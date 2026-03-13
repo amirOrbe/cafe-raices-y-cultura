@@ -1,0 +1,130 @@
+/* See the Tailwind configuration guide for advanced usage
+   https://tailwindcss.com/docs/configuration */
+
+@import "tailwindcss" source(none);
+@source "../css";
+@source "../js";
+@source "../../lib/crc_web";
+
+/* A Tailwind plugin that makes "hero-#{ICON}" classes available.
+   The heroicons installation itself is managed by your mix.exs */
+@plugin "../vendor/heroicons";
+
+/* daisyUI Tailwind Plugin. You can update this file by fetching the latest version with:
+   curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js
+   Make sure to look at the daisyUI changelog: https://daisyui.com/docs/changelog/ */
+@plugin "../vendor/daisyui" {
+  themes: false;
+}
+
+/* Café Raíces y Cultura — Light theme (warm coffee palette) */
+@plugin "../vendor/daisyui-theme" {
+  name: "cafe-light";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  /* Background: warm cream */
+  --color-base-100: oklch(97% 0.015 78);
+  --color-base-200: oklch(93% 0.022 75);
+  --color-base-300: oklch(88% 0.028 72);
+  --color-base-content: oklch(18% 0.04 50);
+  /* Primary: coffee brown */
+  --color-primary: oklch(42% 0.085 45);
+  --color-primary-content: oklch(97% 0.015 78);
+  /* Secondary: terracotta */
+  --color-secondary: oklch(63% 0.10 42);
+  --color-secondary-content: oklch(98% 0 0);
+  /* Accent: warm caramel/gold */
+  --color-accent: oklch(70% 0.13 68);
+  --color-accent-content: oklch(18% 0.04 50);
+  /* Neutral */
+  --color-neutral: oklch(38% 0.05 48);
+  --color-neutral-content: oklch(97% 0.015 78);
+  /* Semantic */
+  --color-info: oklch(62% 0.214 259.815);
+  --color-info-content: oklch(97% 0.014 254.604);
+  --color-success: oklch(60% 0.14 165);
+  --color-success-content: oklch(98% 0.014 180.72);
+  --color-warning: oklch(70% 0.17 68);
+  --color-warning-content: oklch(18% 0.04 50);
+  --color-error: oklch(58% 0.253 17.585);
+  --color-error-content: oklch(96% 0.015 12.422);
+  /* Shape */
+  --radius-selector: 0.375rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.21875rem;
+  --size-field: 0.21875rem;
+  --border: 1.5px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Café Raíces y Cultura — Dark theme (espresso palette) */
+@plugin "../vendor/daisyui-theme" {
+  name: "cafe-dark";
+  default: false;
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: oklch(18% 0.03 45);
+  --color-base-200: oklch(14% 0.025 45);
+  --color-base-300: oklch(10% 0.02 45);
+  --color-base-content: oklch(93% 0.022 75);
+  --color-primary: oklch(63% 0.10 42);
+  --color-primary-content: oklch(97% 0.015 78);
+  --color-secondary: oklch(70% 0.13 68);
+  --color-secondary-content: oklch(18% 0.04 50);
+  --color-accent: oklch(75% 0.15 72);
+  --color-accent-content: oklch(18% 0.04 50);
+  --color-neutral: oklch(28% 0.04 48);
+  --color-neutral-content: oklch(93% 0.022 75);
+  --color-info: oklch(58% 0.158 241.966);
+  --color-info-content: oklch(97% 0.013 236.62);
+  --color-success: oklch(60% 0.118 184.704);
+  --color-success-content: oklch(98% 0.014 180.72);
+  --color-warning: oklch(66% 0.179 58.318);
+  --color-warning-content: oklch(98% 0.022 95.277);
+  --color-error: oklch(58% 0.253 17.585);
+  --color-error-content: oklch(96% 0.015 12.422);
+  --radius-selector: 0.375rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.21875rem;
+  --size-field: 0.21875rem;
+  --border: 1.5px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Add variants based on LiveView classes */
+@custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
+@custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
+@custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
+
+/* Use the data attribute for dark mode  */
+@custom-variant dark (&:where([data-theme=cafe-dark], [data-theme=cafe-dark] *));
+
+/* Make LiveView wrapper divs transparent for layout */
+[data-phx-session], [data-phx-teleported-src] { display: contents }
+
+/* Smooth scrolling for section navigation */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Carousel transitions */
+.carousel-slide {
+  transition: opacity 0.7s ease-in-out;
+}
+
+/* Custom scrollbar for menu overflow */
+.menu-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.menu-scroll::-webkit-scrollbar-track {
+  background: oklch(93% 0.022 75);
+}
+.menu-scroll::-webkit-scrollbar-thumb {
+  background: oklch(42% 0.085 45);
+  border-radius: 2px;
+}

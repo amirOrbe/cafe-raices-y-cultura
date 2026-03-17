@@ -457,10 +457,15 @@ defmodule CRCWeb.HomeLive do
               </div>
               <div>
                 <p class="font-semibold text-base-content">Dirección</p>
-                <p class="text-base-content/70 mt-0.5">
-                  Coquimbo 709, Lindavista Sur<br />
-                  Ciudad de México, CDMX 07300
-                </p>
+                <a
+                  href="https://maps.app.goo.gl/zWn8XyzHjHwZS9RA9"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-base-content/70 mt-0.5 hover:text-primary transition-colors block"
+                >
+                  Dr. Mariano Azuela #80 Local A<br />
+                  Col. Santa María la Ribera, CDMX 06400
+                </a>
               </div>
             </div>
 
@@ -515,13 +520,13 @@ defmodule CRCWeb.HomeLive do
           <!-- Google Maps embed -->
           <div class="rounded-2xl overflow-hidden shadow-xl border border-base-300">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3762.123456789!2d-99.14!3d19.48!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85d1f8b6f4a3e5c1%3A0x123456789abcdef!2sCoquimbo%20709%2C%20Lindavista%20Sur%2C%2007300%20Ciudad%20de%20M%C3%A9xico%2C%20CDMX!5e0!3m2!1ses!2smx!4v1234567890"
+              src="https://maps.google.com/maps?q=Dr.+Mariano+Azuela+80,+Santa+María+la+Ribera,+Cuauhtémoc,+06400+Ciudad+de+México,+CDMX&output=embed&z=17"
               class="w-full h-64 sm:h-80 lg:h-96"
               style="border: 0"
               allowfullscreen=""
               loading="lazy"
               referrerpolicy="no-referrer-when-downgrade"
-              title="Ubicación de Café Raíces y Cultura"
+              title="Ubicación de Café Raíces y Cultura — Dr. Mariano Azuela #80 Local A, Santa María la Ribera"
             ></iframe>
           </div>
         </div>

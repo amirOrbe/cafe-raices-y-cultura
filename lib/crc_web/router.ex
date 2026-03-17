@@ -19,6 +19,7 @@ defmodule CRCWeb.Router do
 
     live "/", HomeLive
     live "/menu", MenuLive
+    live "/colaboraciones", ColaboracionesLive
   end
 
   # Future scopes — ready to expand

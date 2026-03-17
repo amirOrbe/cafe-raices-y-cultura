@@ -6,8 +6,15 @@ defmodule CRCWeb.HomeLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    photos = Media.list_photos()
-    categories = Catalog.list_categories()
+    photos = case Media.list_photos() do
+      [] -> placeholder_photos()
+      real -> real
+    end
+
+    categories = case Catalog.list_categories() do
+      [] -> placeholder_categories()
+      real -> real
+    end
 
     socket =
       socket
@@ -40,7 +47,8 @@ defmodule CRCWeb.HomeLive do
 
   def handle_event("select_category", %{"id" => id}, socket) do
     category =
-      Enum.find(socket.assigns.categories, fn c -> to_string(c.id) == id end)
+      Enum.find(socket.assigns.categories, fn c -> to_string(c.id) == id end) ||
+        Enum.find(socket.assigns.categories, fn c -> c.id == id end)
 
     {:noreply, assign(socket, :active_category, category)}
   end
@@ -68,6 +76,63 @@ defmodule CRCWeb.HomeLive do
       <.footer />
     </div>
     """
+  end
+
+  # ---------------------------------------------------------------------------
+  # Placeholder data (shown when DB is empty)
+  # ---------------------------------------------------------------------------
+
+  defp placeholder_photos do
+    [
+      %{url: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&auto=format&fit=crop", caption: "Bienvenidos a Café Raíces y Cultura"},
+      %{url: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1200&auto=format&fit=crop", caption: "Un espacio para conectar"},
+      %{url: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200&auto=format&fit=crop", caption: "Café de origen seleccionado"},
+      %{url: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=1200&auto=format&fit=crop", caption: "Arte y sabor en cada taza"},
+      %{url: "https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=1200&auto=format&fit=crop", caption: "Tu refugio en Lindavista"}
+    ]
+  end
+
+  defp placeholder_categories do
+    [
+      %{
+        id: 1, name: "Bebidas Calientes",
+        menu_items: [
+          %{name: "Espresso", description: "Doble shot de espresso de origen mexicano.", price: "45", featured: false},
+          %{name: "Americano", description: "Espresso suavizado con agua caliente, equilibrado y limpio.", price: "50", featured: false},
+          %{name: "Cappuccino", description: "Espresso con leche vaporizada y espuma cremosa.", price: "65", featured: true},
+          %{name: "Latte", description: "Espresso con mucha leche vaporizada y toque de espuma.", price: "68", featured: false},
+          %{name: "Matcha Latte", description: "Matcha ceremonial japonés con leche de avena.", price: "72", featured: true},
+          %{name: "Chocolate Caliente", description: "Cacao artesanal de Oaxaca con leche entera.", price: "60", featured: false}
+        ]
+      },
+      %{
+        id: 2, name: "Bebidas Frías",
+        menu_items: [
+          %{name: "Cold Brew", description: "Infusión en frío por 18 horas, suave y sin acidez.", price: "70", featured: true},
+          %{name: "Frappé de Café", description: "Espresso, hielo y leche batidos al momento.", price: "75", featured: false},
+          %{name: "Limonada de Lavanda", description: "Limonada artesanal con jarabe de lavanda natural.", price: "65", featured: false},
+          %{name: "Té Frío de Hibisco", description: "Jamaica con jengibre, miel y jugo de naranja.", price: "58", featured: false}
+        ]
+      },
+      %{
+        id: 3, name: "Alimentos",
+        menu_items: [
+          %{name: "Croissant de Mantequilla", description: "Horneado en casa, hojaldrado y dorado.", price: "55", featured: false},
+          %{name: "Tostada Francesa", description: "Pan brioche, maple, frutos rojos y crema batida.", price: "95", featured: true},
+          %{name: "Bowl de Granola", description: "Granola artesanal, yogurt griego, miel y frutas de temporada.", price: "88", featured: false},
+          %{name: "Sándwich Club", description: "Pollo, aguacate, jitomate y lechuga en pan de centeno.", price: "110", featured: false},
+          %{name: "Avocado Toast", description: "Pan sourdough con aguacate, huevo pochado y chile de árbol.", price: "105", featured: true}
+        ]
+      },
+      %{
+        id: 4, name: "Postres",
+        menu_items: [
+          %{name: "Cheesecake de Frutos Rojos", description: "Cremoso con base de galleta y coulis de fresa.", price: "80", featured: true},
+          %{name: "Brownie de Chocolate", description: "Chocolate belga, nuez y centro húmedo.", price: "65", featured: false},
+          %{name: "Muffin de Arándanos", description: "Esponjoso, sin azúcar refinada y con arándanos frescos.", price: "55", featured: false}
+        ]
+      }
+    ]
   end
 
   # ---------------------------------------------------------------------------

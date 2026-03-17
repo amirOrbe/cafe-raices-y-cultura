@@ -38,7 +38,7 @@ const CarouselAutoplay = {
     this.stopAutoplay()
     this.interval = setInterval(() => {
       this.pushEvent("carousel_next", {})
-    }, 5000)
+    }, 6000)
   },
   stopAutoplay() {
     if (this.interval) {

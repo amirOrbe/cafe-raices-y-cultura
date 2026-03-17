@@ -27,12 +27,6 @@ defmodule CRCWeb.HomeLive do
     {:noreply, assign(socket, :active_slide, next)}
   end
 
-  def handle_event("carousel_prev", _params, socket) do
-    total = length(socket.assigns.photos)
-    prev = rem(socket.assigns.active_slide - 1 + total, total)
-    {:noreply, assign(socket, :active_slide, prev)}
-  end
-
   def handle_event("carousel_goto", %{"index" => index}, socket) do
     {:noreply, assign(socket, :active_slide, String.to_integer(index))}
   end
@@ -131,26 +125,6 @@ defmodule CRCWeb.HomeLive do
           </div>
         <% end %>
       </div>
-
-      <!-- Prev / Next controls -->
-      <button
-        phx-click="carousel_prev"
-        class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-20 btn btn-circle btn-sm sm:btn-md bg-black/30 border-0 text-white hover:bg-black/60"
-        aria-label="Anterior"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <button
-        phx-click="carousel_next"
-        class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-20 btn btn-circle btn-sm sm:btn-md bg-black/30 border-0 text-white hover:bg-black/60"
-        aria-label="Siguiente"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
 
       <!-- Dot indicators -->
       <div class="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2">

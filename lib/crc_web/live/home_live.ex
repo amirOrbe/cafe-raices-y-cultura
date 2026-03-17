@@ -94,10 +94,10 @@ defmodule CRCWeb.HomeLive do
           <!-- Logo / Brand -->
           <a href="#inicio" class="flex items-center gap-2 group">
             <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-content font-bold text-sm">
-              RC
+              CRC
             </div>
             <span class="font-semibold text-base-content text-sm sm:text-base leading-tight">
-              Raíces y Cultura
+              Café Raíces y Cultura
             </span>
           </a>
 
@@ -271,7 +271,7 @@ defmodule CRCWeb.HomeLive do
             </h2>
             <div class="space-y-4 text-base-content/70 text-base sm:text-lg leading-relaxed">
               <p>
-                En <strong class="text-base-content">Raíces y Cultura</strong> creemos que una buena taza de café
+                En <strong class="text-base-content">Café Raíces y Cultura</strong> creemos que una buena taza de café
                 es el punto de partida para grandes conversaciones, ideas y momentos que perduran.
               </p>
               <p>
@@ -467,7 +467,7 @@ defmodule CRCWeb.HomeLive do
               <h3 class="text-lg font-bold text-base-content">Encuentro con Amigos</h3>
               <p class="text-sm text-base-content/60 mt-2 leading-relaxed">
                 Reúnete con quienes más quieres. Aparta una mesa, trae a tu gente
-                y deja que Raíces y Cultura sea el escenario perfecto.
+                y deja que Café Raíces y Cultura sea el escenario perfecto.
               </p>
               <div class="mt-4 flex flex-wrap gap-2">
                 <span class="badge badge-ghost text-xs">Pequeños grupos</span>
@@ -638,7 +638,7 @@ defmodule CRCWeb.HomeLive do
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div class="flex items-center gap-2">
             <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-content font-bold text-xs">
-              RC
+              CRC
             </div>
             <span class="font-semibold text-sm">Café Raíces y Cultura</span>
           </div>
@@ -651,7 +651,7 @@ defmodule CRCWeb.HomeLive do
           </nav>
 
           <p class="text-xs text-neutral-content/50">
-            © {Date.utc_today().year} Raíces y Cultura
+            © {Date.utc_today().year} Café Raíces y Cultura
           </p>
         </div>
       </div>

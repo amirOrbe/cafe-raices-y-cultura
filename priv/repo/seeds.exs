@@ -416,7 +416,7 @@ photos = [
   },
   %{
     url: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1600&auto=format&fit=crop",
-    caption: "Tu lugar favorito en Lindavista",
+    caption: "Tu lugar favorito en Santa María la Ribera",
     position: 4
   },
   %{

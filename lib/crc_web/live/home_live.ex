@@ -72,14 +72,14 @@ defmodule CRCWeb.HomeLive do
       %{url: "/images/carousel/crc-02.jpg", caption: "Un espacio para conectar"},
       %{url: "/images/carousel/crc-03.jpg", caption: "Café de origen seleccionado"},
       %{url: "/images/carousel/crc-04.jpg", caption: "Arte y sabor en cada taza"},
-      %{url: "/images/carousel/crc-05.jpg", caption: "Tu refugio en Lindavista"},
+      %{url: "/images/carousel/crc-05.jpg", caption: "Tu refugio en Santa María la Ribera"},
       %{url: "/images/carousel/crc-06.jpg", caption: "Café Raíces y Cultura"},
       %{url: "/images/carousel/crc-07.jpg", caption: "Hecho con amor y detalle"},
       %{url: "/images/carousel/crc-08.jpg", caption: "Raíces que nos sostienen"},
       %{url: "/images/carousel/crc-09.jpg", caption: "Cultura que inspira"},
       %{url: "/images/carousel/crc-10.jpg", caption: "Un proyecto familiar"},
       %{url: "/images/carousel/crc-11.jpg", caption: "Granos de origen seleccionado"},
-      %{url: "/images/carousel/crc-12.jpg", caption: "Lindavista Sur · CDMX"},
+      %{url: "/images/carousel/crc-12.jpg", caption: "Santa María la Ribera · CDMX"},
       %{url: "/images/carousel/crc-13.jpg", caption: "Café Raíces y Cultura"},
       %{url: "/images/carousel/crc-14.jpg", caption: "Cada taza, una historia"},
       %{url: "/images/carousel/crc-15.jpg", caption: "Bienvenidos a CRC"},
@@ -99,7 +99,7 @@ defmodule CRCWeb.HomeLive do
     <section id="inicio" class="relative pt-16 h-64 sm:h-80 md:h-[500px] lg:h-[600px] bg-primary flex items-center justify-center">
       <div class="text-center text-primary-content px-4">
         <h1 class="text-3xl sm:text-5xl font-bold mb-4">Café Raíces y Cultura</h1>
-        <p class="text-lg sm:text-xl opacity-90">Coquimbo 709, Lindavista Sur · CDMX</p>
+        <p class="text-lg sm:text-xl opacity-90">Santa María la Ribera · CDMX</p>
       </div>
     </section>
     """
@@ -170,7 +170,7 @@ defmodule CRCWeb.HomeLive do
           Café Raíces y Cultura
         </h1>
         <p class="mt-2 text-sm sm:text-base md:text-lg text-white/90 drop-shadow">
-          Lindavista Sur · Ciudad de México
+          Santa María la Ribera · Ciudad de México
         </p>
       </div>
     </section>

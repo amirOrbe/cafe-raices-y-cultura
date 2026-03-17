@@ -166,65 +166,140 @@ defmodule CRCWeb.HomeLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Nosotros (About)
+  # Nosotros (About) — contenido real del café
   # ---------------------------------------------------------------------------
 
   defp about_section(assigns) do
     ~H"""
     <section id="nosotros" class="py-16 sm:py-20 lg:py-24 bg-base-100">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          <!-- Image -->
-          <div class="order-2 lg:order-1">
-            <div class="relative rounded-2xl overflow-hidden shadow-xl aspect-[4/3]">
-              <img
-                src="https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=800&auto=format&fit=crop"
-                alt="Interior de Café Raíces y Cultura"
-                class="w-full h-full object-cover"
-                loading="lazy"
-              />
-              <div class="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent"></div>
-            </div>
+
+        <!-- Header -->
+        <div class="text-center mb-12 sm:mb-16">
+          <span class="inline-block text-primary font-semibold text-sm uppercase tracking-widest mb-3">
+            Nuestra historia
+          </span>
+          <h2 class="text-3xl sm:text-4xl font-bold text-base-content leading-tight">
+            Un espacio para conectar
+          </h2>
+        </div>
+
+        <!-- Intro + imagen -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-16 sm:mb-20">
+          <!-- Imagen -->
+          <div class="relative rounded-2xl overflow-hidden shadow-xl aspect-[4/3]">
+            <img
+              src="https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=800&auto=format&fit=crop"
+              alt="Interior de Café Raíces y Cultura"
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div class="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent"></div>
           </div>
 
-          <!-- Text -->
-          <div class="order-1 lg:order-2">
-            <span class="inline-block text-primary font-semibold text-sm uppercase tracking-widest mb-3">
-              Nuestra historia
-            </span>
-            <h2 class="text-3xl sm:text-4xl font-bold text-base-content mb-6 leading-tight">
-              Donde el café se convierte en cultura
-            </h2>
-            <div class="space-y-4 text-base-content/70 text-base sm:text-lg leading-relaxed">
-              <p>
-                En <strong class="text-base-content">Café Raíces y Cultura</strong> creemos que una buena taza de café
-                es el punto de partida para grandes conversaciones, ideas y momentos que perduran.
-              </p>
-              <p>
-                Nos ubicamos en el corazón de Lindavista Sur, CDMX, con un espacio diseñado para
-                que te sientas como en casa. Trabajamos con granos de origen seleccionado y métodos
-                de preparación que respetan cada terroir.
-              </p>
-              <p>
-                Más que una cafetería, somos un espacio donde las <strong class="text-base-content">raíces</strong>
-                —nuestros ingredientes, nuestra gente, nuestra gastronomía— se abrazan con la
-                <strong class="text-base-content">cultura</strong> viva de la ciudad.
-              </p>
-            </div>
-
-            <!-- Quick info -->
-            <div class="mt-8 grid grid-cols-2 gap-4">
+          <!-- Texto intro -->
+          <div>
+            <p class="text-base-content/70 text-base sm:text-lg leading-relaxed mb-6">
+              En un rincón acogedor de la ciudad,
+              <strong class="text-base-content">Café Raíces y Cultura</strong>
+              se erige como un santuario donde el café se convierte en un puente entre las personas
+              y sus historias. Este proyecto familiar nació con la intención de ofrecer más que una
+              simple taza de café; es un lugar donde las raíces y la cultura se entrelazan para
+              crear experiencias significativas.
+            </p>
+            <!-- Horarios -->
+            <div class="grid grid-cols-2 gap-4">
               <div class="bg-base-200 rounded-xl p-4 text-center">
-                <p class="text-2xl font-bold text-primary">Lun–Vie</p>
+                <p class="text-xl font-bold text-primary">Lun – Vie</p>
                 <p class="text-sm text-base-content/60 mt-1">8:00 – 21:00</p>
               </div>
               <div class="bg-base-200 rounded-xl p-4 text-center">
-                <p class="text-2xl font-bold text-primary">Sáb–Dom</p>
+                <p class="text-xl font-bold text-primary">Sáb – Dom</p>
                 <p class="text-sm text-base-content/60 mt-1">9:00 – 22:00</p>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- 4 pilares -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 mb-14">
+
+          <!-- Raíces -->
+          <div class="bg-base-200 border border-base-300 rounded-2xl p-6 hover:shadow-md transition-shadow">
+            <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m8.66-13l-.87.5M4.21 15.5l-.87.5M20.66 15.5l-.87-.5M4.21 8.5l-.87-.5M21 12h-1M4 12H3m15.07-7.07l-.7.7M6.63 17.37l-.7.7M17.37 17.37l-.7-.7M6.63 6.63l-.7-.7" />
+              </svg>
+            </div>
+            <h3 class="text-base font-bold text-base-content mb-2">Raíces que Sostienen</h3>
+            <p class="text-sm text-base-content/60 leading-relaxed">
+              Nuestras raíces son profundas, nutridas por la historia y el esfuerzo de quienes
+              han guiado este camino. Son el ADN que nos sostiene y nos conecta con el pasado
+              para guiarnos hacia el futuro.
+            </p>
+          </div>
+
+          <!-- Cultura -->
+          <div class="bg-base-200 border border-base-300 rounded-2xl p-6 hover:shadow-md transition-shadow">
+            <div class="w-12 h-12 bg-secondary/10 rounded-2xl flex items-center justify-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <h3 class="text-base font-bold text-base-content mb-2">Cultura que Inspira</h3>
+            <p class="text-sm text-base-content/60 leading-relaxed">
+              Más que una cafetería, somos un espacio cultural vibrante. Promovemos actividades
+              artísticas que unen a las personas y generan un impacto positivo. Somos un faro
+              de colaboración y creatividad.
+            </p>
+          </div>
+
+          <!-- Comunidad -->
+          <div class="bg-base-200 border border-base-300 rounded-2xl p-6 hover:shadow-md transition-shadow">
+            <div class="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <h3 class="text-base font-bold text-base-content mb-2">Compromiso con la Comunidad</h3>
+            <p class="text-sm text-base-content/60 leading-relaxed">
+              Creemos en la trazabilidad del café, mostrando el impacto de quienes lo producen.
+              Nuestra visión es fomentar comunidades comprometidas que trabajen juntas para
+              mejorar el ámbito cafetalero.
+            </p>
+          </div>
+
+          <!-- Valores -->
+          <div class="bg-base-200 border border-base-300 rounded-2xl p-6 hover:shadow-md transition-shadow">
+            <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div>
+            <h3 class="text-base font-bold text-base-content mb-2">Valores que Nos Definen</h3>
+            <p class="text-sm text-base-content/60 leading-relaxed">
+              Empatía, respeto, colaboración e integridad son el pilar de cada acción. Promovemos
+              el trabajo en equipo, la responsabilidad social y la conciencia del entorno con
+              perseverancia y resiliencia.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Cierre -->
+        <div class="text-center max-w-2xl mx-auto">
+          <p class="text-base-content/60 text-base sm:text-lg leading-relaxed">
+            En CRC somos personas cálidas y versátiles, siempre en busca de nuevos horizontes.
+            Ven y descubre un espacio donde el <strong class="text-base-content">café</strong>,
+            el <strong class="text-base-content">arte</strong> y la
+            <strong class="text-base-content">cultura</strong>
+            convergen para nutrir y transformar nuestro entorno.
+          </p>
+          <p class="mt-4 text-primary font-semibold">
+            ¡Te esperamos en Café Raíces y Cultura para compartir una experiencia única y auténtica!
+          </p>
+        </div>
+
       </div>
     </section>
     """

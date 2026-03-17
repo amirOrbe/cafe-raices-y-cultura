@@ -3,15 +3,12 @@ defmodule CRCWeb.HomeLive do
 
   use CRCWeb, :live_view
 
-  alias CRC.Media
   alias CRCWeb.Components.SiteComponents
 
   @impl true
   def mount(_params, _session, socket) do
-    photos = case Media.list_photos() do
-      [] -> placeholder_photos()
-      real -> real
-    end
+    # Carousel always uses local photos shuffled randomly — every visit shows a different order
+    photos = carousel_photos() |> Enum.shuffle()
 
     socket =
       socket
@@ -68,13 +65,28 @@ defmodule CRCWeb.HomeLive do
   # Placeholder data (shown when DB is empty)
   # ---------------------------------------------------------------------------
 
-  defp placeholder_photos do
+  # All 19 real CRC photos — shuffled on every mount so each visit looks different
+  defp carousel_photos do
     [
-      %{url: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&auto=format&fit=crop", caption: "Bienvenidos a Café Raíces y Cultura"},
-      %{url: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1200&auto=format&fit=crop",   caption: "Un espacio para conectar"},
-      %{url: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200&auto=format&fit=crop", caption: "Café de origen seleccionado"},
-      %{url: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=1200&auto=format&fit=crop", caption: "Arte y sabor en cada taza"},
-      %{url: "https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=1200&auto=format&fit=crop", caption: "Tu refugio en Lindavista"}
+      %{url: "/images/carousel/crc-01.jpg", caption: "Café Raíces y Cultura"},
+      %{url: "/images/carousel/crc-02.jpg", caption: "Un espacio para conectar"},
+      %{url: "/images/carousel/crc-03.jpg", caption: "Café de origen seleccionado"},
+      %{url: "/images/carousel/crc-04.jpg", caption: "Arte y sabor en cada taza"},
+      %{url: "/images/carousel/crc-05.jpg", caption: "Tu refugio en Lindavista"},
+      %{url: "/images/carousel/crc-06.jpg", caption: "Café Raíces y Cultura"},
+      %{url: "/images/carousel/crc-07.jpg", caption: "Hecho con amor y detalle"},
+      %{url: "/images/carousel/crc-08.jpg", caption: "Raíces que nos sostienen"},
+      %{url: "/images/carousel/crc-09.jpg", caption: "Cultura que inspira"},
+      %{url: "/images/carousel/crc-10.jpg", caption: "Un proyecto familiar"},
+      %{url: "/images/carousel/crc-11.jpg", caption: "Granos de origen seleccionado"},
+      %{url: "/images/carousel/crc-12.jpg", caption: "Lindavista Sur · CDMX"},
+      %{url: "/images/carousel/crc-13.jpg", caption: "Café Raíces y Cultura"},
+      %{url: "/images/carousel/crc-14.jpg", caption: "Cada taza, una historia"},
+      %{url: "/images/carousel/crc-15.jpg", caption: "Bienvenidos a CRC"},
+      %{url: "/images/carousel/crc-16.jpg", caption: "Arte, café y cultura"},
+      %{url: "/images/carousel/crc-17.jpg", caption: "Compromiso con la comunidad"},
+      %{url: "/images/carousel/crc-18.jpg", caption: "Lo artesanal en cada detalle"},
+      %{url: "/images/carousel/crc-19.jpg", caption: "Ven y descúbrenos"}
     ]
   end
 

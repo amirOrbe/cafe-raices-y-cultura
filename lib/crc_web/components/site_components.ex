@@ -24,7 +24,7 @@ defmodule CRCWeb.Components.SiteComponents do
           <!-- Logo / Brand -->
           <a href="/" class="flex items-center group" aria-label="Café Raíces y Cultura — Inicio">
             <img
-              src="/images/logo-color.png"
+              src="/images/brand/logo-color.png"
               alt="Café Raíces y Cultura"
               class="h-11 w-auto transition-opacity group-hover:opacity-80"
             />
@@ -103,7 +103,7 @@ defmodule CRCWeb.Components.SiteComponents do
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
           <a href="/" aria-label="Café Raíces y Cultura — Inicio">
             <img
-              src="/images/logo-white.png"
+              src="/images/brand/logo-white.png"
               alt="Café Raíces y Cultura"
               class="h-12 w-auto opacity-90 hover:opacity-100 transition-opacity"
             />

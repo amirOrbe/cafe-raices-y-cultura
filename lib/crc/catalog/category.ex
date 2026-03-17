@@ -16,7 +16,7 @@ defmodule CRC.Catalog.Category do
     timestamps(type: :utc_datetime)
   end
 
-  @valid_kinds ~w(food drink)
+  @valid_kinds ~w(food drink extra)
 
   @doc false
   def changeset(category, attrs) do

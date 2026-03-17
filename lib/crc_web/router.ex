@@ -18,6 +18,7 @@ defmodule CRCWeb.Router do
     pipe_through :browser
 
     live "/", HomeLive
+    live "/menu", MenuLive
   end
 
   # Future scopes — ready to expand

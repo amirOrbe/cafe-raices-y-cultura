@@ -1,8 +1,11 @@
 defmodule CRCWeb.HomeLive do
+  @moduledoc "Single-page home LiveView for Café Raíces y Cultura."
+
   use CRCWeb, :live_view
 
   alias CRC.Catalog
   alias CRC.Media
+  alias CRCWeb.Components.SiteComponents
 
   @impl true
   def mount(_params, _session, socket) do
@@ -11,9 +14,9 @@ defmodule CRCWeb.HomeLive do
       real -> real
     end
 
-    categories = case Catalog.list_categories() do
-      [] -> placeholder_categories()
-      real -> real
+    featured_items = case Catalog.list_featured_items() do
+      [] -> placeholder_featured()
+      real -> Enum.take(real, 6)
     end
 
     socket =
@@ -21,8 +24,7 @@ defmodule CRCWeb.HomeLive do
       |> assign(:page_title, "Café Raíces y Cultura")
       |> assign(:photos, photos)
       |> assign(:active_slide, 0)
-      |> assign(:categories, categories)
-      |> assign(:active_category, List.first(categories))
+      |> assign(:featured_items, featured_items)
       |> assign(:nav_open, false)
 
     {:ok, socket}
@@ -45,14 +47,6 @@ defmodule CRCWeb.HomeLive do
     {:noreply, assign(socket, :active_slide, String.to_integer(index))}
   end
 
-  def handle_event("select_category", %{"id" => id}, socket) do
-    category =
-      Enum.find(socket.assigns.categories, fn c -> to_string(c.id) == id end) ||
-        Enum.find(socket.assigns.categories, fn c -> c.id == id end)
-
-    {:noreply, assign(socket, :active_category, category)}
-  end
-
   def handle_event("toggle_nav", _params, socket) do
     {:noreply, assign(socket, :nav_open, !socket.assigns.nav_open)}
   end
@@ -65,15 +59,15 @@ defmodule CRCWeb.HomeLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen flex flex-col">
-      <.navbar nav_open={@nav_open} />
+      <SiteComponents.site_navbar nav_open={@nav_open} current_page={:home} />
       <main class="flex-1">
         <.hero_section photos={@photos} active_slide={@active_slide} />
         <.about_section />
-        <.menu_section categories={@categories} active_category={@active_category} />
+        <.menu_teaser_section featured_items={@featured_items} />
         <.booking_section />
         <.contact_section />
       </main>
-      <.footer />
+      <SiteComponents.site_footer />
     </div>
     """
   end
@@ -85,131 +79,22 @@ defmodule CRCWeb.HomeLive do
   defp placeholder_photos do
     [
       %{url: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&auto=format&fit=crop", caption: "Bienvenidos a Café Raíces y Cultura"},
-      %{url: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1200&auto=format&fit=crop", caption: "Un espacio para conectar"},
+      %{url: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1200&auto=format&fit=crop",   caption: "Un espacio para conectar"},
       %{url: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200&auto=format&fit=crop", caption: "Café de origen seleccionado"},
       %{url: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=1200&auto=format&fit=crop", caption: "Arte y sabor en cada taza"},
       %{url: "https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=1200&auto=format&fit=crop", caption: "Tu refugio en Lindavista"}
     ]
   end
 
-  defp placeholder_categories do
+  defp placeholder_featured do
     [
-      %{
-        id: 1, name: "Bebidas Calientes",
-        menu_items: [
-          %{name: "Espresso", description: "Doble shot de espresso de origen mexicano.", price: "45", featured: false},
-          %{name: "Americano", description: "Espresso suavizado con agua caliente, equilibrado y limpio.", price: "50", featured: false},
-          %{name: "Cappuccino", description: "Espresso con leche vaporizada y espuma cremosa.", price: "65", featured: true},
-          %{name: "Latte", description: "Espresso con mucha leche vaporizada y toque de espuma.", price: "68", featured: false},
-          %{name: "Matcha Latte", description: "Matcha ceremonial japonés con leche de avena.", price: "72", featured: true},
-          %{name: "Chocolate Caliente", description: "Cacao artesanal de Oaxaca con leche entera.", price: "60", featured: false}
-        ]
-      },
-      %{
-        id: 2, name: "Bebidas Frías",
-        menu_items: [
-          %{name: "Cold Brew", description: "Infusión en frío por 18 horas, suave y sin acidez.", price: "70", featured: true},
-          %{name: "Frappé de Café", description: "Espresso, hielo y leche batidos al momento.", price: "75", featured: false},
-          %{name: "Limonada de Lavanda", description: "Limonada artesanal con jarabe de lavanda natural.", price: "65", featured: false},
-          %{name: "Té Frío de Hibisco", description: "Jamaica con jengibre, miel y jugo de naranja.", price: "58", featured: false}
-        ]
-      },
-      %{
-        id: 3, name: "Alimentos",
-        menu_items: [
-          %{name: "Croissant de Mantequilla", description: "Horneado en casa, hojaldrado y dorado.", price: "55", featured: false},
-          %{name: "Tostada Francesa", description: "Pan brioche, maple, frutos rojos y crema batida.", price: "95", featured: true},
-          %{name: "Bowl de Granola", description: "Granola artesanal, yogurt griego, miel y frutas de temporada.", price: "88", featured: false},
-          %{name: "Sándwich Club", description: "Pollo, aguacate, jitomate y lechuga en pan de centeno.", price: "110", featured: false},
-          %{name: "Avocado Toast", description: "Pan sourdough con aguacate, huevo pochado y chile de árbol.", price: "105", featured: true}
-        ]
-      },
-      %{
-        id: 4, name: "Postres",
-        menu_items: [
-          %{name: "Cheesecake de Frutos Rojos", description: "Cremoso con base de galleta y coulis de fresa.", price: "80", featured: true},
-          %{name: "Brownie de Chocolate", description: "Chocolate belga, nuez y centro húmedo.", price: "65", featured: false},
-          %{name: "Muffin de Arándanos", description: "Esponjoso, sin azúcar refinada y con arándanos frescos.", price: "55", featured: false}
-        ]
-      }
+      %{name: "Cappuccino",       description: "Espresso con leche vaporizada y espuma cremosa.",          price: "55", featured: true},
+      %{name: "Matcha Culinario", description: "Matcha con leche vaporizada. Suave y reconfortante.",      price: "65", featured: true},
+      %{name: "Cold Brew",        description: "Infusión en frío 18 horas. Suave, con cuerpo y sin acidez.", price: "55", featured: true},
+      %{name: "El Favorito",      description: "Arrachera, queso gouda, aguacate, champis y arugula.",     price: "115", featured: true},
+      %{name: "El Mexa",          description: "Pizza con frijoles, jalapeño, chistorra y queso gouda.",   price: "95", featured: true},
+      %{name: "Toast Francés",    description: "Pan campesino con crema de avellanas, fruta y miel.",      price: "95", featured: true}
     ]
-  end
-
-  # ---------------------------------------------------------------------------
-  # Helpers
-  # ---------------------------------------------------------------------------
-
-  defp format_price(%Decimal{} = price) do
-    price
-    |> Decimal.round(0)
-    |> Decimal.to_string()
-  end
-
-  defp format_price(price), do: "#{price}"
-
-  # ---------------------------------------------------------------------------
-  # Navbar
-  # ---------------------------------------------------------------------------
-
-  defp navbar(assigns) do
-    ~H"""
-    <nav class="fixed top-0 left-0 right-0 z-50 bg-base-100/95 backdrop-blur-sm border-b border-base-300 shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16">
-          <!-- Logo / Brand -->
-          <a href="#inicio" class="flex items-center gap-2 group">
-            <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-content font-bold text-sm">
-              CRC
-            </div>
-            <span class="font-semibold text-base-content text-sm sm:text-base leading-tight">
-              Café Raíces y Cultura
-            </span>
-          </a>
-
-          <!-- Desktop nav links -->
-          <div class="hidden md:flex items-center gap-6">
-            <a href="#nosotros" class="text-sm font-medium text-base-content/70 hover:text-primary transition-colors">
-              Nosotros
-            </a>
-            <a href="#menu" class="text-sm font-medium text-base-content/70 hover:text-primary transition-colors">
-              Menú
-            </a>
-            <a href="#booking" class="btn btn-primary btn-sm">
-              Reservar
-            </a>
-          </div>
-
-          <!-- Mobile hamburger -->
-          <button
-            phx-click="toggle_nav"
-            phx-value-stop="true"
-            class="md:hidden btn btn-ghost btn-sm p-1"
-            aria-label="Abrir menú"
-          >
-            <svg :if={!@nav_open} xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-            <svg :if={@nav_open} xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Mobile menu -->
-      <div :if={@nav_open} class="md:hidden border-t border-base-300 bg-base-100 px-4 py-3 space-y-2">
-        <a href="#nosotros" phx-click="close_nav" class="block py-2 text-base font-medium text-base-content/80 hover:text-primary">
-          Nosotros
-        </a>
-        <a href="#menu" phx-click="close_nav" class="block py-2 text-base font-medium text-base-content/80 hover:text-primary">
-          Menú
-        </a>
-        <a href="#booking" phx-click="close_nav" class="block py-2">
-          <span class="btn btn-primary btn-sm w-full">Reservar experiencia</span>
-        </a>
-      </div>
-    </nav>
-    """
   end
 
   # ---------------------------------------------------------------------------
@@ -237,18 +122,14 @@ defmodule CRCWeb.HomeLive do
       <!-- Slides -->
       <div class="relative w-full h-full">
         <%= for {photo, index} <- Enum.with_index(@photos) do %>
-          <div
-            class={"absolute inset-0 transition-opacity duration-700 #{if index == @active_slide, do: "opacity-100 z-10", else: "opacity-0 z-0"}"}
-          >
+          <div class={"absolute inset-0 transition-opacity duration-700 #{if index == @active_slide, do: "opacity-100 z-10", else: "opacity-0 z-0"}"}>
             <img
               src={photo.url}
               alt={photo.caption || "Café Raíces y Cultura"}
               class="w-full h-full object-cover"
               loading={if index == 0, do: "eager", else: "lazy"}
             />
-            <!-- Gradient overlay -->
             <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
-            <!-- Caption -->
             <div :if={photo.caption} class="absolute bottom-12 md:bottom-16 left-0 right-0 text-center px-4">
               <p class="text-white text-base sm:text-lg md:text-2xl font-medium drop-shadow-lg">
                 {photo.caption}
@@ -268,7 +149,6 @@ defmodule CRCWeb.HomeLive do
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
-
       <button
         phx-click="carousel_next"
         class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-20 btn btn-circle btn-sm sm:btn-md bg-black/30 border-0 text-white hover:bg-black/60"
@@ -291,7 +171,7 @@ defmodule CRCWeb.HomeLive do
         <% end %>
       </div>
 
-      <!-- Hero headline overlay -->
+      <!-- Headline overlay -->
       <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 z-20 text-center px-4 pointer-events-none">
         <h1 class="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white drop-shadow-xl leading-tight">
           Café Raíces y Cultura
@@ -370,87 +250,47 @@ defmodule CRCWeb.HomeLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Menú
+  # Menu teaser — a preview of featured items with link to /menu
   # ---------------------------------------------------------------------------
 
-  defp menu_section(%{categories: []} = assigns) do
-    ~H"""
-    <section id="menu" class="py-16 bg-base-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl font-bold text-base-content mb-4">Nuestro Menú</h2>
-        <p class="text-base-content/60">Próximamente...</p>
-      </div>
-    </section>
-    """
-  end
-
-  defp menu_section(assigns) do
+  defp menu_teaser_section(assigns) do
     ~H"""
     <section id="menu" class="py-16 sm:py-20 lg:py-24 bg-base-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
         <!-- Header -->
         <div class="text-center mb-10 sm:mb-14">
-          <span class="inline-block text-primary font-semibold text-sm uppercase tracking-widest mb-3">
+          <span class="inline-block text-primary font-semibold text-xs sm:text-sm uppercase tracking-widest mb-3">
             Lo que ofrecemos
           </span>
           <h2 class="text-3xl sm:text-4xl font-bold text-base-content">Nuestro Menú</h2>
+          <p class="mt-3 text-base-content/50 text-sm sm:text-base max-w-lg mx-auto">
+            Hecho en casa, con procesos orgánicos y atención al detalle.
+          </p>
         </div>
 
-        <!-- Category tabs -->
-        <div class="flex gap-2 sm:gap-3 overflow-x-auto pb-2 mb-8 menu-scroll snap-x">
-          <%= for category <- @categories do %>
-            <button
-              phx-click="select_category"
-              phx-value-id={category.id}
-              class={"btn btn-sm sm:btn-md whitespace-nowrap snap-start flex-shrink-0 #{if @active_category && @active_category.id == category.id, do: "btn-primary", else: "btn-ghost border border-base-300"}"}
-            >
-              {category.name}
-            </button>
+        <!-- Featured items grid (preview) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          <%= for item <- @featured_items do %>
+            <SiteComponents.menu_item_card item={item} />
           <% end %>
         </div>
 
-        <!-- Menu items grid -->
-        <div :if={@active_category} class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          <%= for item <- @active_category.menu_items do %>
-            <.menu_card item={item} />
-          <% end %>
-        </div>
-
-        <!-- CTA -->
+        <!-- CTA to full menu -->
         <div class="text-center mt-10 sm:mt-14">
-          <a href="#booking" class="btn btn-primary btn-lg">
-            Reserva tu experiencia
+          <p class="text-base-content/50 text-sm mb-4">
+            Esto es solo una muestra — tenemos mucho más para ti.
+          </p>
+          <a href="/menu" class="btn btn-primary btn-lg px-8 gap-2">
+            Ver menú completo
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
           </a>
         </div>
+
       </div>
     </section>
-    """
-  end
-
-  defp menu_card(assigns) do
-    ~H"""
-    <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-base-300">
-      <div class="card-body p-4 sm:p-5">
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex-1 min-w-0">
-            <h3 class="card-title text-base sm:text-lg font-semibold text-base-content leading-tight">
-              {@item.name}
-            </h3>
-            <p :if={@item.description} class="text-sm text-base-content/60 mt-1.5 leading-relaxed line-clamp-2">
-              {@item.description}
-            </p>
-          </div>
-          <div class="flex-shrink-0 text-right">
-            <span class="text-lg font-bold text-primary">
-              ${format_price(@item.price)}
-            </span>
-          </div>
-        </div>
-        <div :if={@item.featured} class="mt-2">
-          <span class="badge badge-accent badge-sm text-xs">Recomendado</span>
-        </div>
-      </div>
-    </div>
     """
   end
 
@@ -460,7 +300,7 @@ defmodule CRCWeb.HomeLive do
 
   defp booking_section(assigns) do
     ~H"""
-    <section id="booking" class="py-16 sm:py-20 lg:py-24 bg-base-200">
+    <section id="booking" class="py-16 sm:py-20 lg:py-24 bg-base-100">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <!-- Header -->
@@ -482,7 +322,7 @@ defmodule CRCWeb.HomeLive do
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 mb-12">
 
           <!-- Coffee Party -->
-          <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
+          <div class="card bg-base-200 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
             <div class="card-body p-6">
               <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -492,7 +332,7 @@ defmodule CRCWeb.HomeLive do
               <h3 class="text-lg font-bold text-base-content">Coffee Party</h3>
               <p class="text-sm text-base-content/60 mt-2 leading-relaxed">
                 Celebra con tu grupo en un ambiente acogedor. Menú especial, espacio privado
-                y toda la vibra de Raíces y Cultura para tu reunión.
+                y toda la vibra de Raíces y Cultura.
               </p>
               <div class="mt-4 flex flex-wrap gap-2">
                 <span class="badge badge-ghost text-xs">Grupos de 6–20</span>
@@ -502,7 +342,7 @@ defmodule CRCWeb.HomeLive do
           </div>
 
           <!-- Sesión de lectura -->
-          <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
+          <div class="card bg-base-200 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
             <div class="card-body p-6">
               <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -522,7 +362,7 @@ defmodule CRCWeb.HomeLive do
           </div>
 
           <!-- Encuentro con amigos -->
-          <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
+          <div class="card bg-base-200 border border-base-300 shadow-sm hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
             <div class="card-body p-6">
               <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -543,7 +383,7 @@ defmodule CRCWeb.HomeLive do
 
         </div>
 
-        <!-- CTA — contact via WhatsApp meanwhile -->
+        <!-- CTA WhatsApp mientras tanto -->
         <div class="text-center">
           <p class="text-base-content/50 text-sm mb-4">
             Mientras habilitamos el sistema de reservas, escríbenos directamente:
@@ -572,7 +412,7 @@ defmodule CRCWeb.HomeLive do
 
   defp contact_section(assigns) do
     ~H"""
-    <section id="contacto" class="py-16 sm:py-20 lg:py-24 bg-base-100">
+    <section id="contacto" class="py-16 sm:py-20 lg:py-24 bg-base-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-10 sm:mb-14">
           <span class="inline-block text-primary font-semibold text-sm uppercase tracking-widest mb-3">
@@ -584,7 +424,7 @@ defmodule CRCWeb.HomeLive do
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
           <!-- Contact info + Social -->
           <div class="space-y-8">
-            <!-- Address -->
+            <!-- Dirección -->
             <div class="flex gap-4">
               <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -601,22 +441,7 @@ defmodule CRCWeb.HomeLive do
               </div>
             </div>
 
-            <!-- Phone -->
-            <div class="flex gap-4">
-              <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-              </div>
-              <div>
-                <p class="font-semibold text-base-content">Teléfono</p>
-                <a href="tel:+525551234567" class="text-base-content/70 hover:text-primary transition-colors mt-0.5 block">
-                  55 5123-4567
-                </a>
-              </div>
-            </div>
-
-            <!-- Hours -->
+            <!-- Horario -->
             <div class="flex gap-4">
               <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -632,7 +457,7 @@ defmodule CRCWeb.HomeLive do
               </div>
             </div>
 
-            <!-- Social media -->
+            <!-- Redes sociales -->
             <div>
               <p class="font-semibold text-base-content mb-4">Síguenos</p>
               <div class="flex gap-3">
@@ -641,21 +466,11 @@ defmodule CRCWeb.HomeLive do
                   href="https://www.instagram.com/crc.2020/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="w-10 h-10 bg-base-200 hover:bg-primary hover:text-primary-content rounded-xl flex items-center justify-center transition-all group"
+                  class="w-10 h-10 bg-base-300 hover:bg-primary hover:text-primary-content rounded-xl flex items-center justify-center transition-all"
                   aria-label="Instagram"
                 >
                   <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                  </svg>
-                </a>
-                <!-- Facebook placeholder -->
-                <a
-                  href="#"
-                  class="w-10 h-10 bg-base-200 hover:bg-primary hover:text-primary-content rounded-xl flex items-center justify-center transition-all"
-                  aria-label="Facebook"
-                >
-                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                   </svg>
                 </a>
                 <!-- WhatsApp -->
@@ -663,7 +478,7 @@ defmodule CRCWeb.HomeLive do
                   href="https://wa.me/525551234567"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="w-10 h-10 bg-base-200 hover:bg-primary hover:text-primary-content rounded-xl flex items-center justify-center transition-all"
+                  class="w-10 h-10 bg-base-300 hover:bg-primary hover:text-primary-content rounded-xl flex items-center justify-center transition-all"
                   aria-label="WhatsApp"
                 >
                   <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -689,38 +504,6 @@ defmodule CRCWeb.HomeLive do
         </div>
       </div>
     </section>
-    """
-  end
-
-  # ---------------------------------------------------------------------------
-  # Footer
-  # ---------------------------------------------------------------------------
-
-  defp footer(assigns) do
-    ~H"""
-    <footer class="bg-neutral text-neutral-content py-8 sm:py-10">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-content font-bold text-xs">
-              CRC
-            </div>
-            <span class="font-semibold text-sm">Café Raíces y Cultura</span>
-          </div>
-
-          <nav class="flex gap-5 text-sm text-neutral-content/70">
-            <a href="#nosotros" class="hover:text-neutral-content transition-colors">Nosotros</a>
-            <a href="#menu" class="hover:text-neutral-content transition-colors">Menú</a>
-            <a href="#booking" class="hover:text-neutral-content transition-colors">Booking</a>
-            <a href="#contacto" class="hover:text-neutral-content transition-colors">Contacto</a>
-          </nav>
-
-          <p class="text-xs text-neutral-content/50">
-            © {Date.utc_today().year} Café Raíces y Cultura
-          </p>
-        </div>
-      </div>
-    </footer>
     """
   end
 end

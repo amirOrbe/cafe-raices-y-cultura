@@ -45,10 +45,10 @@ defmodule CRCWeb.Components.SiteComponents do
               Menú
             </a>
             <a
-              href={if @current_page == :home, do: "#booking", else: "/#booking"}
+              href={if @current_page == :home, do: "#colaboraciones", else: "/#colaboraciones"}
               class="btn btn-primary btn-sm"
             >
-              Reservar
+              Colabora
             </a>
           </div>
 
@@ -81,11 +81,11 @@ defmodule CRCWeb.Components.SiteComponents do
           Menú
         </a>
         <a
-          href={if @current_page == :home, do: "#booking", else: "/#booking"}
+          href={if @current_page == :home, do: "#colaboraciones", else: "/#colaboraciones"}
           phx-click="close_nav"
           class="block py-2"
         >
-          <span class="btn btn-primary btn-sm w-full">Reservar experiencia</span>
+          <span class="btn btn-primary btn-sm w-full">Colabora con nosotros</span>
         </a>
       </div>
     </nav>
@@ -112,7 +112,7 @@ defmodule CRCWeb.Components.SiteComponents do
           <nav class="flex gap-5 text-sm text-neutral-content/70">
             <a href="/#nosotros" class="hover:text-neutral-content transition-colors">Nosotros</a>
             <a href={~p"/menu"} class="hover:text-neutral-content transition-colors">Menú</a>
-            <a href="/#booking" class="hover:text-neutral-content transition-colors">Booking</a>
+            <a href="/#colaboraciones" class="hover:text-neutral-content transition-colors">Colaboraciones</a>
             <a href="/#contacto" class="hover:text-neutral-content transition-colors">Contacto</a>
           </nav>
 

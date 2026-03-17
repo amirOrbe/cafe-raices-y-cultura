@@ -17,7 +17,7 @@
   themes: false;
 }
 
-/* Café Raíces y Cultura — Light theme (warm coffee palette) */
+/* Café Raíces y Cultura — Light theme (paleta oficial del Manual de IC) */
 @plugin "../vendor/daisyui-theme" {
   name: "cafe-light";
   default: true;
@@ -28,17 +28,17 @@
   --color-base-200: oklch(93% 0.022 75);
   --color-base-300: oklch(88% 0.028 72);
   --color-base-content: oklch(18% 0.04 50);
-  /* Primary: coffee brown */
-  --color-primary: oklch(42% 0.085 45);
+  /* Primary: #724c21 — coffee brown oscuro (Pantone manual) */
+  --color-primary: oklch(39% 0.108 52);
   --color-primary-content: oklch(97% 0.015 78);
-  /* Secondary: terracotta */
-  --color-secondary: oklch(63% 0.10 42);
-  --color-secondary-content: oklch(98% 0 0);
-  /* Accent: warm caramel/gold */
-  --color-accent: oklch(70% 0.13 68);
+  /* Secondary: #8b6534 — coffee brown medio/dorado (Pantone manual) */
+  --color-secondary: oklch(48% 0.098 54);
+  --color-secondary-content: oklch(97% 0.015 78);
+  /* Accent: warm caramel/gold derivado de la paleta */
+  --color-accent: oklch(68% 0.12 65);
   --color-accent-content: oklch(18% 0.04 50);
-  /* Neutral */
-  --color-neutral: oklch(38% 0.05 48);
+  /* Neutral: #51555e — slate oscuro (Pantone manual) */
+  --color-neutral: oklch(37% 0.016 264);
   --color-neutral-content: oklch(97% 0.015 78);
   /* Semantic */
   --color-info: oklch(62% 0.214 259.815);

@@ -22,13 +22,12 @@ defmodule CRCWeb.Components.SiteComponents do
         <div class="flex items-center justify-between h-16">
 
           <!-- Logo / Brand -->
-          <a href="/" class="flex items-center gap-2 group">
-            <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-content font-bold text-sm">
-              CRC
-            </div>
-            <span class="font-semibold text-base-content text-sm sm:text-base leading-tight">
-              Café Raíces y Cultura
-            </span>
+          <a href="/" class="flex items-center group" aria-label="Café Raíces y Cultura — Inicio">
+            <img
+              src="/images/logo-color.png"
+              alt="Café Raíces y Cultura"
+              class="h-11 w-auto transition-opacity group-hover:opacity-80"
+            />
           </a>
 
           <!-- Desktop links -->
@@ -102,12 +101,13 @@ defmodule CRCWeb.Components.SiteComponents do
     <footer class="bg-neutral text-neutral-content py-8 sm:py-10">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-content font-bold text-xs">
-              CRC
-            </div>
-            <span class="font-semibold text-sm">Café Raíces y Cultura</span>
-          </div>
+          <a href="/" aria-label="Café Raíces y Cultura — Inicio">
+            <img
+              src="/images/logo-white.png"
+              alt="Café Raíces y Cultura"
+              class="h-12 w-auto opacity-90 hover:opacity-100 transition-opacity"
+            />
+          </a>
 
           <nav class="flex gap-5 text-sm text-neutral-content/70">
             <a href="/#nosotros" class="hover:text-neutral-content transition-colors">Nosotros</a>

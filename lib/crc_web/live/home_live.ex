@@ -3,7 +3,6 @@ defmodule CRCWeb.HomeLive do
 
   use CRCWeb, :live_view
 
-  alias CRC.Catalog
   alias CRC.Media
   alias CRCWeb.Components.SiteComponents
 
@@ -14,17 +13,11 @@ defmodule CRCWeb.HomeLive do
       real -> real
     end
 
-    featured_items = case Catalog.list_featured_items() do
-      [] -> placeholder_featured()
-      real -> Enum.take(real, 6)
-    end
-
     socket =
       socket
       |> assign(:page_title, "Café Raíces y Cultura")
       |> assign(:photos, photos)
       |> assign(:active_slide, 0)
-      |> assign(:featured_items, featured_items)
       |> assign(:nav_open, false)
 
     {:ok, socket}
@@ -63,7 +56,6 @@ defmodule CRCWeb.HomeLive do
       <main class="flex-1">
         <.hero_section photos={@photos} active_slide={@active_slide} />
         <.about_section />
-        <.menu_teaser_section featured_items={@featured_items} />
         <.booking_section />
         <.contact_section />
       </main>
@@ -83,17 +75,6 @@ defmodule CRCWeb.HomeLive do
       %{url: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200&auto=format&fit=crop", caption: "Café de origen seleccionado"},
       %{url: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=1200&auto=format&fit=crop", caption: "Arte y sabor en cada taza"},
       %{url: "https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=1200&auto=format&fit=crop", caption: "Tu refugio en Lindavista"}
-    ]
-  end
-
-  defp placeholder_featured do
-    [
-      %{name: "Cappuccino",       description: "Espresso con leche vaporizada y espuma cremosa.",          price: "55", featured: true},
-      %{name: "Matcha Culinario", description: "Matcha con leche vaporizada. Suave y reconfortante.",      price: "65", featured: true},
-      %{name: "Cold Brew",        description: "Infusión en frío 18 horas. Suave, con cuerpo y sin acidez.", price: "55", featured: true},
-      %{name: "El Favorito",      description: "Arrachera, queso gouda, aguacate, champis y arugula.",     price: "115", featured: true},
-      %{name: "El Mexa",          description: "Pizza con frijoles, jalapeño, chistorra y queso gouda.",   price: "95", featured: true},
-      %{name: "Toast Francés",    description: "Pan campesino con crema de avellanas, fruta y miel.",      price: "95", featured: true}
     ]
   end
 
@@ -244,51 +225,6 @@ defmodule CRCWeb.HomeLive do
             </div>
           </div>
         </div>
-      </div>
-    </section>
-    """
-  end
-
-  # ---------------------------------------------------------------------------
-  # Menu teaser — a preview of featured items with link to /menu
-  # ---------------------------------------------------------------------------
-
-  defp menu_teaser_section(assigns) do
-    ~H"""
-    <section id="menu" class="py-16 sm:py-20 lg:py-24 bg-base-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        <!-- Header -->
-        <div class="text-center mb-10 sm:mb-14">
-          <span class="inline-block text-primary font-semibold text-xs sm:text-sm uppercase tracking-widest mb-3">
-            Lo que ofrecemos
-          </span>
-          <h2 class="text-3xl sm:text-4xl font-bold text-base-content">Nuestro Menú</h2>
-          <p class="mt-3 text-base-content/50 text-sm sm:text-base max-w-lg mx-auto">
-            Hecho en casa, con procesos orgánicos y atención al detalle.
-          </p>
-        </div>
-
-        <!-- Featured items grid (preview) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          <%= for item <- @featured_items do %>
-            <SiteComponents.menu_item_card item={item} />
-          <% end %>
-        </div>
-
-        <!-- CTA to full menu -->
-        <div class="text-center mt-10 sm:mt-14">
-          <p class="text-base-content/50 text-sm mb-4">
-            Esto es solo una muestra — tenemos mucho más para ti.
-          </p>
-          <a href="/menu" class="btn btn-primary btn-lg px-8 gap-2">
-            Ver menú completo
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </a>
-        </div>
-
       </div>
     </section>
     """

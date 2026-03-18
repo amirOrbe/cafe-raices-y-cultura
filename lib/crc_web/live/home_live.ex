@@ -174,7 +174,7 @@ defmodule CRCWeb.HomeLive do
           <!-- Imagen -->
           <div class="relative rounded-2xl overflow-hidden shadow-xl aspect-[4/3]">
             <img
-              src="https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=800&auto=format&fit=crop"
+              src="/images/carousel/crc-17.jpg"
               alt="Interior de Café Raíces y Cultura"
               class="w-full h-full object-cover"
               loading="lazy"

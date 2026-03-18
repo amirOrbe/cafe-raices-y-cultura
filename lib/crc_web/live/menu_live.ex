@@ -100,22 +100,14 @@ defmodule CRCWeb.MenuLive do
               <p class="text-lg">Próximamente más opciones en esta categoría.</p>
             </div>
 
-            <!-- Bottom CTA -->
+            <!-- Bottom nav -->
             <div class="text-center mt-14 sm:mt-16 pt-8 border-t border-base-300">
-              <p class="text-base-content/50 text-sm mb-4">
-                ¿Quieres vivir una experiencia especial?
-              </p>
-              <a href="/#booking" class="btn btn-primary btn-lg px-8">
-                Reserva tu experiencia
+              <a href="/" class="text-sm text-base-content/40 hover:text-primary transition-colors inline-flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Volver al inicio
               </a>
-              <div class="mt-6">
-                <a href="/" class="text-sm text-base-content/40 hover:text-primary transition-colors inline-flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Volver al inicio
-                </a>
-              </div>
             </div>
 
           </div>

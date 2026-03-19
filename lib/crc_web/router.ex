@@ -15,6 +15,10 @@ defmodule CRCWeb.Router do
   end
 
   scope "/", CRCWeb do
+    get "/sitemap.xml", SitemapController, :index
+  end
+
+  scope "/", CRCWeb do
     pipe_through :browser
 
     live "/", HomeLive

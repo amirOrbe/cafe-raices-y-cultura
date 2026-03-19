@@ -295,9 +295,6 @@ defmodule CRCWeb.HomeLive do
     <section id="contacto" class="py-16 sm:py-20 lg:py-24 bg-base-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-10 sm:mb-14">
-          <span class="inline-block text-primary font-semibold text-sm uppercase tracking-widest mb-3">
-            Encuéntranos
-          </span>
           <h2 class="text-3xl sm:text-4xl font-bold text-base-content">Visítanos</h2>
         </div>
 

@@ -193,14 +193,10 @@ defmodule CRCWeb.HomeLive do
               crear experiencias significativas.
             </p>
             <!-- Horarios -->
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4">
               <div class="bg-base-200 rounded-xl p-4 text-center">
                 <p class="text-xl font-bold text-primary">Lun – Vie</p>
                 <p class="text-sm text-base-content/60 mt-1">8:00 – 21:00</p>
-              </div>
-              <div class="bg-base-200 rounded-xl p-4 text-center">
-                <p class="text-xl font-bold text-primary">Sáb – Dom</p>
-                <p class="text-sm text-base-content/60 mt-1">9:00 – 22:00</p>
               </div>
             </div>
           </div>
@@ -340,8 +336,7 @@ defmodule CRCWeb.HomeLive do
               <div>
                 <p class="font-semibold text-base-content">Horario</p>
                 <p class="text-base-content/70 mt-0.5">
-                  Lunes – Viernes: 8:00 – 21:00<br />
-                  Sábado – Domingo: 9:00 – 22:00
+                  Lunes – Viernes: 8:00 – 21:00
                 </p>
               </div>
             </div>
@@ -376,7 +371,7 @@ defmodule CRCWeb.HomeLive do
                 </a>
                 <!-- WhatsApp -->
                 <a
-                  href="https://wa.me/525551234567"
+                  href="https://wa.me/525530418611"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="w-10 h-10 bg-base-300 hover:bg-primary hover:text-primary-content rounded-xl flex items-center justify-center transition-all"

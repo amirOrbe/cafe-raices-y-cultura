@@ -118,7 +118,7 @@ defmodule CRCWeb.ColaboracionesLive do
                 la comunidad, queremos escucharte.
               </p>
               <a
-                href="https://wa.me/525551234567?text=Hola%2C%20me%20gustaría%20proponer%20una%20colaboración%20con%20Café%20Raíces%20y%20Cultura"
+                href="https://wa.me/525530418611?text=Hola%2C%20me%20gustaría%20proponer%20una%20colaboración%20con%20Café%20Raíces%20y%20Cultura"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="btn btn-lg bg-white text-primary border-0 hover:bg-white/90 gap-2 shadow-md"

@@ -2,6 +2,7 @@
 # Ejecutar con: mix run priv/repo/seeds.exs
 
 alias CRC.Repo
+alias CRC.Accounts.User
 alias CRC.Catalog.{Category, MenuItem}
 alias CRC.Media.Photo
 
@@ -11,6 +12,21 @@ alias CRC.Media.Photo
 Repo.delete_all(MenuItem)
 Repo.delete_all(Category)
 Repo.delete_all(Photo)
+Repo.delete_all(User)
+
+# ---------------------------------------------------------------------------
+# Usuario administrador inicial
+# ---------------------------------------------------------------------------
+%User{}
+|> User.changeset(%{
+  name: "Administrador",
+  email: "admin@caferaices.mx",
+  password: "Raices2024!",
+  role: "admin"
+})
+|> Repo.insert!()
+
+IO.puts("✓ Admin creado: admin@caferaices.mx")
 
 # ---------------------------------------------------------------------------
 # Categorías (basadas en el menú real)

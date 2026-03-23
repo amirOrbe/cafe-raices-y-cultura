@@ -16,6 +16,8 @@ defmodule CRC.Accounts.User do
 
   import Ecto.Changeset
 
+  @type t :: %__MODULE__{}
+
   @roles ~w(admin empleado cliente)
   @stations ~w(cocina barra sala)
   @min_password_length 8

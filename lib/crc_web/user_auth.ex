@@ -43,7 +43,7 @@ defmodule CRCWeb.UserAuth do
     else
       conn
       |> put_flash(:error, "Debes iniciar sesión para continuar.")
-      |> redirect(to: ~p"/iniciar-sesion")
+      |> redirect(to: "/iniciar-sesion")
       |> halt()
     end
   end
@@ -57,7 +57,7 @@ defmodule CRCWeb.UserAuth do
       _ ->
         conn
         |> put_flash(:error, "No tienes permiso para acceder a esta sección.")
-        |> redirect(to: ~p"/")
+        |> redirect(to: "/")
         |> halt()
     end
   end
@@ -66,7 +66,7 @@ defmodule CRCWeb.UserAuth do
   def redirect_if_authenticated(conn, _opts) do
     if conn.assigns[:current_user] do
       conn
-      |> redirect(to: ~p"/")
+      |> redirect(to: "/")
       |> halt()
     else
       conn
@@ -82,14 +82,14 @@ defmodule CRCWeb.UserAuth do
     conn
     |> renew_session()
     |> put_session(@session_key, user.id)
-    |> redirect(to: ~p"/admin")
+    |> redirect(to: "/admin")
   end
 
   @doc "Cierra sesión: limpia la sesión y redirige al inicio."
   def log_out_user(conn) do
     conn
     |> renew_session()
-    |> redirect(to: ~p"/")
+    |> redirect(to: "/")
   end
 
   # ---------------------------------------------------------------------------
@@ -110,7 +110,7 @@ defmodule CRCWeb.UserAuth do
       socket =
         socket
         |> Phoenix.LiveView.put_flash(:error, "Debes iniciar sesión para continuar.")
-        |> Phoenix.LiveView.redirect(to: ~p"/iniciar-sesion")
+        |> Phoenix.LiveView.redirect(to: "/iniciar-sesion")
 
       {:halt, socket}
     end
@@ -127,7 +127,7 @@ defmodule CRCWeb.UserAuth do
         socket =
           socket
           |> Phoenix.LiveView.put_flash(:error, "No tienes permiso para acceder a esta sección.")
-          |> Phoenix.LiveView.redirect(to: ~p"/")
+          |> Phoenix.LiveView.redirect(to: "/")
 
         {:halt, socket}
     end

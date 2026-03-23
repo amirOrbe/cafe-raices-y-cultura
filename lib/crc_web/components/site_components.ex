@@ -50,6 +50,9 @@ defmodule CRCWeb.Components.SiteComponents do
             >
               Colabora
             </a>
+            <a href="/iniciar-sesion" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content">
+              Iniciar sesión
+            </a>
           </div>
 
           <!-- Mobile hamburger -->
@@ -86,6 +89,9 @@ defmodule CRCWeb.Components.SiteComponents do
           class="block py-2"
         >
           <span class="btn btn-primary btn-sm w-full">Colabora con nosotros</span>
+        </a>
+        <a href="/iniciar-sesion" phx-click="close_nav" class="block py-2 text-sm text-base-content/60 hover:text-base-content text-center">
+          Iniciar sesión
         </a>
       </div>
     </nav>

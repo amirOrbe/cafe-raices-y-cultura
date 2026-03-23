@@ -116,9 +116,14 @@ defmodule CRCWeb.Components.SiteComponents do
             <a href="/#contacto" class="hover:text-neutral-content transition-colors">Contacto</a>
           </nav>
 
-          <p class="text-xs text-neutral-content/50">
-            © {Date.utc_today().year} Café Raíces y Cultura
-          </p>
+          <div class="flex items-center gap-4">
+            <p class="text-xs text-neutral-content/50">
+              © {Date.utc_today().year} Café Raíces y Cultura
+            </p>
+            <a href="/iniciar-sesion" class="text-xs text-neutral-content/30 hover:text-neutral-content/50 transition-colors">
+              Acceso personal
+            </a>
+          </div>
         </div>
       </div>
     </footer>

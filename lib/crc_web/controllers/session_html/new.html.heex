@@ -1,0 +1,68 @@
+<div class="min-h-screen bg-base-200 flex items-center justify-center px-4">
+  <div class="w-full max-w-sm">
+
+    <%!-- Logo --%>
+    <div class="flex justify-center mb-8">
+      <a href="/">
+        <img src="/images/brand/logo-color.png" alt="Café Raíces y Cultura" class="h-16 w-auto" />
+      </a>
+    </div>
+
+    <%!-- Card --%>
+    <div class="bg-base-100 rounded-2xl shadow-md border border-base-300 p-8">
+      <h1 class="text-xl font-bold text-base-content mb-1">Acceso personal</h1>
+      <p class="text-sm text-base-content/60 mb-6">Ingresa tus credenciales para continuar.</p>
+
+      <%!-- Error general --%>
+      <%= if @error do %>
+        <div class="alert alert-error mb-5 text-sm py-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+          <span><%= @error %></span>
+        </div>
+      <% end %>
+
+      <form action={~p"/iniciar-sesion"} method="post" class="space-y-4">
+        <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+
+        <div class="form-control">
+          <label class="label pb-1">
+            <span class="label-text font-medium">Correo electrónico</span>
+          </label>
+          <input
+            type="email"
+            name="email"
+            placeholder="tu@correo.com"
+            autocomplete="email"
+            required
+            class="input input-bordered w-full"
+          />
+        </div>
+
+        <div class="form-control">
+          <label class="label pb-1">
+            <span class="label-text font-medium">Contraseña</span>
+          </label>
+          <input
+            type="password"
+            name="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+            required
+            class="input input-bordered w-full"
+          />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full mt-2">
+          Iniciar sesión
+        </button>
+      </form>
+    </div>
+
+    <p class="text-center text-xs text-base-content/40 mt-6">
+      <a href="/" class="hover:text-base-content/60 transition-colors">← Volver al sitio</a>
+    </p>
+
+  </div>
+</div>

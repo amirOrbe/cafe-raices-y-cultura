@@ -23,6 +23,10 @@ defmodule CRC.Accounts do
     |> Repo.all()
   end
 
+  @doc "Obtiene un usuario por id. Retorna `nil` si no existe."
+  @spec get_user(integer()) :: User.t() | nil
+  def get_user(id), do: Repo.get(User, id)
+
   @doc "Obtiene un usuario por id. Lanza `Ecto.NoResultsError` si no existe."
   @spec get_user!(integer()) :: User.t()
   def get_user!(id), do: Repo.get!(User, id)

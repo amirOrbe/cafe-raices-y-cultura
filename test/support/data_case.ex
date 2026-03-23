@@ -49,10 +49,12 @@ defmodule CRC.DataCase do
 
   """
   def errors_on(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {message, opts} ->
-      Regex.replace(~r"%{(\w+)}", message, fn _, key ->
-        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
-      end)
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      if count = opts[:count] do
+        Gettext.dngettext(CRCWeb.Gettext, "errors", msg, msg, count, opts)
+      else
+        Gettext.dgettext(CRCWeb.Gettext, "errors", msg, opts)
+      end
     end)
   end
 end

@@ -43,6 +43,7 @@ defmodule CRC.Accounts.User do
   def changeset(user, attrs) do
     user
     |> cast(attrs, [:name, :email, :phone, :role, :station, :is_active, :password])
+    |> normalize_empty_station()
     |> validate_required([:name, :email, :role])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/,
       message: "tiene formato inválido"
@@ -68,6 +69,13 @@ defmodule CRC.Accounts.User do
   # ---------------------------------------------------------------------------
   # Helpers privados
   # ---------------------------------------------------------------------------
+
+  defp normalize_empty_station(changeset) do
+    case get_change(changeset, :station) do
+      "" -> put_change(changeset, :station, nil)
+      _ -> changeset
+    end
+  end
 
   defp validate_password(changeset) do
     # Solo es requerida al crear (cuando aún no hay hash guardado)

@@ -73,6 +73,78 @@ defmodule CRCWeb.Layouts do
   end
 
   @doc """
+  Layout para el panel de administración con sidebar lateral.
+  """
+  attr :flash, :map, required: true
+  attr :current_scope, :map, default: nil
+  slot :inner_block, required: true
+
+  def admin(assigns) do
+    ~H"""
+    <div class="min-h-screen flex bg-base-200">
+      <%!-- Sidebar --%>
+      <aside class="w-64 bg-primary text-primary-content flex flex-col fixed inset-y-0 left-0 z-40 shadow-xl">
+        <%!-- Logo --%>
+        <div class="px-6 py-5 border-b border-primary-content/20">
+          <a href="/admin" class="flex items-center gap-2">
+            <span class="text-lg font-bold tracking-tight">CRC Admin</span>
+          </a>
+          <p class="text-xs text-primary-content/50 mt-0.5">Panel de Administración</p>
+        </div>
+
+        <%!-- Navegación --%>
+        <nav class="flex-1 px-3 py-5 space-y-1">
+          <a
+            href="/admin"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-home" class="size-5 shrink-0" />
+            Dashboard
+          </a>
+          <a
+            href="/admin/usuarios"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-users" class="size-5 shrink-0" />
+            Usuarios
+          </a>
+        </nav>
+
+        <%!-- Usuario y logout --%>
+        <div class="px-3 py-4 border-t border-primary-content/20 space-y-1">
+          <a
+            href="/"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm text-primary-content/80"
+          >
+            <.icon name="hero-arrow-left" class="size-4 shrink-0" />
+            Ver sitio
+          </a>
+          <form action="/cerrar-sesion" method="post">
+            <input type="hidden" name="_method" value="delete" />
+            <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+            <button
+              type="submit"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm text-primary-content/80"
+            >
+              <.icon name="hero-arrow-right-on-rectangle" class="size-4 shrink-0" />
+              Cerrar sesión
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      <%!-- Contenido principal --%>
+      <div class="flex-1 ml-64 min-h-screen flex flex-col">
+        <main class="flex-1 p-6 lg:p-8">
+          <.flash_group flash={@flash} />
+          {render_slot(@inner_block)}
+        </main>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
   Shows the flash group with standard titles and content.
 
   ## Examples

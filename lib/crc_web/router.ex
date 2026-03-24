@@ -72,13 +72,16 @@ defmodule CRCWeb.Router do
   # Panel de administración — requiere rol admin
   # ---------------------------------------------------------------------------
 
-  # scope "/admin", CRCWeb.Admin, as: :admin do
-  #   pipe_through [:browser, :require_auth, :require_admin_role]
-  #   live "/", DashboardLive
-  #   live "/usuarios", UsersLive
-  #   live "/menu", MenuLive
-  #   live "/reservaciones", BookingsLive
-  # end
+  scope "/admin", CRCWeb.Admin, as: :admin do
+    pipe_through [:browser, :require_auth, :require_admin_role]
+
+    live_session :admin,
+      on_mount: [{CRCWeb.UserAuth, :require_admin}],
+      layout: {CRCWeb.Layouts, :admin} do
+      live "/", DashboardLive
+      live "/usuarios", UsersLive
+    end
+  end
 
   # ---------------------------------------------------------------------------
   # Estaciones — requiere sesión activa

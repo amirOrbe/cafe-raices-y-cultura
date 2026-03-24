@@ -51,6 +51,22 @@ defmodule CRC.Accounts do
   def create_user(%User{}, _attrs), do: {:error, :no_autorizado}
 
   @doc """
+  Actualiza los datos de un usuario existente.
+
+  Requiere que el ejecutor sea administrador; de lo contrario retorna
+  `{:error, :no_autorizado}`.
+  """
+  @spec update_user(User.t(), User.t(), map()) ::
+          {:ok, User.t()} | {:error, :no_autorizado} | {:error, Ecto.Changeset.t()}
+  def update_user(%User{role: "admin"}, %User{} = user, attrs) do
+    user
+    |> User.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def update_user(%User{}, _user, _attrs), do: {:error, :no_autorizado}
+
+  @doc """
   Desactiva un usuario (is_active = false).
 
   Requiere que el ejecutor sea administrador y que no sea el mismo usuario.

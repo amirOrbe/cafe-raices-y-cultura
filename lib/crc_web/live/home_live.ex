@@ -43,7 +43,7 @@ defmodule CRCWeb.HomeLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen flex flex-col">
-      <SiteComponents.site_navbar nav_open={@nav_open} current_page={:home} />
+      <SiteComponents.site_navbar nav_open={@nav_open} current_page={:home} current_user={@current_user} />
       <main class="flex-1">
         <.hero_section photos={@photos} active_slide={@active_slide} />
         <.about_section />

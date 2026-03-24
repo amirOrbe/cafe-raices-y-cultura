@@ -46,7 +46,7 @@ defmodule CRCWeb.ColaboracionesLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen flex flex-col">
-      <SiteComponents.site_navbar nav_open={@nav_open} current_page={:colaboraciones} />
+      <SiteComponents.site_navbar nav_open={@nav_open} current_page={:colaboraciones} current_user={@current_user} />
       <main class="flex-1 pt-16">
 
         <!-- Hero -->

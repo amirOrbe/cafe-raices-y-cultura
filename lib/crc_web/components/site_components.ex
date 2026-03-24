@@ -14,6 +14,7 @@ defmodule CRCWeb.Components.SiteComponents do
 
   attr :nav_open, :boolean, default: false
   attr :current_page, :atom, default: :home  # :home | :menu | :colaboraciones
+  attr :current_user, :map, default: nil
 
   def site_navbar(assigns) do
     ~H"""
@@ -50,9 +51,18 @@ defmodule CRCWeb.Components.SiteComponents do
             >
               Colabora
             </a>
-            <a href="/iniciar-sesion" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content">
-              Iniciar sesión
-            </a>
+            <%= if @current_user do %>
+              <a href="/admin" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Panel
+              </a>
+            <% else %>
+              <a href="/iniciar-sesion" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content">
+                Iniciar sesión
+              </a>
+            <% end %>
           </div>
 
           <!-- Mobile hamburger -->
@@ -90,9 +100,15 @@ defmodule CRCWeb.Components.SiteComponents do
         >
           <span class="btn btn-primary btn-sm w-full">Colabora con nosotros</span>
         </a>
-        <a href="/iniciar-sesion" phx-click="close_nav" class="block py-2 text-sm text-base-content/60 hover:text-base-content text-center">
-          Iniciar sesión
-        </a>
+        <%= if @current_user do %>
+          <a href="/admin" phx-click="close_nav" class="block py-2 text-sm font-medium text-primary text-center">
+            Panel de administración
+          </a>
+        <% else %>
+          <a href="/iniciar-sesion" phx-click="close_nav" class="block py-2 text-sm text-base-content/60 hover:text-base-content text-center">
+            Iniciar sesión
+          </a>
+        <% end %>
       </div>
     </nav>
     """

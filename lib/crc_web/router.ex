@@ -42,9 +42,12 @@ defmodule CRCWeb.Router do
   scope "/", CRCWeb do
     pipe_through :browser
 
-    live "/", HomeLive
-    live "/menu", MenuLive
-    live "/colaboraciones", ColaboracionesLive
+    live_session :public,
+      on_mount: [{CRCWeb.UserAuth, :fetch_current_user}] do
+      live "/", HomeLive
+      live "/menu", MenuLive
+      live "/colaboraciones", ColaboracionesLive
+    end
   end
 
   # ---------------------------------------------------------------------------

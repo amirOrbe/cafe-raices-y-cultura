@@ -48,7 +48,7 @@ defmodule CRCWeb.MenuLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen flex flex-col bg-base-100">
-      <SiteComponents.site_navbar nav_open={@nav_open} current_page={:menu} />
+      <SiteComponents.site_navbar nav_open={@nav_open} current_page={:menu} current_user={@current_user} />
 
       <main class="flex-1 pt-16">
         <section class="py-14 sm:py-20 lg:py-24 bg-base-100">

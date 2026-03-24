@@ -62,14 +62,17 @@ defmodule CRCWeb.UserAuth do
     end
   end
 
-  @doc "Redirige al inicio si ya hay una sesión activa (para la página de login)."
+  @doc "Redirige según rol si ya hay una sesión activa (para la página de login)."
   def redirect_if_authenticated(conn, _opts) do
-    if conn.assigns[:current_user] do
-      conn
-      |> redirect(to: "/")
-      |> halt()
-    else
-      conn
+    case conn.assigns[:current_user] do
+      %{role: "admin"} ->
+        conn |> redirect(to: "/admin") |> halt()
+
+      %{} ->
+        conn |> redirect(to: "/") |> halt()
+
+      _ ->
+        conn
     end
   end
 

@@ -52,12 +52,16 @@ defmodule CRCWeb.Components.SiteComponents do
               Colabora
             </a>
             <%= if @current_user do %>
-              <a href="/admin" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content gap-1.5">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
+              <a href="/admin" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content">
                 Panel
               </a>
+              <form action="/cerrar-sesion" method="post">
+                <input type="hidden" name="_method" value="delete" />
+                <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+                <button type="submit" class="btn btn-sm btn-ghost text-base-content/60 hover:text-error transition-colors">
+                  Salir
+                </button>
+              </form>
             <% else %>
               <a href="/iniciar-sesion" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content">
                 Iniciar sesión
@@ -101,9 +105,16 @@ defmodule CRCWeb.Components.SiteComponents do
           <span class="btn btn-primary btn-sm w-full">Colabora con nosotros</span>
         </a>
         <%= if @current_user do %>
-          <a href="/admin" phx-click="close_nav" class="block py-2 text-sm font-medium text-primary text-center">
+          <a href="/admin" phx-click="close_nav" class="block py-2 text-sm font-medium text-primary">
             Panel de administración
           </a>
+          <form action="/cerrar-sesion" method="post">
+            <input type="hidden" name="_method" value="delete" />
+            <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+            <button type="submit" class="w-full text-left py-2 text-sm text-error">
+              Cerrar sesión
+            </button>
+          </form>
         <% else %>
           <a href="/iniciar-sesion" phx-click="close_nav" class="block py-2 text-sm text-base-content/60 hover:text-base-content text-center">
             Iniciar sesión

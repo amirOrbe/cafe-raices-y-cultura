@@ -81,15 +81,43 @@ defmodule CRCWeb.Layouts do
 
   def admin(assigns) do
     ~H"""
-    <div class="min-h-screen flex bg-base-200">
+    <div class="min-h-screen bg-base-200">
+      <%!-- Backdrop móvil --%>
+      <div
+        id="admin-backdrop"
+        class="fixed inset-0 z-30 bg-black/50 hidden lg:hidden"
+        phx-click={
+          JS.add_class("hidden", to: "#admin-backdrop")
+          |> JS.remove_class("-translate-x-0", to: "#admin-sidebar")
+          |> JS.add_class("-translate-x-full", to: "#admin-sidebar")
+        }
+      />
+
       <%!-- Sidebar --%>
-      <aside class="w-64 bg-primary text-primary-content flex flex-col fixed inset-y-0 left-0 z-40 shadow-xl">
+      <aside
+        id="admin-sidebar"
+        class="fixed inset-y-0 left-0 z-40 w-64 bg-primary text-primary-content flex flex-col shadow-xl
+               -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out"
+      >
         <%!-- Logo --%>
-        <div class="px-6 py-5 border-b border-primary-content/20">
-          <a href="/admin" class="flex items-center gap-2">
-            <span class="text-lg font-bold tracking-tight">CRC Admin</span>
-          </a>
-          <p class="text-xs text-primary-content/50 mt-0.5">Panel de Administración</p>
+        <div class="px-6 py-5 border-b border-primary-content/20 flex items-center justify-between">
+          <div>
+            <a href="/admin" class="flex items-center gap-2">
+              <span class="text-lg font-bold tracking-tight">CRC Admin</span>
+            </a>
+            <p class="text-xs text-primary-content/50 mt-0.5">Panel de Administración</p>
+          </div>
+          <%!-- Cerrar sidebar en móvil --%>
+          <button
+            class="lg:hidden p-1.5 rounded-lg hover:bg-primary-content/15 transition-colors"
+            phx-click={
+              JS.add_class("hidden", to: "#admin-backdrop")
+              |> JS.remove_class("-translate-x-0", to: "#admin-sidebar")
+              |> JS.add_class("-translate-x-full", to: "#admin-sidebar")
+            }
+          >
+            <.icon name="hero-x-mark" class="size-5" />
+          </button>
         </div>
 
         <%!-- Navegación --%>
@@ -134,8 +162,24 @@ defmodule CRCWeb.Layouts do
       </aside>
 
       <%!-- Contenido principal --%>
-      <div class="flex-1 ml-64 min-h-screen flex flex-col">
-        <main class="flex-1 p-6 lg:p-8">
+      <div class="lg:ml-64 min-h-screen flex flex-col">
+        <%!-- Top bar móvil --%>
+        <header class="lg:hidden sticky top-0 z-20 bg-primary text-primary-content px-4 h-14 flex items-center justify-between shadow-md">
+          <button
+            class="p-1.5 rounded-lg hover:bg-primary-content/15 transition-colors"
+            phx-click={
+              JS.remove_class("hidden", to: "#admin-backdrop")
+              |> JS.remove_class("-translate-x-full", to: "#admin-sidebar")
+              |> JS.add_class("-translate-x-0", to: "#admin-sidebar")
+            }
+          >
+            <.icon name="hero-bars-3" class="size-6" />
+          </button>
+          <span class="font-bold text-sm tracking-tight">CRC Admin</span>
+          <div class="w-9" />
+        </header>
+
+        <main class="flex-1 p-4 sm:p-6 lg:p-8">
           <.flash_group flash={@flash} />
           {@inner_content}
         </main>

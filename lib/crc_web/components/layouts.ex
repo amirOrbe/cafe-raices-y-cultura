@@ -77,7 +77,7 @@ defmodule CRCWeb.Layouts do
   """
   attr :flash, :map, required: true
   attr :current_scope, :map, default: nil
-  slot :inner_block, required: true
+  attr :inner_content, :any, default: nil
 
   def admin(assigns) do
     ~H"""
@@ -137,7 +137,7 @@ defmodule CRCWeb.Layouts do
       <div class="flex-1 ml-64 min-h-screen flex flex-col">
         <main class="flex-1 p-6 lg:p-8">
           <.flash_group flash={@flash} />
-          {render_slot(@inner_block)}
+          {@inner_content}
         </main>
       </div>
     </div>

@@ -1,16 +1,16 @@
 defmodule CRC.Accounts.User do
   @moduledoc """
-  Schema que representa a un usuario del sistema.
+  Schema representing a system user.
 
-  Roles disponibles:
-  - `"admin"` — acceso total, puede gestionar usuarios y el sistema.
-  - `"empleado"` — personal del restaurante; debe tener una estación asignada.
-  - `"cliente"` — cliente externo (reservas, pedidos propios).
+  Available roles:
+  - `"admin"` — full access, can manage users and the system.
+  - `"empleado"` — restaurant staff; must have an assigned station.
+  - `"cliente"` — external customer (reservations, own orders).
 
-  Estaciones (`station`) — solo aplica a empleados:
-  - `"cocina"` — prepara platos.
-  - `"barra"` — prepara bebidas.
-  - `"sala"` — sirve mesas; puede ver el estado de sus pedidos sin ir a la estación.
+  Stations (`station`) — only applies to employees:
+  - `"cocina"` — prepares dishes.
+  - `"barra"` — prepares drinks.
+  - `"sala"` — serves tables; can see order status without going to the station.
   """
   use Ecto.Schema
 
@@ -36,8 +36,8 @@ defmodule CRC.Accounts.User do
   end
 
   @doc """
-  Changeset principal para crear y actualizar usuarios.
-  La contraseña es obligatoria al crear (cuando `password_hash` aún no existe).
+  Main changeset for creating and updating users.
+  Password is required on creation (when `password_hash` does not yet exist).
   """
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(user, attrs) do
@@ -56,8 +56,8 @@ defmodule CRC.Accounts.User do
   end
 
   @doc """
-  Changeset exclusivo para actualizar el estado `is_active`.
-  No requiere contraseña.
+  Changeset exclusively for updating the `is_active` status.
+  Does not require a password.
   """
   @spec status_changeset(t(), map()) :: Ecto.Changeset.t()
   def status_changeset(user, attrs) do
@@ -67,7 +67,7 @@ defmodule CRC.Accounts.User do
   end
 
   # ---------------------------------------------------------------------------
-  # Helpers privados
+  # Private helpers
   # ---------------------------------------------------------------------------
 
   defp normalize_empty_station(changeset) do
@@ -78,7 +78,7 @@ defmodule CRC.Accounts.User do
   end
 
   defp validate_password(changeset) do
-    # Solo es requerida al crear (cuando aún no hay hash guardado)
+    # Password is only required on creation (when no hash is stored yet)
     if is_nil(get_field(changeset, :password_hash)) do
       changeset
       |> validate_required([:password])

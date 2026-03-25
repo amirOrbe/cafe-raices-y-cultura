@@ -1,5 +1,5 @@
 defmodule CRCWeb.Admin.DashboardLive do
-  @moduledoc "Panel principal de administración."
+  @moduledoc "Main administration dashboard."
 
   use CRCWeb, :live_view
 
@@ -12,12 +12,12 @@ defmodule CRCWeb.Admin.DashboardLive do
     stats = %{
       total: length(users),
       admins: Enum.count(users, &(&1.role == "admin")),
-      empleados: Enum.count(users, &(&1.role == "empleado")),
-      activos: Enum.count(users, & &1.is_active),
-      inactivos: Enum.count(users, &(!&1.is_active))
+      employees: Enum.count(users, &(&1.role == "empleado")),
+      active: Enum.count(users, & &1.is_active),
+      inactive: Enum.count(users, &(!&1.is_active))
     }
 
-    recientes =
+    recent =
       users
       |> Enum.sort_by(& &1.inserted_at, {:desc, DateTime})
       |> Enum.take(5)
@@ -26,7 +26,7 @@ defmodule CRCWeb.Admin.DashboardLive do
       socket
       |> assign(:page_title, "Dashboard · Admin")
       |> assign(:stats, stats)
-      |> assign(:recientes, recientes)
+      |> assign(:recent, recent)
 
     {:ok, socket}
   end
@@ -35,29 +35,29 @@ defmodule CRCWeb.Admin.DashboardLive do
   def render(assigns) do
     ~H"""
     <div class="space-y-8">
-      <%!-- Encabezado --%>
+      <%!-- Header --%>
       <div>
         <h1 class="text-2xl font-bold text-base-content">Dashboard</h1>
         <p class="text-base-content/60 mt-1 text-sm">Bienvenido, {@current_user.name}</p>
       </div>
 
-      <%!-- Tarjetas de estadísticas --%>
+      <%!-- Stats cards --%>
       <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <.stat_card label="Total usuarios" value={@stats.total} icon="hero-users" variant={:primary} />
         <.stat_card label="Admins" value={@stats.admins} icon="hero-shield-check" variant={:secondary} />
-        <.stat_card label="Empleados" value={@stats.empleados} icon="hero-briefcase" variant={:accent} />
-        <.stat_card label="Activos" value={@stats.activos} icon="hero-check-circle" variant={:success} />
-        <.stat_card label="Inactivos" value={@stats.inactivos} icon="hero-x-circle" variant={:error} />
+        <.stat_card label="Empleados" value={@stats.employees} icon="hero-briefcase" variant={:accent} />
+        <.stat_card label="Activos" value={@stats.active} icon="hero-check-circle" variant={:success} />
+        <.stat_card label="Inactivos" value={@stats.inactive} icon="hero-x-circle" variant={:error} />
       </div>
 
-      <%!-- Usuarios recientes --%>
+      <%!-- Recent users --%>
       <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
         <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
           <h2 class="font-semibold text-base-content">Usuarios recientes</h2>
           <a href="/admin/usuarios" class="btn btn-sm btn-ghost text-primary">Ver todos</a>
         </div>
         <div class="divide-y divide-base-200">
-          <%= for user <- @recientes do %>
+          <%= for user <- @recent do %>
             <div class="px-6 py-4 flex items-center justify-between gap-4">
               <div class="flex items-center gap-3 min-w-0">
                 <div class="size-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -76,7 +76,7 @@ defmodule CRCWeb.Admin.DashboardLive do
               </div>
             </div>
           <% end %>
-          <%= if @recientes == [] do %>
+          <%= if @recent == [] do %>
             <div class="px-6 py-8 text-center text-base-content/40 text-sm">
               No hay usuarios registrados aún.
             </div>
@@ -88,7 +88,7 @@ defmodule CRCWeb.Admin.DashboardLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Componentes privados
+  # Private components
   # ---------------------------------------------------------------------------
 
   attr :label, :string, required: true

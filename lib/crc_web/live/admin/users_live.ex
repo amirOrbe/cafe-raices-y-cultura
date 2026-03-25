@@ -1,5 +1,5 @@
 defmodule CRCWeb.Admin.UsersLive do
-  @moduledoc "Gestión de usuarios desde el panel de administración."
+  @moduledoc "User management from the administration panel."
 
   use CRCWeb, :live_view
 
@@ -19,43 +19,43 @@ defmodule CRCWeb.Admin.UsersLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Eventos
+  # Events
   # ---------------------------------------------------------------------------
 
   @impl true
-  def handle_event("nuevo_usuario", _params, socket) do
+  def handle_event("new_user", _params, socket) do
     changeset = User.changeset(%User{}, %{})
 
     {:noreply,
      socket
-     |> assign(:modal, :nuevo)
+     |> assign(:modal, :new)
      |> assign(:form, to_form(changeset))}
   end
 
-  def handle_event("editar_usuario", %{"id" => id}, socket) do
+  def handle_event("edit_user", %{"id" => id}, socket) do
     user = Accounts.get_user!(String.to_integer(id))
     changeset = User.changeset(user, %{})
 
     {:noreply,
      socket
-     |> assign(:modal, {:editar, user})
+     |> assign(:modal, {:edit, user})
      |> assign(:form, to_form(changeset))}
   end
 
-  def handle_event("cerrar_modal", _params, socket) do
+  def handle_event("close_modal", _params, socket) do
     {:noreply, assign(socket, modal: nil, form: nil)}
   end
 
-  def handle_event("guardar_usuario", %{"user" => params}, socket) do
+  def handle_event("save_user", %{"user" => params}, socket) do
     admin = socket.assigns.current_user
 
     result =
       case socket.assigns.modal do
-        :nuevo ->
+        :new ->
           Accounts.create_user(admin, params)
 
-        {:editar, user} ->
-          # No actualizar contraseña si se dejó en blanco
+        {:edit, user} ->
+          # Skip password update if left blank
           clean_params =
             if params["password"] == "" or is_nil(params["password"]) do
               Map.delete(params, "password")
@@ -68,7 +68,7 @@ defmodule CRCWeb.Admin.UsersLive do
 
     case result do
       {:ok, _user} ->
-        label = if socket.assigns.modal == :nuevo, do: "creado", else: "actualizado"
+        label = if socket.assigns.modal == :new, do: "creado", else: "actualizado"
 
         {:noreply,
          socket
@@ -80,12 +80,12 @@ defmodule CRCWeb.Admin.UsersLive do
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
 
-      {:error, :no_autorizado} ->
+      {:error, :unauthorized} ->
         {:noreply, put_flash(socket, :error, "No tienes permiso para realizar esta acción.")}
     end
   end
 
-  def handle_event("toggle_activo", %{"id" => id}, socket) do
+  def handle_event("toggle_active", %{"id" => id}, socket) do
     admin = socket.assigns.current_user
     user = Accounts.get_user!(String.to_integer(id))
 
@@ -98,14 +98,14 @@ defmodule CRCWeb.Admin.UsersLive do
 
     case result do
       {:ok, _} ->
-        accion = if user.is_active, do: "desactivado", else: "activado"
+        action = if user.is_active, do: "desactivado", else: "activado"
 
         {:noreply,
          socket
-         |> put_flash(:info, "Usuario #{accion} correctamente.")
+         |> put_flash(:info, "Usuario #{action} correctamente.")
          |> assign(:users, Accounts.list_users())}
 
-      {:error, :no_puede_desactivarse_a_si_mismo} ->
+      {:error, :cannot_deactivate_self} ->
         {:noreply, put_flash(socket, :error, "No puedes desactivar tu propia cuenta.")}
 
       {:error, _} ->
@@ -121,7 +121,7 @@ defmodule CRCWeb.Admin.UsersLive do
   def render(assigns) do
     ~H"""
     <div class="space-y-6">
-      <%!-- Encabezado --%>
+      <%!-- Header --%>
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Usuarios</h1>
@@ -130,13 +130,13 @@ defmodule CRCWeb.Admin.UsersLive do
             {if length(@users) == 1, do: "usuario registrado", else: "usuarios registrados"}
           </p>
         </div>
-        <button id="btn-nuevo-usuario" class="btn btn-primary gap-2" phx-click="nuevo_usuario">
+        <button id="btn-new-user" class="btn btn-primary gap-2" phx-click="new_user">
           <.icon name="hero-plus" class="size-4" />
           Nuevo usuario
         </button>
       </div>
 
-      <%!-- Tabla --%>
+      <%!-- Table --%>
       <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <table class="table table-zebra w-full">
@@ -176,9 +176,9 @@ defmodule CRCWeb.Admin.UsersLive do
                   <td>
                     <div class="flex items-center justify-end gap-1">
                       <button
-                        id={"btn-editar-#{user.id}"}
+                        id={"btn-edit-#{user.id}"}
                         class="btn btn-ghost btn-sm"
-                        phx-click="editar_usuario"
+                        phx-click="edit_user"
                         phx-value-id={user.id}
                         title="Editar"
                       >
@@ -187,7 +187,7 @@ defmodule CRCWeb.Admin.UsersLive do
                       <button
                         id={"btn-toggle-#{user.id}"}
                         class={["btn btn-ghost btn-sm", if(user.is_active, do: "text-error", else: "text-success")]}
-                        phx-click="toggle_activo"
+                        phx-click="toggle_active"
                         phx-value-id={user.id}
                         title={if user.is_active, do: "Desactivar", else: "Activar"}
                       >
@@ -213,7 +213,7 @@ defmodule CRCWeb.Admin.UsersLive do
       </div>
     </div>
 
-    <%!-- Modal: nuevo / editar usuario --%>
+    <%!-- Modal: new / edit user --%>
     <%= if @modal != nil do %>
       <.user_modal form={@form} modal={@modal} />
     <% end %>
@@ -221,44 +221,44 @@ defmodule CRCWeb.Admin.UsersLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Modal de usuario
+  # User modal
   # ---------------------------------------------------------------------------
 
   attr :form, :map, required: true
   attr :modal, :any, required: true
 
   defp user_modal(assigns) do
-    titulo =
+    title =
       case assigns.modal do
-        :nuevo -> "Nuevo usuario"
-        {:editar, _} -> "Editar usuario"
+        :new -> "Nuevo usuario"
+        {:edit, _} -> "Editar usuario"
       end
 
-    assigns = assign(assigns, :titulo, titulo)
+    assigns = assign(assigns, :title, title)
 
     ~H"""
     <div
       id="user-modal"
       class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      phx-window-keydown="cerrar_modal"
+      phx-window-keydown="close_modal"
       phx-key="Escape"
     >
       <%!-- Overlay --%>
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="cerrar_modal"></div>
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
 
       <%!-- Panel --%>
       <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
         <%!-- Header --%>
         <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-base-content">{@titulo}</h2>
-          <button id="btn-cerrar-modal" class="btn btn-ghost btn-sm btn-circle" phx-click="cerrar_modal">
+          <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
+          <button id="btn-close-modal" class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
             <.icon name="hero-x-mark" class="size-5" />
           </button>
         </div>
 
-        <%!-- Formulario --%>
+        <%!-- Form --%>
         <div class="px-6 py-5">
-          <.form id="user-form" for={@form} phx-submit="guardar_usuario" class="space-y-1">
+          <.form id="user-form" for={@form} phx-submit="save_user" class="space-y-1">
             <.input field={@form[:name]} type="text" label="Nombre completo" placeholder="Ej. Ana García López" />
             <.input field={@form[:email]} type="email" label="Correo electrónico" placeholder="correo@ejemplo.com" />
             <.input field={@form[:phone]} type="text" label="Teléfono (opcional)" placeholder="55 1234 5678" />
@@ -286,14 +286,14 @@ defmodule CRCWeb.Admin.UsersLive do
             <.input
               field={@form[:password]}
               type="password"
-              label={if @modal == :nuevo, do: "Contraseña", else: "Contraseña (dejar en blanco para no cambiar)"}
-              placeholder={if @modal == :nuevo, do: "Mínimo 8 caracteres", else: "Nueva contraseña (opcional)"}
+              label={if @modal == :new, do: "Contraseña", else: "Contraseña (dejar en blanco para no cambiar)"}
+              placeholder={if @modal == :new, do: "Mínimo 8 caracteres", else: "Nueva contraseña (opcional)"}
             />
 
             <div class="flex justify-end gap-3 pt-4">
-              <button type="button" class="btn btn-ghost" phx-click="cerrar_modal">Cancelar</button>
+              <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
               <button type="submit" class="btn btn-primary">
-                {if @modal == :nuevo, do: "Crear usuario", else: "Guardar cambios"}
+                {if @modal == :new, do: "Crear usuario", else: "Guardar cambios"}
               </button>
             </div>
           </.form>
@@ -304,7 +304,7 @@ defmodule CRCWeb.Admin.UsersLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Componentes de badge
+  # Badge components
   # ---------------------------------------------------------------------------
 
   defp role_badge(assigns) do

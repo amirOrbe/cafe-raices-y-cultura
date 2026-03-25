@@ -1,5 +1,5 @@
 defmodule CRCWeb.Components.SiteComponents do
-  @moduledoc "Shared site-wide UI components: navbar, footer, menu item card."
+  @moduledoc "Shared site-wide UI components: navbar, footer, and menu item card."
 
   use Phoenix.Component
 
@@ -9,11 +9,11 @@ defmodule CRCWeb.Components.SiteComponents do
     statics: CRCWeb.static_paths()
 
   # ---------------------------------------------------------------------------
-  # Navbar
+  # Navbar component
   # ---------------------------------------------------------------------------
 
   attr :nav_open, :boolean, default: false
-  attr :current_page, :atom, default: :home  # :home | :menu | :colaboraciones
+  attr :current_page, :atom, default: :home  # :home | :menu | :colaboraciones (colaboraciones page keeps its atom as-is)
   attr :current_user, :map, default: nil
 
   def site_navbar(assigns) do
@@ -126,7 +126,7 @@ defmodule CRCWeb.Components.SiteComponents do
   end
 
   # ---------------------------------------------------------------------------
-  # Footer
+  # Footer component
   # ---------------------------------------------------------------------------
 
   def site_footer(assigns) do
@@ -164,7 +164,7 @@ defmodule CRCWeb.Components.SiteComponents do
   end
 
   # ---------------------------------------------------------------------------
-  # Menu item card  (matches the screenshot design)
+  # Menu item card
   # ---------------------------------------------------------------------------
 
   attr :item, :map, required: true
@@ -198,7 +198,7 @@ defmodule CRCWeb.Components.SiteComponents do
   end
 
   # ---------------------------------------------------------------------------
-  # Helpers
+  # Private helpers
   # ---------------------------------------------------------------------------
 
   defp format_price(%Decimal{} = price) do

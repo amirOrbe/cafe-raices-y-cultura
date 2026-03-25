@@ -73,7 +73,7 @@ defmodule CRCWeb.Layouts do
   end
 
   @doc """
-  Layout para el panel de administración con sidebar lateral.
+  Layout for the administration panel with a lateral sidebar.
   """
   attr :flash, :map, required: true
   attr :current_scope, :map, default: nil

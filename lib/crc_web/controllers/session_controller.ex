@@ -1,5 +1,5 @@
 defmodule CRCWeb.SessionController do
-  @moduledoc "Gestiona el inicio y cierre de sesión del personal."
+  @moduledoc "Handles login and logout for staff members."
   use CRCWeb, :controller
 
   alias CRC.Accounts
@@ -14,12 +14,12 @@ defmodule CRCWeb.SessionController do
         |> put_flash(:info, "Bienvenido, #{user.name}.")
         |> UserAuth.log_in_user(user)
 
-      {:error, :usuario_inactivo} ->
+      {:error, :inactive_user} ->
         render(conn, :new,
           error: "Tu cuenta está desactivada. Contacta al administrador."
         )
 
-      {:error, :credenciales_invalidas} ->
+      {:error, :invalid_credentials} ->
         render(conn, :new, error: "Email o contraseña incorrectos.")
     end
   end

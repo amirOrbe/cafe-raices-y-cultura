@@ -32,7 +32,7 @@ defmodule CRCWeb.Router do
   end
 
   # ---------------------------------------------------------------------------
-  # Rutas públicas sin autenticación
+  # Public routes — no authentication required
   # ---------------------------------------------------------------------------
 
   scope "/", CRCWeb do
@@ -51,7 +51,7 @@ defmodule CRCWeb.Router do
   end
 
   # ---------------------------------------------------------------------------
-  # Autenticación — solo accesibles sin sesión activa
+  # Authentication — only accessible without an active session
   # ---------------------------------------------------------------------------
 
   scope "/", CRCWeb do
@@ -62,7 +62,7 @@ defmodule CRCWeb.Router do
   end
 
   # ---------------------------------------------------------------------------
-  # Cerrar sesión — requiere sesión activa
+  # Logout — requires active session
   # ---------------------------------------------------------------------------
 
   scope "/", CRCWeb do
@@ -72,7 +72,7 @@ defmodule CRCWeb.Router do
   end
 
   # ---------------------------------------------------------------------------
-  # Panel de administración — requiere rol admin
+  # Admin panel — requires admin role
   # ---------------------------------------------------------------------------
 
   scope "/admin", CRCWeb.Admin, as: :admin do
@@ -87,7 +87,7 @@ defmodule CRCWeb.Router do
   end
 
   # ---------------------------------------------------------------------------
-  # Estaciones — requiere sesión activa
+  # Stations — requires active session
   # ---------------------------------------------------------------------------
 
   # scope "/mesa", CRCWeb.Waiter, as: :waiter do
@@ -101,7 +101,7 @@ defmodule CRCWeb.Router do
   # end
 
   # ---------------------------------------------------------------------------
-  # Herramientas de desarrollo
+  # Development tools
   # ---------------------------------------------------------------------------
 
   if Application.compile_env(:crc, :dev_routes) do

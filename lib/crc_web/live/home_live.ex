@@ -55,7 +55,7 @@ defmodule CRCWeb.HomeLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Placeholder data (shown when DB is empty)
+  # Static photo data
   # ---------------------------------------------------------------------------
 
   # All 19 real CRC photos — shuffled on every mount so each visit looks different
@@ -84,7 +84,7 @@ defmodule CRCWeb.HomeLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Hero / Carousel
+  # Hero / Carousel section
   # ---------------------------------------------------------------------------
 
   defp hero_section(%{photos: []} = assigns) do
@@ -151,7 +151,7 @@ defmodule CRCWeb.HomeLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Nosotros (About) — contenido real del café
+  # About section
   # ---------------------------------------------------------------------------
 
   defp about_section(assigns) do
@@ -287,7 +287,7 @@ defmodule CRCWeb.HomeLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Contacto / Redes / Mapa
+  # Contact / Social / Map section
   # ---------------------------------------------------------------------------
 
   defp contact_section(assigns) do

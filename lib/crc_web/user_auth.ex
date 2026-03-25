@@ -1,8 +1,8 @@
 defmodule CRCWeb.UserAuth do
   @moduledoc """
-  Plug y helpers de autenticación para controllers y LiveViews.
+  Plugs and authentication helpers for controllers and LiveViews.
 
-  ## Uso en controllers (router)
+  ## Usage in controllers (router)
 
       pipeline :browser do
         plug :fetch_current_user
@@ -12,7 +12,7 @@ defmodule CRCWeb.UserAuth do
         plug :require_authenticated_user
       end
 
-  ## Uso en LiveViews
+  ## Usage in LiveViews
 
       on_mount {CRCWeb.UserAuth, :fetch_current_user}
       on_mount {CRCWeb.UserAuth, :require_authenticated_user}
@@ -27,16 +27,16 @@ defmodule CRCWeb.UserAuth do
   @session_key "user_id"
 
   # ---------------------------------------------------------------------------
-  # Plugs para el pipeline del router
+  # Router pipeline plugs
   # ---------------------------------------------------------------------------
 
-  @doc "Carga el usuario actual desde la sesión y lo asigna como :current_user."
+  @doc "Loads the current user from the session and assigns it as :current_user."
   def fetch_current_user(conn, _opts) do
     user_id = get_session(conn, @session_key)
     assign(conn, :current_user, user_id && Accounts.get_user(user_id))
   end
 
-  @doc "Redirige a /iniciar-sesion si no hay sesión activa."
+  @doc "Redirects to /iniciar-sesion if there is no active session."
   def require_authenticated_user(conn, _opts) do
     if conn.assigns[:current_user] do
       conn
@@ -48,7 +48,7 @@ defmodule CRCWeb.UserAuth do
     end
   end
 
-  @doc "Redirige al inicio si el usuario no tiene rol admin."
+  @doc "Redirects to home if the user does not have the admin role."
   def require_admin(conn, _opts) do
     case conn.assigns[:current_user] do
       %{role: "admin"} ->
@@ -62,7 +62,7 @@ defmodule CRCWeb.UserAuth do
     end
   end
 
-  @doc "Redirige según rol si ya hay una sesión activa (para la página de login)."
+  @doc "Redirects by role if a session is already active (for the login page)."
   def redirect_if_authenticated(conn, _opts) do
     case conn.assigns[:current_user] do
       %{role: "admin"} ->
@@ -77,10 +77,10 @@ defmodule CRCWeb.UserAuth do
   end
 
   # ---------------------------------------------------------------------------
-  # Manejo de sesión
+  # Session management
   # ---------------------------------------------------------------------------
 
-  @doc "Inicia sesión: guarda el user_id en sesión y redirige al panel."
+  @doc "Logs in: saves user_id in session and redirects to the admin panel."
   def log_in_user(conn, user) do
     conn
     |> renew_session()
@@ -88,7 +88,7 @@ defmodule CRCWeb.UserAuth do
     |> redirect(to: "/admin")
   end
 
-  @doc "Cierra sesión: limpia la sesión y redirige al inicio."
+  @doc "Logs out: clears the session and redirects to home."
   def log_out_user(conn) do
     conn
     |> renew_session()
@@ -96,7 +96,7 @@ defmodule CRCWeb.UserAuth do
   end
 
   # ---------------------------------------------------------------------------
-  # on_mount para LiveViews
+  # on_mount callbacks for LiveViews
   # ---------------------------------------------------------------------------
 
   @doc false
@@ -137,7 +137,7 @@ defmodule CRCWeb.UserAuth do
   end
 
   # ---------------------------------------------------------------------------
-  # Helpers privados
+  # Private helpers
   # ---------------------------------------------------------------------------
 
   defp assign_current_user(socket, session) do

@@ -8,6 +8,8 @@ defmodule CRCWeb.Admin.SuppliersLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket), do: Phoenix.PubSub.subscribe(CRC.PubSub, "admin:suppliers")
+
     socket =
       socket
       |> assign(:page_title, "Proveedores · Admin")
@@ -16,6 +18,15 @@ defmodule CRCWeb.Admin.SuppliersLive do
       |> assign(:form, nil)
 
     {:ok, socket}
+  end
+
+  # ---------------------------------------------------------------------------
+  # PubSub
+  # ---------------------------------------------------------------------------
+
+  @impl true
+  def handle_info({:supplier_changed, _supplier}, socket) do
+    {:noreply, assign(socket, :suppliers, Inventory.list_suppliers())}
   end
 
   # ---------------------------------------------------------------------------

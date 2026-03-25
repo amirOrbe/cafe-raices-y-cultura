@@ -4,17 +4,47 @@ defmodule CRCWeb.Admin.DashboardLive do
   use CRCWeb, :live_view
 
   alias CRC.Accounts
+  alias CRC.Inventory
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(CRC.PubSub, "admin:users")
+      Phoenix.PubSub.subscribe(CRC.PubSub, "admin:products")
+    end
+
+    socket =
+      socket
+      |> assign(:page_title, "Dashboard · Admin")
+      |> load_stats()
+
+    {:ok, socket}
+  end
+
+  # ---------------------------------------------------------------------------
+  # PubSub
+  # ---------------------------------------------------------------------------
+
+  @impl true
+  def handle_info({event, _payload}, socket) when event in [:user_changed, :product_changed] do
+    {:noreply, load_stats(socket)}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Private helpers
+  # ---------------------------------------------------------------------------
+
+  defp load_stats(socket) do
     users = Accounts.list_users()
+    low_stock = length(Inventory.list_low_stock_products())
 
     stats = %{
       total: length(users),
       admins: Enum.count(users, &(&1.role == "admin")),
       employees: Enum.count(users, &(&1.role == "empleado")),
       active: Enum.count(users, & &1.is_active),
-      inactive: Enum.count(users, &(!&1.is_active))
+      inactive: Enum.count(users, &(!&1.is_active)),
+      low_stock: low_stock
     }
 
     recent =
@@ -22,13 +52,9 @@ defmodule CRCWeb.Admin.DashboardLive do
       |> Enum.sort_by(& &1.inserted_at, {:desc, DateTime})
       |> Enum.take(5)
 
-    socket =
-      socket
-      |> assign(:page_title, "Dashboard · Admin")
-      |> assign(:stats, stats)
-      |> assign(:recent, recent)
-
-    {:ok, socket}
+    socket
+    |> assign(:stats, stats)
+    |> assign(:recent, recent)
   end
 
   @impl true
@@ -42,12 +68,13 @@ defmodule CRCWeb.Admin.DashboardLive do
       </div>
 
       <%!-- Stats cards --%>
-      <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <.stat_card label="Total usuarios" value={@stats.total} icon="hero-users" variant={:primary} />
         <.stat_card label="Admins" value={@stats.admins} icon="hero-shield-check" variant={:secondary} />
         <.stat_card label="Empleados" value={@stats.employees} icon="hero-briefcase" variant={:accent} />
         <.stat_card label="Activos" value={@stats.active} icon="hero-check-circle" variant={:success} />
         <.stat_card label="Inactivos" value={@stats.inactive} icon="hero-x-circle" variant={:error} />
+        <.stat_card label="Stock bajo" value={@stats.low_stock} icon="hero-exclamation-triangle" variant={:warning} />
       </div>
 
       <%!-- Recent users --%>
@@ -157,6 +184,20 @@ defmodule CRCWeb.Admin.DashboardLive do
     <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 flex items-center gap-4">
       <div class="size-12 rounded-xl bg-error/10 flex items-center justify-center flex-shrink-0">
         <.icon name={@icon} class="size-6 text-error" />
+      </div>
+      <div>
+        <p class="text-2xl font-bold text-base-content">{@value}</p>
+        <p class="text-xs text-base-content/50 mt-0.5">{@label}</p>
+      </div>
+    </div>
+    """
+  end
+
+  defp stat_card(%{variant: :warning} = assigns) do
+    ~H"""
+    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 flex items-center gap-4">
+      <div class="size-12 rounded-xl bg-warning/10 flex items-center justify-center flex-shrink-0">
+        <.icon name={@icon} class="size-6 text-warning" />
       </div>
       <div>
         <p class="text-2xl font-bold text-base-content">{@value}</p>

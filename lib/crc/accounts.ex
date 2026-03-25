@@ -46,6 +46,7 @@ defmodule CRC.Accounts do
     %User{}
     |> User.changeset(attrs)
     |> Repo.insert()
+    |> broadcast_user_change()
   end
 
   def create_user(%User{}, _attrs), do: {:error, :unauthorized}
@@ -62,6 +63,7 @@ defmodule CRC.Accounts do
     user
     |> User.changeset(attrs)
     |> Repo.update()
+    |> broadcast_user_change()
   end
 
   def update_user(%User{}, _user, _attrs), do: {:error, :unauthorized}
@@ -85,6 +87,7 @@ defmodule CRC.Accounts do
     user
     |> User.status_changeset(%{is_active: false})
     |> Repo.update()
+    |> broadcast_user_change()
   end
 
   def deactivate_user(%User{}, _user), do: {:error, :unauthorized}
@@ -100,6 +103,7 @@ defmodule CRC.Accounts do
     user
     |> User.status_changeset(%{is_active: true})
     |> Repo.update()
+    |> broadcast_user_change()
   end
 
   def activate_user(%User{}, _user), do: {:error, :unauthorized}
@@ -128,6 +132,13 @@ defmodule CRC.Accounts do
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------
+
+  defp broadcast_user_change({:ok, user} = result) do
+    Phoenix.PubSub.broadcast(CRC.PubSub, "admin:users", {:user_changed, user})
+    result
+  end
+
+  defp broadcast_user_change(error), do: error
 
   defp do_authenticate(nil, _password) do
     # Prevents timing attacks: always runs a dummy verification

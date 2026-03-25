@@ -8,6 +8,8 @@ defmodule CRCWeb.Admin.ProductsLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket), do: Phoenix.PubSub.subscribe(CRC.PubSub, "admin:products")
+
     products = Inventory.list_products()
     low_stock = Enum.count(products, &low_stock?/1)
 
@@ -22,6 +24,22 @@ defmodule CRCWeb.Admin.ProductsLive do
       |> assign(:form, nil)
 
     {:ok, socket}
+  end
+
+  # ---------------------------------------------------------------------------
+  # PubSub
+  # ---------------------------------------------------------------------------
+
+  @impl true
+  def handle_info({:product_changed, _product}, socket) do
+    products = Inventory.list_products()
+    low_stock = Enum.count(products, &low_stock?/1)
+
+    {:noreply,
+     socket
+     |> assign(:products, products)
+     |> assign(:low_stock_count, low_stock)
+     |> assign(:suppliers, Inventory.list_active_suppliers())}
   end
 
   # ---------------------------------------------------------------------------

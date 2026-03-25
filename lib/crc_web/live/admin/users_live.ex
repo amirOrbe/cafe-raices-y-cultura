@@ -8,6 +8,8 @@ defmodule CRCWeb.Admin.UsersLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket), do: Phoenix.PubSub.subscribe(CRC.PubSub, "admin:users")
+
     socket =
       socket
       |> assign(:page_title, "Usuarios · Admin")
@@ -16,6 +18,15 @@ defmodule CRCWeb.Admin.UsersLive do
       |> assign(:form, nil)
 
     {:ok, socket}
+  end
+
+  # ---------------------------------------------------------------------------
+  # PubSub
+  # ---------------------------------------------------------------------------
+
+  @impl true
+  def handle_info({:user_changed, _user}, socket) do
+    {:noreply, assign(socket, :users, Accounts.list_users())}
   end
 
   # ---------------------------------------------------------------------------

@@ -38,6 +38,7 @@ defmodule CRC.Inventory do
     %Supplier{}
     |> Supplier.changeset(attrs)
     |> Repo.insert()
+    |> broadcast_supplier_change()
   end
 
   @doc "Updates a supplier."
@@ -46,6 +47,7 @@ defmodule CRC.Inventory do
     supplier
     |> Supplier.changeset(attrs)
     |> Repo.update()
+    |> broadcast_supplier_change()
   end
 
   @doc "Toggles the active status of a supplier."
@@ -54,6 +56,7 @@ defmodule CRC.Inventory do
     supplier
     |> Supplier.changeset(%{active: !supplier.active})
     |> Repo.update()
+    |> broadcast_supplier_change()
   end
 
   @doc "Returns an empty changeset for a new supplier."
@@ -103,6 +106,7 @@ defmodule CRC.Inventory do
     %Product{}
     |> Product.changeset(attrs)
     |> Repo.insert()
+    |> broadcast_product_change()
   end
 
   @doc "Updates a product."
@@ -111,6 +115,7 @@ defmodule CRC.Inventory do
     product
     |> Product.changeset(attrs)
     |> Repo.update()
+    |> broadcast_product_change()
   end
 
   @doc "Toggles the active status of a product."
@@ -119,6 +124,7 @@ defmodule CRC.Inventory do
     product
     |> Product.changeset(%{active: !product.active})
     |> Repo.update()
+    |> broadcast_product_change()
   end
 
   @doc "Returns an empty changeset for a new product."
@@ -126,4 +132,22 @@ defmodule CRC.Inventory do
   def change_product(%Product{} = product, attrs \\ %{}) do
     Product.changeset(product, attrs)
   end
+
+  # ---------------------------------------------------------------------------
+  # Private broadcast helpers
+  # ---------------------------------------------------------------------------
+
+  defp broadcast_supplier_change({:ok, supplier} = result) do
+    Phoenix.PubSub.broadcast(CRC.PubSub, "admin:suppliers", {:supplier_changed, supplier})
+    result
+  end
+
+  defp broadcast_supplier_change(error), do: error
+
+  defp broadcast_product_change({:ok, product} = result) do
+    Phoenix.PubSub.broadcast(CRC.PubSub, "admin:products", {:product_changed, product})
+    result
+  end
+
+  defp broadcast_product_change(error), do: error
 end

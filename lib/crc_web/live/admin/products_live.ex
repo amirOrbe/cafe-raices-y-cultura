@@ -20,6 +20,7 @@ defmodule CRCWeb.Admin.ProductsLive do
       |> assign(:low_stock_count, low_stock)
       |> assign(:suppliers, Inventory.list_active_suppliers())
       |> assign(:filter_category, "all")
+      |> assign(:status_filter, :active)
       |> assign(:modal, nil)
       |> assign(:form, nil)
 
@@ -49,6 +50,10 @@ defmodule CRCWeb.Admin.ProductsLive do
   @impl true
   def handle_event("filter_category", %{"category" => cat}, socket) do
     {:noreply, assign(socket, :filter_category, cat)}
+  end
+
+  def handle_event("set_status_filter", %{"status" => status}, socket) do
+    {:noreply, assign(socket, :status_filter, String.to_existing_atom(status))}
   end
 
   def handle_event("new_product", _params, socket) do
@@ -127,14 +132,19 @@ defmodule CRCWeb.Admin.ProductsLive do
   @impl true
   def render(assigns) do
     ~H"""
+    <% by_status = filter_by_status(@products, @status_filter) %>
+    <% visible = filtered_products(by_status, @filter_category) %>
+    <% active_count = Enum.count(@products, & &1.active) %>
+    <% inactive_count = Enum.count(@products, &(!&1.active)) %>
     <div class="space-y-6">
       <%!-- Header --%>
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Insumos</h1>
           <p class="text-sm text-base-content/50 mt-0.5">
-            {length(@products)} insumos registrados
-            <%= if @low_stock_count > 0 do %>
+            {length(visible)} insumos
+            {if @status_filter == :active, do: "activos", else: "inactivos"}
+            <%= if @status_filter == :active && @low_stock_count > 0 do %>
               · <span class="text-warning font-medium">{@low_stock_count} con stock bajo</span>
             <% end %>
           </p>
@@ -142,6 +152,32 @@ defmodule CRCWeb.Admin.ProductsLive do
         <button class="btn btn-primary gap-2" phx-click="new_product">
           <.icon name="hero-plus" class="size-4" />
           Nuevo insumo
+        </button>
+      </div>
+
+      <%!-- Status tabs --%>
+      <div class="flex gap-2">
+        <button
+          class={["btn btn-sm gap-1.5", if(@status_filter == :active, do: "btn-primary", else: "btn-ghost")]}
+          phx-click="set_status_filter"
+          phx-value-status="active"
+        >
+          <.icon name="hero-check-circle" class="size-3.5" />
+          Activos
+          <span class={["badge badge-xs", if(@status_filter == :active, do: "badge-primary-content/30", else: "badge-ghost")]}>
+            {active_count}
+          </span>
+        </button>
+        <button
+          class={["btn btn-sm gap-1.5", if(@status_filter == :inactive, do: "btn-error", else: "btn-ghost")]}
+          phx-click="set_status_filter"
+          phx-value-status="inactive"
+        >
+          <.icon name="hero-x-circle" class="size-3.5" />
+          Inactivos
+          <span class={["badge badge-xs", if(@status_filter == :inactive, do: "badge-error-content/30", else: "badge-ghost")]}>
+            {inactive_count}
+          </span>
         </button>
       </div>
 
@@ -171,7 +207,7 @@ defmodule CRCWeb.Admin.ProductsLive do
               </tr>
             </thead>
             <tbody>
-              <%= for product <- filtered_products(@products, @filter_category) do %>
+              <%= for product <- visible do %>
                 <tr class={["hover:bg-base-200/50 transition-colors", if(low_stock?(product), do: "bg-warning/5")]}>
                   <td>
                     <div class="flex items-center gap-2">
@@ -231,12 +267,15 @@ defmodule CRCWeb.Admin.ProductsLive do
                   </td>
                 </tr>
               <% end %>
-              <%= if filtered_products(@products, @filter_category) == [] do %>
+              <%= if visible == [] do %>
                 <tr>
                   <td colspan="9" class="text-center py-12 text-base-content/40 text-sm">
-                    {if @filter_category == "all",
-                      do: "No hay insumos registrados. Crea el primero.",
-                      else: "No hay insumos en esta categoría."}
+                    {cond do
+                      @status_filter == :inactive && @filter_category == "all" -> "No hay insumos inactivos."
+                      @status_filter == :inactive -> "No hay insumos inactivos en esta categoría."
+                      @filter_category != "all" -> "No hay insumos en esta categoría."
+                      true -> "No hay insumos registrados. Crea el primero."
+                    end}
                   </td>
                 </tr>
               <% end %>
@@ -403,6 +442,9 @@ defmodule CRCWeb.Admin.ProductsLive do
   # ---------------------------------------------------------------------------
   # Helpers
   # ---------------------------------------------------------------------------
+
+  defp filter_by_status(products, :active), do: Enum.filter(products, & &1.active)
+  defp filter_by_status(products, :inactive), do: Enum.filter(products, &(!&1.active))
 
   defp filtered_products(products, "all"), do: products
   defp filtered_products(products, cat), do: Enum.filter(products, &(&1.category == cat))

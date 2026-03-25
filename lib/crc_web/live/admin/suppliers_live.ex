@@ -14,6 +14,7 @@ defmodule CRCWeb.Admin.SuppliersLive do
       socket
       |> assign(:page_title, "Proveedores · Admin")
       |> assign(:suppliers, Inventory.list_suppliers())
+      |> assign(:status_filter, :active)
       |> assign(:modal, nil)
       |> assign(:form, nil)
 
@@ -34,6 +35,10 @@ defmodule CRCWeb.Admin.SuppliersLive do
   # ---------------------------------------------------------------------------
 
   @impl true
+  def handle_event("set_status_filter", %{"status" => status}, socket) do
+    {:noreply, assign(socket, :status_filter, String.to_existing_atom(status))}
+  end
+
   def handle_event("new_supplier", _params, socket) do
     changeset = Inventory.change_supplier(%Supplier{})
 
@@ -104,19 +109,49 @@ defmodule CRCWeb.Admin.SuppliersLive do
   @impl true
   def render(assigns) do
     ~H"""
+    <% visible = filter_by_status(@suppliers, @status_filter) %>
+    <% active_count = Enum.count(@suppliers, & &1.active) %>
+    <% inactive_count = Enum.count(@suppliers, &(!&1.active)) %>
     <div class="space-y-6">
       <%!-- Header --%>
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Proveedores</h1>
           <p class="text-sm text-base-content/50 mt-0.5">
-            {length(@suppliers)}
-            {if length(@suppliers) == 1, do: "proveedor registrado", else: "proveedores registrados"}
+            {length(visible)}
+            {if length(visible) == 1, do: "proveedor", else: "proveedores"}
+            {if @status_filter == :active, do: "activos", else: "inactivos"}
           </p>
         </div>
         <button class="btn btn-primary gap-2" phx-click="new_supplier">
           <.icon name="hero-plus" class="size-4" />
           Nuevo proveedor
+        </button>
+      </div>
+
+      <%!-- Status tabs --%>
+      <div class="flex gap-2">
+        <button
+          class={["btn btn-sm gap-1.5", if(@status_filter == :active, do: "btn-primary", else: "btn-ghost")]}
+          phx-click="set_status_filter"
+          phx-value-status="active"
+        >
+          <.icon name="hero-check-circle" class="size-3.5" />
+          Activos
+          <span class={["badge badge-xs", if(@status_filter == :active, do: "badge-primary-content/30", else: "badge-ghost")]}>
+            {active_count}
+          </span>
+        </button>
+        <button
+          class={["btn btn-sm gap-1.5", if(@status_filter == :inactive, do: "btn-error", else: "btn-ghost")]}
+          phx-click="set_status_filter"
+          phx-value-status="inactive"
+        >
+          <.icon name="hero-x-circle" class="size-3.5" />
+          Inactivos
+          <span class={["badge badge-xs", if(@status_filter == :inactive, do: "badge-error-content/30", else: "badge-ghost")]}>
+            {inactive_count}
+          </span>
         </button>
       </div>
 
@@ -135,7 +170,7 @@ defmodule CRCWeb.Admin.SuppliersLive do
               </tr>
             </thead>
             <tbody>
-              <%= for supplier <- @suppliers do %>
+              <%= for supplier <- visible do %>
                 <tr class="hover:bg-base-200/50 transition-colors">
                   <td class="font-medium text-sm text-base-content">{supplier.name}</td>
                   <td class="text-sm text-base-content/70">{supplier.contact_name || "—"}</td>
@@ -173,10 +208,12 @@ defmodule CRCWeb.Admin.SuppliersLive do
                   </td>
                 </tr>
               <% end %>
-              <%= if @suppliers == [] do %>
+              <%= if visible == [] do %>
                 <tr>
                   <td colspan="6" class="text-center py-12 text-base-content/40 text-sm">
-                    No hay proveedores registrados. Crea el primero.
+                    {if @status_filter == :active,
+                      do: "No hay proveedores activos.",
+                      else: "No hay proveedores inactivos."}
                   </td>
                 </tr>
               <% end %>
@@ -272,4 +309,7 @@ defmodule CRCWeb.Admin.SuppliersLive do
     </div>
     """
   end
+
+  defp filter_by_status(suppliers, :active), do: Enum.filter(suppliers, & &1.active)
+  defp filter_by_status(suppliers, :inactive), do: Enum.filter(suppliers, &(!&1.active))
 end

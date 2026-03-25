@@ -52,9 +52,11 @@ defmodule CRCWeb.Components.SiteComponents do
               Colabora
             </a>
             <%= if @current_user do %>
-              <a href="/admin" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content">
-                Panel
-              </a>
+              <%= if @current_user.role in ["admin", "empleado"] do %>
+                <a href="/admin" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content">
+                  Panel
+                </a>
+              <% end %>
               <form action="/cerrar-sesion" method="post">
                 <input type="hidden" name="_method" value="delete" />
                 <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
@@ -105,9 +107,11 @@ defmodule CRCWeb.Components.SiteComponents do
           <span class="btn btn-primary btn-sm w-full">Colabora con nosotros</span>
         </a>
         <%= if @current_user do %>
-          <a href="/admin" phx-click="close_nav" class="block py-2 text-sm font-medium text-primary">
-            Panel de administración
-          </a>
+          <%= if @current_user.role in ["admin", "empleado"] do %>
+            <a href="/admin" phx-click="close_nav" class="block py-2 text-sm font-medium text-primary">
+              Panel de administración
+            </a>
+          <% end %>
           <form action="/cerrar-sesion" method="post">
             <input type="hidden" name="_method" value="delete" />
             <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />

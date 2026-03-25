@@ -210,11 +210,11 @@ defmodule CRCWeb.Admin.EventsLive do
     {:noreply, socket}
   end
 
-  def handle_event("update_collaborator_selection", %{"value" => value}, socket) do
+  def handle_event("update_collaborator_selection", %{"collab_select" => value}, socket) do
     {:noreply, assign(socket, :selected_collaborator_id, value)}
   end
 
-  def handle_event("update_collaborator_role", %{"value" => value}, socket) do
+  def handle_event("update_collaborator_role", %{"collab_role" => value}, socket) do
     {:noreply, assign(socket, :collaborator_role_input, value)}
   end
 

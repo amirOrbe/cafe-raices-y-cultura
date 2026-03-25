@@ -85,6 +85,9 @@ defmodule CRCWeb.Router do
       live "/usuarios", UsersLive
       live "/proveedores", SuppliersLive
       live "/insumos", ProductsLive
+      live "/eventos", EventsLive
+      live "/colaboradores", CollaboratorsLive
+      live "/eventos/tipos", EventTypesLive
     end
   end
 

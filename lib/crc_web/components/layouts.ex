@@ -136,6 +136,27 @@ defmodule CRCWeb.Layouts do
             <.icon name="hero-users" class="size-5 shrink-0" />
             Usuarios
           </a>
+
+          <%!-- Inventory section --%>
+          <div class="pt-3 pb-1">
+            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
+              Inventario
+            </p>
+          </div>
+          <a
+            href="/admin/proveedores"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-truck" class="size-5 shrink-0" />
+            Proveedores
+          </a>
+          <a
+            href="/admin/insumos"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-archive-box" class="size-5 shrink-0" />
+            Insumos
+          </a>
         </nav>
 
         <%!-- Usuario y logout --%>

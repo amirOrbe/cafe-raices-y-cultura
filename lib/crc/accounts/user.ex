@@ -44,7 +44,7 @@ defmodule CRC.Accounts.User do
     user
     |> cast(attrs, [:name, :email, :phone, :role, :station, :is_active, :password])
     |> normalize_empty_station()
-    |> validate_required([:name, :email, :role])
+    |> validate_required([:name, :email, :role], message: "no puede estar en blanco")
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/,
       message: "tiene formato inválido"
     )
@@ -81,7 +81,7 @@ defmodule CRC.Accounts.User do
     # Password is only required on creation (when no hash is stored yet)
     if is_nil(get_field(changeset, :password_hash)) do
       changeset
-      |> validate_required([:password])
+      |> validate_required([:password], message: "no puede estar en blanco")
       |> validate_length(:password,
         min: @min_password_length,
         message: "debe tener al menos %{count} caracteres"

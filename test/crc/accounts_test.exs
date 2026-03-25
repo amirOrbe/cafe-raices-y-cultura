@@ -151,13 +151,13 @@ defmodule CRC.AccountsTest do
         insertar_usuario(%{role: "empleado", station: "sala", email: "emp@cafe.com"})
 
       attrs = attrs_validos(%{email: "nuevo@cafe.com"})
-      assert {:error, :no_autorizado} = Accounts.create_user(empleado, attrs)
+      assert {:error, :unauthorized} = Accounts.create_user(empleado, attrs)
     end
 
     test "cliente no puede crear usuarios" do
       cliente = insertar_usuario(%{role: "cliente", email: "cli@cafe.com"})
       attrs = attrs_validos(%{email: "nuevo@cafe.com"})
-      assert {:error, :no_autorizado} = Accounts.create_user(cliente, attrs)
+      assert {:error, :unauthorized} = Accounts.create_user(cliente, attrs)
     end
 
     test "email duplicado retorna error de changeset" do
@@ -190,12 +190,12 @@ defmodule CRC.AccountsTest do
       empleado = insertar_usuario(%{role: "empleado", station: "sala", email: "emp@cafe.com"})
       otro = insertar_usuario(%{role: "empleado", station: "cocina", email: "otro@cafe.com"})
 
-      assert {:error, :no_autorizado} = Accounts.deactivate_user(empleado, otro)
+      assert {:error, :unauthorized} = Accounts.deactivate_user(empleado, otro)
     end
 
     test "admin no puede desactivarse a sí mismo" do
       admin = insertar_usuario()
-      assert {:error, :no_puede_desactivarse_a_si_mismo} = Accounts.deactivate_user(admin, admin)
+      assert {:error, :cannot_deactivate_self} = Accounts.deactivate_user(admin, admin)
     end
   end
 
@@ -218,7 +218,7 @@ defmodule CRC.AccountsTest do
       {:ok, desactivado} = Accounts.deactivate_user(admin, empleado)
 
       otro_admin = insertar_usuario(%{email: "admin2@cafe.com"})
-      assert {:error, :no_autorizado} = Accounts.activate_user(desactivado, otro_admin)
+      assert {:error, :unauthorized} = Accounts.activate_user(desactivado, otro_admin)
     end
   end
 
@@ -273,12 +273,12 @@ defmodule CRC.AccountsTest do
 
     test "contraseña incorrecta retorna error" do
       insertar_usuario(%{email: "login@cafe.com"})
-      assert {:error, :credenciales_invalidas} =
+      assert {:error, :invalid_credentials} =
                Accounts.authenticate_user("login@cafe.com", "mal_password")
     end
 
     test "email inexistente retorna error" do
-      assert {:error, :credenciales_invalidas} =
+      assert {:error, :invalid_credentials} =
                Accounts.authenticate_user("noexiste@cafe.com", "contraseña123")
     end
 
@@ -287,7 +287,7 @@ defmodule CRC.AccountsTest do
       empleado = insertar_usuario(%{role: "empleado", station: "sala", email: "emp@cafe.com"})
       Accounts.deactivate_user(admin, empleado)
 
-      assert {:error, :usuario_inactivo} =
+      assert {:error, :inactive_user} =
                Accounts.authenticate_user("emp@cafe.com", "contraseña123")
     end
   end

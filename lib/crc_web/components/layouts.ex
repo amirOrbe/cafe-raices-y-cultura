@@ -137,6 +137,20 @@ defmodule CRCWeb.Layouts do
             Usuarios
           </a>
 
+          <%!-- Menu section --%>
+          <div class="pt-3 pb-1">
+            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
+              Carta
+            </p>
+          </div>
+          <a
+            href="/admin/platillos"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-clipboard-document-list" class="size-5 shrink-0" />
+            Platillos
+          </a>
+
           <%!-- Inventory section --%>
           <div class="pt-3 pb-1">
             <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">

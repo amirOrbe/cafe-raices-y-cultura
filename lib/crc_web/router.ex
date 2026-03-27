@@ -83,6 +83,7 @@ defmodule CRCWeb.Router do
       layout: {CRCWeb.Layouts, :admin} do
       live "/", DashboardLive
       live "/usuarios", UsersLive
+      live "/platillos", PlatillosLive
       live "/proveedores", SuppliersLive
       live "/insumos", ProductsLive
       live "/eventos", EventsLive

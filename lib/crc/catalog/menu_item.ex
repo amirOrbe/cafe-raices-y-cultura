@@ -2,7 +2,7 @@ defmodule CRC.Catalog.MenuItem do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias CRC.Catalog.Category
+  alias CRC.Catalog.{Category, MenuItemIngredient}
 
   schema "menu_items" do
     field :name, :string
@@ -14,6 +14,7 @@ defmodule CRC.Catalog.MenuItem do
     field :position, :integer, default: 0
 
     belongs_to :category, Category
+    has_many :menu_item_ingredients, MenuItemIngredient
 
     timestamps(type: :utc_datetime)
   end

@@ -157,6 +157,33 @@ defmodule CRC.Catalog do
   # Private helpers
   # ---------------------------------------------------------------------------
 
+  @doc """
+  Returns available menu items for a given category, preloading ingredient stock.
+  Each entry is a `{%MenuItem{}, in_stock?}` tuple.
+  """
+  def list_menu_items_for_category_with_stock(category_id) do
+    MenuItem
+    |> where(available: true, category_id: ^category_id)
+    |> order_by(:position)
+    |> preload([:category, menu_item_ingredients: :product])
+    |> Repo.all()
+    |> Enum.map(&{&1, item_in_stock?(&1)})
+  end
+
+  @doc """
+  Returns true when every ingredient has enough stock for at least one serving.
+  Items with no ingredients are always considered in stock.
+  """
+  def item_in_stock?(%MenuItem{menu_item_ingredients: []}), do: true
+
+  def item_in_stock?(%MenuItem{menu_item_ingredients: ingredients}) do
+    Enum.all?(ingredients, fn mii ->
+      not is_nil(mii.product) and
+        mii.product.active and
+        Decimal.compare(mii.product.stock_quantity, mii.quantity) != :lt
+    end)
+  end
+
   defp available_items_query do
     from m in MenuItem, where: m.available == true, order_by: m.position
   end

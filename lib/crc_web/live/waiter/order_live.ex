@@ -11,6 +11,8 @@ defmodule CRCWeb.Waiter.OrderLive do
   def mount(%{"id" => order_id}, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(CRC.PubSub, "orders")
+      # Refresh menu availability whenever any order is sent to kitchen
+      Phoenix.PubSub.subscribe(CRC.PubSub, "menu_stock")
     end
 
     order = Orders.get_order!(order_id)
@@ -19,7 +21,7 @@ defmodule CRCWeb.Waiter.OrderLive do
 
     menu_items =
       if first_category do
-        load_menu_items_for_category(first_category.id)
+        Catalog.list_menu_items_for_category_with_stock(first_category.id)
       else
         []
       end
@@ -56,6 +58,16 @@ defmodule CRCWeb.Waiter.OrderLive do
     end
   end
 
+  def handle_info(:stock_updated, socket) do
+    # A comanda was sent somewhere — reload menu with updated availability
+    if socket.assigns.selected_category_id do
+      items = Catalog.list_menu_items_for_category_with_stock(socket.assigns.selected_category_id)
+      {:noreply, assign(socket, :menu_items, items)}
+    else
+      {:noreply, socket}
+    end
+  end
+
   # ---------------------------------------------------------------------------
   # Events
   # ---------------------------------------------------------------------------
@@ -71,7 +83,7 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   def handle_event("select_category", %{"id" => id}, socket) do
     category_id = String.to_integer(id)
-    menu_items = load_menu_items_for_category(category_id)
+    menu_items = Catalog.list_menu_items_for_category_with_stock(category_id)
 
     {:noreply,
      socket
@@ -317,8 +329,14 @@ defmodule CRCWeb.Waiter.OrderLive do
 
           <%!-- Right panel: menu browser --%>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm flex flex-col">
-            <div class="px-4 py-3 border-b border-base-300">
+            <div class="px-4 py-3 border-b border-base-300 flex items-center justify-between gap-2">
               <h2 class="font-semibold text-base-content">Menú</h2>
+              <%!-- Stock legend --%>
+              <span class="text-xs text-base-content/40 hidden sm:block">
+                <span class="inline-flex items-center gap-1">
+                  <span class="size-2 rounded-full bg-error/60 inline-block"></span>Sin inventario
+                </span>
+              </span>
             </div>
 
             <%!-- Category tabs --%>
@@ -343,18 +361,40 @@ defmodule CRCWeb.Waiter.OrderLive do
                 </p>
               <% else %>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <%= for menu_item <- @menu_items do %>
-                    <div class="bg-base-200/60 rounded-xl p-3 flex flex-col gap-2">
+                  <%= for {menu_item, in_stock?} <- @menu_items do %>
+                    <div class={[
+                      "rounded-xl p-3 flex flex-col gap-2 border transition-opacity",
+                      if(in_stock?,
+                        do: "bg-base-200/60 border-transparent",
+                        else: "bg-base-100 border-error/20 opacity-60"
+                      )
+                    ]}>
                       <div class="flex items-start justify-between gap-2">
-                        <p class="text-sm font-medium text-base-content leading-snug">{menu_item.name}</p>
-                        <span class="text-sm font-bold text-primary whitespace-nowrap">${format_price(menu_item.price)}</span>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-base-content leading-snug">
+                            {menu_item.name}
+                          </p>
+                          <%= if !in_stock? do %>
+                            <p class="text-xs text-error mt-0.5 flex items-center gap-0.5">
+                              <.icon name="hero-exclamation-triangle" class="size-3 shrink-0" />
+                              Sin inventario
+                            </p>
+                          <% end %>
+                        </div>
+                        <span class="text-sm font-bold text-primary whitespace-nowrap shrink-0">
+                          ${format_price(menu_item.price)}
+                        </span>
                       </div>
                       <button
-                        class="btn btn-xs btn-outline btn-primary w-full"
+                        class={[
+                          "btn btn-xs w-full",
+                          if(in_stock?, do: "btn-outline btn-primary", else: "btn-disabled")
+                        ]}
                         phx-click="add_item"
                         phx-value-menu_item_id={menu_item.id}
+                        disabled={!in_stock?}
                       >
-                        Agregar
+                        {if in_stock?, do: "Agregar", else: "Sin stock"}
                       </button>
                     </div>
                   <% end %>
@@ -422,11 +462,6 @@ defmodule CRCWeb.Waiter.OrderLive do
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------
-
-  defp load_menu_items_for_category(category_id) do
-    Catalog.list_menu_items()
-    |> Enum.filter(&(&1.category_id == category_id))
-  end
 
   defp format_price(%Decimal{} = price) do
     price |> Decimal.round(0) |> Decimal.to_string()

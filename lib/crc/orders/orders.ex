@@ -7,9 +7,13 @@ defmodule CRC.Orders do
   import Ecto.Query, warn: false
   alias CRC.Repo
   alias CRC.Orders.{Order, OrderItem}
+  alias CRC.Catalog.MenuItemIngredient
+  alias CRC.Inventory.Product
 
   # Both cocina and barra subscribe to this topic
   @pubsub_topic "orders"
+  # Waiter menu browsers subscribe to this for real-time stock availability
+  @stock_topic "menu_stock"
 
   # ---------------------------------------------------------------------------
   # Orders
@@ -131,25 +135,49 @@ defmodule CRC.Orders do
   # Kitchen / Barra actions
   # ---------------------------------------------------------------------------
 
-  @doc "Marks all pending items as 'sent', sets order status to 'sent', broadcasts to stations."
+  @doc """
+  Marks all pending items as 'sent', updates order status, deducts ingredient
+  stock from inventory, and broadcasts to stations and waiter menu browsers.
+  All DB writes run in a single transaction.
+  """
   def send_to_kitchen(%Order{} = order) do
-    # Transition pending items so cocina/barra can see them
-    from(oi in OrderItem,
-      where: oi.order_id == ^order.id and oi.status == "pending"
-    )
-    |> Repo.update_all(set: [status: "sent"])
+    # Load pending items directly from DB (safe regardless of preload state)
+    pending =
+      from(oi in OrderItem,
+        where: oi.order_id == ^order.id and oi.status == "pending"
+      )
+      |> Repo.all()
 
     result =
-      order
-      |> Order.changeset(%{status: "sent"})
-      |> Repo.update()
+      Repo.transaction(fn ->
+        # 1. Mark pending items → sent
+        from(oi in OrderItem,
+          where: oi.order_id == ^order.id and oi.status == "pending"
+        )
+        |> Repo.update_all(set: [status: "sent"])
+
+        # 2. Update order status
+        updated =
+          order
+          |> Order.changeset(%{status: "sent"})
+          |> Repo.update!()
+
+        # 3. Deduct ingredient stock for the sent items
+        deduct_ingredients_for_items(pending)
+
+        updated
+      end)
 
     case result do
       {:ok, updated} ->
         broadcast({:order_updated, updated.id})
+        # Notify all waiter browsers to refresh menu availability
+        Phoenix.PubSub.broadcast(CRC.PubSub, @stock_topic, :stock_updated)
+        # Notify admin inventory view
+        Phoenix.PubSub.broadcast(CRC.PubSub, "admin:products", {:product_changed, :stock})
         {:ok, updated}
 
-      error ->
+      {:error, _} = error ->
         error
     end
   end
@@ -200,5 +228,43 @@ defmodule CRC.Orders do
 
   defp broadcast(message) do
     Phoenix.PubSub.broadcast(CRC.PubSub, @pubsub_topic, message)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Stock deduction (runs inside send_to_kitchen transaction)
+  # ---------------------------------------------------------------------------
+
+  defp deduct_ingredients_for_items([]), do: :ok
+
+  defp deduct_ingredients_for_items(pending_items) do
+    menu_item_ids =
+      pending_items
+      |> Enum.map(& &1.menu_item_id)
+      |> Enum.uniq()
+
+    # Load all ingredients for the relevant menu items in one query
+    ingredients =
+      from(mii in MenuItemIngredient, where: mii.menu_item_id in ^menu_item_ids)
+      |> Repo.all()
+
+    # Group by menu_item_id for quick lookup
+    by_menu_item = Enum.group_by(ingredients, & &1.menu_item_id)
+
+    # Accumulate total deduction per product across all pending items
+    deductions =
+      Enum.reduce(pending_items, %{}, fn order_item, acc ->
+        item_ingredients = Map.get(by_menu_item, order_item.menu_item_id, [])
+
+        Enum.reduce(item_ingredients, acc, fn mii, inner ->
+          total = Decimal.mult(mii.quantity, Decimal.new(order_item.quantity))
+          Map.update(inner, mii.product_id, total, &Decimal.add(&1, total))
+        end)
+      end)
+
+    # Apply one atomic decrement per product
+    Enum.each(deductions, fn {product_id, deduction} ->
+      from(p in Product, where: p.id == ^product_id)
+      |> Repo.update_all(inc: [stock_quantity: Decimal.negate(deduction)])
+    end)
   end
 end

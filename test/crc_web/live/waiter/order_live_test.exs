@@ -1,0 +1,562 @@
+defmodule CRCWeb.Waiter.OrderLiveTest do
+  use CRCWeb.ConnCase, async: true
+
+  import Phoenix.LiveViewTest
+
+  alias CRC.Accounts.User
+  alias CRC.Orders
+  alias CRC.Catalog
+
+  # ---------------------------------------------------------------------------
+  # Helpers
+  # ---------------------------------------------------------------------------
+
+  defp insert_user(overrides \\ %{}) do
+    attrs =
+      Map.merge(
+        %{name: "Mesero", email: "mesero#{System.unique_integer()}@cafe.com",
+          role: "empleado", station: "sala", password: "pass123456"},
+        overrides
+      )
+
+    {:ok, user} = %User{} |> User.changeset(attrs) |> CRC.Repo.insert()
+    user
+  end
+
+  defp auth_conn(conn) do
+    user = insert_user()
+    {init_test_session(conn, %{"user_id" => user.id}), user}
+  end
+
+  defp insert_category(overrides \\ %{}) do
+    attrs = Map.merge(%{name: "Cafés", kind: "drink"}, overrides)
+    {:ok, cat} = Catalog.create_category(attrs)
+    cat
+  end
+
+  defp insert_menu_item(category_id, overrides \\ %{}) do
+    attrs = Map.merge(%{name: "Espresso", price: "45.00", category_id: category_id}, overrides)
+    {:ok, item} = Catalog.create_menu_item(attrs)
+    item
+  end
+
+  defp insert_order(overrides \\ %{}) do
+    {:ok, order} = Orders.create_order(Map.merge(%{customer_name: "Test"}, overrides))
+    order
+  end
+
+  defp insert_order_item(order_id, menu_item_id, overrides \\ %{}) do
+    {:ok, item} =
+      Orders.add_item(
+        Map.merge(%{order_id: order_id, menu_item_id: menu_item_id, quantity: 1}, overrides)
+      )
+
+    item
+  end
+
+  # ---------------------------------------------------------------------------
+  # Authentication
+  # ---------------------------------------------------------------------------
+
+  describe "authentication" do
+    test "redirects to login when not authenticated", %{conn: conn} do
+      order = insert_order()
+      {:error, {:redirect, %{to: path}}} = live(conn, "/mesa/#{order.id}")
+      assert path =~ "/iniciar-sesion"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Mount
+  # ---------------------------------------------------------------------------
+
+  describe "mount" do
+    test "shows order with customer name", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order(%{customer_name: "Rocío Mendez"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Rocío Mendez"
+    end
+
+    test "redirects to /mesa for unknown order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      {:error, {:redirect, %{to: "/mesa"}}} = live(conn, "/mesa/999999")
+    end
+
+    test "shows empty comanda message when no items", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "La comanda está vacía"
+    end
+
+    test "shows existing items in the order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Capuchino"})
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Capuchino"
+    end
+
+    test "send button is disabled on empty order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Enviar a cocina y barra"
+      assert html =~ ~s(phx-click="send_to_kitchen" disabled)
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Adding items
+  # ---------------------------------------------------------------------------
+
+  describe "add_item" do
+    test "adds a new item to the order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Latte"})
+      order = insert_order()
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+
+      html = render_click(lv, "add_item", %{"menu_item_id" => to_string(mi.id)})
+      assert html =~ "Latte"
+      assert html =~ "Artículo agregado"
+    end
+
+    test "increments quantity when adding an existing item", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Americano"})
+      order = insert_order()
+      insert_order_item(order.id, mi.id, %{quantity: 1})
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "add_item", %{"menu_item_id" => to_string(mi.id)})
+
+      html = render(lv)
+      # Quantity should be 2
+      assert html =~ "2"
+    end
+
+    test "added item has pending status", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "add_item", %{"menu_item_id" => to_string(mi.id)})
+
+      reloaded = Orders.get_order!(order.id)
+      assert hd(reloaded.order_items).status == "pending"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Quantity controls
+  # ---------------------------------------------------------------------------
+
+  describe "increment_item" do
+    test "increments item quantity", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id, %{quantity: 1})
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "increment_item", %{"id" => to_string(item.id)})
+
+      reloaded = Orders.get_order!(order.id)
+      assert hd(reloaded.order_items).quantity == 2
+    end
+  end
+
+  describe "decrement_item" do
+    test "decrements item quantity", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id, %{quantity: 3})
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "decrement_item", %{"id" => to_string(item.id)})
+
+      reloaded = Orders.get_order!(order.id)
+      assert hd(reloaded.order_items).quantity == 2
+    end
+
+    test "does not decrement below 1", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id, %{quantity: 1})
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "decrement_item", %{"id" => to_string(item.id)})
+
+      reloaded = Orders.get_order!(order.id)
+      assert hd(reloaded.order_items).quantity == 1
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Remove item
+  # ---------------------------------------------------------------------------
+
+  describe "remove_item" do
+    test "removes the item from the order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Moka"})
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+
+      html = render_click(lv, "remove_item", %{"id" => to_string(item.id)})
+      assert html =~ "Artículo eliminado"
+      # Comanda should be empty (item removed from order, not from menu browser)
+      assert html =~ "La comanda está vacía"
+      assert Orders.get_order!(order.id).order_items == []
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Send to kitchen
+  # ---------------------------------------------------------------------------
+
+  describe "send_to_kitchen" do
+    test "button is enabled when there are pending items", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id, %{status: "pending"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+
+      # Has pending items → button should NOT carry the disabled attribute
+      refute html =~ ~s(phx-click="send_to_kitchen" disabled)
+    end
+
+    test "button is disabled when all items are sent", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+
+      assert html =~ "Enviar adicionales"
+      # No pending items → button should carry the disabled attribute
+      assert html =~ ~s(phx-click="send_to_kitchen" disabled)
+    end
+
+    test "marks pending items as sent and order as sent", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id, %{status: "pending"})
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "send_to_kitchen")
+
+      reloaded = Orders.get_order!(order.id)
+      assert reloaded.status == "sent"
+      assert Enum.all?(reloaded.order_items, &(&1.status == "sent"))
+    end
+
+    test "shows 'Enviar adicionales' label when order is already sent", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Enviar adicionales"
+    end
+
+    test "can add and send additional items after initial send", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      # Add new item — creates a NEW pending item (not increment of existing sent item)
+      render_click(lv, "add_item", %{"menu_item_id" => to_string(mi.id)})
+
+      # DB should have one sent item + one pending item
+      reloaded = Orders.get_order!(order.id)
+      pending = Enum.filter(reloaded.order_items, &(&1.status == "pending"))
+      assert length(pending) == 1
+
+      # Button should NOT be disabled (has pending items to send)
+      html = render(lv)
+      refute html =~ ~s(phx-click="send_to_kitchen" disabled)
+
+      # Send the additional item
+      render_click(lv, "send_to_kitchen")
+
+      reloaded2 = Orders.get_order!(order.id)
+      assert Enum.all?(reloaded2.order_items, &(&1.status in ["sent", "ready"]))
+    end
+
+    test "shows item status badge 'En preparación' after send", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "send_to_kitchen")
+      html = render(lv)
+      assert html =~ "En preparación"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Close order
+  # ---------------------------------------------------------------------------
+
+  describe "close_order" do
+    test "redirects to /mesa after closing", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      assert {:error, {:redirect, %{to: "/mesa"}}} = render_click(lv, "close_order")
+    end
+
+    test "closed order no longer appears in active list", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Té"})
+      order = insert_order(%{customer_name: "Miguel"})
+      insert_order_item(order.id, mi.id)
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      render_click(lv, "close_order")
+
+      {:ok, _lv2, html} = live(conn, "/mesa")
+      refute html =~ "Miguel"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Item status badges
+  # ---------------------------------------------------------------------------
+
+  describe "item status badges" do
+    test "shows 'Listo' badge when item is ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "ready"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Listo"
+    end
+
+    test "shows 'En preparación' badge for sent items in sent order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "En preparación"
+    end
+
+    test "shows 'Sin enviar' badge for pending items in sent order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "pending"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Sin enviar"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Navigation
+  # ---------------------------------------------------------------------------
+
+  describe "nav events" do
+    test "toggle_nav opens and closes nav", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "toggle_nav", %{})
+      render_click(lv, "toggle_nav", %{})
+      assert render(lv) =~ order.customer_name
+    end
+
+    test "close_nav closes nav", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "toggle_nav", %{})
+      render_click(lv, "close_nav", %{})
+      assert render(lv) =~ order.customer_name
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Category selection
+  # ---------------------------------------------------------------------------
+
+  describe "select_category" do
+    test "switching category loads its menu items", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat1 = insert_category(%{name: "Cafés", kind: "drink"})
+      cat2 = insert_category(%{name: "Comidas", kind: "food"})
+      insert_menu_item(cat1.id, %{name: "Espresso Cat"})
+      insert_menu_item(cat2.id, %{name: "Tacos Cat"})
+      order = insert_order()
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      html = render_click(lv, "select_category", %{"id" => to_string(cat2.id)})
+      assert html =~ "Tacos Cat"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # PubSub handle_info
+  # ---------------------------------------------------------------------------
+
+  describe "handle_info PubSub" do
+    test "updates order when order_updated matches current order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Ristretto PubSub"})
+      order = insert_order()
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      # Add item via DB and broadcast
+      Orders.add_item(%{order_id: order.id, menu_item_id: mi.id, quantity: 1})
+      Phoenix.PubSub.broadcast(CRC.PubSub, "orders", {:order_updated, order.id})
+
+      html = render(lv)
+      assert html =~ "Ristretto PubSub"
+    end
+
+    test "ignores order_updated for a different order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order(%{customer_name: "Orden Principal"})
+      other_order = insert_order(%{customer_name: "Otra Orden"})
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      Phoenix.PubSub.broadcast(CRC.PubSub, "orders", {:order_updated, other_order.id})
+
+      html = render(lv)
+      # Still shows the original order, not the other one
+      assert html =~ "Orden Principal"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Edge cases for item controls
+  # ---------------------------------------------------------------------------
+
+  describe "increment_item with missing item" do
+    test "does nothing when item id not found in order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      # Sending increment for non-existent item id — should not crash
+      render_click(lv, "increment_item", %{"id" => "999999"})
+      assert render(lv) =~ order.customer_name
+    end
+  end
+
+  describe "food category station labels" do
+    test "shows Cocina label for food category items", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      food_cat = insert_category(%{name: "Comidas", kind: "food"})
+      mi = insert_menu_item(food_cat.id, %{name: "Enchiladas"})
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Cocina"
+    end
+
+    test "shows Cocina label for extra category items", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      extra_cat = insert_category(%{name: "Extras", kind: "extra"})
+      mi = insert_menu_item(extra_cat.id, %{name: "Postre"})
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Cocina"
+    end
+  end
+
+  describe "closed order state" do
+    test "shows Esta cuenta está cerrada when order is closed", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "closed"})
+      insert_order_item(order.id, mi.id)
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "cerrada"
+    end
+
+    test "send button is disabled when order is closed", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "closed"})
+      insert_order_item(order.id, mi.id, %{status: "pending"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ ~s(phx-click="send_to_kitchen" disabled)
+    end
+  end
+
+  describe "order status badges" do
+    test "shows Abierta badge for open order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order(%{status: "open"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Abierta"
+    end
+
+    test "shows En cocina / barra badge for sent order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order(%{status: "sent"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "En cocina / barra"
+    end
+
+    test "shows Lista badge for ready order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order(%{status: "ready"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Lista"
+    end
+
+    test "shows Cerrada badge for closed order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "closed"})
+      insert_order_item(order.id, mi.id)
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Cerrada"
+    end
+  end
+end

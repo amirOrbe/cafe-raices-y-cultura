@@ -21,12 +21,23 @@ Repo.delete_all(User)
 |> User.changeset(%{
   name: "Administrador",
   email: "admin@caferaices.mx",
-  password: "Raices2024!",
+  password: "12345678",
   role: "admin"
 })
 |> Repo.insert!()
 
-IO.puts("✓ Admin creado: admin@caferaices.mx")
+%User{}
+|> User.changeset(%{
+  name: "Mesero",
+  email: "mesero@caferaices.mx",
+  password: "12345678",
+  role: "empleado"
+})
+|> Repo.insert!()
+
+IO.puts("✓ Usuarios creados:")
+IO.puts("  admin@caferaices.mx   / 12345678  (admin)")
+IO.puts("  mesero@caferaices.mx  / 12345678  (empleado)")
 
 # ---------------------------------------------------------------------------
 # Categorías (basadas en el menú real)

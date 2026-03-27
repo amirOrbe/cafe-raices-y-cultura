@@ -95,15 +95,33 @@ defmodule CRCWeb.Router do
   # Stations — requires active session
   # ---------------------------------------------------------------------------
 
-  # scope "/mesa", CRCWeb.Waiter, as: :waiter do
-  #   pipe_through [:browser, :require_auth]
-  #   live "/:mesa", OrderLive
-  # end
+  scope "/mesa", CRCWeb.Waiter, as: :waiter do
+    pipe_through [:browser, :require_auth]
 
-  # scope "/cocina", CRCWeb.Kitchen, as: :kitchen do
-  #   pipe_through [:browser, :require_auth]
-  #   live "/", DisplayLive
-  # end
+    live_session :waiter,
+      on_mount: [{CRCWeb.UserAuth, :require_authenticated_user}] do
+      live "/", TableLive
+      live "/:id", OrderLive
+    end
+  end
+
+  scope "/cocina", CRCWeb.Kitchen, as: :kitchen do
+    pipe_through [:browser, :require_auth]
+
+    live_session :kitchen,
+      on_mount: [{CRCWeb.UserAuth, :require_authenticated_user}] do
+      live "/", DisplayLive
+    end
+  end
+
+  scope "/barra", CRCWeb.Barra, as: :barra do
+    pipe_through [:browser, :require_auth]
+
+    live_session :barra,
+      on_mount: [{CRCWeb.UserAuth, :require_authenticated_user}] do
+      live "/", DisplayLive
+    end
+  end
 
   # ---------------------------------------------------------------------------
   # Development tools

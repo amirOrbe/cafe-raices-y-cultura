@@ -380,4 +380,16 @@ defmodule CRC.CatalogTest do
       assert_raise Ecto.NoResultsError, fn -> Catalog.get_menu_item!(item.id) end
     end
   end
+
+  describe "create_category/0 default arg" do
+    test "returns error with empty attrs (required name missing)" do
+      assert {:error, %Ecto.Changeset{}} = Catalog.create_category()
+    end
+  end
+
+  describe "create_menu_item/0 default arg" do
+    test "returns error with empty attrs (required fields missing)" do
+      assert {:error, %Ecto.Changeset{}} = Catalog.create_menu_item()
+    end
+  end
 end

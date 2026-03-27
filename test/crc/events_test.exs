@@ -51,6 +51,14 @@ defmodule CRC.EventsTest do
     event
   end
 
+  # Returns today's date in CDMX timezone (UTC-6), matching the logic used
+  # in Events context functions. This avoids test failures around UTC midnight.
+  defp cdmx_today do
+    DateTime.utc_now()
+    |> DateTime.add(-6 * 3600, :second)
+    |> DateTime.to_date()
+  end
+
   # ===========================================================================
   # EVENT TYPES
   # ===========================================================================
@@ -509,7 +517,7 @@ defmodule CRC.EventsTest do
     end
 
     test "excludes past events" do
-      yesterday = Date.utc_today() |> Date.add(-1)
+      yesterday = cdmx_today() |> Date.add(-1)
       {:ok, past} = Events.create_event(event_attrs(%{event_date: yesterday, title: "Pasado"}))
 
       ids = Events.list_upcoming_events() |> Enum.map(& &1.id)
@@ -540,7 +548,7 @@ defmodule CRC.EventsTest do
 
   describe "list_past_events/0" do
     test "returns events from past dates" do
-      yesterday = Date.utc_today() |> Date.add(-1)
+      yesterday = cdmx_today() |> Date.add(-1)
       {:ok, past} = Events.create_event(event_attrs(%{event_date: yesterday, title: "Pasado"}))
 
       ids = Events.list_past_events() |> Enum.map(& &1.id)
@@ -556,7 +564,7 @@ defmodule CRC.EventsTest do
     end
 
     test "excludes inactive events" do
-      yesterday = Date.utc_today() |> Date.add(-1)
+      yesterday = cdmx_today() |> Date.add(-1)
       {:ok, event} = Events.create_event(event_attrs(%{event_date: yesterday}))
       Events.toggle_event_active(event)
 
@@ -565,8 +573,8 @@ defmodule CRC.EventsTest do
     end
 
     test "returns most recent events first" do
-      two_days_ago = Date.utc_today() |> Date.add(-2)
-      five_days_ago = Date.utc_today() |> Date.add(-5)
+      two_days_ago = cdmx_today() |> Date.add(-2)
+      five_days_ago = cdmx_today() |> Date.add(-5)
 
       {:ok, recent} = Events.create_event(event_attrs(%{event_date: two_days_ago, title: "Reciente"}))
       {:ok, older} = Events.create_event(event_attrs(%{event_date: five_days_ago, title: "Antiguo"}))
@@ -577,7 +585,7 @@ defmodule CRC.EventsTest do
     end
 
     test "limits to 20 results" do
-      yesterday = Date.utc_today() |> Date.add(-1)
+      yesterday = cdmx_today() |> Date.add(-1)
 
       for i <- 1..25 do
         Events.create_event(event_attrs(%{event_date: yesterday, title: "Evento #{i}"}))

@@ -250,4 +250,18 @@ defmodule CRC.BookingsTest do
       assert %Ecto.Changeset{} = cs
     end
   end
+
+  describe "Reservation.available_times/0" do
+    test "returns list of available time slots" do
+      times = Reservation.available_times()
+      assert is_list(times)
+      assert length(times) > 0
+    end
+  end
+
+  describe "create_reservation/0 default arg" do
+    test "returns error with empty attrs (required fields missing)" do
+      assert {:error, %Ecto.Changeset{}} = Bookings.create_reservation()
+    end
+  end
 end

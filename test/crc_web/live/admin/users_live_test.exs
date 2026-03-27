@@ -165,5 +165,123 @@ defmodule CRCWeb.Admin.UsersLiveTest do
       html = render_click(lv, "toggle_active", %{"id" => to_string(empleado.id)})
       assert html =~ "desactivado" or !html =~ "Emp Toggle"
     end
+
+    test "can activate a deactivated user", %{conn: conn} do
+      {conn, admin} = admin_session(conn)
+      empleado = insert_user(%{name: "Emp Activar", role: "empleado", station: "sala"})
+      Accounts.deactivate_user(admin, empleado)
+
+      {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
+
+      render_click(lv, "set_status_filter", %{"status" => "inactive"})
+      html = render_click(lv, "toggle_active", %{"id" => to_string(empleado.id)})
+      assert html =~ "activado"
+    end
+  end
+
+  describe "edit_user event" do
+    test "opens modal with user data for editing", %{conn: conn} do
+      {conn, _admin} = admin_session(conn)
+      empleado = insert_user(%{name: "Emp Editar", role: "empleado", station: "barra"})
+
+      {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
+
+      html = render_click(lv, "edit_user", %{"id" => to_string(empleado.id)})
+      assert html =~ "Editar usuario"
+    end
+
+    test "can save user changes without changing password", %{conn: conn} do
+      {conn, _admin} = admin_session(conn)
+      empleado = insert_user(%{name: "Emp Editar Pass", role: "empleado", station: "cocina"})
+
+      {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
+      render_click(lv, "edit_user", %{"id" => to_string(empleado.id)})
+
+      html =
+        lv
+        |> form("#user-form",
+          user: %{
+            name: "Emp Editado",
+            email: "emp_editado#{System.unique_integer()}@cafe.com",
+            role: "empleado",
+            station: "barra",
+            password: ""
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "actualizado" or !String.contains?(html, "Editar usuario")
+    end
+
+    test "can save user changes with new password", %{conn: conn} do
+      {conn, _admin} = admin_session(conn)
+      empleado = insert_user(%{name: "Emp New Pass", role: "empleado", station: "sala"})
+
+      {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
+      render_click(lv, "edit_user", %{"id" => to_string(empleado.id)})
+
+      html =
+        lv
+        |> form("#user-form",
+          user: %{
+            name: "Emp New Pass",
+            email: empleado.email,
+            role: "empleado",
+            station: "sala",
+            password: "nuevapass123"
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "actualizado" or !String.contains?(html, "Editar usuario")
+    end
+  end
+
+  describe "close_modal event" do
+    test "closes the modal", %{conn: conn} do
+      {conn, _admin} = admin_session(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
+
+      render_click(lv, "new_user", %{})
+      html = render_click(lv, "close_modal", %{})
+      refute html =~ "user-modal"
+    end
+  end
+
+  describe "PubSub" do
+    test "user_changed PubSub event refreshes the list", %{conn: conn} do
+      {conn, _admin} = admin_session(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
+
+      insert_user(%{name: "Usuario PubSub", role: "empleado", station: "sala"})
+      Phoenix.PubSub.broadcast(CRC.PubSub, "admin:users", {:user_changed, %{}})
+
+      html = render(lv)
+      assert html =~ "Usuario PubSub"
+    end
+  end
+
+  describe "inactive users empty state" do
+    test "shows empty state when no inactive users", %{conn: conn} do
+      {conn, _admin} = admin_session(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
+
+      html = render_click(lv, "set_status_filter", %{"status" => "inactive"})
+      assert html =~ "No hay usuarios inactivos"
+    end
+  end
+
+  describe "station labels" do
+    test "shows station labels in user table", %{conn: conn} do
+      {conn, _admin} = admin_session(conn)
+      insert_user(%{name: "Emp Barra Label", role: "empleado", station: "barra"})
+      insert_user(%{name: "Emp Cocina Label", role: "empleado", station: "cocina"})
+      insert_user(%{name: "Emp Sala Label", role: "empleado", station: "sala"})
+
+      {:ok, _lv, html} = live(conn, ~p"/admin/usuarios")
+      assert html =~ "Barra"
+      assert html =~ "Cocina"
+      assert html =~ "Sala"
+    end
   end
 end

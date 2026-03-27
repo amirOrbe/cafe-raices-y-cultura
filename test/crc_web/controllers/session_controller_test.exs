@@ -34,7 +34,7 @@ defmodule CRCWeb.SessionControllerTest do
       assert html_response(conn, 200) =~ "Iniciar sesión"
     end
 
-    test "redirige al panel si ya hay sesión activa", %{conn: conn} do
+    test "redirige al panel si ya hay sesión activa (admin)", %{conn: conn} do
       user = crear_usuario()
 
       conn =
@@ -43,6 +43,17 @@ defmodule CRCWeb.SessionControllerTest do
         |> get(~p"/iniciar-sesion")
 
       assert redirected_to(conn) == ~p"/admin"
+    end
+
+    test "redirige al inicio si ya hay sesión activa (no-admin)", %{conn: conn} do
+      empleado = crear_usuario(%{role: "empleado", station: "sala", email: "emp_redirect#{System.unique_integer()}@test.com"})
+
+      conn =
+        conn
+        |> init_test_session(%{"user_id" => empleado.id})
+        |> get(~p"/iniciar-sesion")
+
+      assert redirected_to(conn) == ~p"/"
     end
   end
 

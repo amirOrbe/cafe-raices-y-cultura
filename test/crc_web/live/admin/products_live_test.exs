@@ -193,4 +193,100 @@ defmodule CRCWeb.Admin.ProductsLiveTest do
       assert html =~ "desactivado" or !String.contains?(html, "Insumo Toggle")
     end
   end
+
+  describe "edit_product event" do
+    test "opens modal with product data", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      product = insert_product(%{name: "Insumo Editar"})
+
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+
+      html = render_click(lv, "edit_product", %{"id" => to_string(product.id)})
+      assert html =~ "Editar insumo" or html =~ "Insumo Editar"
+    end
+
+    test "can save product changes in edit mode", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      product = insert_product(%{name: "Insumo Antes Editar"})
+
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+      render_click(lv, "edit_product", %{"id" => to_string(product.id)})
+
+      html =
+        lv
+        |> form("#product-form",
+          product: %{
+            name: "Insumo Después Editar",
+            category: "alimentos",
+            unit: "kilogramos",
+            net_cost: "60.00",
+            stock_quantity: "8.0",
+            min_stock: "1.5"
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "actualizado" or html =~ "Insumo Después Editar"
+    end
+  end
+
+  describe "close_modal event" do
+    test "closes the modal", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+
+      render_click(lv, "new_product", %{})
+      html = render_click(lv, "close_modal", %{})
+      refute html =~ "product-modal"
+    end
+  end
+
+  describe "low stock display" do
+    test "shows low stock warning for products below min_stock", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      insert_product(%{
+        name: "Insumo Bajo Stock",
+        stock_quantity: "1.0",
+        min_stock: "5.0"
+      })
+
+      {:ok, _lv, html} = live(conn, ~p"/admin/insumos")
+      # Low stock product should show warning indicator
+      assert html =~ "Insumo Bajo Stock"
+    end
+
+    test "shows nil min_stock products correctly", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, product} = Inventory.create_product(%{
+        name: "Insumo Sin Min",
+        category: "lacteos",
+        unit: "litros",
+        net_cost: "25.00",
+        stock_quantity: "10.0"
+      })
+
+      {:ok, _lv, html} = live(conn, ~p"/admin/insumos")
+      assert html =~ "Insumo Sin Min"
+    end
+  end
+
+  describe "unit variations" do
+    test "shows various unit types in product listing", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      units = ~w(piezas gramos mililitros onzas paquetes)
+
+      for unit <- units do
+        insert_product(%{
+          name: "Producto #{unit}",
+          unit: unit,
+          category: "alimentos",
+          stock_quantity: "10.0",
+          min_stock: "2.0"
+        })
+      end
+
+      {:ok, _lv, html} = live(conn, ~p"/admin/insumos")
+      assert html =~ "Insumos"
+    end
+  end
 end

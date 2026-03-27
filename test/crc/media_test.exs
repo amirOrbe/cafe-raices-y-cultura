@@ -180,4 +180,10 @@ defmodule CRC.MediaTest do
       assert_raise Ecto.NoResultsError, fn -> Media.get_photo!(photo.id) end
     end
   end
+
+  describe "create_photo/0 default arg" do
+    test "returns error with no attrs (required url missing)" do
+      assert {:error, %Ecto.Changeset{}} = Media.create_photo()
+    end
+  end
 end

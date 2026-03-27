@@ -56,6 +56,15 @@ defmodule CRCWeb.Components.SiteComponents do
                 <a href="/admin" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content">
                   Panel
                 </a>
+                <a href="/mesa" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content">
+                  Comandas
+                </a>
+                <a href="/cocina" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content">
+                  Cocina
+                </a>
+                <a href="/barra" class="btn btn-sm btn-ghost text-base-content/60 hover:text-base-content">
+                  Barra
+                </a>
               <% end %>
               <form action="/cerrar-sesion" method="post">
                 <input type="hidden" name="_method" value="delete" />
@@ -110,6 +119,15 @@ defmodule CRCWeb.Components.SiteComponents do
           <%= if @current_user.role in ["admin", "empleado"] do %>
             <a href="/admin" phx-click="close_nav" class="block py-2 text-sm font-medium text-primary">
               Panel de administración
+            </a>
+            <a href="/mesa" phx-click="close_nav" class="block py-2 text-sm font-medium text-primary">
+              Comandas
+            </a>
+            <a href="/cocina" phx-click="close_nav" class="block py-2 text-sm font-medium text-primary">
+              Cocina
+            </a>
+            <a href="/barra" phx-click="close_nav" class="block py-2 text-sm font-medium text-primary">
+              Barra
             </a>
           <% end %>
           <form action="/cerrar-sesion" method="post">

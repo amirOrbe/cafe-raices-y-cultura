@@ -308,7 +308,7 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       assert Enum.all?(reloaded2.order_items, &(&1.status in ["sent", "ready"]))
     end
 
-    test "shows item status badge 'En preparación' after send", %{conn: conn} do
+    test "item remains visible after send (no ¡Listo! badge yet)", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       cat = insert_category()
       mi = insert_menu_item(cat.id)
@@ -318,7 +318,9 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
 
       render_click(lv, "send_to_kitchen")
       html = render(lv)
-      assert html =~ "En preparación"
+      # Item is still visible in the list but ¡Listo! badge is NOT shown (item is "sent", not ready)
+      assert html =~ mi.name
+      refute html =~ "¡Listo!"
     end
   end
 
@@ -387,24 +389,30 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       assert html =~ "Listo"
     end
 
-    test "shows 'En preparación' badge for sent items in sent order", %{conn: conn} do
+    test "sent items in sent order are visible but do NOT show ¡Listo! badge", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       cat = insert_category()
       mi = insert_menu_item(cat.id)
       order = insert_order(%{status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "sent"})
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
-      assert html =~ "En preparación"
+      # Item is visible
+      assert html =~ mi.name
+      # ¡Listo! badge only appears when status is "ready"
+      refute html =~ "¡Listo!"
     end
 
-    test "shows 'Sin enviar' badge for pending items in sent order", %{conn: conn} do
+    test "pending items in sent order are visible but do NOT show ¡Listo! badge", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       cat = insert_category()
       mi = insert_menu_item(cat.id)
       order = insert_order(%{status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "pending"})
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
-      assert html =~ "Sin enviar"
+      # Item is visible
+      assert html =~ mi.name
+      # ¡Listo! badge only appears when status is "ready"
+      refute html =~ "¡Listo!"
     end
   end
 
@@ -780,6 +788,187 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       insert_order_item(order.id, mi.id)
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
       assert html =~ "Cerrada"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # mark_item_served — basic + auto-serve regression
+  # ---------------------------------------------------------------------------
+
+  describe "mark_item_served" do
+    test "marks a ready item as served", %{conn: conn} do
+      {conn, user} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Tacos Servidos"})
+      order = insert_order(%{customer_name: "Mesa Servir", status: "sent", user_id: user.id})
+      item = insert_order_item(order.id, mi.id, %{status: "ready"})
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      html = render_click(lv, "mark_item_served", %{"id" => to_string(item.id)})
+      assert html =~ "Servido"
+    end
+
+    test "served item no longer shows the Servir button", %{conn: conn} do
+      {conn, user} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Latte"})
+      order = insert_order(%{customer_name: "Mesa Botón", status: "sent", user_id: user.id})
+      item = insert_order_item(order.id, mi.id, %{status: "ready"})
+
+      {:ok, lv, html_before} = live(conn, "/mesa/#{order.id}")
+      assert html_before =~ "Servir"
+
+      render_click(lv, "mark_item_served", %{"id" => to_string(item.id)})
+      html_after = render(lv)
+      refute html_after =~ ~r/phx-value-id="#{item.id}"[^>]*>.*?Servir/s
+    end
+
+    # REGRESSION Bug #4: extra stays visible after parent served (any status)
+    test "auto-serves a 'pending' extra when parent menu item is served", %{conn: conn} do
+      {conn, user} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Capuchino Auto"})
+
+      extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Leche extra #{System.unique_integer()}",
+        category: "lacteos", unit: "ml",
+        net_cost: Decimal.new("0.05"),
+        stock_quantity: Decimal.new("3000"), active: true
+      })
+
+      order = insert_order(%{customer_name: "Mesa Auto Serve", status: "sent", user_id: user.id})
+      parent_item = insert_order_item(order.id, mi.id, %{status: "ready"})
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      extra_item = CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, product_id: extra_product.id,
+        for_menu_item_id: mi.id, quantity: 1, status: "pending",
+        inserted_at: now, updated_at: now
+      })
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      render_click(lv, "mark_item_served", %{"id" => to_string(parent_item.id)})
+
+      reloaded = CRC.Repo.get!(CRC.Orders.OrderItem, extra_item.id)
+      assert reloaded.status == "served"
+    end
+
+    test "auto-serves a 'sent' extra when parent menu item is served", %{conn: conn} do
+      {conn, user} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Mocca Auto"})
+
+      extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Jarabe #{System.unique_integer()}",
+        category: "otros", unit: "ml",
+        net_cost: Decimal.new("0.10"),
+        stock_quantity: Decimal.new("2000"), active: true
+      })
+
+      order = insert_order(%{customer_name: "Mesa Auto Sent", status: "sent", user_id: user.id})
+      parent_item = insert_order_item(order.id, mi.id, %{status: "ready"})
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      extra_item = CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, product_id: extra_product.id,
+        for_menu_item_id: mi.id, quantity: 1, status: "sent",
+        inserted_at: now, updated_at: now
+      })
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      render_click(lv, "mark_item_served", %{"id" => to_string(parent_item.id)})
+
+      reloaded = CRC.Repo.get!(CRC.Orders.OrderItem, extra_item.id)
+      assert reloaded.status == "served"
+    end
+
+    test "does NOT auto-serve extras of a DIFFERENT menu item", %{conn: conn} do
+      {conn, user} = auth_conn(conn)
+      cat = insert_category()
+      mi_a = insert_menu_item(cat.id, %{name: "Bebida A"})
+      mi_b = insert_menu_item(cat.id, %{name: "Bebida B"})
+
+      extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Extra Otro #{System.unique_integer()}",
+        category: "otros", unit: "ml",
+        net_cost: Decimal.new("0.05"),
+        stock_quantity: Decimal.new("1000"), active: true
+      })
+
+      order = insert_order(%{customer_name: "Mesa Dos Bebidas", status: "sent", user_id: user.id})
+      item_a = insert_order_item(order.id, mi_a.id, %{status: "ready"})
+      _item_b = insert_order_item(order.id, mi_b.id, %{status: "ready"})
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      extra_for_b = CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, product_id: extra_product.id,
+        for_menu_item_id: mi_b.id, quantity: 1, status: "pending",
+        inserted_at: now, updated_at: now
+      })
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      render_click(lv, "mark_item_served", %{"id" => to_string(item_a.id)})
+
+      reloaded = CRC.Repo.get!(CRC.Orders.OrderItem, extra_for_b.id)
+      assert reloaded.status == "pending"
+    end
+
+    test "does NOT auto-serve cancelled extras", %{conn: conn} do
+      {conn, user} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Café Cancelado Extra"})
+
+      extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Extra Cancelado #{System.unique_integer()}",
+        category: "otros", unit: "ml",
+        net_cost: Decimal.new("0.05"),
+        stock_quantity: Decimal.new("1000"), active: true
+      })
+
+      order = insert_order(%{customer_name: "Mesa Cancel Extra", status: "sent", user_id: user.id})
+      parent_item = insert_order_item(order.id, mi.id, %{status: "ready"})
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      cancelled_extra = CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, product_id: extra_product.id,
+        for_menu_item_id: mi.id, quantity: 1, status: "cancelled",
+        inserted_at: now, updated_at: now
+      })
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      render_click(lv, "mark_item_served", %{"id" => to_string(parent_item.id)})
+
+      reloaded = CRC.Repo.get!(CRC.Orders.OrderItem, cancelled_extra.id)
+      assert reloaded.status == "cancelled"
+    end
+
+    test "does NOT auto-serve cancelled_waste extras", %{conn: conn} do
+      {conn, user} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Café Waste Extra"})
+
+      extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Extra Waste #{System.unique_integer()}",
+        category: "otros", unit: "ml",
+        net_cost: Decimal.new("0.05"),
+        stock_quantity: Decimal.new("1000"), active: true
+      })
+
+      order = insert_order(%{customer_name: "Mesa Waste Extra", status: "sent", user_id: user.id})
+      parent_item = insert_order_item(order.id, mi.id, %{status: "ready"})
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      waste_extra = CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, product_id: extra_product.id,
+        for_menu_item_id: mi.id, quantity: 1, status: "cancelled_waste",
+        inserted_at: now, updated_at: now
+      })
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      render_click(lv, "mark_item_served", %{"id" => to_string(parent_item.id)})
+
+      reloaded = CRC.Repo.get!(CRC.Orders.OrderItem, waste_extra.id)
+      assert reloaded.status == "cancelled_waste"
     end
   end
 end

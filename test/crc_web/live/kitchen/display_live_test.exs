@@ -364,4 +364,97 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
       assert html =~ "sin chile"
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # REGRESSION Bug #3: mark_order_ready (Todo listo) must bulk-mark all
+  # sent kitchen items as ready so they leave the pending queue
+  # ---------------------------------------------------------------------------
+
+  describe "mark_order_ready — Todo listo regression" do
+    test "all sent food items in the order become ready after mark_order_ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      food_cat = insert_category("food")
+      mi1 = insert_menu_item(food_cat.id, "Taco Todo Listo 1")
+      mi2 = insert_menu_item(food_cat.id, "Taco Todo Listo 2")
+      order = insert_order(%{customer_name: "Mesa Todo Listo", status: "sent"})
+      item1 = insert_order_item(order.id, mi1.id, %{status: "sent"})
+      item2 = insert_order_item(order.id, mi2.id, %{status: "sent"})
+
+      {:ok, lv, html_before} = live(conn, "/cocina")
+      assert html_before =~ "Taco Todo Listo 1"
+      assert html_before =~ "Taco Todo Listo 2"
+
+      render_click(lv, "mark_order_ready", %{"id" => to_string(order.id)})
+
+      # Both items must be "ready" in DB
+      reloaded1 = CRC.Repo.get!(CRC.Orders.OrderItem, item1.id)
+      reloaded2 = CRC.Repo.get!(CRC.Orders.OrderItem, item2.id)
+      assert reloaded1.status == "ready"
+      assert reloaded2.status == "ready"
+    end
+
+    test "order disappears from cocina pending queue after mark_order_ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      food_cat = insert_category("food")
+      mi = insert_menu_item(food_cat.id, "Pozole Todo Listo")
+      order = insert_order(%{customer_name: "Mesa Desaparecer", status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "sent"})
+
+      {:ok, lv, html_before} = live(conn, "/cocina")
+      assert html_before =~ "Pozole Todo Listo"
+
+      html_after = render_click(lv, "mark_order_ready", %{"id" => to_string(order.id)})
+      refute html_after =~ "Pozole Todo Listo"
+    end
+
+    test "items already ready are not affected by mark_order_ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      food_cat = insert_category("food")
+      mi1 = insert_menu_item(food_cat.id, "Item Sent")
+      mi2 = insert_menu_item(food_cat.id, "Item Already Ready")
+      order = insert_order(%{customer_name: "Mesa Mixta", status: "sent"})
+      item_sent  = insert_order_item(order.id, mi1.id, %{status: "sent"})
+      item_ready = insert_order_item(order.id, mi2.id, %{status: "ready"})
+
+      {:ok, lv, _} = live(conn, "/cocina")
+      render_click(lv, "mark_order_ready", %{"id" => to_string(order.id)})
+
+      reloaded_sent  = CRC.Repo.get!(CRC.Orders.OrderItem, item_sent.id)
+      reloaded_ready = CRC.Repo.get!(CRC.Orders.OrderItem, item_ready.id)
+      assert reloaded_sent.status == "ready"
+      assert reloaded_ready.status == "ready"
+    end
+
+    test "mark_order_ready does not affect drink items (barra's responsibility)", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      food_cat  = insert_category("food")
+      drink_cat = insert_category("drink")
+      food_mi  = insert_menu_item(food_cat.id,  "Tacos Cocina Solo")
+      drink_mi = insert_menu_item(drink_cat.id, "Café Barra Solo")
+      order = insert_order(%{customer_name: "Mesa Mixta Barra", status: "sent"})
+      food_item  = insert_order_item(order.id, food_mi.id,  %{status: "sent"})
+      drink_item = insert_order_item(order.id, drink_mi.id, %{status: "sent"})
+
+      {:ok, lv, _} = live(conn, "/cocina")
+      render_click(lv, "mark_order_ready", %{"id" => to_string(order.id)})
+
+      reloaded_food  = CRC.Repo.get!(CRC.Orders.OrderItem, food_item.id)
+      reloaded_drink = CRC.Repo.get!(CRC.Orders.OrderItem, drink_item.id)
+      # Food item should be ready; drink item should remain sent (barra handles it)
+      assert reloaded_food.status == "ready"
+      assert reloaded_drink.status == "sent"
+    end
+
+    test "shows flash message after mark_order_ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      food_cat = insert_category("food")
+      mi = insert_menu_item(food_cat.id, "Platillo Flash")
+      order = insert_order(%{customer_name: "Mesa Flash Cocina", status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "sent"})
+
+      {:ok, lv, _} = live(conn, "/cocina")
+      html = render_click(lv, "mark_order_ready", %{"id" => to_string(order.id)})
+      assert html =~ "marcada como lista"
+    end
+  end
 end

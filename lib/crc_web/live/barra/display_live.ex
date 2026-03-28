@@ -3,6 +3,8 @@ defmodule CRCWeb.Barra.DisplayLive do
 
   use CRCWeb, :live_view
 
+  import CRCWeb.Layouts, only: [flash_group: 1]
+
   alias CRC.Orders
   alias CRCWeb.Components.SiteComponents
 
@@ -192,6 +194,7 @@ defmodule CRCWeb.Barra.DisplayLive do
 
       </div>
     </div>
+    <.flash_group flash={@flash} />
     """
   end
 

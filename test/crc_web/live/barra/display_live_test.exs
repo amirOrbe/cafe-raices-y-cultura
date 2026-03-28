@@ -277,7 +277,7 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       refute html =~ "Limonada Servida"
     end
 
-    test "order disappears from barra when all drinks are marked ready", %{conn: conn} do
+    test "order leaves pending queue (moves to Listos) when all drinks are marked ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       drink_cat = insert_category("drink")
       mi = insert_menu_item(drink_cat.id, "Café Final")
@@ -286,7 +286,8 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       {:ok, lv, _} = live(conn, "/barra")
 
       html = render_click(lv, "mark_item_ready", %{"id" => to_string(item.id)})
-      refute html =~ "Solo Barra"
+      # Order moves to "Listos para servir" section — no longer in pending queue
+      assert html =~ "Listos para servir"
     end
   end
 
@@ -337,8 +338,11 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       {:ok, lv, _} = live(conn, "/barra")
 
       html = render_click(lv, "mark_item_ready", %{"id" => to_string(item.id)})
+      # Item name no longer shown in the pending section (moved to ready)
       refute html =~ "Última Bebida"
-      refute html =~ "Última Mesa"
+      # Order moves to "Listos para servir" section (customer name still shown there)
+      assert html =~ "Listos para servir"
+      assert html =~ "Última Mesa"
     end
   end
 
@@ -365,6 +369,97 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
 
       {:ok, _lv, html} = live(conn, "/barra")
       assert html =~ "sin azúcar"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # REGRESSION: mark_all_drinks_ready (Todo listo barra) must bulk-mark
+  # all sent drink items as ready and move them to "Listos para servir"
+  # ---------------------------------------------------------------------------
+
+  describe "mark_all_drinks_ready — Todo listo barra regression" do
+    test "all sent drink items become ready after mark_all_drinks_ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      drink_cat = insert_category("drink")
+      mi1 = insert_menu_item(drink_cat.id, "Latte Todo Listo")
+      mi2 = insert_menu_item(drink_cat.id, "Cappuccino Todo Listo")
+      order = insert_order(%{customer_name: "Mesa Barra Listo", status: "sent"})
+      item1 = insert_order_item(order.id, mi1.id, %{status: "sent"})
+      item2 = insert_order_item(order.id, mi2.id, %{status: "sent"})
+
+      {:ok, lv, html_before} = live(conn, "/barra")
+      assert html_before =~ "Latte Todo Listo"
+
+      render_click(lv, "mark_all_drinks_ready", %{"id" => to_string(order.id)})
+
+      reloaded1 = CRC.Repo.get!(CRC.Orders.OrderItem, item1.id)
+      reloaded2 = CRC.Repo.get!(CRC.Orders.OrderItem, item2.id)
+      assert reloaded1.status == "ready"
+      assert reloaded2.status == "ready"
+    end
+
+    test "order moves out of pending queue after mark_all_drinks_ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      drink_cat = insert_category("drink")
+      mi = insert_menu_item(drink_cat.id, "Mocha Desaparece")
+      order = insert_order(%{customer_name: "Mesa Desaparece Barra", status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "sent"})
+
+      {:ok, lv, html_before} = live(conn, "/barra")
+      assert html_before =~ "Mocha Desaparece"
+
+      html_after = render_click(lv, "mark_all_drinks_ready", %{"id" => to_string(order.id)})
+      refute html_after =~ "Mocha Desaparece"
+    end
+
+    test "shows flash message after mark_all_drinks_ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      drink_cat = insert_category("drink")
+      mi = insert_menu_item(drink_cat.id, "Bebida Flash Barra")
+      order = insert_order(%{customer_name: "Mesa Flash Barra", status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "sent"})
+
+      {:ok, lv, _} = live(conn, "/barra")
+      html = render_click(lv, "mark_all_drinks_ready", %{"id" => to_string(order.id)})
+      assert html =~ "lista en barra"
+    end
+
+    test "already-ready drinks are not re-processed", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      drink_cat = insert_category("drink")
+      mi1 = insert_menu_item(drink_cat.id, "Ya Lista Barra")
+      mi2 = insert_menu_item(drink_cat.id, "Pendiente Barra")
+      order = insert_order(%{customer_name: "Mesa Mixta Barra Ready", status: "sent"})
+      item_ready = insert_order_item(order.id, mi1.id, %{status: "ready"})
+      item_sent  = insert_order_item(order.id, mi2.id, %{status: "sent"})
+
+      {:ok, lv, _} = live(conn, "/barra")
+      render_click(lv, "mark_all_drinks_ready", %{"id" => to_string(order.id)})
+
+      reloaded_ready = CRC.Repo.get!(CRC.Orders.OrderItem, item_ready.id)
+      reloaded_sent  = CRC.Repo.get!(CRC.Orders.OrderItem, item_sent.id)
+      assert reloaded_ready.status == "ready"
+      assert reloaded_sent.status == "ready"
+    end
+
+    test "food items in the same order are NOT marked ready by barra", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      drink_cat = insert_category("drink")
+      food_cat  = insert_category("food")
+      drink_mi = insert_menu_item(drink_cat.id, "Bebida Barra")
+      food_mi  = insert_menu_item(food_cat.id,  "Taco No Barra")
+      order = insert_order(%{customer_name: "Mesa Mixta Food Barra", status: "sent"})
+      drink_item = insert_order_item(order.id, drink_mi.id, %{status: "sent"})
+      food_item  = insert_order_item(order.id, food_mi.id,  %{status: "sent"})
+
+      {:ok, lv, _} = live(conn, "/barra")
+      render_click(lv, "mark_all_drinks_ready", %{"id" => to_string(order.id)})
+
+      reloaded_drink = CRC.Repo.get!(CRC.Orders.OrderItem, drink_item.id)
+      reloaded_food  = CRC.Repo.get!(CRC.Orders.OrderItem, food_item.id)
+      assert reloaded_drink.status == "ready"
+      # Food item must remain sent — barra doesn't touch it
+      assert reloaded_food.status == "sent"
     end
   end
 end

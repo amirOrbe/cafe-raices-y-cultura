@@ -809,4 +809,758 @@ defmodule CRC.OrdersTest do
       assert hd(station_stats).count == 2
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # list_closed_orders/1 — period filtering
+  # ---------------------------------------------------------------------------
+
+  describe "list_closed_orders/1" do
+    defp insert_closed_order_at(inserted_at) do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      CRC.Repo.insert!(%Order{
+        customer_name: "Historial #{System.unique_integer()}",
+        status: "closed",
+        payment_method: "tarjeta",
+        total: Decimal.new("80.00"),
+        closed_at: now,
+        inserted_at: inserted_at,
+        updated_at: now
+      })
+    end
+
+    test "returns all closed orders with :all" do
+      order = insert_closed_order_at(DateTime.utc_now() |> DateTime.truncate(:second))
+      ids = Orders.list_closed_orders(:all) |> Enum.map(& &1.id)
+      assert order.id in ids
+    end
+
+    test "does not return open orders" do
+      open = insert_order(%{status: "open"})
+      ids = Orders.list_closed_orders(:all) |> Enum.map(& &1.id)
+      refute open.id in ids
+    end
+
+    test "returns orders from this week with :week" do
+      recent = DateTime.utc_now() |> DateTime.add(-2, :day) |> DateTime.truncate(:second)
+      order = insert_closed_order_at(recent)
+      ids = Orders.list_closed_orders(:week) |> Enum.map(& &1.id)
+      assert order.id in ids
+    end
+
+    test "excludes orders older than 7 days with :week" do
+      old = DateTime.utc_now() |> DateTime.add(-10, :day) |> DateTime.truncate(:second)
+      order = insert_closed_order_at(old)
+      ids = Orders.list_closed_orders(:week) |> Enum.map(& &1.id)
+      refute order.id in ids
+    end
+
+    test "returns orders from this month with :month" do
+      recent = DateTime.utc_now() |> DateTime.add(-15, :day) |> DateTime.truncate(:second)
+      order = insert_closed_order_at(recent)
+      ids = Orders.list_closed_orders(:month) |> Enum.map(& &1.id)
+      assert order.id in ids
+    end
+
+    test "excludes orders older than 30 days with :month" do
+      old = DateTime.utc_now() |> DateTime.add(-35, :day) |> DateTime.truncate(:second)
+      order = insert_closed_order_at(old)
+      ids = Orders.list_closed_orders(:month) |> Enum.map(& &1.id)
+      refute order.id in ids
+    end
+
+    test "filters by date range {:range, date_from, date_to}" do
+      target_dt = ~U[2026-03-10 12:00:00Z]
+      order = insert_closed_order_at(target_dt)
+
+      ids =
+        Orders.list_closed_orders({:range, ~D[2026-03-10], ~D[2026-03-10]})
+        |> Enum.map(& &1.id)
+
+      assert order.id in ids
+    end
+
+    test "excludes orders outside date range" do
+      outside_dt = ~U[2026-03-05 12:00:00Z]
+      order = insert_closed_order_at(outside_dt)
+
+      ids =
+        Orders.list_closed_orders({:range, ~D[2026-03-10], ~D[2026-03-15]})
+        |> Enum.map(& &1.id)
+
+      refute order.id in ids
+    end
+
+    # REGRESSION: Timezone bug — "Hoy" showing $0 when server is UTC, café is UTC-6
+    test ":today returns orders created within current local day (UTC-6 offset)" do
+      # An order created right now (UTC) must appear in :today regardless of local offset
+      # because 'now' is always within 'today' in any negative offset
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      order = insert_closed_order_at(now)
+      ids = Orders.list_closed_orders(:today) |> Enum.map(& &1.id)
+      assert order.id in ids
+    end
+
+    test ":today excludes orders from 48 hours ago" do
+      old = DateTime.utc_now() |> DateTime.add(-48, :hour) |> DateTime.truncate(:second)
+      order = insert_closed_order_at(old)
+      ids = Orders.list_closed_orders(:today) |> Enum.map(& &1.id)
+      refute order.id in ids
+    end
+
+    test "returns newest first" do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      older = insert_closed_order_at(DateTime.add(now, -3600, :second))
+      newer = insert_closed_order_at(now)
+      [first | _] = Orders.list_closed_orders(:all) |> Enum.filter(&(&1.id in [older.id, newer.id]))
+      assert first.id == newer.id
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # list_orders_history/2
+  # ---------------------------------------------------------------------------
+
+  describe "list_orders_history/2" do
+    test "returns closed orders with user preloaded" do
+      user = insert_user(%{name: "Mesero Historial"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      CRC.Repo.insert!(%Order{
+        customer_name: "Test Hist",
+        status: "closed",
+        payment_method: "efectivo",
+        amount_paid: Decimal.new("50.00"),
+        total: Decimal.new("50.00"),
+        closed_at: now,
+        user_id: user.id,
+        inserted_at: now,
+        updated_at: now
+      })
+
+      results = Orders.list_orders_history(:all)
+      [loaded | _] = Enum.filter(results, &(&1.user_id == user.id))
+      assert loaded.user.name == "Mesero Historial"
+    end
+
+    test "filters by user_id when provided" do
+      u1 = insert_user(%{name: "User A"})
+      u2 = insert_user(%{name: "User B"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      o1 = CRC.Repo.insert!(%Order{
+        customer_name: "Para U1", status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("40.00"), closed_at: now, user_id: u1.id,
+        inserted_at: now, updated_at: now
+      })
+      CRC.Repo.insert!(%Order{
+        customer_name: "Para U2", status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("40.00"), closed_at: now, user_id: u2.id,
+        inserted_at: now, updated_at: now
+      })
+
+      results = Orders.list_orders_history(:all, user_id: u1.id)
+      ids = Enum.map(results, & &1.id)
+      assert o1.id in ids
+      refute Enum.any?(results, &(&1.user_id == u2.id))
+    end
+
+    test "returns all orders when user_id is nil (admin view)" do
+      u1 = insert_user(%{name: "Uno"})
+      u2 = insert_user(%{name: "Dos"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      o1 = CRC.Repo.insert!(%Order{
+        customer_name: "Comanda A", status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("30.00"), closed_at: now, user_id: u1.id,
+        inserted_at: now, updated_at: now
+      })
+      o2 = CRC.Repo.insert!(%Order{
+        customer_name: "Comanda B", status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("30.00"), closed_at: now, user_id: u2.id,
+        inserted_at: now, updated_at: now
+      })
+
+      ids = Orders.list_orders_history(:all) |> Enum.map(& &1.id)
+      assert o1.id in ids
+      assert o2.id in ids
+    end
+
+    test "excludes open orders" do
+      open = insert_order(%{status: "open"})
+      ids = Orders.list_orders_history(:all) |> Enum.map(& &1.id)
+      refute open.id in ids
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # list_waiters_with_history/0
+  # ---------------------------------------------------------------------------
+
+  describe "list_waiters_with_history/0" do
+    test "returns users who created at least one closed order" do
+      user = insert_user(%{name: "Mesero Con Historial"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      CRC.Repo.insert!(%Order{
+        customer_name: "Comanda", status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("50.00"), closed_at: now, user_id: user.id,
+        inserted_at: now, updated_at: now
+      })
+
+      results = Orders.list_waiters_with_history()
+      assert Enum.any?(results, &(&1.id == user.id))
+    end
+
+    test "does not return users without closed orders" do
+      user = insert_user(%{name: "Sin Historial"})
+      # No closed orders for this user
+      results = Orders.list_waiters_with_history()
+      refute Enum.any?(results, &(&1.id == user.id))
+    end
+
+    test "returns each user only once even with multiple closed orders" do
+      user = insert_user(%{name: "Mesero Duplicado"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      for _ <- 1..3 do
+        CRC.Repo.insert!(%Order{
+          customer_name: "Comanda #{System.unique_integer()}",
+          status: "closed", payment_method: "tarjeta",
+          total: Decimal.new("50.00"), closed_at: now, user_id: user.id,
+          inserted_at: now, updated_at: now
+        })
+      end
+
+      results = Orders.list_waiters_with_history()
+      count = Enum.count(results, &(&1.id == user.id))
+      assert count == 1
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # sales_summary/1
+  # ---------------------------------------------------------------------------
+
+  describe "sales_summary/1" do
+    defp insert_closed_order_with_total(total, payment_method \\ "tarjeta") do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      CRC.Repo.insert!(%Order{
+        customer_name: "Ventas #{System.unique_integer()}",
+        status: "closed",
+        payment_method: payment_method,
+        total: Decimal.new(total),
+        closed_at: now,
+        inserted_at: now,
+        updated_at: now
+      })
+    end
+
+    test "returns zeros when no closed orders" do
+      future = Date.utc_today() |> Date.add(365)
+      future2 = Date.add(future, 1)
+      summary = Orders.sales_summary({:range, future, future2})
+
+      assert Decimal.equal?(summary.total_revenue, Decimal.new(0))
+      assert summary.order_count == 0
+      assert Decimal.equal?(summary.avg_ticket, Decimal.new(0))
+    end
+
+    test "calculates total revenue" do
+      o1 = insert_closed_order_with_total("100.00")
+      o2 = insert_closed_order_with_total("200.00")
+
+      summary = Orders.sales_summary(:all)
+      ids_total = Enum.filter(
+        Orders.list_closed_orders(:all),
+        &(&1.id in [o1.id, o2.id])
+      ) |> Enum.reduce(Decimal.new(0), &Decimal.add(&2, &1.total))
+
+      assert Decimal.compare(summary.total_revenue, ids_total) != :lt
+    end
+
+    test "calculates order_count" do
+      before_count = Orders.sales_summary(:all).order_count
+      insert_closed_order_with_total("50.00")
+      insert_closed_order_with_total("50.00")
+      after_count = Orders.sales_summary(:all).order_count
+      assert after_count == before_count + 2
+    end
+
+    test "calculates avg_ticket" do
+      future = Date.utc_today() |> Date.add(100)
+      future2 = Date.add(future, 30)
+
+      # Insert directly with a future date to isolate
+      d1 = ~U[2027-06-01 10:00:00Z]
+      CRC.Repo.insert!(%Order{
+        customer_name: "Avg A", status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("100.00"), closed_at: d1,
+        inserted_at: d1, updated_at: d1
+      })
+      CRC.Repo.insert!(%Order{
+        customer_name: "Avg B", status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("200.00"), closed_at: d1,
+        inserted_at: d1, updated_at: d1
+      })
+
+      summary = Orders.sales_summary({:range, ~D[2027-06-01], ~D[2027-06-01]})
+      assert Decimal.equal?(summary.avg_ticket, Decimal.new("150.00"))
+    end
+
+    test "groups revenue by payment method" do
+      d = ~U[2027-07-01 10:00:00Z]
+      CRC.Repo.insert!(%Order{
+        customer_name: "Efectivo 1", status: "closed", payment_method: "efectivo",
+        total: Decimal.new("300.00"), amount_paid: Decimal.new("300.00"),
+        closed_at: d, inserted_at: d, updated_at: d
+      })
+      CRC.Repo.insert!(%Order{
+        customer_name: "Tarjeta 1", status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("150.00"),
+        closed_at: d, inserted_at: d, updated_at: d
+      })
+
+      summary = Orders.sales_summary({:range, ~D[2027-07-01], ~D[2027-07-01]})
+      assert Decimal.equal?(summary.by_method["efectivo"], Decimal.new("300.00"))
+      assert Decimal.equal?(summary.by_method["tarjeta"], Decimal.new("150.00"))
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # financial_summary/1
+  # ---------------------------------------------------------------------------
+
+  describe "financial_summary/1" do
+    # Isolated date so no other tests interfere
+    @fin_date ~U[2027-08-15 12:00:00Z]
+    @fin_date_range {:range, ~D[2027-08-15], ~D[2027-08-15]}
+
+    defp insert_product_with_cost(net_cost) do
+      CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Ingrediente #{System.unique_integer()}",
+        category: "granos",
+        unit: "g",
+        net_cost: Decimal.new(net_cost),
+        stock_quantity: Decimal.new("1000"),
+        active: true
+      })
+    end
+
+    defp link_ingredient(menu_item_id, product_id, quantity) do
+      CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+        menu_item_id: menu_item_id,
+        product_id: product_id,
+        quantity: Decimal.new(quantity)
+      })
+    end
+
+    test "returns zeros when no closed orders in period" do
+      future = {:range, ~D[2030-01-01], ~D[2030-01-02]}
+      summary = Orders.financial_summary(future)
+
+      assert Decimal.equal?(summary.revenue, Decimal.new(0))
+      assert Decimal.equal?(summary.cogs, Decimal.new(0))
+      assert Decimal.equal?(summary.gross_profit, Decimal.new(0))
+      assert Decimal.equal?(summary.waste_cost, Decimal.new(0))
+      assert Decimal.equal?(summary.net_profit, Decimal.new(0))
+    end
+
+    test "calculates revenue from closed orders" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{price: "100.00"})
+
+      order = CRC.Repo.insert!(%Order{
+        customer_name: "Rev Test",
+        status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("100.00"),
+        closed_at: @fin_date, inserted_at: @fin_date, updated_at: @fin_date
+      })
+      CRC.Repo.insert!(%OrderItem{
+        order_id: order.id, menu_item_id: mi.id, quantity: 1,
+        status: "served", inserted_at: @fin_date, updated_at: @fin_date
+      })
+
+      summary = Orders.financial_summary(@fin_date_range)
+      assert Decimal.equal?(summary.revenue, Decimal.new("100.00"))
+    end
+
+    test "calculates COGS as ingredient_qty × net_cost × order_qty" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{price: "80.00"})
+      product = insert_product_with_cost("5.00")
+      # 10 units of ingredient per portion, net_cost 5.00 → cost per portion = 50.00
+      link_ingredient(mi.id, product.id, "10")
+
+      order = CRC.Repo.insert!(%Order{
+        customer_name: "COGS Test",
+        status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("80.00"),
+        closed_at: @fin_date, inserted_at: @fin_date, updated_at: @fin_date
+      })
+      # qty 2 → COGS = 2 × 10 × 5.00 = 100.00
+      CRC.Repo.insert!(%OrderItem{
+        order_id: order.id, menu_item_id: mi.id, quantity: 2,
+        status: "served", inserted_at: @fin_date, updated_at: @fin_date
+      })
+
+      summary = Orders.financial_summary(@fin_date_range)
+      assert Decimal.equal?(summary.cogs, Decimal.new("100.00"))
+    end
+
+    test "calculates gross_profit = revenue - cogs" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{price: "50.00"})
+      product = insert_product_with_cost("2.00")
+      link_ingredient(mi.id, product.id, "5")
+      # COGS per unit = 5 × 2.00 = 10.00; revenue = 50.00; gross = 40.00
+
+      d = ~U[2027-08-16 12:00:00Z]
+      order = CRC.Repo.insert!(%Order{
+        customer_name: "Profit Test",
+        status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("50.00"),
+        closed_at: d, inserted_at: d, updated_at: d
+      })
+      CRC.Repo.insert!(%OrderItem{
+        order_id: order.id, menu_item_id: mi.id, quantity: 1,
+        status: "served", inserted_at: d, updated_at: d
+      })
+
+      summary = Orders.financial_summary({:range, ~D[2027-08-16], ~D[2027-08-16]})
+      assert Decimal.equal?(summary.gross_profit, Decimal.new("40.00"))
+    end
+
+    test "calculates margin_pct as percentage of revenue" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{price: "100.00"})
+      product = insert_product_with_cost("2.00")
+      link_ingredient(mi.id, product.id, "10")
+      # COGS = 10 × 2.00 = 20.00; revenue = 100.00; gross = 80.00; margin = 80%
+
+      d = ~U[2027-08-17 12:00:00Z]
+      order = CRC.Repo.insert!(%Order{
+        customer_name: "Margin Test",
+        status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("100.00"),
+        closed_at: d, inserted_at: d, updated_at: d
+      })
+      CRC.Repo.insert!(%OrderItem{
+        order_id: order.id, menu_item_id: mi.id, quantity: 1,
+        status: "served", inserted_at: d, updated_at: d
+      })
+
+      summary = Orders.financial_summary({:range, ~D[2027-08-17], ~D[2027-08-17]})
+      assert Decimal.equal?(summary.margin_pct, Decimal.new("80.0"))
+    end
+
+    test "calculates waste_cost from cancelled_waste items" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{price: "60.00"})
+      product = insert_product_with_cost("3.00")
+      link_ingredient(mi.id, product.id, "4")
+      # waste cost = 1 × 4 × 3.00 = 12.00
+
+      d = ~U[2027-08-18 12:00:00Z]
+      order = CRC.Repo.insert!(%Order{
+        customer_name: "Waste Test",
+        status: "sent", payment_method: nil,
+        total: nil,
+        inserted_at: d, updated_at: d
+      })
+      CRC.Repo.insert!(%OrderItem{
+        order_id: order.id, menu_item_id: mi.id, quantity: 1,
+        status: "cancelled_waste", inserted_at: d, updated_at: d
+      })
+
+      summary = Orders.financial_summary({:range, ~D[2027-08-18], ~D[2027-08-18]})
+      assert Decimal.equal?(summary.waste_cost, Decimal.new("12.00"))
+    end
+
+    test "net_profit = gross_profit - waste_cost" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{price: "100.00"})
+      product = insert_product_with_cost("1.00")
+      link_ingredient(mi.id, product.id, "10")
+      # COGS = 10.00; revenue = 100.00; gross = 90.00
+
+      d = ~U[2027-08-19 12:00:00Z]
+      order = CRC.Repo.insert!(%Order{
+        customer_name: "Net Test",
+        status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("100.00"),
+        closed_at: d, inserted_at: d, updated_at: d
+      })
+      CRC.Repo.insert!(%OrderItem{
+        order_id: order.id, menu_item_id: mi.id, quantity: 1,
+        status: "served", inserted_at: d, updated_at: d
+      })
+      # Waste: 1 item × 10 × 1.00 = 10.00
+      waste_order = CRC.Repo.insert!(%Order{
+        customer_name: "Waste Order",
+        status: "sent", payment_method: nil, total: nil,
+        inserted_at: d, updated_at: d
+      })
+      CRC.Repo.insert!(%OrderItem{
+        order_id: waste_order.id, menu_item_id: mi.id, quantity: 1,
+        status: "cancelled_waste", inserted_at: d, updated_at: d
+      })
+
+      summary = Orders.financial_summary({:range, ~D[2027-08-19], ~D[2027-08-19]})
+      # gross = 90.00, waste = 10.00, net = 80.00
+      assert Decimal.equal?(summary.net_profit, Decimal.new("80.00"))
+    end
+
+    test "excludes cancelled (non-waste) items from COGS" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{price: "50.00"})
+      product = insert_product_with_cost("5.00")
+      link_ingredient(mi.id, product.id, "2")
+
+      d = ~U[2027-08-20 12:00:00Z]
+      order = CRC.Repo.insert!(%Order{
+        customer_name: "Cancel Test",
+        status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("0.00"),
+        closed_at: d, inserted_at: d, updated_at: d
+      })
+      # Only cancelled item — should not contribute to COGS
+      CRC.Repo.insert!(%OrderItem{
+        order_id: order.id, menu_item_id: mi.id, quantity: 1,
+        status: "cancelled", inserted_at: d, updated_at: d
+      })
+
+      summary = Orders.financial_summary({:range, ~D[2027-08-20], ~D[2027-08-20]})
+      assert Decimal.equal?(summary.cogs, Decimal.new("0"))
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # top_wasted_items/2
+  # ---------------------------------------------------------------------------
+
+  describe "top_wasted_items/2" do
+    test "returns items sorted by wasted quantity descending" do
+      cat = insert_category()
+      mi_a = insert_menu_item(cat.id, %{name: "Platillo A Top Waste"})
+      mi_b = insert_menu_item(cat.id, %{name: "Platillo B Low Waste"})
+
+      product = CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Ing Waste #{System.unique_integer()}",
+        category: "otros", unit: "g",
+        net_cost: Decimal.new("1.00"),
+        stock_quantity: Decimal.new("500"), active: true
+      })
+
+      CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+        menu_item_id: mi_a.id, product_id: product.id, quantity: Decimal.new("1")
+      })
+      CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+        menu_item_id: mi_b.id, product_id: product.id, quantity: Decimal.new("1")
+      })
+
+      d = ~U[2027-09-01 10:00:00Z]
+      order = CRC.Repo.insert!(%Order{
+        customer_name: "Waste Order", status: "sent",
+        payment_method: nil, total: nil, inserted_at: d, updated_at: d
+      })
+
+      # mi_a wasted 3, mi_b wasted 1
+      CRC.Repo.insert!(%OrderItem{
+        order_id: order.id, menu_item_id: mi_a.id, quantity: 3,
+        status: "cancelled_waste", inserted_at: d, updated_at: d
+      })
+      CRC.Repo.insert!(%OrderItem{
+        order_id: order.id, menu_item_id: mi_b.id, quantity: 1,
+        status: "cancelled_waste", inserted_at: d, updated_at: d
+      })
+
+      results = Orders.top_wasted_items({:range, ~D[2027-09-01], ~D[2027-09-01]})
+      names = Enum.map(results, & &1.name)
+
+      assert "Platillo A Top Waste" in names
+      assert "Platillo B Low Waste" in names
+      # A should come before B (sorted by qty desc)
+      a_pos = Enum.find_index(names, &(&1 == "Platillo A Top Waste"))
+      b_pos = Enum.find_index(names, &(&1 == "Platillo B Low Waste"))
+      assert a_pos < b_pos
+    end
+
+    test "calculates cost for each wasted item" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Platillo Costo Waste"})
+      product = CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Ing Cost #{System.unique_integer()}",
+        category: "otros", unit: "ml",
+        net_cost: Decimal.new("4.00"),
+        stock_quantity: Decimal.new("500"), active: true
+      })
+      CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+        menu_item_id: mi.id, product_id: product.id, quantity: Decimal.new("5")
+      })
+
+      d = ~U[2027-09-02 10:00:00Z]
+      order = CRC.Repo.insert!(%Order{
+        customer_name: "Cost Waste", status: "sent",
+        payment_method: nil, total: nil, inserted_at: d, updated_at: d
+      })
+      # qty=2 → cost = 2 × 5 × 4.00 = 40.00
+      CRC.Repo.insert!(%OrderItem{
+        order_id: order.id, menu_item_id: mi.id, quantity: 2,
+        status: "cancelled_waste", inserted_at: d, updated_at: d
+      })
+
+      results = Orders.top_wasted_items({:range, ~D[2027-09-02], ~D[2027-09-02]})
+      item = Enum.find(results, &(&1.name == "Platillo Costo Waste"))
+      refute is_nil(item)
+      assert Decimal.equal?(item.cost, Decimal.new("40.00"))
+    end
+
+    test "returns empty list when no waste in period" do
+      future = {:range, ~D[2035-01-01], ~D[2035-01-01]}
+      assert Orders.top_wasted_items(future) == []
+    end
+
+    test "respects the limit parameter" do
+      cat = insert_category()
+      d = ~U[2027-09-03 10:00:00Z]
+      order = CRC.Repo.insert!(%Order{
+        customer_name: "Limit Test", status: "sent",
+        payment_method: nil, total: nil, inserted_at: d, updated_at: d
+      })
+      product = CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Ing Limit #{System.unique_integer()}",
+        category: "otros", unit: "g",
+        net_cost: Decimal.new("1.00"),
+        stock_quantity: Decimal.new("999"), active: true
+      })
+
+      for _ <- 1..5 do
+        mi = insert_menu_item(cat.id, %{name: "Item Limit #{System.unique_integer()}"})
+        CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+          menu_item_id: mi.id, product_id: product.id, quantity: Decimal.new("1")
+        })
+        CRC.Repo.insert!(%OrderItem{
+          order_id: order.id, menu_item_id: mi.id, quantity: 1,
+          status: "cancelled_waste", inserted_at: d, updated_at: d
+        })
+      end
+
+      results = Orders.top_wasted_items({:range, ~D[2027-09-03], ~D[2027-09-03]}, 3)
+      assert length(results) == 3
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # top_selling_items/2
+  # ---------------------------------------------------------------------------
+
+  describe "top_selling_items/2" do
+    test "returns items with highest total quantity sold" do
+      cat = insert_category()
+      mi_top = insert_menu_item(cat.id, %{name: "Best Seller Test"})
+      mi_low = insert_menu_item(cat.id, %{name: "Slow Seller Test"})
+
+      d = ~U[2027-10-01 10:00:00Z]
+      order = CRC.Repo.insert!(%Order{
+        customer_name: "Top Seller", status: "closed",
+        payment_method: "tarjeta", total: Decimal.new("100.00"),
+        closed_at: d, inserted_at: d, updated_at: d
+      })
+      CRC.Repo.insert!(%OrderItem{
+        order_id: order.id, menu_item_id: mi_top.id, quantity: 5,
+        status: "served", inserted_at: d, updated_at: d
+      })
+      CRC.Repo.insert!(%OrderItem{
+        order_id: order.id, menu_item_id: mi_low.id, quantity: 1,
+        status: "served", inserted_at: d, updated_at: d
+      })
+
+      results = Orders.top_selling_items({:range, ~D[2027-10-01], ~D[2027-10-01]})
+      names = Enum.map(results, fn {name, _} -> name end)
+      assert "Best Seller Test" in names
+      top_pos = Enum.find_index(names, &(&1 == "Best Seller Test"))
+      low_pos = Enum.find_index(names, &(&1 == "Slow Seller Test"))
+      assert top_pos < low_pos
+    end
+
+    test "returns empty list when no closed orders" do
+      future = {:range, ~D[2035-06-01], ~D[2035-06-01]}
+      assert Orders.top_selling_items(future) == []
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # mark_item_served/2
+  # ---------------------------------------------------------------------------
+
+  describe "mark_item_served/2" do
+    test "sets item status to 'served'" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "sent"})
+      item = insert_order_item(order.id, mi.id, %{status: "ready"})
+
+      assert {:ok, updated} = Orders.mark_item_served(item.id)
+      assert updated.status == "served"
+    end
+
+    test "sets served_at timestamp" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "sent"})
+      item = insert_order_item(order.id, mi.id, %{status: "ready"})
+
+      {:ok, updated} = Orders.mark_item_served(item.id)
+      refute is_nil(updated.served_at)
+    end
+
+    test "records served_by_id when provided" do
+      user = insert_user()
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "sent", user_id: user.id})
+      item = insert_order_item(order.id, mi.id, %{status: "ready"})
+
+      {:ok, updated} = Orders.mark_item_served(item.id, user.id)
+      assert updated.served_by_id == user.id
+    end
+
+    test "served_by_id is nil when not provided" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id, %{status: "ready"})
+
+      {:ok, updated} = Orders.mark_item_served(item.id)
+      assert is_nil(updated.served_by_id)
+    end
+
+    test "returns {:error, :not_found} for unknown item id" do
+      assert {:error, :not_found} = Orders.mark_item_served(0)
+    end
+
+    test "broadcasts order_updated" do
+      Phoenix.PubSub.subscribe(CRC.PubSub, "orders")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id, %{status: "ready"})
+
+      {:ok, _} = Orders.mark_item_served(item.id)
+      order_id = order.id
+      assert_receive {:order_updated, ^order_id}
+    end
+
+    test "can serve item in any active status (pending, sent, ready)" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+
+      for status <- ["pending", "sent", "ready"] do
+        item = insert_order_item(order.id, mi.id, %{status: status})
+        assert {:ok, updated} = Orders.mark_item_served(item.id)
+        assert updated.status == "served"
+      end
+    end
+  end
 end

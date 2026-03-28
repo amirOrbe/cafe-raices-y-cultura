@@ -107,13 +107,13 @@ defmodule CRCWeb.HomeLiveTest do
       assert html =~ "Panel"
     end
 
-    test "logged-in cliente does NOT see Panel link but sees Salir", %{conn: conn} do
+    test "logged-in cliente does NOT see Panel link but sees logout option", %{conn: conn} do
       cliente = insert_user(%{role: "cliente"})
       conn = log_in(conn, cliente)
 
       {:ok, _lv, html} = live(conn, ~p"/")
       refute html =~ "Panel"
-      assert html =~ "Salir"
+      assert html =~ "Cerrar sesión"
     end
 
     test "current_user is loaded from session", %{conn: conn} do

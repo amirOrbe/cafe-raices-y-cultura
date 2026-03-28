@@ -153,7 +153,7 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       assert hd(reloaded.order_items).status == "ready"
     end
 
-    test "shows Listo badge after marking ready", %{conn: conn} do
+    test "removes drink from queue after marking it ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       drink_cat = insert_category("drink")
       mi = insert_menu_item(drink_cat.id, "Tepache")
@@ -162,7 +162,8 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       {:ok, lv, _} = live(conn, "/barra")
 
       html = render_click(lv, "mark_item_ready", %{"id" => to_string(item.id)})
-      assert html =~ "Listo"
+      # Item moves to "ready" — disappears from the bar queue
+      refute html =~ "Tepache"
     end
   end
 
@@ -240,7 +241,7 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
   end
 
   describe "drink item with ready status" do
-    test "shows Listo badge for ready drink items", %{conn: conn} do
+    test "does NOT show already-ready drinks in the pending queue", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       drink_cat = insert_category("drink")
       mi = insert_menu_item(drink_cat.id, "Agua Lista")
@@ -248,7 +249,96 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       insert_order_item(order.id, mi.id, %{status: "ready"})
 
       {:ok, _lv, html} = live(conn, "/barra")
-      assert html =~ "Listo"
+      # Already-ready drinks must not resurface in the bar queue
+      refute html =~ "Agua Lista"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Bug regression: second-batch sends must not resurface already-ready drinks
+  # ---------------------------------------------------------------------------
+
+  describe "second batch does not resurface ready drinks (Bug 1)" do
+    test "only shows newly-sent drinks when a second batch arrives", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      drink_cat = insert_category("drink")
+      mi1 = insert_menu_item(drink_cat.id, "Limonada Servida")
+      mi2 = insert_menu_item(drink_cat.id, "Horchata Nueva")
+      order = insert_order(%{customer_name: "Mesa Segundas Barra", status: "sent"})
+
+      # First batch: mi1 already served (ready)
+      insert_order_item(order.id, mi1.id, %{status: "ready"})
+      # Second batch: mi2 newly sent
+      insert_order_item(order.id, mi2.id, %{status: "sent"})
+
+      {:ok, _lv, html} = live(conn, "/barra")
+
+      assert html =~ "Horchata Nueva"
+      refute html =~ "Limonada Servida"
+    end
+
+    test "order disappears from barra when all drinks are marked ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      drink_cat = insert_category("drink")
+      mi = insert_menu_item(drink_cat.id, "Café Final")
+      order = insert_order(%{customer_name: "Solo Barra", status: "sent"})
+      item = insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, lv, _} = live(conn, "/barra")
+
+      html = render_click(lv, "mark_item_ready", %{"id" => to_string(item.id)})
+      refute html =~ "Solo Barra"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Bug regression: barra must show orders whose status advanced to "ready"
+  # while a drink item is still "sent" (Bug 2)
+  # ---------------------------------------------------------------------------
+
+  describe "pending drinks visible when order status is ready (Bug 2)" do
+    test "shows order in barra if a drink is still sent, even when order.status == ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      drink_cat = insert_category("drink")
+      mi = insert_menu_item(drink_cat.id, "Refresco Pendiente")
+      # Simulate: kitchen used mark_order_ready while 1 drink was still "sent"
+      order = insert_order(%{customer_name: "Orden Casi Lista", status: "ready"})
+      insert_order_item(order.id, mi.id, %{status: "sent"})
+
+      {:ok, _lv, html} = live(conn, "/barra")
+      assert html =~ "Refresco Pendiente"
+    end
+
+    test "partial mark: 3 of 4 drinks ready — remaining sent drink still shows", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      drink_cat = insert_category("drink")
+      mi_a = insert_menu_item(drink_cat.id, "Bebida A")
+      mi_b = insert_menu_item(drink_cat.id, "Bebida B")
+      mi_c = insert_menu_item(drink_cat.id, "Bebida C")
+      mi_d = insert_menu_item(drink_cat.id, "Bebida D Pendiente")
+      order = insert_order(%{customer_name: "Cuatro Bebidas", status: "sent"})
+      insert_order_item(order.id, mi_a.id, %{status: "ready"})
+      insert_order_item(order.id, mi_b.id, %{status: "ready"})
+      insert_order_item(order.id, mi_c.id, %{status: "ready"})
+      insert_order_item(order.id, mi_d.id, %{status: "sent"})
+
+      {:ok, _lv, html} = live(conn, "/barra")
+      assert html =~ "Bebida D Pendiente"
+      refute html =~ "Bebida A"
+      refute html =~ "Bebida B"
+      refute html =~ "Bebida C"
+    end
+
+    test "order disappears from barra once all drinks (including last one) are ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      drink_cat = insert_category("drink")
+      mi = insert_menu_item(drink_cat.id, "Última Bebida")
+      order = insert_order(%{customer_name: "Última Mesa", status: "ready"})
+      item = insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, lv, _} = live(conn, "/barra")
+
+      html = render_click(lv, "mark_item_ready", %{"id" => to_string(item.id)})
+      refute html =~ "Última Bebida"
+      refute html =~ "Última Mesa"
     end
   end
 

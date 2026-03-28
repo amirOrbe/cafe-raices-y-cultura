@@ -189,6 +189,107 @@ defmodule CRCWeb.Waiter.TableLiveTest do
     end
   end
 
+  # ---------------------------------------------------------------------------
+  # Visual indicators: overdue, drinks-ready, all-ready
+  # ---------------------------------------------------------------------------
+
+  describe "overdue indicator" do
+    test "shows +15 min badge when sent item has sent_at > 15 min ago", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      alias CRC.Catalog
+
+      {:ok, cat} = Catalog.create_category(%{name: "Cat Overdue", kind: "food"})
+      {:ok, mi} = Catalog.create_menu_item(%{name: "Platillo Lento", price: "80.00", category_id: cat.id})
+      order = insert_order(%{customer_name: "Overdue Test", status: "sent"})
+
+      old_sent_at = DateTime.utc_now() |> DateTime.add(-20 * 60, :second) |> DateTime.truncate(:second)
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi.id,
+        quantity: 1, status: "sent", sent_at: old_sent_at,
+        inserted_at: old_sent_at, updated_at: old_sent_at
+      })
+
+      {:ok, _lv, html} = live(conn, "/mesa")
+      assert html =~ "+15 min"
+    end
+
+    test "does not show +15 min badge for recently sent items", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      alias CRC.Catalog
+
+      {:ok, cat} = Catalog.create_category(%{name: "Cat Fresh", kind: "food"})
+      {:ok, mi} = Catalog.create_menu_item(%{name: "Platillo Rapido", price: "80.00", category_id: cat.id})
+      order = insert_order(%{customer_name: "Fresh Test", status: "sent"})
+
+      recent_sent_at = DateTime.utc_now() |> DateTime.add(-5 * 60, :second) |> DateTime.truncate(:second)
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi.id,
+        quantity: 1, status: "sent", sent_at: recent_sent_at,
+        inserted_at: recent_sent_at, updated_at: recent_sent_at
+      })
+
+      {:ok, _lv, html} = live(conn, "/mesa")
+      refute html =~ "+15 min"
+    end
+  end
+
+  describe "drinks-ready indicator" do
+    test "shows Bebidas listas badge when drinks ready but food pending", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      alias CRC.Catalog
+
+      {:ok, drink_cat} = Catalog.create_category(%{name: "Bebidas Test", kind: "drink"})
+      {:ok, food_cat}  = Catalog.create_category(%{name: "Comida Test", kind: "food"})
+      {:ok, mi_drink}  = Catalog.create_menu_item(%{name: "Refresco", price: "30.00", category_id: drink_cat.id})
+      {:ok, mi_food}   = Catalog.create_menu_item(%{name: "Taco", price: "60.00", category_id: food_cat.id})
+
+      order = insert_order(%{customer_name: "Drinks Ready", status: "sent"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi_drink.id,
+        quantity: 1, status: "ready", sent_at: now, ready_at: now,
+        inserted_at: now, updated_at: now
+      })
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi_food.id,
+        quantity: 1, status: "sent", sent_at: now,
+        inserted_at: now, updated_at: now
+      })
+
+      {:ok, _lv, html} = live(conn, "/mesa")
+      assert html =~ "Bebidas listas"
+    end
+
+    test "does not show Bebidas listas when food is also ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      alias CRC.Catalog
+
+      {:ok, drink_cat} = Catalog.create_category(%{name: "Beb All Ready", kind: "drink"})
+      {:ok, food_cat}  = Catalog.create_category(%{name: "Com All Ready", kind: "food"})
+      {:ok, mi_drink}  = Catalog.create_menu_item(%{name: "Agua", price: "20.00", category_id: drink_cat.id})
+      {:ok, mi_food}   = Catalog.create_menu_item(%{name: "Sopa", price: "50.00", category_id: food_cat.id})
+
+      order = insert_order(%{customer_name: "All Ready", status: "ready"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi_drink.id,
+        quantity: 1, status: "ready", sent_at: now, ready_at: now,
+        inserted_at: now, updated_at: now
+      })
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi_food.id,
+        quantity: 1, status: "ready", sent_at: now, ready_at: now,
+        inserted_at: now, updated_at: now
+      })
+
+      {:ok, _lv, html} = live(conn, "/mesa")
+      refute html =~ "Bebidas listas"
+      assert html =~ "Lista para servir"
+    end
+  end
+
   describe "order item count on cards" do
     test "shows Sin artículos when order has no items", %{conn: conn} do
       {conn, _} = auth_conn(conn)

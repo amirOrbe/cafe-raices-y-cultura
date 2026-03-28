@@ -158,7 +158,7 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
       assert hd(reloaded.order_items).status == "ready"
     end
 
-    test "shows Listo badge after marking item ready", %{conn: conn} do
+    test "removes item from queue after marking it ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       food_cat = insert_category("food")
       mi = insert_menu_item(food_cat.id, "Caldo")
@@ -167,7 +167,8 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
       {:ok, lv, _} = live(conn, "/cocina")
 
       html = render_click(lv, "mark_item_ready", %{"id" => to_string(item.id)})
-      assert html =~ "Listo"
+      # Item moves to "ready" — disappears from the pending queue
+      refute html =~ "Caldo"
     end
   end
 
@@ -282,7 +283,7 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
   end
 
   describe "food item with ready status" do
-    test "shows Listo badge for ready food items", %{conn: conn} do
+    test "does NOT show already-ready items in the pending queue", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       food_cat = insert_category("food")
       mi = insert_menu_item(food_cat.id, "Sopa Lista")
@@ -290,7 +291,64 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
       insert_order_item(order.id, mi.id, %{status: "ready"})
 
       {:ok, _lv, html} = live(conn, "/cocina")
-      assert html =~ "Listo"
+      # Ready items must not resurface in the cooking queue
+      refute html =~ "Sopa Lista"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Bug regression: second-batch sends must not resurface already-ready items
+  # ---------------------------------------------------------------------------
+
+  describe "second batch does not resurface ready items (Bug 1)" do
+    test "only shows newly-sent items when a second batch arrives", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      food_cat = insert_category("food")
+      mi1 = insert_menu_item(food_cat.id, "Tamal")
+      mi2 = insert_menu_item(food_cat.id, "Mole")
+      order = insert_order(%{customer_name: "Mesa Segundas", status: "sent"})
+
+      # First batch: mi1 sent and already marked ready
+      insert_order_item(order.id, mi1.id, %{status: "ready"})
+      # Second batch: mi2 newly sent
+      insert_order_item(order.id, mi2.id, %{status: "sent"})
+
+      {:ok, _lv, html} = live(conn, "/cocina")
+
+      # Only the new sent item should appear
+      assert html =~ "Mole"
+      refute html =~ "Tamal"
+    end
+
+    test "order disappears entirely when all items are marked ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      food_cat = insert_category("food")
+      mi = insert_menu_item(food_cat.id, "Enchilada Final")
+      order = insert_order(%{customer_name: "Todo Listo Cocina", status: "sent"})
+      item = insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, lv, _} = live(conn, "/cocina")
+
+      html = render_click(lv, "mark_item_ready", %{"id" => to_string(item.id)})
+      refute html =~ "Todo Listo Cocina"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Bug regression: kitchen shows pending items even when order.status == "ready"
+  # ---------------------------------------------------------------------------
+
+  describe "pending items visible when order is in ready status (Bug 2 mirror)" do
+    test "shows order in pending if it has a sent food item regardless of order status", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      food_cat = insert_category("food")
+      mi = insert_menu_item(food_cat.id, "Pozole Tardío")
+      # Simulate: order was marked ready (e.g. barra finished first) but
+      # a food item is still pending in cocina
+      order = insert_order(%{customer_name: "Orden Ready", status: "ready"})
+      insert_order_item(order.id, mi.id, %{status: "sent"})
+
+      {:ok, _lv, html} = live(conn, "/cocina")
+      assert html =~ "Pozole Tardío"
     end
   end
 

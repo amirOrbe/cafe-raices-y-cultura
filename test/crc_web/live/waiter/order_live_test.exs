@@ -326,8 +326,8 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
   # Close order
   # ---------------------------------------------------------------------------
 
-  describe "close_order" do
-    test "redirects to /mesa after closing", %{conn: conn} do
+  describe "close_order payment flow" do
+    test "show_payment_step reveals payment panel", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       cat = insert_category()
       mi = insert_menu_item(cat.id)
@@ -335,7 +335,24 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       insert_order_item(order.id, mi.id)
       {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
 
-      assert {:error, {:redirect, %{to: "/mesa"}}} = render_click(lv, "close_order")
+      html = render_click(lv, "show_payment_step")
+      assert html =~ "Total a cobrar"
+      assert html =~ "Efectivo"
+    end
+
+    test "redirects to /mesa after confirming tarjeta payment", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "show_payment_step")
+      render_click(lv, "set_payment_method", %{"method" => "tarjeta"})
+
+      assert {:error, {:redirect, %{to: "/mesa"}}} =
+               render_click(lv, "confirm_close_order")
     end
 
     test "closed order no longer appears in active list", %{conn: conn} do
@@ -345,7 +362,10 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       order = insert_order(%{customer_name: "Miguel"})
       insert_order_item(order.id, mi.id)
       {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
-      render_click(lv, "close_order")
+
+      render_click(lv, "show_payment_step")
+      render_click(lv, "set_payment_method", %{"method" => "transferencia"})
+      render_click(lv, "confirm_close_order")
 
       {:ok, _lv2, html} = live(conn, "/mesa")
       refute html =~ "Miguel"
@@ -524,6 +544,209 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       insert_order_item(order.id, mi.id, %{status: "pending"})
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
       assert html =~ ~s(phx-click="send_to_kitchen" disabled)
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Cancel item flow
+  # ---------------------------------------------------------------------------
+
+  # ---------------------------------------------------------------------------
+  # Timing banners and overdue warnings
+  # ---------------------------------------------------------------------------
+
+  describe "drinks-ready banner" do
+    test "shows banner when drinks are ready but food is still pending", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      drink_cat = insert_category(%{name: "Barra Banner", kind: "drink"})
+      food_cat  = insert_category(%{name: "Cocina Banner", kind: "food"})
+      mi_drink  = insert_menu_item(drink_cat.id, %{name: "Limonada"})
+      mi_food   = insert_menu_item(food_cat.id,  %{name: "Enchiladas"})
+      order = insert_order(%{status: "sent"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi_drink.id,
+        quantity: 1, status: "ready", sent_at: now, ready_at: now,
+        inserted_at: now, updated_at: now
+      })
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi_food.id,
+        quantity: 1, status: "sent", sent_at: now,
+        inserted_at: now, updated_at: now
+      })
+
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "bebida(s) lista(s) en barra"
+    end
+
+    test "does not show banner when all items are ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      drink_cat = insert_category(%{name: "Barra All", kind: "drink"})
+      mi = insert_menu_item(drink_cat.id, %{name: "Café"})
+      order = insert_order(%{status: "ready"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi.id,
+        quantity: 1, status: "ready", sent_at: now, ready_at: now,
+        inserted_at: now, updated_at: now
+      })
+
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      refute html =~ "bebida(s) lista(s) en barra"
+    end
+  end
+
+  describe "all-ready banner" do
+    test "shows banner when all active items are ready", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category(%{name: "Cat Ready", kind: "food"})
+      mi = insert_menu_item(cat.id, %{name: "Burrito"})
+      order = insert_order(%{status: "sent"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi.id,
+        quantity: 1, status: "ready", sent_at: now, ready_at: now,
+        inserted_at: now, updated_at: now
+      })
+
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "¡Todo listo!"
+    end
+  end
+
+  describe "overdue item warning" do
+    test "shows +15 min badge on item sent more than 15 min ago", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category(%{name: "Cocina Overdue", kind: "food"})
+      mi = insert_menu_item(cat.id, %{name: "Pozole"})
+      order = insert_order(%{status: "sent"})
+      old = DateTime.utc_now() |> DateTime.add(-20 * 60, :second) |> DateTime.truncate(:second)
+
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi.id,
+        quantity: 1, status: "sent", sent_at: old,
+        inserted_at: old, updated_at: old
+      })
+
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "+15 min"
+    end
+
+    test "does not show +15 min badge on recently sent item", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category(%{name: "Cocina Fresh", kind: "food"})
+      mi = insert_menu_item(cat.id, %{name: "Caldo"})
+      order = insert_order(%{status: "sent"})
+      recent = DateTime.utc_now() |> DateTime.add(-3 * 60, :second) |> DateTime.truncate(:second)
+
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi.id,
+        quantity: 1, status: "sent", sent_at: recent,
+        inserted_at: recent, updated_at: recent
+      })
+
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      refute html =~ "+15 min"
+    end
+  end
+
+  describe "cancel item flow" do
+    test "request_cancel_item shows cancel dialog for sent item", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Enchiladas"})
+      order = insert_order(%{status: "sent"})
+      item = insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      html = render_click(lv, "request_cancel_item", %{"id" => to_string(item.id)})
+      assert html =~ "¿Este artículo ya fue preparado"
+      assert html =~ "Enchiladas"
+    end
+
+    test "dismiss_cancel removes the dialog", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Tacos"})
+      order = insert_order(%{status: "sent"})
+      item = insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "request_cancel_item", %{"id" => to_string(item.id)})
+      html = render_click(lv, "dismiss_cancel")
+      refute html =~ "¿Este artículo ya fue preparado"
+    end
+
+    test "cancel_with_restore marks item as 'cancelled'", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Sopa"})
+      order = insert_order(%{status: "sent"})
+      item = insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "request_cancel_item", %{"id" => to_string(item.id)})
+      html = render_click(lv, "cancel_with_restore")
+      assert html =~ "stock restaurado"
+
+      reloaded = Orders.get_order!(order.id)
+      assert hd(reloaded.order_items).status == "cancelled"
+    end
+
+    test "cancel_as_waste marks item as 'cancelled_waste'", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Postre"})
+      order = insert_order(%{status: "sent"})
+      item = insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "request_cancel_item", %{"id" => to_string(item.id)})
+      html = render_click(lv, "cancel_as_waste")
+      assert html =~ "desperdicio"
+
+      reloaded = Orders.get_order!(order.id)
+      assert hd(reloaded.order_items).status == "cancelled_waste"
+    end
+
+    test "cancelled item shows strikethrough text in comanda", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Agua Fresca"})
+      order = insert_order(%{status: "sent"})
+      item = insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "request_cancel_item", %{"id" => to_string(item.id)})
+      html = render_click(lv, "cancel_as_waste")
+      assert html =~ "line-through"
+      assert html =~ "Agua Fresca"
+    end
+
+    test "pending item uses remove_item (trash) not request_cancel_item", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id, %{status: "pending"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+
+      assert html =~ ~s(phx-click="remove_item")
+      refute html =~ ~s(phx-click="request_cancel_item")
+    end
+
+    test "sent item uses request_cancel_item not remove_item", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order(%{status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "sent"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+
+      assert html =~ ~s(phx-click="request_cancel_item")
     end
   end
 

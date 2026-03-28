@@ -89,6 +89,9 @@ defmodule CRCWeb.Router do
       live "/eventos", EventsLive
       live "/colaboradores", CollaboratorsLive
       live "/eventos/tipos", EventTypesLive
+      live "/ventas", VentasLive
+      live "/rendimiento", RendimientoLive
+      live "/finanzas", FinanzasLive
     end
   end
 
@@ -102,6 +105,7 @@ defmodule CRCWeb.Router do
     live_session :waiter,
       on_mount: [{CRCWeb.UserAuth, :require_authenticated_user}] do
       live "/", TableLive
+      live "/historial", HistorialLive
       live "/:id", OrderLive
     end
   end

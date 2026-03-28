@@ -126,6 +126,44 @@ defmodule CRC.CatalogTest do
       assert "Disponible" in item_names
       refute "No disponible" in item_names
     end
+
+    test "precarga menu_item_ingredients con product en cada item" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Platillo con ingrediente"})
+
+      product =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Arrachera Prueba #{System.unique_integer()}",
+          category: "carnes",
+          unit: "g",
+          net_cost: Decimal.new("5.00"),
+          stock_quantity: Decimal.new("500"),
+          active: true
+        })
+
+      CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+        menu_item_id: mi.id,
+        product_id: product.id,
+        quantity: Decimal.new("120")
+      })
+
+      [loaded_cat] = Catalog.list_categories()
+      [loaded_item] = loaded_cat.menu_items
+      assert is_list(loaded_item.menu_item_ingredients)
+      assert length(loaded_item.menu_item_ingredients) == 1
+      [mii] = loaded_item.menu_item_ingredients
+      assert mii.product.name == product.name
+      assert Decimal.equal?(mii.quantity, Decimal.new("120"))
+    end
+
+    test "menu_item_ingredients es lista vacía si el platillo no tiene ingredientes" do
+      cat = insert_category()
+      insert_menu_item(cat.id, %{name: "Sin ingredientes"})
+
+      [loaded_cat] = Catalog.list_categories()
+      [loaded_item] = loaded_cat.menu_items
+      assert loaded_item.menu_item_ingredients == []
+    end
   end
 
   # ===========================================================================

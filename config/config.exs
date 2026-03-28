@@ -10,7 +10,10 @@ import Config
 config :crc,
   namespace: CRC,
   ecto_repos: [CRC.Repo],
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  # UTC offset for the café's local timezone (Mexico City: UTC-6 standard, UTC-5 DST).
+  # Used to compute local midnight in UTC for the "Hoy" filter.
+  utc_offset_hours: -6
 
 # Configures the endpoint
 config :crc, CRCWeb.Endpoint,

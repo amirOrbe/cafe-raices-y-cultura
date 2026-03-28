@@ -6,16 +6,21 @@ defmodule CRCWeb.Waiter.TableLive do
   alias CRC.Orders
   alias CRCWeb.Components.SiteComponents
 
+  @tick_interval 30_000
+  @overdue_seconds 15 * 60
+
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(CRC.PubSub, "orders")
+      Process.send_after(self(), :tick, @tick_interval)
     end
 
     socket =
       socket
       |> assign(:page_title, "Comandas")
       |> assign(:orders, Orders.list_active_orders())
+      |> assign(:now, DateTime.utc_now())
       |> assign(:show_new_modal, false)
       |> assign(:new_name, "")
       |> assign(:name_error, nil)
@@ -25,12 +30,20 @@ defmodule CRCWeb.Waiter.TableLive do
   end
 
   # ---------------------------------------------------------------------------
-  # PubSub
+  # PubSub + tick
   # ---------------------------------------------------------------------------
 
   @impl true
   def handle_info({:order_updated, _order_id}, socket) do
-    {:noreply, assign(socket, :orders, Orders.list_active_orders())}
+    {:noreply,
+     socket
+     |> assign(:orders, Orders.list_active_orders())
+     |> assign(:now, DateTime.utc_now())}
+  end
+
+  def handle_info(:tick, socket) do
+    Process.send_after(self(), :tick, @tick_interval)
+    {:noreply, assign(socket, :now, DateTime.utc_now())}
   end
 
   # ---------------------------------------------------------------------------
@@ -68,7 +81,7 @@ defmodule CRCWeb.Waiter.TableLive do
     if name == "" do
       {:noreply, assign(socket, :name_error, "El nombre no puede estar vacío")}
     else
-      case Orders.create_order(%{customer_name: name}) do
+      case Orders.create_order(%{customer_name: name, user_id: socket.assigns.current_user.id}) do
         {:ok, order} ->
           {:noreply,
            socket
@@ -100,10 +113,16 @@ defmodule CRCWeb.Waiter.TableLive do
               Comandas activas del turno
             </p>
           </div>
-          <button class="btn btn-primary btn-sm gap-1" phx-click="open_new_modal">
-            <.icon name="hero-plus" class="size-4" />
-            Nueva cuenta
-          </button>
+          <div class="flex items-center gap-2">
+            <a href="/mesa/historial" class="btn btn-ghost btn-sm gap-1">
+              <.icon name="hero-clock" class="size-4" />
+              Historial
+            </a>
+            <button class="btn btn-primary btn-sm gap-1" phx-click="open_new_modal">
+              <.icon name="hero-plus" class="size-4" />
+              Nueva cuenta
+            </button>
+          </div>
         </div>
 
         <%!-- Empty state --%>
@@ -120,7 +139,7 @@ defmodule CRCWeb.Waiter.TableLive do
         <%!-- Comandas grid --%>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <%= for order <- @orders do %>
-            <.cuenta_card order={order} />
+            <.cuenta_card order={order} now={@now} />
           <% end %>
         </div>
 
@@ -130,9 +149,7 @@ defmodule CRCWeb.Waiter.TableLive do
     <%!-- Nueva cuenta modal --%>
     <%= if @show_new_modal do %>
       <div class="fixed inset-0 z-50">
-        <%!-- Backdrop: closes modal on click --%>
         <div class="absolute inset-0 bg-black/50" phx-click="close_modal"></div>
-        <%!-- Modal content: sibling of backdrop, no click bubbling issue --%>
         <div class="relative z-10 flex items-center justify-center min-h-full px-4 pointer-events-none">
           <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4 pointer-events-auto">
             <h2 class="text-lg font-bold text-base-content">Nueva cuenta</h2>
@@ -176,34 +193,76 @@ defmodule CRCWeb.Waiter.TableLive do
   # ---------------------------------------------------------------------------
 
   attr :order, :map, required: true
+  attr :now, :any, required: true
 
   defp cuenta_card(assigns) do
+    assigns =
+      assigns
+      |> assign(:overdue?, has_overdue_items?(assigns.order, assigns.now))
+      |> assign(:drinks_ready?, drinks_ready_food_pending?(assigns.order))
+      |> assign(:all_ready?, all_active_items_ready?(assigns.order))
+      |> assign(:any_ready?, has_ready_items?(assigns.order))
+
     ~H"""
     <a href={"/mesa/#{@order.id}"} class="block">
       <div class={[
         "card bg-base-100 shadow-sm border-2 hover:shadow-md transition-all cursor-pointer",
-        border_class(@order.status)
+        card_border_class(@overdue?, @all_ready?, @drinks_ready?, @order.status)
       ]}>
         <div class="card-body p-4 gap-2">
+          <%!-- Name + status --%>
           <div class="flex items-center justify-between gap-2">
             <span class="text-base font-bold text-base-content truncate">{@order.customer_name}</span>
             <.status_badge status={@order.status} />
           </div>
 
-          <div class="text-sm text-base-content/60">
-            <%= if length(@order.order_items) == 0 do %>
-              Sin artículos
-            <% else %>
-              {length(@order.order_items)} {if length(@order.order_items) == 1, do: "artículo", else: "artículos"}
+          <%!-- Item count + waiter --%>
+          <div class="flex items-center justify-between gap-2 text-sm text-base-content/60">
+            <span>
+              <%= if length(@order.order_items) == 0 do %>
+                Sin artículos
+              <% else %>
+                {length(@order.order_items)} {if length(@order.order_items) == 1, do: "artículo", else: "artículos"}
+              <% end %>
+            </span>
+            <%= if @order.user do %>
+              <span class="text-xs text-base-content/40 truncate max-w-[100px]">
+                <.icon name="hero-user" class="size-3 inline" /> {@order.user.name}
+              </span>
             <% end %>
           </div>
 
+          <%!-- Indicator badges --%>
+          <div class="flex flex-wrap gap-1.5 min-h-[1.25rem]">
+            <%= if @overdue? do %>
+              <span class="badge badge-xs badge-error gap-1 animate-pulse">
+                <.icon name="hero-clock" class="size-3" /> +15 min
+              </span>
+            <% end %>
+            <%= if @drinks_ready? do %>
+              <span class="badge badge-xs badge-info gap-1">
+                <.icon name="hero-beaker" class="size-3" /> Bebidas listas
+              </span>
+            <% end %>
+            <%= if @any_ready? and not @all_ready? and not @drinks_ready? do %>
+              <span class="badge badge-xs badge-success gap-1">
+                <.icon name="hero-check" class="size-3" /> Hay listos
+              </span>
+            <% end %>
+          </div>
+
+          <%!-- CTA button --%>
           <div class="mt-1">
-            <span class={["btn btn-xs w-full", btn_class(@order.status)]}>
-              <%= if @order.status == "ready" do %>
-                <.icon name="hero-check-circle" class="size-3" /> Lista para servir
-              <% else %>
-                Ver comanda
+            <span class={["btn btn-xs w-full", cta_btn_class(@overdue?, @all_ready?, @order.status)]}>
+              <%= cond do %>
+                <% @overdue? -> %>
+                  <.icon name="hero-exclamation-triangle" class="size-3" /> Revisar — tardando mucho
+                <% @all_ready? -> %>
+                  <.icon name="hero-check-circle" class="size-3" /> Lista para servir
+                <% @drinks_ready? -> %>
+                  <.icon name="hero-beaker" class="size-3" /> Bebidas listas · Revisar
+                <% true -> %>
+                  Ver comanda
               <% end %>
             </span>
           </div>
@@ -212,6 +271,10 @@ defmodule CRCWeb.Waiter.TableLive do
     </a>
     """
   end
+
+  # ---------------------------------------------------------------------------
+  # Badge components
+  # ---------------------------------------------------------------------------
 
   defp status_badge(%{status: "open"} = assigns) do
     ~H"<span class='badge badge-sm badge-info'>Abierta</span>"
@@ -229,10 +292,56 @@ defmodule CRCWeb.Waiter.TableLive do
     ~H"<span class='badge badge-sm badge-ghost'>{@status}</span>"
   end
 
-  defp border_class("sent"), do: "border-warning"
-  defp border_class("ready"), do: "border-success"
-  defp border_class(_), do: "border-base-300"
+  # ---------------------------------------------------------------------------
+  # Style helpers
+  # ---------------------------------------------------------------------------
 
-  defp btn_class("ready"), do: "btn-success btn-outline"
-  defp btn_class(_), do: "btn-outline btn-primary"
+  defp card_border_class(true, _all_ready, _drinks_ready, _status),
+    do: "border-error animate-pulse"
+
+  defp card_border_class(_overdue, true, _drinks_ready, _status), do: "border-success"
+  defp card_border_class(_overdue, _all_ready, true, _status), do: "border-info"
+  defp card_border_class(_overdue, _all_ready, _drinks_ready, "sent"), do: "border-warning"
+  defp card_border_class(_overdue, _all_ready, _drinks_ready, _status), do: "border-base-300"
+
+  defp cta_btn_class(true, _all_ready, _status), do: "btn-error btn-outline"
+  defp cta_btn_class(_overdue, true, _status), do: "btn-success btn-outline"
+  defp cta_btn_class(_overdue, _all_ready, _status), do: "btn-outline btn-primary"
+
+  # ---------------------------------------------------------------------------
+  # Order state helpers
+  # ---------------------------------------------------------------------------
+
+  # Any sent item (not cancelled) has been waiting more than 15 min
+  defp has_overdue_items?(order, now) do
+    Enum.any?(order.order_items, fn item ->
+      item.status == "sent" and not is_nil(item.sent_at) and
+        DateTime.diff(now, item.sent_at, :second) > @overdue_seconds
+    end)
+  end
+
+  # All drink items are ready but at least one food item is still pending/sent
+  defp drinks_ready_food_pending?(order) do
+    active = Enum.filter(order.order_items, &(&1.status not in ["cancelled", "cancelled_waste"]))
+    drinks = Enum.filter(active, &item_is_drink?/1)
+    food = Enum.filter(active, &(not item_is_drink?(&1)))
+
+    drinks != [] and
+      Enum.all?(drinks, &(&1.status == "ready")) and
+      Enum.any?(food, &(&1.status in ["pending", "sent"]))
+  end
+
+  # All active items are ready
+  defp all_active_items_ready?(order) do
+    active = Enum.filter(order.order_items, &(&1.status not in ["cancelled", "cancelled_waste"]))
+    active != [] and Enum.all?(active, &(&1.status == "ready"))
+  end
+
+  # At least one active item is ready
+  defp has_ready_items?(order) do
+    Enum.any?(order.order_items, &(&1.status == "ready"))
+  end
+
+  defp item_is_drink?(%{menu_item: %{category: %{kind: "drink"}}}), do: true
+  defp item_is_drink?(_), do: false
 end

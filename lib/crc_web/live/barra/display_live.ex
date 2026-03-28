@@ -44,12 +44,29 @@ defmodule CRCWeb.Barra.DisplayLive do
   end
 
   def handle_event("mark_item_ready", %{"id" => id}, socket) do
-    case Orders.mark_item_ready(String.to_integer(id)) do
+    case Orders.mark_item_ready(String.to_integer(id), socket.assigns.current_user.id) do
       {:ok, _} ->
         {:noreply, assign(socket, :orders, Orders.list_open_orders())}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "No se pudo marcar el artículo como listo.")}
+    end
+  end
+
+  def handle_event("mark_all_drinks_ready", %{"id" => id}, socket) do
+    order = Enum.find(socket.assigns.orders, &(to_string(&1.id) == id))
+
+    if order do
+      order.order_items
+      |> Enum.filter(fn oi -> oi.status == "sent" and drink_item?(oi) end)
+      |> Enum.each(fn oi -> Orders.mark_item_ready(oi.id, socket.assigns.current_user.id) end)
+
+      {:noreply,
+       socket
+       |> put_flash(:info, "#{order.customer_name} lista en barra.")
+       |> assign(:orders, Orders.list_open_orders())}
+    else
+      {:noreply, socket}
     end
   end
 
@@ -111,7 +128,7 @@ defmodule CRCWeb.Barra.DisplayLive do
                       <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-base-content">
                           <span class="font-bold text-primary">{item.quantity}×</span>
-                          {item.menu_item.name}
+                          {item.menu_item && item.menu_item.name}
                         </p>
                         <%= if item.notes do %>
                           <p class="text-xs text-base-content/50 mt-0.5">{item.notes}</p>
@@ -133,10 +150,45 @@ defmodule CRCWeb.Barra.DisplayLive do
                   <% end %>
                 </div>
 
+                <%!-- Mark all drinks ready --%>
+                <div class="px-4 py-3 border-t border-base-300">
+                  <button
+                    class="btn btn-success w-full btn-sm"
+                    phx-click="mark_all_drinks_ready"
+                    phx-value-id={order.id}
+                  >
+                    <.icon name="hero-check" class="size-4" />
+                    Todo listo — {order.customer_name}
+                  </button>
+                </div>
+
               </div>
             <% end %>
           <% end %>
         </div>
+
+        <%!-- Ready orders --%>
+        <% ready = ready_drink_orders(@orders) %>
+        <%= if ready != [] do %>
+          <div class="space-y-3">
+            <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider">
+              Listos para servir
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <%= for order <- ready do %>
+                <div class="bg-base-100 rounded-2xl border border-success/50 shadow-sm px-4 py-4 flex items-center justify-between">
+                  <div>
+                    <p class="font-bold text-base-content">{order.customer_name}</p>
+                    <p class="text-xs text-base-content/50">
+                      {Enum.count(order.order_items, &drink_item?/1)} bebidas
+                    </p>
+                  </div>
+                  <span class="badge badge-success">Lista</span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
 
       </div>
     </div>
@@ -147,17 +199,33 @@ defmodule CRCWeb.Barra.DisplayLive do
   # Private helpers
   # ---------------------------------------------------------------------------
 
-  # Only show items that have been explicitly sent (status "sent" or "ready")
-  # Items with status "pending" haven't been dispatched to the station yet
+  # Only show drink items actively waiting to be prepared (not yet marked ready).
+  # Excludes "ready" items so that second-batch sends don't resurface
+  # already-served drinks in the bar queue.
   defp drink_items(order) do
     Enum.filter(order.order_items, fn oi ->
-      oi.menu_item.category.kind == "drink" and oi.status in ["sent", "ready"]
+      oi.status == "sent" and drink_item?(oi)
     end)
   end
 
+  defp drink_item?(oi) do
+    not is_nil(oi.menu_item) and oi.menu_item.category.kind == "drink"
+  end
+
+  # An order is pending in barra if ANY drink item still has status "sent",
+  # regardless of the order-level status (which may have advanced to "ready"
+  # if cocina marked everything ready first while a drink was still pending).
   defp pending_orders(orders) do
-    orders
-    |> Enum.filter(&(&1.status == "sent"))
-    |> Enum.filter(fn o -> drink_items(o) != [] end)
+    Enum.filter(orders, fn o ->
+      Enum.any?(o.order_items, fn oi -> oi.status == "sent" and drink_item?(oi) end)
+    end)
+  end
+
+  # Orders where all drink items are ready (none "sent") — waiting to be served.
+  defp ready_drink_orders(orders) do
+    Enum.filter(orders, fn o ->
+      drinks = Enum.filter(o.order_items, &drink_item?/1)
+      drinks != [] and Enum.all?(drinks, fn oi -> oi.status == "ready" end)
+    end)
   end
 end

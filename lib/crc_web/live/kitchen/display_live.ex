@@ -44,7 +44,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
   end
 
   def handle_event("mark_item_ready", %{"id" => id}, socket) do
-    case Orders.mark_item_ready(String.to_integer(id)) do
+    case Orders.mark_item_ready(String.to_integer(id), socket.assigns.current_user.id) do
       {:ok, _} ->
         {:noreply, assign(socket, :orders, Orders.list_open_orders())}
 
@@ -57,6 +57,11 @@ defmodule CRCWeb.Kitchen.DisplayLive do
     order = Enum.find(socket.assigns.orders, &(to_string(&1.id) == id))
 
     if order do
+      # Mark all pending kitchen items as ready first, then mark the order itself.
+      order.order_items
+      |> Enum.filter(fn oi -> oi.status == "sent" and kitchen_item?(oi) end)
+      |> Enum.each(fn oi -> Orders.mark_item_ready(oi.id, socket.assigns.current_user.id) end)
+
       case Orders.mark_order_ready(order) do
         {:ok, _} ->
           {:noreply,
@@ -130,8 +135,24 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                       <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-base-content">
                           <span class="font-bold text-primary">{item.quantity}×</span>
-                          {item.menu_item.name}
+                          <%= if item.product_id do %>
+                            <span class="text-accent">Extra:</span> {item.product.name}
+                            <%= if item.portion_quantity do %>
+                              <span class="text-xs text-base-content/50 font-normal">
+                                ({format_qty(item.portion_quantity)} {item.product.unit})
+                              </span>
+                            <% end %>
+                          <% else %>
+                            {item.menu_item.name}
+                          <% end %>
                         </p>
+                        <%!-- Show which dish this extra belongs to --%>
+                        <%= if item.product_id && item.for_menu_item do %>
+                          <p class="text-xs text-accent/70 mt-0.5 flex items-center gap-1">
+                            <span>↳ para</span>
+                            <span class="font-semibold">{item.for_menu_item.name}</span>
+                          </p>
+                        <% end %>
                         <%= if item.notes do %>
                           <p class="text-xs text-base-content/50 mt-0.5">{item.notes}</p>
                         <% end %>
@@ -182,7 +203,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                   <div>
                     <p class="font-bold text-base-content">{order.customer_name}</p>
                     <p class="text-xs text-base-content/50">
-                      {length(food_items(order))} platillos
+                      {kitchen_item_count(order)} platillos
                     </p>
                   </div>
                   <span class="badge badge-success">Lista</span>
@@ -201,18 +222,42 @@ defmodule CRCWeb.Kitchen.DisplayLive do
   # Private helpers
   # ---------------------------------------------------------------------------
 
-  # Only show items that have been explicitly sent (status "sent" or "ready")
-  # Items with status "pending" haven't been dispatched to the station yet
+  # Only show items actively waiting to be prepared (not yet marked ready).
+  # Excludes "ready" items so that second-batch sends don't resurface
+  # already-prepared items in the cooking queue.
   defp food_items(order) do
     Enum.filter(order.order_items, fn oi ->
-      oi.menu_item.category.kind in ["food", "extra"] and oi.status in ["sent", "ready"]
+      oi.status == "sent" and kitchen_item?(oi)
     end)
   end
 
+  # Total kitchen item count for an order (sent + ready) — used in display labels.
+  defp kitchen_item_count(order) do
+    Enum.count(order.order_items, &kitchen_item?/1)
+  end
+
+  # Ingredient extras (product_id set, no menu_item) always go to cocina
+  defp kitchen_item?(%{product_id: pid}) when not is_nil(pid), do: true
+  defp kitchen_item?(%{menu_item: mi}) when not is_nil(mi), do: mi.category.kind in ["food", "extra"]
+  defp kitchen_item?(_), do: false
+
+  defp format_qty(%Decimal{} = qty) do
+    str = qty |> Decimal.round(3) |> Decimal.to_string()
+
+    if String.contains?(str, ".") do
+      str |> String.trim_trailing("0") |> String.trim_trailing(".")
+    else
+      str
+    end
+  end
+
+  # An order is pending in cocina if ANY kitchen item still has status "sent",
+  # regardless of the order-level status (which may have advanced to "ready"
+  # if barra marked everything ready first).
   defp pending_orders(orders) do
-    orders
-    |> Enum.filter(&(&1.status == "sent"))
-    |> Enum.filter(fn o -> food_items(o) != [] end)
+    Enum.filter(orders, fn o ->
+      Enum.any?(o.order_items, fn oi -> oi.status == "sent" and kitchen_item?(oi) end)
+    end)
   end
 
   defp ready_orders(orders), do: Enum.filter(orders, &(&1.status == "ready"))

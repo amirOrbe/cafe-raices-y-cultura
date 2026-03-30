@@ -8,6 +8,8 @@ defmodule CRCWeb.Waiter.OrderLive do
   alias CRCWeb.Components.SiteComponents
 
   @tick_interval 30_000
+  # Items with this many or fewer portions remaining show a low-stock warning badge
+  @low_stock_threshold 5
   @overdue_secs 15 * 60
 
   @impl true
@@ -46,6 +48,7 @@ defmodule CRCWeb.Waiter.OrderLive do
       |> assign(:change_due, nil)
       |> assign(:cancelling_item, nil)
       |> assign(:now, DateTime.utc_now())
+      |> assign(:low_stock_threshold, @low_stock_threshold)
 
     {:ok, socket}
   rescue
@@ -857,14 +860,18 @@ defmodule CRCWeb.Waiter.OrderLive do
                   </p>
                 <% else %>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <%= for {menu_item, in_stock?} <- @menu_items do %>
-                      <% selected? = @selected_menu_item && @selected_menu_item.id == menu_item.id %>
+                    <%!-- portions: nil=sin receta (ilimitado), 0=agotado, n=porciones restantes --%>
+                    <%= for {menu_item, portions} <- @menu_items do %>
+                      <% selected?   = @selected_menu_item && @selected_menu_item.id == menu_item.id %>
+                      <% available?  = is_nil(portions) or portions > 0 %>
+                      <% low_stock?  = not is_nil(portions) and portions > 0 and portions <= @low_stock_threshold %>
                       <div class={[
                         "rounded-xl p-3 flex flex-col gap-2 border transition-all",
                         cond do
-                          selected? -> "bg-accent/10 border-accent"
-                          in_stock? -> "bg-base-200/60 border-transparent"
-                          true -> "bg-base-100 border-error/20 opacity-60"
+                          selected?   -> "bg-accent/10 border-accent"
+                          not available? -> "bg-base-100 border-error/20 opacity-60"
+                          low_stock?  -> "bg-warning/5 border-warning/40"
+                          true        -> "bg-base-200/60 border-transparent"
                         end
                       ]}>
                         <div class="flex items-start justify-between gap-2">
@@ -872,11 +879,20 @@ defmodule CRCWeb.Waiter.OrderLive do
                             <p class="text-sm font-medium text-base-content leading-snug">
                               {menu_item.name}
                             </p>
-                            <%= if !in_stock? do %>
+                            <%!-- Agotado --%>
+                            <%= if not available? do %>
                               <p class="text-xs text-error mt-0.5 flex items-center gap-0.5">
-                                <.icon name="hero-exclamation-triangle" class="size-3 shrink-0" />
-                                Sin inventario
+                                <.icon name="hero-x-circle" class="size-3 shrink-0" />
+                                Agotado
                               </p>
+                            <%!-- Bajo stock: warning con porciones exactas --%>
+                            <% else %>
+                              <%= if low_stock? do %>
+                                <p class="text-xs text-warning font-semibold mt-0.5 flex items-center gap-0.5">
+                                  <.icon name="hero-exclamation-triangle" class="size-3 shrink-0" />
+                                  {if portions == 1, do: "¡Es el último!", else: "¡Solo quedan #{portions}!"}
+                                </p>
+                              <% end %>
                             <% end %>
                           </div>
                           <span class="text-sm font-bold text-primary whitespace-nowrap shrink-0">
@@ -887,13 +903,22 @@ defmodule CRCWeb.Waiter.OrderLive do
                           <button
                             class={[
                               "btn btn-xs flex-1",
-                              if(in_stock?, do: "btn-outline btn-primary", else: "btn-disabled")
+                              cond do
+                                not available? -> "btn-disabled"
+                                low_stock?     -> "btn-warning"
+                                true           -> "btn-outline btn-primary"
+                              end
                             ]}
                             phx-click="add_item"
                             phx-value-menu_item_id={menu_item.id}
-                            disabled={!in_stock?}
+                            disabled={not available?}
                           >
-                            {if in_stock?, do: "Agregar", else: "Sin stock"}
+                            {cond do
+                              not available? -> "Agotado"
+                              low_stock? and portions == 1 -> "¡Agregar — último!"
+                              low_stock? -> "Agregar"
+                              true -> "Agregar"
+                            end}
                           </button>
                           <button
                             class={[

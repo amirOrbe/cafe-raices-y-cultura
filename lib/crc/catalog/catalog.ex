@@ -161,7 +161,10 @@ defmodule CRC.Catalog do
 
   @doc """
   Returns available menu items for a given category, preloading ingredient stock.
-  Each entry is a `{%MenuItem{}, in_stock?}` tuple.
+  Each entry is a `{%MenuItem{}, available_portions}` tuple where:
+  - `nil`     — no recipe defined; item is always available (unlimited)
+  - `0`       — at least one ingredient is fully depleted; item is unavailable
+  - integer   — the number of portions that can still be prepared before running out
   """
   def list_menu_items_for_category_with_stock(category_id) do
     MenuItem
@@ -169,7 +172,7 @@ defmodule CRC.Catalog do
     |> order_by(:position)
     |> preload([:category, menu_item_ingredients: :product])
     |> Repo.all()
-    |> Enum.map(&{&1, item_in_stock?(&1)})
+    |> Enum.map(&{&1, available_portions(&1)})
   end
 
   @doc """
@@ -237,17 +240,41 @@ defmodule CRC.Catalog do
   end
 
   @doc """
-  Returns true when every ingredient has enough stock for at least one serving.
-  Items with no ingredients are always considered in stock.
-  """
-  def item_in_stock?(%MenuItem{menu_item_ingredients: []}), do: true
+  Returns the number of complete portions that can still be prepared for a menu item.
 
-  def item_in_stock?(%MenuItem{menu_item_ingredients: ingredients}) do
-    Enum.all?(ingredients, fn mii ->
-      not is_nil(mii.product) and
-        mii.product.active and
-        Decimal.compare(mii.product.stock_quantity, mii.quantity) != :lt
+  - `nil`     — no recipe; availability is unlimited (always orderable)
+  - `0`       — at least one ingredient is depleted; item cannot be prepared
+  - integer n — the item can be prepared exactly n more times before an ingredient runs out
+
+  The bottleneck ingredient (lowest floor(stock / quantity_per_portion)) determines the result.
+  Inactive or missing products are treated as 0 stock.
+  """
+  def available_portions(%MenuItem{menu_item_ingredients: []}), do: nil
+
+  def available_portions(%MenuItem{menu_item_ingredients: ingredients}) do
+    ingredients
+    |> Enum.map(fn mii ->
+      if is_nil(mii.product) or not mii.product.active do
+        0
+      else
+        mii.product.stock_quantity
+        |> Decimal.div(mii.quantity)
+        |> Decimal.round(0, :floor)
+        |> Decimal.to_integer()
+      end
     end)
+    |> Enum.min()
+  end
+
+  @doc """
+  Returns true when every ingredient has enough stock for at least one serving.
+  Kept for backward compatibility; prefer `available_portions/1` for richer info.
+  """
+  def item_in_stock?(menu_item) do
+    case available_portions(menu_item) do
+      nil -> true
+      n -> n > 0
+    end
   end
 
   defp available_items_query do

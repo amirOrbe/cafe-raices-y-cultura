@@ -973,6 +973,148 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
   end
 
   # ---------------------------------------------------------------------------
+  # Low-stock & out-of-stock menu item display
+  # ---------------------------------------------------------------------------
+
+  describe "low-stock and out-of-stock menu items" do
+    defp insert_stocked_product_for_ui(stock) do
+      CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Prod UI #{System.unique_integer()}",
+        category: "insumos",
+        unit: "g",
+        net_cost: Decimal.new("1.00"),
+        stock_quantity: Decimal.new(stock),
+        active: true
+      })
+    end
+
+    defp link_recipe_for_ui(menu_item_id, product_id, qty) do
+      CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+        menu_item_id: menu_item_id,
+        product_id: product_id,
+        quantity: Decimal.new(qty)
+      })
+    end
+
+    test "item with no recipe always shows normal Agregar button", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ mi.name
+      assert html =~ "Agregar"
+      refute html =~ "Agotado"
+    end
+
+    test "item with sufficient stock shows normal Agregar button (no warning)", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      # 10g per portion, 1000g stock = 100 portions → no warning
+      prod = insert_stocked_product_for_ui("1000")
+      link_recipe_for_ui(mi.id, prod.id, "10")
+      order = insert_order()
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ mi.name
+      assert html =~ "Agregar"
+      refute html =~ "Solo quedan"
+      refute html =~ "el último"
+      refute html =~ "Agotado"
+    end
+
+    test "item with low stock (2 portions) shows low-stock warning", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      # 10g per portion, 20g stock = 2 portions → low-stock warning
+      prod = insert_stocked_product_for_ui("20")
+      link_recipe_for_ui(mi.id, prod.id, "10")
+      order = insert_order()
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ mi.name
+      assert html =~ "Solo quedan 2"
+    end
+
+    test "item with exactly 1 portion shows '¡Es el último!' warning", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      # 10g per portion, 10g stock = exactly 1 portion
+      prod = insert_stocked_product_for_ui("10")
+      link_recipe_for_ui(mi.id, prod.id, "10")
+      order = insert_order()
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ mi.name
+      assert html =~ "el último"
+    end
+
+    test "item with 0 stock is disabled and shows Agotado", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      # 0g stock = cannot be prepared
+      prod = insert_stocked_product_for_ui("0")
+      link_recipe_for_ui(mi.id, prod.id, "10")
+      order = insert_order()
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ mi.name
+      assert html =~ "Agotado"
+      # Button should be disabled
+      assert html =~ "disabled"
+    end
+
+    test "item above threshold (6 portions) shows no warning", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      # 10g per portion, 60g stock = 6 portions → above threshold of 5 → no warning
+      prod = insert_stocked_product_for_ui("60")
+      link_recipe_for_ui(mi.id, prod.id, "10")
+      order = insert_order()
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ mi.name
+      assert html =~ "Agregar"
+      refute html =~ "Solo quedan"
+      refute html =~ "el último"
+    end
+
+    test "item with low stock can still be added (button is NOT disabled)", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      # 2 portions remaining — still orderable, just with a warning
+      prod = insert_stocked_product_for_ui("20")
+      link_recipe_for_ui(mi.id, prod.id, "10")
+      order = insert_order()
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      # Adding the item should succeed
+      html = render_click(lv, "add_item", %{"menu_item_id" => to_string(mi.id)})
+      reloaded = CRC.Orders.get_order!(order.id)
+      assert Enum.any?(reloaded.order_items, &(&1.menu_item_id == mi.id))
+      # After adding, the warning portion count updated (2→1 after send, but here just reload)
+      assert html =~ mi.name
+    end
+
+    test "stock update via PubSub refreshes the menu display", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      prod = insert_stocked_product_for_ui("20")
+      link_recipe_for_ui(mi.id, prod.id, "10")
+      order = insert_order()
+      {:ok, lv, html} = live(conn, "/mesa/#{order.id}")
+      # Initially 2 portions remaining
+      assert html =~ "Solo quedan 2"
+      # Simulate stock depletion by broadcasting the stock update event
+      Phoenix.PubSub.broadcast(CRC.PubSub, "menu_stock", :stock_updated)
+      # Allow the LiveView to process the message
+      html = render(lv)
+      assert html =~ mi.name
+    end
+  end
+
+  # ---------------------------------------------------------------------------
   # Ingredient exclusion toggles (sin jitomate)
   # ---------------------------------------------------------------------------
 

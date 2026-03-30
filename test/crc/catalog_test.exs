@@ -430,4 +430,159 @@ defmodule CRC.CatalogTest do
       assert {:error, %Ecto.Changeset{}} = Catalog.create_menu_item()
     end
   end
+
+  # ===========================================================================
+  # available_portions/1 — stock-aware availability
+  # ===========================================================================
+
+  defp insert_product(name, stock) do
+    CRC.Repo.insert!(%CRC.Inventory.Product{
+      name: "#{name}_#{System.unique_integer()}",
+      category: "insumos",
+      unit: "g",
+      net_cost: Decimal.new("1.00"),
+      stock_quantity: Decimal.new(stock),
+      active: true
+    })
+  end
+
+  defp link_ingredient(menu_item_id, product_id, qty) do
+    CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+      menu_item_id: menu_item_id,
+      product_id: product_id,
+      quantity: Decimal.new(qty)
+    })
+  end
+
+  defp item_with_ingredients(category_id, ingredients) do
+    item = insert_menu_item(category_id)
+    for {product_id, qty} <- ingredients, do: link_ingredient(item.id, product_id, qty)
+    Catalog.get_menu_item_with_ingredients!(item.id)
+  end
+
+  describe "available_portions/1" do
+    test "returns nil for items with no recipe (always available)" do
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+      loaded = Catalog.get_menu_item_with_ingredients!(item.id)
+      assert is_nil(Catalog.available_portions(loaded))
+    end
+
+    test "returns integer portions when recipe is present" do
+      cat = insert_category()
+      prod = insert_product("jitomate", "100")
+      # recipe: 25g per portion → 100 / 25 = 4 portions
+      item = item_with_ingredients(cat.id, [{prod.id, "25"}])
+      assert Catalog.available_portions(item) == 4
+    end
+
+    test "returns 0 when any ingredient is fully depleted" do
+      cat = insert_category()
+      pan   = insert_product("pan", "200")
+      queso = insert_product("queso", "0")   # depleted
+      item = item_with_ingredients(cat.id, [{pan.id, "50"}, {queso.id, "30"}])
+      assert Catalog.available_portions(item) == 0
+    end
+
+    test "returns the minimum across all ingredients (bottleneck ingredient)" do
+      cat = insert_category()
+      # tortilla: 500g stock / 100g each = 5 portions
+      # lechuga:  200g stock / 50g each  = 4 portions  ← bottleneck
+      # pollo:    1000g stock / 120g each = 8 portions
+      tortilla = insert_product("tortilla", "500")
+      lechuga  = insert_product("lechuga",  "200")
+      pollo    = insert_product("pollo",    "1000")
+      item = item_with_ingredients(cat.id, [
+        {tortilla.id, "100"},
+        {lechuga.id, "50"},
+        {pollo.id, "120"}
+      ])
+      assert Catalog.available_portions(item) == 4
+    end
+
+    test "floors fractional portions (never rounds up)" do
+      cat = insert_category()
+      # 100g stock, 30g per portion → 3.33 → floors to 3
+      prod = insert_product("arroz", "100")
+      item = item_with_ingredients(cat.id, [{prod.id, "30"}])
+      assert Catalog.available_portions(item) == 3
+    end
+
+    test "returns 0 for inactive product ingredient" do
+      cat = insert_category()
+      prod = CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Prod inactivo #{System.unique_integer()}",
+        category: "insumos",
+        unit: "g",
+        net_cost: Decimal.new("1.00"),
+        stock_quantity: Decimal.new("999"),
+        active: false
+      })
+      item = item_with_ingredients(cat.id, [{prod.id, "10"}])
+      assert Catalog.available_portions(item) == 0
+    end
+  end
+
+  describe "item_in_stock?/1 — backward-compatible wrapper" do
+    test "returns true when portions is nil (no recipe)" do
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+      loaded = Catalog.get_menu_item_with_ingredients!(item.id)
+      assert Catalog.item_in_stock?(loaded) == true
+    end
+
+    test "returns true when portions > 0" do
+      cat = insert_category()
+      prod = insert_product("ingr_stock", "100")
+      item = item_with_ingredients(cat.id, [{prod.id, "10"}])
+      assert Catalog.item_in_stock?(item) == true
+    end
+
+    test "returns false when portions == 0 (depleted)" do
+      cat = insert_category()
+      prod = insert_product("ingr_empty", "0")
+      item = item_with_ingredients(cat.id, [{prod.id, "10"}])
+      assert Catalog.item_in_stock?(item) == false
+    end
+  end
+
+  describe "list_menu_items_for_category_with_stock/1" do
+    test "returns {MenuItem, nil} for item with no recipe" do
+      cat = insert_category()
+      insert_menu_item(cat.id)
+      results = Catalog.list_menu_items_for_category_with_stock(cat.id)
+      assert length(results) == 1
+      [{_item, portions}] = results
+      assert is_nil(portions)
+    end
+
+    test "returns {MenuItem, n} with correct portions count" do
+      cat = insert_category()
+      prod = insert_product("stock_cat_test", "200")
+      item = insert_menu_item(cat.id)
+      link_ingredient(item.id, prod.id, "50")  # 200/50 = 4 portions
+      results = Catalog.list_menu_items_for_category_with_stock(cat.id)
+      assert length(results) == 1
+      [{_item, portions}] = results
+      assert portions == 4
+    end
+
+    test "returns {MenuItem, 0} when ingredient is depleted" do
+      cat = insert_category()
+      prod = insert_product("empty_cat", "0")
+      item = insert_menu_item(cat.id)
+      link_ingredient(item.id, prod.id, "10")
+      results = Catalog.list_menu_items_for_category_with_stock(cat.id)
+      [{_item, portions}] = results
+      assert portions == 0
+    end
+
+    test "excludes unavailable menu items" do
+      cat = insert_category()
+      insert_menu_item(cat.id, %{available: false})
+      results = Catalog.list_menu_items_for_category_with_stock(cat.id)
+      assert results == []
+    end
+  end
+
 end

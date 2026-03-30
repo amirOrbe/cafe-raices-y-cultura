@@ -132,6 +132,15 @@ defmodule CRCWeb.Barra.DisplayLive do
                           <span class="font-bold text-primary">{item.quantity}×</span>
                           {item.menu_item && item.menu_item.name}
                         </p>
+                        <%!-- Ingredient exclusions requested by customer --%>
+                        <%= if item.exclusions != [] do %>
+                          <div class="flex flex-wrap items-center gap-1 mt-1">
+                            <span class="text-xs font-bold text-error shrink-0">⚠ Sin:</span>
+                            <%= for excl <- item.exclusions do %>
+                              <span class="badge badge-xs badge-error">{excl.product.name}</span>
+                            <% end %>
+                          </div>
+                        <% end %>
                         <%= if item.notes do %>
                           <p class="text-xs text-base-content/50 mt-0.5">{item.notes}</p>
                         <% end %>

@@ -6,7 +6,7 @@ defmodule CRC.Orders do
 
   import Ecto.Query, warn: false
   alias CRC.Repo
-  alias CRC.Orders.{Order, OrderItem}
+  alias CRC.Orders.{Order, OrderItem, OrderItemExclusion}
   alias CRC.Catalog.MenuItemIngredient
   alias CRC.Inventory.Product
   alias CRC.Accounts.User
@@ -20,12 +20,12 @@ defmodule CRC.Orders do
   # Orders
   # ---------------------------------------------------------------------------
 
-  @doc "Returns all orders with status 'open', 'sent', or 'ready'. Preloads items with menu_item + category + product, and the user who created the order."
+  @doc "Returns all orders with status 'open', 'sent', or 'ready'. Preloads items with menu_item + category + product + exclusions, and the user who created the order."
   def list_open_orders do
     Order
     |> where([o], o.status in ["open", "sent", "ready"])
     |> order_by([o], o.inserted_at)
-    |> preload([:user, order_items: [:product, :for_menu_item, menu_item: :category]])
+    |> preload([:user, order_items: [:product, :for_menu_item, exclusions: [:product], menu_item: :category]])
     |> Repo.all()
   end
 
@@ -34,15 +34,23 @@ defmodule CRC.Orders do
     Order
     |> where([o], o.status in ["open", "sent", "ready"])
     |> order_by([o], o.inserted_at)
-    |> preload([:user, order_items: [:product, :for_menu_item, menu_item: :category]])
+    |> preload([:user, order_items: [:product, :for_menu_item, exclusions: [:product], menu_item: :category]])
     |> Repo.all()
   end
 
-  @doc "Gets an order by id. Raises if not found. Preloads items with menu_item + category + product, and the order creator."
+  @doc "Gets an order by id. Raises if not found. Preloads items with full ingredient recipe + exclusions for the modifier UI."
   def get_order!(id) do
     Order
     |> Repo.get!(id)
-    |> Repo.preload([:user, order_items: [:product, :for_menu_item, menu_item: :category]])
+    |> Repo.preload([
+      :user,
+      order_items: [
+        :product,
+        :for_menu_item,
+        exclusions: [:product],
+        menu_item: [:category, menu_item_ingredients: [:product]]
+      ]
+    ])
   end
 
   @doc "Creates an order (a new customer tab)."
@@ -137,7 +145,7 @@ defmodule CRC.Orders do
     |> filter_by_period(period)
     |> maybe_filter_user(user_id)
     |> order_by([o], desc: o.closed_at)
-    |> preload([:user, :closed_by, order_items: [:product, :for_menu_item, menu_item: :category]])
+    |> preload([:user, :closed_by, order_items: [:product, :for_menu_item, exclusions: [:product], menu_item: :category]])
     |> Repo.all()
   end
 
@@ -227,13 +235,18 @@ defmodule CRC.Orders do
       |> select([o], o.id)
 
     # COGS: quantity_ordered × ingredient_quantity_per_unit × ingredient_net_cost
+    # Left-join exclusions and exclude rows where the ingredient was removed by the customer
+    # (excluded ingredients were never deducted from stock, so they are not a real cost).
     cogs =
       from(oi in OrderItem,
         join: mii in MenuItemIngredient, on: mii.menu_item_id == oi.menu_item_id,
         join: p in Product, on: p.id == mii.product_id,
+        left_join: excl in OrderItemExclusion,
+          on: excl.order_item_id == oi.id and excl.product_id == mii.product_id,
         where: oi.order_id in subquery(closed_ids_query),
         where: oi.status not in ["cancelled", "cancelled_waste"],
         where: not is_nil(oi.menu_item_id),
+        where: is_nil(excl.id),
         select: sum(fragment("?::numeric * ? * ?", oi.quantity, mii.quantity, p.net_cost))
       )
       |> Repo.one()
@@ -249,9 +262,12 @@ defmodule CRC.Orders do
       from(oi in OrderItem,
         join: mii in MenuItemIngredient, on: mii.menu_item_id == oi.menu_item_id,
         join: p in Product, on: p.id == mii.product_id,
+        left_join: excl in OrderItemExclusion,
+          on: excl.order_item_id == oi.id and excl.product_id == mii.product_id,
         where: oi.order_id in subquery(all_order_ids_in_period),
         where: oi.status == "cancelled_waste",
         where: not is_nil(oi.menu_item_id),
+        where: is_nil(excl.id),
         select: sum(fragment("?::numeric * ? * ?", oi.quantity, mii.quantity, p.net_cost))
       )
       |> Repo.one()
@@ -352,6 +368,43 @@ defmodule CRC.Orders do
 
       error ->
         error
+    end
+  end
+
+  @doc """
+  Toggles an ingredient exclusion on a pending order item.
+
+  If the product is not yet excluded → inserts the exclusion record.
+  If it is already excluded → removes it (customer changed their mind).
+
+  Only meaningful for pending items (before send_to_kitchen). Calling it on
+  a sent item is harmless but has no effect on inventory since deduction
+  already happened.
+
+  Returns `{:ok, :added}` | `{:ok, :removed}` | `{:error, changeset}`.
+  """
+  def toggle_exclusion(order_item_id, product_id) do
+    case Repo.get_by(OrderItemExclusion,
+           order_item_id: order_item_id,
+           product_id: product_id
+         ) do
+      nil ->
+        result =
+          %OrderItemExclusion{}
+          |> OrderItemExclusion.changeset(%{
+            order_item_id: order_item_id,
+            product_id: product_id
+          })
+          |> Repo.insert()
+
+        case result do
+          {:ok, _} -> {:ok, :added}
+          error -> error
+        end
+
+      existing ->
+        Repo.delete(existing)
+        {:ok, :removed}
     end
   end
 
@@ -560,17 +613,29 @@ defmodule CRC.Orders do
 
   # Reverses the stock deduction for a single order item.
   # Called inside a transaction from cancel_item/2 when :not_prepared.
-  defp restore_stock_for_item(%OrderItem{menu_item_id: menu_item_id, quantity: qty})
+  # Excluded ingredients were never deducted, so they are NOT restored.
+  defp restore_stock_for_item(%OrderItem{menu_item_id: menu_item_id, quantity: qty} = item)
        when not is_nil(menu_item_id) do
+    # Load exclusions so we only restore what was actually deducted
+    excluded_product_ids =
+      from(e in OrderItemExclusion,
+        where: e.order_item_id == ^item.id,
+        select: e.product_id
+      )
+      |> Repo.all()
+      |> MapSet.new()
+
     ingredients =
       from(mii in MenuItemIngredient, where: mii.menu_item_id == ^menu_item_id)
       |> Repo.all()
 
     Enum.each(ingredients, fn mii ->
-      restore = Decimal.mult(mii.quantity, Decimal.new(qty))
+      unless MapSet.member?(excluded_product_ids, mii.product_id) do
+        restore = Decimal.mult(mii.quantity, Decimal.new(qty))
 
-      from(p in Product, where: p.id == ^mii.product_id)
-      |> Repo.update_all(inc: [stock_quantity: restore])
+        from(p in Product, where: p.id == ^mii.product_id)
+        |> Repo.update_all(inc: [stock_quantity: restore])
+      end
     end)
   end
 
@@ -872,21 +937,37 @@ defmodule CRC.Orders do
       |> Enum.map(& &1.menu_item_id)
       |> Enum.uniq()
 
+    order_item_ids = Enum.map(menu_items, & &1.id)
+
     # Load all ingredients for the relevant menu items in one query
     ingredients =
       from(mii in MenuItemIngredient, where: mii.menu_item_id in ^menu_item_ids)
       |> Repo.all()
 
+    # Load exclusions for these order items: {order_item_id, product_id} pairs
+    exclusions =
+      from(e in OrderItemExclusion, where: e.order_item_id in ^order_item_ids)
+      |> Repo.all()
+
+    # Build a MapSet of {order_item_id, product_id} for O(1) exclusion lookups
+    excluded_pairs =
+      MapSet.new(exclusions, fn e -> {e.order_item_id, e.product_id} end)
+
     # Group by menu_item_id for quick lookup
     by_menu_item = Enum.group_by(ingredients, & &1.menu_item_id)
 
-    # Accumulate total deduction per product across all pending menu items
+    # Accumulate total deduction per product, skipping excluded ingredients
     Enum.reduce(menu_items, %{}, fn order_item, acc ->
       item_ingredients = Map.get(by_menu_item, order_item.menu_item_id, [])
 
       Enum.reduce(item_ingredients, acc, fn mii, inner ->
-        total = Decimal.mult(mii.quantity, Decimal.new(order_item.quantity))
-        Map.update(inner, mii.product_id, total, &Decimal.add(&1, total))
+        if MapSet.member?(excluded_pairs, {order_item.id, mii.product_id}) do
+          # Customer requested "sin X" — do not deduct this ingredient
+          inner
+        else
+          total = Decimal.mult(mii.quantity, Decimal.new(order_item.quantity))
+          Map.update(inner, mii.product_id, total, &Decimal.add(&1, total))
+        end
       end)
     end)
   end

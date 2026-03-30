@@ -155,6 +155,15 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                             <span class="font-semibold">{item.for_menu_item.name}</span>
                           </p>
                         <% end %>
+                        <%!-- Ingredient exclusions requested by customer --%>
+                        <%= if item.exclusions != [] do %>
+                          <div class="flex flex-wrap items-center gap-1 mt-1">
+                            <span class="text-xs font-bold text-error shrink-0">⚠ Sin:</span>
+                            <%= for excl <- item.exclusions do %>
+                              <span class="badge badge-xs badge-error">{excl.product.name}</span>
+                            <% end %>
+                          </div>
+                        <% end %>
                         <%= if item.notes do %>
                           <p class="text-xs text-base-content/50 mt-0.5">{item.notes}</p>
                         <% end %>

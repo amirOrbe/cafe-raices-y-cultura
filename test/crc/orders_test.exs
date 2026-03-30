@@ -1563,4 +1563,369 @@ defmodule CRC.OrdersTest do
       end
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # toggle_exclusion/2 — ingredient modifier (sin jitomate)
+  # ---------------------------------------------------------------------------
+
+  describe "toggle_exclusion/2" do
+    defp insert_product(overrides \\ %{}) do
+      CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Prod #{System.unique_integer()}",
+        category: "verduras",
+        unit: "g",
+        net_cost: Decimal.new("1.00"),
+        stock_quantity: Decimal.new("500"),
+        active: true
+      } |> Map.merge(overrides))
+    end
+
+    defp link_ingredient_to_item(menu_item_id, product_id, qty \\ "10") do
+      CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+        menu_item_id: menu_item_id,
+        product_id: product_id,
+        quantity: Decimal.new(qty)
+      })
+    end
+
+    test "adds exclusion record when ingredient is not yet excluded" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      product = insert_product()
+      link_ingredient_to_item(mi.id, product.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      assert {:ok, :added} = Orders.toggle_exclusion(item.id, product.id)
+
+      excl = CRC.Repo.get_by!(CRC.Orders.OrderItemExclusion,
+        order_item_id: item.id, product_id: product.id)
+      assert excl.order_item_id == item.id
+      assert excl.product_id == product.id
+    end
+
+    test "removes exclusion record when ingredient is already excluded" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      product = insert_product()
+      link_ingredient_to_item(mi.id, product.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      # Add exclusion first
+      {:ok, :added} = Orders.toggle_exclusion(item.id, product.id)
+      # Toggle again → removes it
+      assert {:ok, :removed} = Orders.toggle_exclusion(item.id, product.id)
+
+      assert is_nil(CRC.Repo.get_by(CRC.Orders.OrderItemExclusion,
+        order_item_id: item.id, product_id: product.id))
+    end
+
+    test "toggle is idempotent: add → remove → add works correctly" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      product = insert_product()
+      link_ingredient_to_item(mi.id, product.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      assert {:ok, :added}   = Orders.toggle_exclusion(item.id, product.id)
+      assert {:ok, :removed} = Orders.toggle_exclusion(item.id, product.id)
+      assert {:ok, :added}   = Orders.toggle_exclusion(item.id, product.id)
+
+      # After 3 toggles, should be excluded again
+      assert CRC.Repo.get_by(CRC.Orders.OrderItemExclusion,
+        order_item_id: item.id, product_id: product.id)
+    end
+
+    test "multiple different ingredients can each be toggled independently" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      prod_a = insert_product(%{name: "Jitomate #{System.unique_integer()}"})
+      prod_b = insert_product(%{name: "Lechuga #{System.unique_integer()}"})
+      link_ingredient_to_item(mi.id, prod_a.id)
+      link_ingredient_to_item(mi.id, prod_b.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      {:ok, :added} = Orders.toggle_exclusion(item.id, prod_a.id)
+      # prod_b NOT excluded
+
+      excls = CRC.Repo.all(from e in CRC.Orders.OrderItemExclusion,
+        where: e.order_item_id == ^item.id)
+      excluded_ids = Enum.map(excls, & &1.product_id)
+
+      assert prod_a.id in excluded_ids
+      refute prod_b.id in excluded_ids
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Inventory deduction respects exclusions (send_to_kitchen)
+  # ---------------------------------------------------------------------------
+
+  describe "send_to_kitchen — exclusion-aware inventory deduction" do
+    defp insert_stocked_product(name, stock \\ "1000") do
+      CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "#{name}_#{System.unique_integer()}",
+        category: "insumos",
+        unit: "g",
+        net_cost: Decimal.new("1.00"),
+        stock_quantity: Decimal.new(stock),
+        active: true
+      })
+    end
+
+    defp link_ing(menu_item_id, product_id, qty) do
+      CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+        menu_item_id: menu_item_id,
+        product_id: product_id,
+        quantity: Decimal.new(qty)
+      })
+    end
+
+    defp current_stock(product_id) do
+      CRC.Repo.one!(from p in CRC.Inventory.Product,
+        where: p.id == ^product_id, select: p.stock_quantity)
+    end
+
+    test "excluded ingredient is NOT deducted from stock when sent to kitchen" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      jitomate = insert_stocked_product("jitomate")
+      lechuga  = insert_stocked_product("lechuga")
+      link_ing(mi.id, jitomate.id, "50")   # 50g per unit
+      link_ing(mi.id, lechuga.id, "30")    # 30g per unit
+
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      # Customer: sin jitomate
+      {:ok, :added} = Orders.toggle_exclusion(item.id, jitomate.id)
+
+      order = Orders.get_order!(order.id)
+      {:ok, _} = Orders.send_to_kitchen(order)
+
+      # Lechuga deducted normally: 1000 - 30 = 970
+      assert Decimal.equal?(current_stock(lechuga.id), Decimal.new("970"))
+      # Jitomate NOT deducted (excluded): still 1000
+      assert Decimal.equal?(current_stock(jitomate.id), Decimal.new("1000"))
+    end
+
+    test "non-excluded ingredients are still deducted normally" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      pan    = insert_stocked_product("pan")
+      queso  = insert_stocked_product("queso")
+      jito   = insert_stocked_product("jito_2")
+      link_ing(mi.id, pan.id, "100")
+      link_ing(mi.id, queso.id, "40")
+      link_ing(mi.id, jito.id, "20")
+
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      # Only jito excluded; pan and queso should be deducted
+      {:ok, :added} = Orders.toggle_exclusion(item.id, jito.id)
+
+      order = Orders.get_order!(order.id)
+      {:ok, _} = Orders.send_to_kitchen(order)
+
+      assert Decimal.equal?(current_stock(pan.id), Decimal.new("900"))   # 1000 - 100
+      assert Decimal.equal?(current_stock(queso.id), Decimal.new("960"))  # 1000 - 40
+      assert Decimal.equal?(current_stock(jito.id), Decimal.new("1000"))  # not deducted
+    end
+
+    test "item with NO exclusions deducts all ingredients (normal behavior unchanged)" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      ingr_a = insert_stocked_product("ingr_a")
+      ingr_b = insert_stocked_product("ingr_b")
+      link_ing(mi.id, ingr_a.id, "25")
+      link_ing(mi.id, ingr_b.id, "10")
+
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+
+      order = Orders.get_order!(order.id)
+      {:ok, _} = Orders.send_to_kitchen(order)
+
+      assert Decimal.equal?(current_stock(ingr_a.id), Decimal.new("975"))
+      assert Decimal.equal?(current_stock(ingr_b.id), Decimal.new("990"))
+    end
+
+    test "exclusion on one order_item does not affect another order_item for same dish" do
+      # Two different orders: one has "sin jitomate", the other does not
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      jitomate = insert_stocked_product("jito_cross")
+      link_ing(mi.id, jitomate.id, "50")
+
+      # Order A: sin jitomate
+      order_a = insert_order(%{customer_name: "Mesa A #{System.unique_integer()}"})
+      item_a = insert_order_item(order_a.id, mi.id)
+      {:ok, :added} = Orders.toggle_exclusion(item_a.id, jitomate.id)
+
+      # Order B: con jitomate (normal)
+      order_b = insert_order(%{customer_name: "Mesa B #{System.unique_integer()}"})
+      insert_order_item(order_b.id, mi.id)
+
+      # Send both orders to kitchen
+      Orders.send_to_kitchen(Orders.get_order!(order_a.id))
+      Orders.send_to_kitchen(Orders.get_order!(order_b.id))
+
+      # Order B deducted 50g, order A did not → net: 1000 - 50 = 950
+      assert Decimal.equal?(current_stock(jitomate.id), Decimal.new("950"))
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # restore_stock respects exclusions
+  # ---------------------------------------------------------------------------
+
+  describe "cancel_item — restore_stock respects exclusions" do
+    defp insert_stocked_prod(stock \\ "1000") do
+      CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "Prod restore #{System.unique_integer()}",
+        category: "insumos",
+        unit: "g",
+        net_cost: Decimal.new("1.00"),
+        stock_quantity: Decimal.new(stock),
+        active: true
+      })
+    end
+
+    defp link_ing2(menu_item_id, product_id, qty) do
+      CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+        menu_item_id: menu_item_id,
+        product_id: product_id,
+        quantity: Decimal.new(qty)
+      })
+    end
+
+    defp current_stock2(product_id) do
+      CRC.Repo.one!(from p in CRC.Inventory.Product,
+        where: p.id == ^product_id, select: p.stock_quantity)
+    end
+
+    test "excluded ingredient is NOT restored on cancel (it was never deducted)" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      jito = insert_stocked_prod("500")
+      lech = insert_stocked_prod("500")
+      link_ing2(mi.id, jito.id, "20")
+      link_ing2(mi.id, lech.id, "15")
+
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      # Exclude jitomate before sending
+      {:ok, :added} = Orders.toggle_exclusion(item.id, jito.id)
+      {:ok, _sent_order} = Orders.send_to_kitchen(Orders.get_order!(order.id))
+
+      # After send: jitomate still 500, lechuga = 485
+      assert Decimal.equal?(current_stock2(jito.id), Decimal.new("500"))
+      assert Decimal.equal?(current_stock2(lech.id), Decimal.new("485"))
+
+      # Load the sent item struct (cancel_item requires an OrderItem struct)
+      sent_item = CRC.Repo.get!(CRC.Orders.OrderItem, item.id)
+      {:ok, _} = Orders.cancel_item(sent_item, :not_prepared)
+
+      # Lechuga restored: 485 + 15 = 500
+      assert Decimal.equal?(current_stock2(lech.id), Decimal.new("500"))
+      # Jitomate unchanged (was excluded, never deducted, nothing to restore)
+      assert Decimal.equal?(current_stock2(jito.id), Decimal.new("500"))
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # financial_summary COGS respects exclusions
+  # ---------------------------------------------------------------------------
+
+  describe "financial_summary COGS — exclusion-aware" do
+    @excl_cogs_date ~U[2027-09-20 10:00:00Z]
+    @excl_cogs_range {:range, ~D[2027-09-20], ~D[2027-09-20]}
+
+    defp insert_excl_product(net_cost) do
+      CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "COGS Excl #{System.unique_integer()}",
+        category: "insumos",
+        unit: "g",
+        net_cost: Decimal.new(net_cost),
+        stock_quantity: Decimal.new("9999"),
+        active: true
+      })
+    end
+
+    defp link_excl_ing(menu_item_id, product_id, qty) do
+      CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+        menu_item_id: menu_item_id,
+        product_id: product_id,
+        quantity: Decimal.new(qty)
+      })
+    end
+
+    test "excluded ingredient is not counted in COGS" do
+      # Dish with two ingredients: mozzarella (cost=10, qty=5g) and jitomate (cost=2, qty=8g)
+      # Normal COGS = (1×5×10) + (1×8×2) = 50 + 16 = 66
+      # With jitomate excluded: COGS = 50 only
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{price: "120.00"})
+      mozz = insert_excl_product("10.00")
+      jito = insert_excl_product("2.00")
+      link_excl_ing(mi.id, mozz.id, "5")
+      link_excl_ing(mi.id, jito.id, "8")
+
+      # Insert closed order + order item directly (avoids send/close flow complexity)
+      order = CRC.Repo.insert!(%CRC.Orders.Order{
+        customer_name: "COGS Excl Test #{System.unique_integer()}",
+        status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("120.00"),
+        closed_at: @excl_cogs_date,
+        inserted_at: @excl_cogs_date, updated_at: @excl_cogs_date
+      })
+      item = CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi.id, quantity: 1,
+        status: "served",
+        inserted_at: @excl_cogs_date, updated_at: @excl_cogs_date
+      })
+
+      # Customer requested "sin jitomate"
+      CRC.Repo.insert!(%CRC.Orders.OrderItemExclusion{
+        order_item_id: item.id, product_id: jito.id
+      })
+
+      summary = Orders.financial_summary(@excl_cogs_range)
+
+      # mozz: 1 × 5 × 10.00 = 50.00 (jitomate is excluded → not counted)
+      assert Decimal.equal?(summary.cogs, Decimal.new("50.00"))
+    end
+
+    test "without exclusions COGS counts all ingredients (regression — exclusion filter doesn't break normal case)" do
+      # Same setup as above but no exclusion — COGS should be full 66
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{price: "120.00"})
+      mozz = insert_excl_product("10.00")
+      jito = insert_excl_product("2.00")
+      link_excl_ing(mi.id, mozz.id, "5")
+      link_excl_ing(mi.id, jito.id, "8")
+
+      d = ~U[2027-09-21 10:00:00Z]
+      order = CRC.Repo.insert!(%CRC.Orders.Order{
+        customer_name: "COGS Full #{System.unique_integer()}",
+        status: "closed", payment_method: "tarjeta",
+        total: Decimal.new("120.00"),
+        closed_at: d, inserted_at: d, updated_at: d
+      })
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id, menu_item_id: mi.id, quantity: 1,
+        status: "served", inserted_at: d, updated_at: d
+      })
+
+      summary = Orders.financial_summary({:range, ~D[2027-09-21], ~D[2027-09-21]})
+
+      # (1 × 5 × 10) + (1 × 8 × 2) = 50 + 16 = 66
+      assert Decimal.equal?(summary.cogs, Decimal.new("66.00"))
+    end
+  end
 end

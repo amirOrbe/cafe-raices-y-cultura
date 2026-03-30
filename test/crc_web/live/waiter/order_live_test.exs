@@ -971,4 +971,169 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       assert reloaded.status == "cancelled_waste"
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # Ingredient exclusion toggles (sin jitomate)
+  # ---------------------------------------------------------------------------
+
+  describe "ingredient exclusion toggles" do
+    defp insert_recipe_product(name) do
+      CRC.Repo.insert!(%CRC.Inventory.Product{
+        name: "#{name}_#{System.unique_integer()}",
+        category: "verduras",
+        unit: "g",
+        net_cost: Decimal.new("1.00"),
+        stock_quantity: Decimal.new("999"),
+        active: true
+      })
+    end
+
+    defp link_recipe(menu_item_id, product_id) do
+      CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+        menu_item_id: menu_item_id,
+        product_id: product_id,
+        quantity: Decimal.new("10")
+      })
+    end
+
+    test "shows ingredient toggles for pending menu item with a recipe", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      prod = insert_recipe_product("Jitomate")
+      link_recipe(mi.id, prod.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      # The ingredient name should appear as a toggle badge
+      assert html =~ prod.name
+      # The "Quitar:" label is shown
+      assert html =~ "Quitar:"
+    end
+
+    test "does NOT show ingredient toggles for items with no recipe", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      # No ingredients linked to this menu item
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      refute html =~ "Quitar:"
+    end
+
+    test "clicking an ingredient badge excludes it (shows as error/strikethrough)", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      prod = insert_recipe_product("Cebolla")
+      link_recipe(mi.id, prod.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      html =
+        render_click(lv, "toggle_exclusion", %{
+          "order_item_id" => to_string(item.id),
+          "product_id" => to_string(prod.id)
+        })
+
+      # After exclusion, the badge gets `line-through` class (excluded style)
+      assert html =~ "line-through"
+      # Exclusion record was created in DB
+      assert CRC.Repo.get_by(CRC.Orders.OrderItemExclusion,
+               order_item_id: item.id, product_id: prod.id)
+    end
+
+    test "clicking again removes the exclusion (toggle off)", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      prod = insert_recipe_product("Lechuga")
+      link_recipe(mi.id, prod.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      # First click: exclude
+      render_click(lv, "toggle_exclusion", %{
+        "order_item_id" => to_string(item.id),
+        "product_id" => to_string(prod.id)
+      })
+
+      # Second click: un-exclude
+      html =
+        render_click(lv, "toggle_exclusion", %{
+          "order_item_id" => to_string(item.id),
+          "product_id" => to_string(prod.id)
+        })
+
+      # line-through removed (ingredient is included again)
+      refute html =~ "line-through"
+      # DB record removed
+      assert is_nil(CRC.Repo.get_by(CRC.Orders.OrderItemExclusion,
+               order_item_id: item.id, product_id: prod.id))
+    end
+
+    test "does NOT show ingredient toggles for sent items (read-only state)", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      prod = insert_recipe_product("Aguacate")
+      link_recipe(mi.id, prod.id)
+      order = insert_order(%{status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "sent"})
+
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      # No modifiable toggles shown for sent items
+      refute html =~ "Quitar:"
+    end
+
+    test "shows read-only 'Sin:' badge for excluded ingredient on sent item", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      prod = insert_recipe_product("Cilantro")
+      link_recipe(mi.id, prod.id)
+      order = insert_order(%{status: "sent"})
+      item = insert_order_item(order.id, mi.id, %{status: "sent"})
+
+      # Create exclusion directly in DB (was set before sending)
+      CRC.Repo.insert!(%CRC.Orders.OrderItemExclusion{
+        order_item_id: item.id,
+        product_id: prod.id
+      })
+
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      # Read-only "Sin:" badge visible
+      assert html =~ "Sin:"
+      assert html =~ prod.name
+    end
+
+    test "toggle_exclusion on non-pending item is ignored (guard)", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      prod = insert_recipe_product("Chile")
+      link_recipe(mi.id, prod.id)
+      order = insert_order(%{status: "sent"})
+      item = insert_order_item(order.id, mi.id, %{status: "sent"})
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      # Should not raise, just be ignored
+      render_click(lv, "toggle_exclusion", %{
+        "order_item_id" => to_string(item.id),
+        "product_id" => to_string(prod.id)
+      })
+
+      # No exclusion should have been created
+      assert is_nil(CRC.Repo.get_by(CRC.Orders.OrderItemExclusion,
+               order_item_id: item.id, product_id: prod.id))
+    end
+  end
 end

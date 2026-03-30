@@ -2,7 +2,7 @@ defmodule CRC.Orders.OrderItem do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias CRC.Orders.Order
+  alias CRC.Orders.{Order, OrderItemExclusion}
   alias CRC.Catalog.MenuItem
   alias CRC.Inventory.Product
 
@@ -28,6 +28,8 @@ defmodule CRC.Orders.OrderItem do
     belongs_to :served_by, CRC.Accounts.User, foreign_key: :served_by_id
     # For ingredient extras: the dish this extra was added for, e.g. "Queso gouda → Sandwich Clásico"
     belongs_to :for_menu_item, CRC.Catalog.MenuItem, foreign_key: :for_menu_item_id
+    # Ingredients explicitly excluded by the customer (e.g. "sin jitomate")
+    has_many :exclusions, OrderItemExclusion
 
     timestamps(type: :utc_datetime)
   end

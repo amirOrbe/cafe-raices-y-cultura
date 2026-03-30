@@ -218,6 +218,35 @@ defmodule CRCWeb.Waiter.OrderLive do
     end
   end
 
+  @doc """
+  Toggles an ingredient exclusion on a pending order item.
+  Only allowed while the item is still pending (before send_to_kitchen).
+  """
+  def handle_event(
+        "toggle_exclusion",
+        %{"order_item_id" => oi_id_str, "product_id" => prod_id_str},
+        socket
+      ) do
+    order_item_id = String.to_integer(oi_id_str)
+    product_id = String.to_integer(prod_id_str)
+    order = socket.assigns.order
+
+    # Guard: only pending items may be modified
+    item = Enum.find(order.order_items, &(&1.id == order_item_id))
+
+    if item && item.status == "pending" do
+      case Orders.toggle_exclusion(order_item_id, product_id) do
+        {:ok, _} ->
+          {:noreply, assign(socket, :order, Orders.get_order!(order.id))}
+
+        {:error, _} ->
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("increment_item", %{"id" => id}, socket) do
     item = Enum.find(socket.assigns.order.order_items, &(to_string(&1.id) == id))
 
@@ -571,6 +600,37 @@ defmodule CRCWeb.Waiter.OrderLive do
                           <% end %>
                         <% end %>
                       </p>
+
+                      <%!-- Ingredient modifier toggles (pending menu items with a recipe) --%>
+                      <%= if item.status == "pending" and not is_nil(item.menu_item_id) and item.menu_item.menu_item_ingredients != [] do %>
+                        <div class="flex flex-wrap items-center gap-1 mt-1.5 pt-1.5 border-t border-base-200">
+                          <span class="text-xs text-base-content/40 shrink-0">Quitar:</span>
+                          <%= for mii <- item.menu_item.menu_item_ingredients do %>
+                            <% excl? = Enum.any?(item.exclusions, &(&1.product_id == mii.product_id)) %>
+                            <button
+                              phx-click="toggle_exclusion"
+                              phx-value-order_item_id={item.id}
+                              phx-value-product_id={mii.product_id}
+                              class={[
+                                "badge badge-sm cursor-pointer transition-all select-none",
+                                if(excl?, do: "badge-error line-through", else: "badge-ghost hover:badge-warning")
+                              ]}
+                            >
+                              {mii.product.name}
+                            </button>
+                          <% end %>
+                        </div>
+                      <% end %>
+
+                      <%!-- Read-only exclusion badges for sent/ready/served items --%>
+                      <%= if item.status in ["sent", "ready"] and item.exclusions != [] do %>
+                        <div class="flex flex-wrap items-center gap-1 mt-1.5">
+                          <span class="text-xs text-warning font-semibold shrink-0">Sin:</span>
+                          <%= for excl <- item.exclusions do %>
+                            <span class="badge badge-xs badge-warning">{excl.product.name}</span>
+                          <% end %>
+                        </div>
+                      <% end %>
                     </div>
 
                     <%!-- "Servir" button — only for ready items --%>

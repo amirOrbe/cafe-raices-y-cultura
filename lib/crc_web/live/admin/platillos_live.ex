@@ -245,7 +245,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
       </div>
 
       <%!-- Category filter tabs --%>
-      <div class="flex flex-wrap gap-2">
+      <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         <.cat_tab value="all" current={@filter_category} label="Todos" />
         <%= for cat <- @categories do %>
           <.cat_tab value={to_string(cat.id)} current={@filter_category} label={cat.name} />
@@ -578,7 +578,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
   defp cat_tab(assigns) do
     ~H"""
     <button
-      class={["btn btn-sm", if(@value == @current, do: "btn-primary", else: "btn-ghost")]}
+      class={["btn btn-sm whitespace-nowrap", if(@value == @current, do: "btn-primary", else: "btn-ghost")]}
       phx-click="set_category_filter"
       phx-value-category={@value}
     >

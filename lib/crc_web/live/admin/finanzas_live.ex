@@ -207,6 +207,7 @@ defmodule CRCWeb.Admin.FinanzasLive do
             </h2>
 
             <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+              <div class="overflow-x-auto">
               <table class="table table-sm w-full">
                 <thead>
                   <tr class="border-b border-base-300 text-xs text-base-content/50 uppercase tracking-wide">
@@ -235,6 +236,7 @@ defmodule CRCWeb.Admin.FinanzasLive do
                   </tr>
                 </tfoot>
               </table>
+              </div>
             </div>
           </div>
         <% else %>

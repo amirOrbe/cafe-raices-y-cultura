@@ -68,7 +68,7 @@ defmodule CRCWeb.Admin.DashboardLive do
       </div>
 
       <%!-- Stats cards --%>
-      <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         <.stat_card label="Total usuarios" value={@stats.total} icon="hero-users" variant={:primary} />
         <.stat_card label="Admins" value={@stats.admins} icon="hero-shield-check" variant={:secondary} />
         <.stat_card label="Empleados" value={@stats.employees} icon="hero-briefcase" variant={:accent} />

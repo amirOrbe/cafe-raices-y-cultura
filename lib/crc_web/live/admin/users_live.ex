@@ -216,7 +216,7 @@ defmodule CRCWeb.Admin.UsersLive do
                       <span class="font-medium text-sm text-base-content">{user.name}</span>
                     </div>
                   </td>
-                  <td class="text-sm text-base-content/70">{user.email}</td>
+                  <td class="text-sm text-base-content/70 max-w-[160px] truncate">{user.email}</td>
                   <td>
                     <.role_badge role={user.role} />
                   </td>
@@ -311,7 +311,7 @@ defmodule CRCWeb.Admin.UsersLive do
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
 
       <%!-- Panel --%>
-      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
         <%!-- Header --%>
         <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
           <h2 class="text-lg font-semibold text-base-content">{@title}</h2>

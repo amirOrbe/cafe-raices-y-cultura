@@ -304,7 +304,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
             <h2 class="text-base font-semibold text-base-content">Reconocimientos de hoy</h2>
             <div class="flex flex-wrap gap-3">
               <%= for r <- @recognitions_today do %>
-                <div class="bg-base-100 rounded-xl border border-warning/30 shadow-sm px-4 py-3 flex items-start gap-3 max-w-xs">
+                <div class="bg-base-100 rounded-xl border border-warning/30 shadow-sm px-4 py-3 flex items-start gap-3 w-full sm:max-w-xs">
                   <span class="text-2xl shrink-0">{recognition_emoji(r.kind)}</span>
                   <div class="min-w-0">
                     <p class="text-sm font-semibold text-base-content truncate">{r.user.name}</p>

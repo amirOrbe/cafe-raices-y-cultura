@@ -320,7 +320,7 @@ defmodule CRCWeb.Admin.VentasLive do
               <tbody>
                 <%= for order <- @orders do %>
                   <tr class="hover:bg-base-50 border-b border-base-200">
-                    <td class="text-sm font-medium text-base-content py-3">
+                    <td class="text-sm font-medium text-base-content py-3 max-w-[120px] truncate">
                       {order.customer_name}
                     </td>
                     <td class="text-sm font-bold text-primary text-right">
@@ -329,7 +329,7 @@ defmodule CRCWeb.Admin.VentasLive do
                     <td>
                       <.payment_badge method={order.payment_method} />
                     </td>
-                    <td class="text-xs text-base-content/50 whitespace-nowrap">
+                    <td class="text-xs text-base-content/50">
                       { format_datetime(order.inserted_at) }
                     </td>
                   </tr>

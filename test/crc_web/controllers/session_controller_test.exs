@@ -46,7 +46,7 @@ defmodule CRCWeb.SessionControllerTest do
     end
 
     test "redirige al inicio si ya hay sesión activa (no-admin)", %{conn: conn} do
-      empleado = crear_usuario(%{role: "empleado", station: "sala", email: "emp_redirect#{System.unique_integer()}@test.com"})
+      empleado = crear_usuario(%{role: "empleado", stations: ["sala"], email: "emp_redirect#{System.unique_integer()}@test.com"})
 
       conn =
         conn
@@ -101,7 +101,7 @@ defmodule CRCWeb.SessionControllerTest do
 
     test "rechaza usuario inactivo", %{conn: conn} do
       admin = crear_usuario()
-      empleado = crear_usuario(%{role: "empleado", station: "sala", email: "emp@test.com"})
+      empleado = crear_usuario(%{role: "empleado", stations: ["sala"], email: "emp@test.com"})
       CRC.Accounts.deactivate_user(admin, empleado)
 
       conn =

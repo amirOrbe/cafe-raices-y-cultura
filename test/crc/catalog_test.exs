@@ -585,4 +585,165 @@ defmodule CRC.CatalogTest do
     end
   end
 
+  # ===========================================================================
+  # toggle_menu_item_available/1
+  # ===========================================================================
+
+  describe "toggle_menu_item_available/1" do
+    test "hides an available item" do
+      cat = insert_category()
+      item = insert_menu_item(cat.id, %{available: true})
+      assert {:ok, updated} = Catalog.toggle_menu_item_available(item)
+      refute updated.available
+    end
+
+    test "publishes a hidden item" do
+      cat = insert_category()
+      item = insert_menu_item(cat.id, %{available: false})
+      assert {:ok, updated} = Catalog.toggle_menu_item_available(item)
+      assert updated.available
+    end
+  end
+
+  # ===========================================================================
+  # set_menu_item_ingredients/2
+  # ===========================================================================
+
+  describe "set_menu_item_ingredients/2" do
+    test "inserts ingredients for a menu item" do
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+      prod = insert_product("setingr", "100")
+
+      assert {:ok, _} =
+               Catalog.set_menu_item_ingredients(item.id, [
+                 %{product_id: prod.id, quantity: Decimal.new("25")}
+               ])
+
+      loaded = Catalog.get_menu_item_with_ingredients!(item.id)
+      assert length(loaded.menu_item_ingredients) == 1
+      assert hd(loaded.menu_item_ingredients).product_id == prod.id
+    end
+
+    test "replaces existing ingredients on second call" do
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+      prod1 = insert_product("repl1", "100")
+      prod2 = insert_product("repl2", "200")
+
+      Catalog.set_menu_item_ingredients(item.id, [%{product_id: prod1.id, quantity: Decimal.new("10")}])
+      Catalog.set_menu_item_ingredients(item.id, [%{product_id: prod2.id, quantity: Decimal.new("20")}])
+
+      loaded = Catalog.get_menu_item_with_ingredients!(item.id)
+      assert length(loaded.menu_item_ingredients) == 1
+      assert hd(loaded.menu_item_ingredients).product_id == prod2.id
+    end
+
+    test "clears all ingredients when given empty list" do
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+      prod = insert_product("clr", "50")
+
+      Catalog.set_menu_item_ingredients(item.id, [%{product_id: prod.id, quantity: Decimal.new("5")}])
+      Catalog.set_menu_item_ingredients(item.id, [])
+
+      loaded = Catalog.get_menu_item_with_ingredients!(item.id)
+      assert loaded.menu_item_ingredients == []
+    end
+  end
+
+  # ===========================================================================
+  # list_extras_for_category/1
+  # ===========================================================================
+
+  describe "list_extras_for_category/1" do
+    test "returns distinct products used by available items in the category" do
+      cat = insert_category()
+      prod = insert_product("extras_cat", "100")
+      item = insert_menu_item(cat.id)
+      link_ingredient(item.id, prod.id, "10")
+
+      results = Catalog.list_extras_for_category(cat.id)
+      assert Enum.any?(results, &(&1.id == prod.id))
+    end
+
+    test "returns empty list when category has no items with ingredients" do
+      cat = insert_category()
+      _item = insert_menu_item(cat.id)
+      assert Catalog.list_extras_for_category(cat.id) == []
+    end
+
+    test "does not return products from other categories" do
+      cat1 = insert_category(%{name: "Cat Extras A #{System.unique_integer()}"})
+      cat2 = insert_category(%{name: "Cat Extras B #{System.unique_integer()}"})
+      prod = insert_product("other_cat", "100")
+      item2 = insert_menu_item(cat2.id)
+      link_ingredient(item2.id, prod.id, "10")
+
+      results = Catalog.list_extras_for_category(cat1.id)
+      refute Enum.any?(results, &(&1.id == prod.id))
+    end
+
+    test "does not return products from unavailable items" do
+      cat = insert_category()
+      prod = insert_product("unavail_extra", "100")
+      item = insert_menu_item(cat.id, %{available: false})
+      link_ingredient(item.id, prod.id, "10")
+
+      assert Catalog.list_extras_for_category(cat.id) == []
+    end
+  end
+
+  # ===========================================================================
+  # list_extras_for_menu_item/2
+  # ===========================================================================
+
+  describe "list_extras_for_menu_item/2" do
+    test "returns {product, qty} using exact recipe quantity for the item" do
+      cat = insert_category()
+      prod = insert_product("exact_qty", "200")
+      item = insert_menu_item(cat.id)
+      link_ingredient(item.id, prod.id, "75")
+
+      results = Catalog.list_extras_for_menu_item(item.id, cat.id)
+      assert length(results) == 1
+      [{returned_prod, qty}] = results
+      assert returned_prod.id == prod.id
+      assert Decimal.equal?(qty, Decimal.new("75"))
+    end
+
+    test "returns category-avg quantity for products not in the item's recipe" do
+      cat = insert_category()
+      prod = insert_product("avg_qty", "200")
+      item1 = insert_menu_item(cat.id)
+      item2 = insert_menu_item(cat.id)
+      # Only item2 has this ingredient; item1 gets category avg
+      link_ingredient(item2.id, prod.id, "40")
+
+      results = Catalog.list_extras_for_menu_item(item1.id, cat.id)
+      assert length(results) == 1
+      [{_p, qty}] = results
+      assert Decimal.compare(qty, Decimal.new("0")) == :gt
+    end
+
+    test "returns empty list when category has no ingredients" do
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+      assert Catalog.list_extras_for_menu_item(item.id, cat.id) == []
+    end
+  end
+
+  # ===========================================================================
+  # list_all_menu_items/0
+  # ===========================================================================
+
+  describe "list_all_menu_items/0" do
+    test "includes unavailable items" do
+      cat = insert_category()
+      insert_menu_item(cat.id, %{name: "Oculto", available: false})
+      items = Catalog.list_all_menu_items()
+      assert Enum.any?(items, &(&1.name == "Oculto"))
+    end
+  end
+
 end

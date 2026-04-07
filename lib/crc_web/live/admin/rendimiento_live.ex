@@ -1,9 +1,10 @@
 defmodule CRCWeb.Admin.RendimientoLive do
-  @moduledoc "Admin view showing per-employee performance metrics and response times."
+  @moduledoc "Admin view showing per-employee performance metrics, rankings, and recognitions."
 
   use CRCWeb, :live_view
 
-  alias CRC.Orders
+  alias CRC.{Orders, Accounts}
+  alias CRC.Accounts.User
 
   # Thresholds in seconds: >15 min prep is slow for station staff; >60 min total is slow for waiters
   @prep_threshold_secs 15 * 60
@@ -23,6 +24,8 @@ defmodule CRCWeb.Admin.RendimientoLive do
       |> assign(:date_to, "")
       |> assign(:prep_threshold_secs, @prep_threshold_secs)
       |> assign(:service_threshold_secs, @service_threshold_secs)
+      |> assign(:recognition_modal, nil)
+      |> assign(:recognition_note, "")
       |> load_stats()
 
     {:ok, socket}
@@ -72,6 +75,56 @@ defmodule CRCWeb.Admin.RendimientoLive do
     end
   end
 
+  def handle_event("open_recognition_modal", %{"user_id" => user_id_str, "kind" => kind}, socket) do
+    user_id = String.to_integer(user_id_str)
+    user = Accounts.get_user(user_id)
+
+    socket =
+      socket
+      |> assign(:recognition_modal, %{user: user, kind: kind})
+      |> assign(:recognition_note, "")
+
+    {:noreply, socket}
+  end
+
+  def handle_event("close_recognition_modal", _, socket) do
+    {:noreply, assign(socket, :recognition_modal, nil)}
+  end
+
+  def handle_event("update_recognition_note", %{"note" => note}, socket) do
+    {:noreply, assign(socket, :recognition_note, note)}
+  end
+
+  def handle_event("confirm_recognition", _, socket) do
+    %{recognition_modal: %{user: user, kind: kind}, recognition_note: note} = socket.assigns
+    current_user = socket.assigns.current_user
+
+    attrs = %{
+      user_id: user.id,
+      kind: kind,
+      note: if(note == "", do: nil, else: note),
+      period_date: Date.utc_today()
+    }
+
+    case Accounts.give_recognition(current_user, attrs) do
+      {:ok, _} ->
+        socket =
+          socket
+          |> assign(:recognition_modal, nil)
+          |> assign(:recognition_note, "")
+          |> load_stats()
+          |> put_flash(:info, "Reconocimiento enviado a #{user.name}")
+
+        {:noreply, socket}
+
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, "No tienes permiso para dar reconocimientos")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Error al guardar el reconocimiento")}
+    end
+  end
+
   # ---------------------------------------------------------------------------
   # Render
   # ---------------------------------------------------------------------------
@@ -86,7 +139,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
         <div>
           <h1 class="text-2xl font-bold text-base-content">Rendimiento del personal</h1>
           <p class="text-sm text-base-content/50 mt-0.5">
-            Tiempos de preparación y atención por empleado
+            Tiempos de preparación, atención y rankings del período
           </p>
         </div>
 
@@ -145,6 +198,130 @@ defmodule CRCWeb.Admin.RendimientoLive do
           </div>
         <% end %>
 
+        <%!-- Rankings --%>
+        <%= if @revenue_ranking != [] or @speed_ranking != [] do %>
+          <div class="space-y-4">
+            <div class="flex items-center gap-2">
+              <h2 class="text-base font-semibold text-base-content">Rankings del período</h2>
+              <span class="badge badge-sm badge-warning">🏆</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              <%!-- Revenue ranking --%>
+              <%= if @revenue_ranking != [] do %>
+                <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 space-y-3">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-base">💰</span>
+                    <h3 class="font-semibold text-sm text-base-content">Mayor venta</h3>
+                  </div>
+                  <div class="space-y-2">
+                    <%= for entry <- @revenue_ranking do %>
+                      <% medal = medal_for(entry.rank) %>
+                      <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                          <span class="text-lg shrink-0">{medal}</span>
+                          <div class="size-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                            {String.first(entry.name) |> String.upcase()}
+                          </div>
+                          <span class="text-sm font-medium text-base-content truncate">{entry.name}</span>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                          <div class="text-right">
+                            <p class="text-sm font-bold text-success">
+                              $<%= Decimal.round(entry.revenue, 2) %>
+                            </p>
+                            <p class="text-xs text-base-content/40">{entry.order_count} comandas</p>
+                          </div>
+                          <%= if @current_user.role == "admin" do %>
+                            <button
+                              class="btn btn-xs btn-ghost border border-base-300 gap-1"
+                              phx-click="open_recognition_modal"
+                              phx-value-user_id={entry.user_id}
+                              phx-value-kind="top_sales"
+                              title="Dar reconocimiento"
+                            >
+                              🎖️
+                            </button>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+
+              <%!-- Speed ranking --%>
+              <%= if @speed_ranking != [] do %>
+                <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 space-y-3">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-base">⚡</span>
+                    <h3 class="font-semibold text-sm text-base-content">Mayor velocidad</h3>
+                  </div>
+                  <div class="space-y-2">
+                    <%= for entry <- @speed_ranking do %>
+                      <% medal = medal_for(entry.rank) %>
+                      <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                          <span class="text-lg shrink-0">{medal}</span>
+                          <div class="size-7 rounded-full bg-secondary/10 flex items-center justify-center text-xs font-bold text-secondary shrink-0">
+                            {String.first(entry.name) |> String.upcase()}
+                          </div>
+                          <span class="text-sm font-medium text-base-content truncate">{entry.name}</span>
+                          <%= if entry.station do %>
+                            <span class="badge badge-xs badge-ghost">{entry.station}</span>
+                          <% end %>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                          <div class="text-right">
+                            <p class="text-sm font-bold text-info">{format_duration(entry.avg_secs)}</p>
+                            <p class="text-xs text-base-content/40">{entry.count} ítems</p>
+                          </div>
+                          <%= if @current_user.role == "admin" do %>
+                            <button
+                              class="btn btn-xs btn-ghost border border-base-300 gap-1"
+                              phx-click="open_recognition_modal"
+                              phx-value-user_id={entry.user_id}
+                              phx-value-kind="top_speed"
+                              title="Dar reconocimiento"
+                            >
+                              🎖️
+                            </button>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+
+            </div>
+          </div>
+        <% end %>
+
+        <%!-- Recent recognitions today --%>
+        <%= if @recognitions_today != [] do %>
+          <div class="space-y-3">
+            <h2 class="text-base font-semibold text-base-content">Reconocimientos de hoy</h2>
+            <div class="flex flex-wrap gap-3">
+              <%= for r <- @recognitions_today do %>
+                <div class="bg-base-100 rounded-xl border border-warning/30 shadow-sm px-4 py-3 flex items-start gap-3 max-w-xs">
+                  <span class="text-2xl shrink-0">{recognition_emoji(r.kind)}</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-base-content truncate">{r.user.name}</p>
+                    <p class="text-xs text-base-content/50">{recognition_label(r.kind)}</p>
+                    <%= if r.note do %>
+                      <p class="text-xs text-base-content/70 mt-1 italic">"{r.note}"</p>
+                    <% end %>
+                    <%= if r.given_by do %>
+                      <p class="text-xs text-base-content/30 mt-1">— {r.given_by.name}</p>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
         <%!-- Station staff: cocina & barra --%>
         <%= if @station_stats != [] do %>
           <div class="space-y-4">
@@ -155,7 +332,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
             <p class="text-xs text-base-content/40 -mt-2">
               Tiempo desde que el pedido llega a la estación hasta que se marca listo.
             </p>
-            <.stat_grid stats={@station_stats} threshold_secs={@prep_threshold_secs} unit="ítems" />
+            <.stat_grid stats={@station_stats} threshold_secs={@prep_threshold_secs} unit="ítems" current_user={@current_user} />
           </div>
         <% end %>
 
@@ -169,7 +346,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
             <p class="text-xs text-base-content/40 -mt-2">
               Tiempo total de la cuenta (apertura → cobro) y tiempo de recogida (platillo listo → servido).
             </p>
-            <.stat_grid stats={@waiter_stats} threshold_secs={@service_threshold_secs} unit="comandas" />
+            <.stat_grid stats={@waiter_stats} threshold_secs={@service_threshold_secs} unit="comandas" current_user={@current_user} />
 
             <%!-- Pickup time sub-grid (only when there is served data) --%>
             <% has_pickup = Enum.any?(@waiter_stats, fn s -> s.pickup_count > 0 end) %>
@@ -217,6 +394,46 @@ defmodule CRCWeb.Admin.RendimientoLive do
 
       </div>
     </div>
+
+    <%!-- Recognition modal --%>
+    <%= if @recognition_modal do %>
+      <% modal = @recognition_modal %>
+      <div class="modal modal-open">
+        <div class="modal-box max-w-sm">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="text-3xl">{recognition_emoji(modal.kind)}</span>
+            <div>
+              <h3 class="font-bold text-base">{recognition_label(modal.kind)}</h3>
+              <p class="text-sm text-base-content/60">para {modal.user.name}</p>
+            </div>
+          </div>
+
+          <div class="form-control mb-4">
+            <label class="label">
+              <span class="label-text text-xs">Nota personal (opcional)</span>
+            </label>
+            <textarea
+              class="textarea textarea-bordered textarea-sm resize-none"
+              rows="3"
+              placeholder="Ej: Excelente actitud hoy, los clientes quedaron muy contentos…"
+              phx-change="update_recognition_note"
+              name="note"
+            >{@recognition_note}</textarea>
+          </div>
+
+          <div class="modal-action">
+            <button class="btn btn-ghost btn-sm" phx-click="close_recognition_modal">
+              Cancelar
+            </button>
+            <button class="btn btn-primary btn-sm gap-1" phx-click="confirm_recognition">
+              <.icon name="hero-check" class="size-4" />
+              Confirmar
+            </button>
+          </div>
+        </div>
+        <div class="modal-backdrop" phx-click="close_recognition_modal"></div>
+      </div>
+    <% end %>
     """
   end
 
@@ -227,6 +444,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
   attr :stats, :list, required: true
   attr :threshold_secs, :integer, required: true
   attr :unit, :string, default: "ítems"
+  attr :current_user, User, required: true
 
   defp stat_grid(assigns) do
     max_avg = assigns.stats |> Enum.map(& &1.avg) |> Enum.max(fn -> 1 end)
@@ -259,6 +477,17 @@ defmodule CRCWeb.Admin.RendimientoLive do
                 <span class="badge badge-xs badge-error gap-1">
                   <.icon name="hero-exclamation-triangle" class="size-3" /> Lento
                 </span>
+              <% end %>
+              <%= if @current_user.role == "admin" do %>
+                <button
+                  class="btn btn-xs btn-ghost px-1"
+                  phx-click="open_recognition_modal"
+                  phx-value-user_id={stat.user_id}
+                  phx-value-kind="custom"
+                  title="Dar reconocimiento"
+                >
+                  🎖️
+                </button>
               <% end %>
             </div>
           </div>
@@ -306,9 +535,17 @@ defmodule CRCWeb.Admin.RendimientoLive do
     %{station_stats: station, waiter_stats: waiters} =
       Orders.employee_stats(socket.assigns.period)
 
+    %{revenue_ranking: revenue, speed_ranking: speed} =
+      Orders.employee_rankings(socket.assigns.period)
+
+    recognitions_today = Accounts.list_recognitions_for_period(Date.utc_today())
+
     socket
     |> assign(:station_stats, station)
     |> assign(:waiter_stats, waiters)
+    |> assign(:revenue_ranking, revenue)
+    |> assign(:speed_ranking, speed)
+    |> assign(:recognitions_today, recognitions_today)
   end
 
   defp format_duration(secs) when secs < 60, do: "#{secs}s"
@@ -317,4 +554,17 @@ defmodule CRCWeb.Admin.RendimientoLive do
     rem = rem(secs, 60)
     if rem == 0, do: "#{mins}min", else: "#{mins}min #{rem}s"
   end
+
+  defp medal_for(1), do: "🥇"
+  defp medal_for(2), do: "🥈"
+  defp medal_for(3), do: "🥉"
+  defp medal_for(_), do: "·"
+
+  defp recognition_emoji("top_sales"), do: "💰"
+  defp recognition_emoji("top_speed"), do: "⚡"
+  defp recognition_emoji(_), do: "🎖️"
+
+  defp recognition_label("top_sales"), do: "Mayor ventas"
+  defp recognition_label("top_speed"), do: "Mayor velocidad"
+  defp recognition_label(_), do: "Reconocimiento especial"
 end

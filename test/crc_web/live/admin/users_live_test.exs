@@ -64,7 +64,7 @@ defmodule CRCWeb.Admin.UsersLiveTest do
   describe "user listing" do
     test "admin sees active users by default", %{conn: conn} do
       {conn, _admin} = admin_session(conn)
-      user = insert_user(%{name: "Empleado Visible", role: "empleado", station: "cocina"})
+      user = insert_user(%{name: "Empleado Visible", role: "empleado", stations: ["cocina"]})
 
       {:ok, _lv, html} = live(conn, ~p"/admin/usuarios")
       assert html =~ "Empleado Visible"
@@ -72,7 +72,7 @@ defmodule CRCWeb.Admin.UsersLiveTest do
 
     test "inactive users are not shown in active filter", %{conn: conn} do
       {conn, admin} = admin_session(conn)
-      empleado = insert_user(%{name: "Emp Inactivo", role: "empleado", station: "barra"})
+      empleado = insert_user(%{name: "Emp Inactivo", role: "empleado", stations: ["barra"]})
       Accounts.deactivate_user(admin, empleado)
 
       {:ok, _lv, html} = live(conn, ~p"/admin/usuarios")
@@ -81,7 +81,7 @@ defmodule CRCWeb.Admin.UsersLiveTest do
 
     test "set_status_filter 'inactive' shows only inactive users", %{conn: conn} do
       {conn, admin} = admin_session(conn)
-      empleado = insert_user(%{name: "Emp Inactivo Ver", role: "empleado", station: "sala"})
+      empleado = insert_user(%{name: "Emp Inactivo Ver", role: "empleado", stations: ["sala"]})
       Accounts.deactivate_user(admin, empleado)
 
       {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
@@ -91,7 +91,7 @@ defmodule CRCWeb.Admin.UsersLiveTest do
 
     test "set_status_filter 'active' shows only active users", %{conn: conn} do
       {conn, admin} = admin_session(conn)
-      empleado = insert_user(%{name: "Emp Activo Ver", role: "empleado", station: "cocina"})
+      empleado = insert_user(%{name: "Emp Activo Ver", role: "empleado", stations: ["cocina"]})
 
       {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
       html = render_click(lv, "set_status_filter", %{"status" => "active"})
@@ -158,7 +158,7 @@ defmodule CRCWeb.Admin.UsersLiveTest do
 
     test "can deactivate another user", %{conn: conn} do
       {conn, _admin} = admin_session(conn)
-      empleado = insert_user(%{name: "Emp Toggle", role: "empleado", station: "cocina"})
+      empleado = insert_user(%{name: "Emp Toggle", role: "empleado", stations: ["cocina"]})
 
       {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
 
@@ -168,7 +168,7 @@ defmodule CRCWeb.Admin.UsersLiveTest do
 
     test "can activate a deactivated user", %{conn: conn} do
       {conn, admin} = admin_session(conn)
-      empleado = insert_user(%{name: "Emp Activar", role: "empleado", station: "sala"})
+      empleado = insert_user(%{name: "Emp Activar", role: "empleado", stations: ["sala"]})
       Accounts.deactivate_user(admin, empleado)
 
       {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
@@ -182,7 +182,7 @@ defmodule CRCWeb.Admin.UsersLiveTest do
   describe "edit_user event" do
     test "opens modal with user data for editing", %{conn: conn} do
       {conn, _admin} = admin_session(conn)
-      empleado = insert_user(%{name: "Emp Editar", role: "empleado", station: "barra"})
+      empleado = insert_user(%{name: "Emp Editar", role: "empleado", stations: ["barra"]})
 
       {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
 
@@ -192,7 +192,7 @@ defmodule CRCWeb.Admin.UsersLiveTest do
 
     test "can save user changes without changing password", %{conn: conn} do
       {conn, _admin} = admin_session(conn)
-      empleado = insert_user(%{name: "Emp Editar Pass", role: "empleado", station: "cocina"})
+      empleado = insert_user(%{name: "Emp Editar Pass", role: "empleado", stations: ["cocina"]})
 
       {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
       render_click(lv, "edit_user", %{"id" => to_string(empleado.id)})
@@ -204,7 +204,7 @@ defmodule CRCWeb.Admin.UsersLiveTest do
             name: "Emp Editado",
             email: "emp_editado#{System.unique_integer()}@cafe.com",
             role: "empleado",
-            station: "barra",
+            stations: ["barra"],
             password: ""
           }
         )
@@ -215,7 +215,7 @@ defmodule CRCWeb.Admin.UsersLiveTest do
 
     test "can save user changes with new password", %{conn: conn} do
       {conn, _admin} = admin_session(conn)
-      empleado = insert_user(%{name: "Emp New Pass", role: "empleado", station: "sala"})
+      empleado = insert_user(%{name: "Emp New Pass", role: "empleado", stations: ["sala"]})
 
       {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
       render_click(lv, "edit_user", %{"id" => to_string(empleado.id)})
@@ -227,7 +227,7 @@ defmodule CRCWeb.Admin.UsersLiveTest do
             name: "Emp New Pass",
             email: empleado.email,
             role: "empleado",
-            station: "sala",
+            stations: ["sala"],
             password: "nuevapass123"
           }
         )
@@ -253,7 +253,7 @@ defmodule CRCWeb.Admin.UsersLiveTest do
       {conn, _admin} = admin_session(conn)
       {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
 
-      insert_user(%{name: "Usuario PubSub", role: "empleado", station: "sala"})
+      insert_user(%{name: "Usuario PubSub", role: "empleado", stations: ["sala"]})
       Phoenix.PubSub.broadcast(CRC.PubSub, "admin:users", {:user_changed, %{}})
 
       html = render(lv)
@@ -274,9 +274,9 @@ defmodule CRCWeb.Admin.UsersLiveTest do
   describe "station labels" do
     test "shows station labels in user table", %{conn: conn} do
       {conn, _admin} = admin_session(conn)
-      insert_user(%{name: "Emp Barra Label", role: "empleado", station: "barra"})
-      insert_user(%{name: "Emp Cocina Label", role: "empleado", station: "cocina"})
-      insert_user(%{name: "Emp Sala Label", role: "empleado", station: "sala"})
+      insert_user(%{name: "Emp Barra Label", role: "empleado", stations: ["barra"]})
+      insert_user(%{name: "Emp Cocina Label", role: "empleado", stations: ["cocina"]})
+      insert_user(%{name: "Emp Sala Label", role: "empleado", stations: ["sala"]})
 
       {:ok, _lv, html} = live(conn, ~p"/admin/usuarios")
       assert html =~ "Barra"

@@ -69,8 +69,10 @@ defmodule CRCWeb.Components.SiteComponents do
                     <span class="text-xs font-medium text-base-content/80 max-w-[100px] truncate hidden lg:block">
                       {@current_user.name}
                     </span>
-                    <%= if @current_user.station do %>
-                      <span class="badge badge-xs badge-ghost hidden lg:inline-flex">{@current_user.station}</span>
+                    <%= if @current_user.stations != [] do %>
+                      <span class="badge badge-xs badge-ghost hidden lg:inline-flex">
+                        {Enum.join(@current_user.stations, " · ")}
+                      </span>
                     <% end %>
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-3 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -82,7 +84,7 @@ defmodule CRCWeb.Components.SiteComponents do
                       <p class="text-sm font-semibold text-base-content">{@current_user.name}</p>
                       <p class="text-xs text-base-content/50">
                         {if @current_user.role == "admin", do: "Administrador", else: "Empleado"}
-                        {if @current_user.station, do: " · #{@current_user.station}", else: ""}
+                        {if @current_user.stations != [], do: " · #{Enum.join(@current_user.stations, " · ")}", else: ""}
                       </p>
                     </li>
                     <%!-- Admin links --%>
@@ -120,7 +122,7 @@ defmodule CRCWeb.Components.SiteComponents do
                     <% end %>
                     <%!-- Empleado links --%>
                     <%= if @current_user.role == "empleado" do %>
-                      <%= if @current_user.station == "sala" do %>
+                      <%= if "sala" in @current_user.stations do %>
                         <li>
                           <a href="/mesa" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200">
                             <.icon name="hero-clipboard-document-list" class="size-4 text-base-content/50" />
@@ -134,7 +136,7 @@ defmodule CRCWeb.Components.SiteComponents do
                           </a>
                         </li>
                       <% end %>
-                      <%= if @current_user.station == "cocina" do %>
+                      <%= if "cocina" in @current_user.stations do %>
                         <li>
                           <a href="/cocina" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200">
                             <.icon name="hero-fire" class="size-4 text-base-content/50" />
@@ -142,7 +144,7 @@ defmodule CRCWeb.Components.SiteComponents do
                           </a>
                         </li>
                       <% end %>
-                      <%= if @current_user.station == "barra" do %>
+                      <%= if "barra" in @current_user.stations do %>
                         <li>
                           <a href="/barra" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200">
                             <.icon name="hero-beaker" class="size-4 text-base-content/50" />
@@ -215,7 +217,7 @@ defmodule CRCWeb.Components.SiteComponents do
               <p class="text-sm font-semibold text-base-content truncate">{@current_user.name}</p>
               <p class="text-xs text-base-content/50">
                 {if @current_user.role == "admin", do: "Administrador", else: "Empleado"}
-                {if @current_user.station, do: " · #{@current_user.station}", else: ""}
+                {if @current_user.stations != [], do: " · #{Enum.join(@current_user.stations, " · ")}", else: ""}
               </p>
             </div>
           </div>
@@ -240,7 +242,7 @@ defmodule CRCWeb.Components.SiteComponents do
               </a>
             <% end %>
             <%= if @current_user.role == "empleado" do %>
-              <%= if @current_user.station == "sala" do %>
+              <%= if "sala" in @current_user.stations do %>
                 <a href="/mesa" phx-click="close_nav" class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors">
                   <.icon name="hero-clipboard-document-list" class="size-5 text-primary" /> Comandas
                 </a>
@@ -248,12 +250,12 @@ defmodule CRCWeb.Components.SiteComponents do
                   <.icon name="hero-clock" class="size-5 text-primary" /> Historial
                 </a>
               <% end %>
-              <%= if @current_user.station == "cocina" do %>
+              <%= if "cocina" in @current_user.stations do %>
                 <a href="/cocina" phx-click="close_nav" class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors">
                   <.icon name="hero-fire" class="size-5 text-primary" /> Cocina
                 </a>
               <% end %>
-              <%= if @current_user.station == "barra" do %>
+              <%= if "barra" in @current_user.stations do %>
                 <a href="/barra" phx-click="close_nav" class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors">
                   <.icon name="hero-beaker" class="size-5 text-primary" /> Barra
                 </a>

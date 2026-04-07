@@ -14,7 +14,7 @@ defmodule CRCWeb.Waiter.TableLiveTest do
     attrs =
       Map.merge(
         %{name: "Waiter", email: "waiter#{System.unique_integer()}@cafe.com",
-          role: "empleado", station: "sala", password: "pass123456"},
+          role: "empleado", stations: ["sala"], password: "pass123456"},
         overrides
       )
 

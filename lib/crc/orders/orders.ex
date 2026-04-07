@@ -805,6 +805,115 @@ defmodule CRC.Orders do
     end
   end
 
+  @doc """
+  Returns revenue and speed rankings for the given period.
+
+  Returns a map with two keys:
+  - `:revenue_ranking` — waiters sorted by descending total revenue (closed orders).
+    Each entry: `%{user_id, name, revenue, order_count, rank}`.
+  - `:speed_ranking` — station/waiter staff sorted by ascending avg prep/service time.
+    Each entry: `%{user_id, name, station, avg_secs, count, rank}`.
+
+  Only employees with at least 1 data point in the period are included.
+  """
+  def employee_rankings(period \\ :all) do
+    closed_order_ids =
+      Order
+      |> where([o], o.status == "closed")
+      |> filter_by_period(period)
+      |> select([o], o.id)
+      |> Repo.all()
+
+    if closed_order_ids == [] do
+      %{revenue_ranking: [], speed_ranking: []}
+    else
+      revenue_ranking = build_revenue_ranking(closed_order_ids)
+      speed_ranking = build_speed_ranking(closed_order_ids)
+      %{revenue_ranking: revenue_ranking, speed_ranking: speed_ranking}
+    end
+  end
+
+  defp build_revenue_ranking(closed_order_ids) do
+    from(o in Order,
+      join: u in User, on: o.user_id == u.id,
+      where: o.id in ^closed_order_ids and not is_nil(o.user_id),
+      group_by: [u.id, u.name],
+      select: %{
+        user_id: u.id,
+        name: u.name,
+        revenue: sum(o.total),
+        order_count: count(o.id)
+      },
+      order_by: [desc: sum(o.total)]
+    )
+    |> Repo.all()
+    |> Enum.with_index(1)
+    |> Enum.map(fn {entry, rank} -> Map.put(entry, :rank, rank) end)
+  end
+
+  defp build_speed_ranking(closed_order_ids) do
+    # Station staff (cocina/barra): lower prep time = better
+    station_rows =
+      from(oi in OrderItem,
+        join: u in User, on: oi.marked_ready_by_id == u.id,
+        where:
+          oi.order_id in ^closed_order_ids and
+            not is_nil(oi.sent_at) and
+            not is_nil(oi.ready_at),
+        select: %{user_id: u.id, name: u.name, stations: u.stations,
+                  sent_at: oi.sent_at, ready_at: oi.ready_at}
+      )
+      |> Repo.all()
+
+    station_entries =
+      station_rows
+      |> Enum.group_by(fn r -> {r.user_id, r.name, r.stations} end)
+      |> Enum.map(fn {{uid, name, stations}, rows} ->
+        times = Enum.map(rows, fn r -> DateTime.diff(r.ready_at, r.sent_at, :second) end)
+        avg = round(Enum.sum(times) / length(times))
+        %{user_id: uid, name: name, station: stations_label(stations), avg_secs: avg, count: length(times)}
+      end)
+
+    # Waiters pickup time: lower = better
+    pickup_rows =
+      from(oi in OrderItem,
+        join: u in User, on: oi.served_by_id == u.id,
+        where:
+          oi.order_id in ^closed_order_ids and
+            not is_nil(oi.ready_at) and
+            not is_nil(oi.served_at),
+        select: %{user_id: u.id, name: u.name, stations: u.stations,
+                  ready_at: oi.ready_at, served_at: oi.served_at}
+      )
+      |> Repo.all()
+
+    pickup_entries =
+      pickup_rows
+      |> Enum.group_by(fn r -> {r.user_id, r.name, r.stations} end)
+      |> Enum.map(fn {{uid, name, stations}, rows} ->
+        times =
+          rows
+          |> Enum.map(fn r -> DateTime.diff(r.served_at, r.ready_at, :second) end)
+          |> Enum.filter(&(&1 >= 0))
+
+        if times == [] do
+          nil
+        else
+          avg = round(Enum.sum(times) / length(times))
+          %{user_id: uid, name: name, station: stations_label(stations), avg_secs: avg, count: length(times)}
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    # Merge both, deduplicate by user_id keeping lowest avg if same user appears twice
+    (station_entries ++ pickup_entries)
+    |> Enum.group_by(& &1.user_id)
+    |> Enum.map(fn {_uid, entries} -> Enum.min_by(entries, & &1.avg_secs) end)
+    |> Enum.sort_by(& &1.avg_secs, :asc)
+    |> Enum.with_index(1)
+    |> Enum.map(fn {entry, rank} -> Map.put(entry, :rank, rank) end)
+  end
+
   defp build_station_stats(closed_order_ids) do
     from(oi in OrderItem,
       join: u in User, on: oi.marked_ready_by_id == u.id,
@@ -818,16 +927,16 @@ defmodule CRC.Orders do
       select: %{
         user_id: u.id,
         name: u.name,
-        station: u.station,
+        stations: u.stations,
         sent_at: oi.sent_at,
         ready_at: oi.ready_at
       }
     )
     |> Repo.all()
-    |> Enum.group_by(fn r -> {r.user_id, r.name, r.station} end)
-    |> Enum.map(fn {{uid, name, station}, rows} ->
+    |> Enum.group_by(fn r -> {r.user_id, r.name, r.stations} end)
+    |> Enum.map(fn {{uid, name, stations}, rows} ->
       times = Enum.map(rows, fn r -> DateTime.diff(r.ready_at, r.sent_at, :second) end)
-      build_stat_entry(uid, name, station, length(times), times)
+      build_stat_entry(uid, name, stations_label(stations), length(times), times)
     end)
     |> Enum.sort_by(& &1.avg, :desc)
   end
@@ -837,7 +946,7 @@ defmodule CRC.Orders do
       from(o in Order,
         join: u in User, on: o.user_id == u.id,
         where: o.id in ^closed_order_ids and not is_nil(o.closed_at),
-        select: %{user_id: u.id, name: u.name, station: u.station,
+        select: %{user_id: u.id, name: u.name, stations: u.stations,
                   inserted_at: o.inserted_at, closed_at: o.closed_at}
       )
       |> Repo.all()
@@ -864,8 +973,8 @@ defmodule CRC.Orders do
       end)
 
     service_rows
-    |> Enum.group_by(fn r -> {r.user_id, r.name, r.station} end)
-    |> Enum.map(fn {{uid, name, station}, rows} ->
+    |> Enum.group_by(fn r -> {r.user_id, r.name, r.stations} end)
+    |> Enum.map(fn {{uid, name, stations}, rows} ->
       times =
         rows
         |> Enum.map(fn r -> DateTime.diff(r.closed_at, r.inserted_at, :second) end)
@@ -873,7 +982,7 @@ defmodule CRC.Orders do
 
       pickup = Map.get(pickup_by_user, uid, %{count: 0, avg: 0, min: 0, max: 0})
 
-      base = build_stat_entry(uid, name, station, length(rows), times)
+      base = build_stat_entry(uid, name, stations_label(stations), length(rows), times)
       Map.merge(base, %{
         pickup_count: pickup.count,
         pickup_avg: pickup.avg,
@@ -899,6 +1008,11 @@ defmodule CRC.Orders do
       max: Enum.max(times)
     }
   end
+
+  # Converts a stations list (e.g. ["barra", "sala"]) to a display string ("barra · sala").
+  defp stations_label([]), do: "—"
+  defp stations_label(nil), do: "—"
+  defp stations_label(list), do: Enum.join(list, " · ")
 
   # ---------------------------------------------------------------------------
   # Stock deduction (runs inside send_to_kitchen transaction)

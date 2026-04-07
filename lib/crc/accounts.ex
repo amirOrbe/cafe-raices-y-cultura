@@ -8,7 +8,7 @@ defmodule CRC.Accounts do
 
   import Ecto.Query, warn: false
 
-  alias CRC.Accounts.User
+  alias CRC.Accounts.{User, EmployeeRecognition}
   alias CRC.Repo
 
   # ---------------------------------------------------------------------------
@@ -107,6 +107,50 @@ defmodule CRC.Accounts do
   end
 
   def activate_user(%User{}, _user), do: {:error, :unauthorized}
+
+  # ---------------------------------------------------------------------------
+  # Employee recognitions
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Awards a recognition to an employee.
+
+  `kind` must be one of: "top_sales", "top_speed", "custom".
+  `period_date` anchors the recognition to a specific day (usually today).
+  Returns `{:error, :unauthorized}` if the caller is not an admin.
+  """
+  @spec give_recognition(User.t(), map()) ::
+          {:ok, EmployeeRecognition.t()} | {:error, :unauthorized} | {:error, Ecto.Changeset.t()}
+  def give_recognition(%User{role: "admin"} = admin, attrs) do
+    %EmployeeRecognition{}
+    |> EmployeeRecognition.changeset(Map.put(attrs, :given_by_id, admin.id))
+    |> Repo.insert()
+  end
+
+  def give_recognition(%User{}, _attrs), do: {:error, :unauthorized}
+
+  @doc "Returns all recognitions for a given period_date, preloading user and given_by."
+  @spec list_recognitions_for_period(Date.t()) :: [EmployeeRecognition.t()]
+  def list_recognitions_for_period(date) do
+    EmployeeRecognition
+    |> where(period_date: ^date)
+    |> order_by(desc: :inserted_at)
+    |> preload([:user, :given_by])
+    |> Repo.all()
+  end
+
+  @doc "Returns recent recognitions for a specific user (last 30 days), newest first."
+  @spec list_recognitions_for_user(integer()) :: [EmployeeRecognition.t()]
+  def list_recognitions_for_user(user_id) do
+    since = Date.add(Date.utc_today(), -30)
+
+    EmployeeRecognition
+    |> where(user_id: ^user_id)
+    |> where([r], r.period_date >= ^since)
+    |> order_by(desc: :inserted_at)
+    |> preload(:given_by)
+    |> Repo.all()
+  end
 
   # ---------------------------------------------------------------------------
   # Authentication

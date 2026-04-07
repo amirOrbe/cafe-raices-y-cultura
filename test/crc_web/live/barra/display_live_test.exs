@@ -15,7 +15,7 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
     attrs =
       Map.merge(
         %{name: "Barman", email: "barra#{System.unique_integer()}@cafe.com",
-          role: "empleado", station: "barra", password: "pass123456"},
+          role: "empleado", stations: ["barra"], password: "pass123456"},
         overrides
       )
 

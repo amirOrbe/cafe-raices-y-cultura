@@ -17,6 +17,7 @@ defmodule CRCWeb.Admin.UsersLive do
       |> assign(:status_filter, :active)
       |> assign(:modal, nil)
       |> assign(:form, nil)
+      |> assign(:form_role, "admin")
 
     {:ok, socket}
   end
@@ -45,7 +46,8 @@ defmodule CRCWeb.Admin.UsersLive do
     {:noreply,
      socket
      |> assign(:modal, :new)
-     |> assign(:form, to_form(changeset))}
+     |> assign(:form, to_form(changeset))
+     |> assign(:form_role, "admin")}
   end
 
   def handle_event("edit_user", %{"id" => id}, socket) do
@@ -55,11 +57,16 @@ defmodule CRCWeb.Admin.UsersLive do
     {:noreply,
      socket
      |> assign(:modal, {:edit, user})
-     |> assign(:form, to_form(changeset))}
+     |> assign(:form, to_form(changeset))
+     |> assign(:form_role, user.role)}
+  end
+
+  def handle_event("role_changed", %{"user" => %{"role" => role}}, socket) do
+    {:noreply, assign(socket, :form_role, role)}
   end
 
   def handle_event("close_modal", _params, socket) do
-    {:noreply, assign(socket, modal: nil, form: nil)}
+    {:noreply, assign(socket, modal: nil, form: nil, form_role: "admin")}
   end
 
   def handle_event("save_user", %{"user" => params}, socket) do
@@ -213,8 +220,16 @@ defmodule CRCWeb.Admin.UsersLive do
                   <td>
                     <.role_badge role={user.role} />
                   </td>
-                  <td class="text-sm text-base-content/60">
-                    {station_label(user.station)}
+                  <td>
+                    <div class="flex flex-wrap gap-1">
+                      <%= if user.stations == [] do %>
+                        <span class="text-sm text-base-content/40">—</span>
+                      <% else %>
+                        <%= for s <- user.stations do %>
+                          <span class="badge badge-xs badge-ghost">{station_label(s)}</span>
+                        <% end %>
+                      <% end %>
+                    </div>
                   </td>
                   <td>
                     <.status_badge is_active={user.is_active} />
@@ -263,7 +278,7 @@ defmodule CRCWeb.Admin.UsersLive do
 
     <%!-- Modal: new / edit user --%>
     <%= if @modal != nil do %>
-      <.user_modal form={@form} modal={@modal} />
+      <.user_modal form={@form} modal={@modal} form_role={@form_role} />
     <% end %>
     """
   end
@@ -274,6 +289,7 @@ defmodule CRCWeb.Admin.UsersLive do
 
   attr :form, :map, required: true
   attr :modal, :any, required: true
+  attr :form_role, :string, required: true
 
   defp user_modal(assigns) do
     title =
@@ -319,18 +335,35 @@ defmodule CRCWeb.Admin.UsersLive do
                 {"Empleado", "empleado"},
                 {"Cliente", "cliente"}
               ]}
+              phx-change="role_changed"
             />
-            <.input
-              field={@form[:station]}
-              type="select"
-              label="Estación (solo empleados)"
-              options={[
-                {"— Ninguna —", ""},
-                {"Cocina", "cocina"},
-                {"Barra", "barra"},
-                {"Sala (mesero/a)", "sala"}
-              ]}
-            />
+            <%!-- Station checkboxes — only shown when role is "empleado" --%>
+            <%= if @form_role == "empleado" do %>
+              <div class="form-control">
+                <label class="label pb-1">
+                  <span class="label-text text-sm font-medium">Estaciones</span>
+                </label>
+                <%!-- Hidden sentinel so the key is always present even if nothing is checked --%>
+                <input type="hidden" name="user[stations][]" value="" />
+                <div class="flex flex-wrap gap-x-5 gap-y-2 px-1">
+                  <%= for {label, value} <- [{"Cocina", "cocina"}, {"Barra", "barra"}, {"Sala (mesero/a)", "sala"}] do %>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="user[stations][]"
+                        value={value}
+                        checked={value in (Phoenix.HTML.Form.input_value(@form, :stations) || [])}
+                        class="checkbox checkbox-sm checkbox-primary"
+                      />
+                      <span class="text-sm label-text">{label}</span>
+                    </label>
+                  <% end %>
+                </div>
+                <%= if msg = @form[:stations].errors |> List.first() do %>
+                  <p class="text-error text-xs mt-1">{elem(msg, 0)}</p>
+                <% end %>
+              </div>
+            <% end %>
             <.input
               field={@form[:password]}
               type="password"
@@ -383,8 +416,6 @@ defmodule CRCWeb.Admin.UsersLive do
   defp filter_by_status(users, :active), do: Enum.filter(users, & &1.is_active)
   defp filter_by_status(users, :inactive), do: Enum.filter(users, &(!&1.is_active))
 
-  defp station_label(nil), do: "—"
-  defp station_label(""), do: "—"
   defp station_label("cocina"), do: "Cocina"
   defp station_label("barra"), do: "Barra"
   defp station_label("sala"), do: "Sala"

@@ -78,7 +78,7 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
         %User{}
         |> User.changeset(%{
           name: "Emp Fin", email: "emp_fin#{System.unique_integer()}@cafe.com",
-          role: "empleado", station: "sala", password: "pass123456"
+          role: "empleado", stations: ["sala"], password: "pass123456"
         })
         |> CRC.Repo.insert()
 

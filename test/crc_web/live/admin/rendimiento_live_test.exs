@@ -30,7 +30,7 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
       Map.merge(
         %{name: "Staff #{System.unique_integer()}",
           email: "staff#{System.unique_integer()}@cafe.com",
-          role: "empleado", station: "cocina", password: "pass123456"},
+          role: "empleado", stations: ["cocina"], password: "pass123456"},
         overrides
       )
     {:ok, u} = %User{} |> User.changeset(attrs) |> CRC.Repo.insert()
@@ -95,7 +95,7 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
         %User{}
         |> User.changeset(%{
           name: "Emp", email: "emp_rend#{System.unique_integer()}@cafe.com",
-          role: "empleado", station: "sala", password: "pass123456"
+          role: "empleado", stations: ["sala"], password: "pass123456"
         })
         |> CRC.Repo.insert()
 
@@ -258,8 +258,8 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
   describe "stats display" do
     test "shows station stats when kitchen staff has marked items ready", %{conn: conn} do
       {conn, _} = insert_admin(conn)
-      waiter  = insert_user(%{station: "sala"})
-      kitchen = insert_user(%{name: "Carlos Cocina #{System.unique_integer()}", station: "cocina"})
+      waiter  = insert_user(%{stations: ["sala"]})
+      kitchen = insert_user(%{name: "Carlos Cocina #{System.unique_integer()}", stations: ["cocina"]})
       insert_stat_order(waiter, kitchen)
 
       {:ok, _lv, html} = live(conn, "/admin/rendimiento")
@@ -268,8 +268,8 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
 
     test "shows waiter stats when waiter has closed orders", %{conn: conn} do
       {conn, _} = insert_admin(conn)
-      waiter  = insert_user(%{name: "Ana Mesera #{System.unique_integer()}", station: "sala"})
-      kitchen = insert_user(%{station: "cocina"})
+      waiter  = insert_user(%{name: "Ana Mesera #{System.unique_integer()}", stations: ["sala"]})
+      kitchen = insert_user(%{stations: ["cocina"]})
       insert_stat_order(waiter, kitchen)
 
       {:ok, _lv, html} = live(conn, "/admin/rendimiento")
@@ -278,8 +278,8 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
 
     test "employee does not appear when no orders in selected period", %{conn: conn} do
       {conn, _} = insert_admin(conn)
-      waiter  = insert_user(%{name: "Invisible Mesero #{System.unique_integer()}", station: "sala"})
-      kitchen = insert_user(%{station: "cocina"})
+      waiter  = insert_user(%{name: "Invisible Mesero #{System.unique_integer()}", stations: ["sala"]})
+      kitchen = insert_user(%{stations: ["cocina"]})
       insert_stat_order(waiter, kitchen)
 
       {:ok, lv, _} = live(conn, "/admin/rendimiento")
@@ -305,6 +305,131 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
       Phoenix.PubSub.broadcast(CRC.PubSub, "orders", {:order_updated, 999})
       # Should not crash after receiving PubSub message
       assert render(lv) =~ "Rendimiento"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Recognition modal
+  # ---------------------------------------------------------------------------
+
+  # Creates a closed order so that waiter appears in stats (needed for rankings)
+  defp waiter_stat_order(waiter, kitchen_staff) do
+    insert_stat_order(waiter, kitchen_staff)
+  end
+
+  describe "recognition modal" do
+    test "open_recognition_modal shows modal with employee name and kind label", %{conn: conn} do
+      {conn, admin} = insert_admin(conn)
+      employee = insert_user(%{name: "Emp Modal #{System.unique_integer()}", stations: ["sala"]})
+      waiter_stat_order(admin, employee)
+
+      {:ok, lv, _} = live(conn, "/admin/rendimiento")
+
+      html =
+        render_click(lv, "open_recognition_modal", %{
+          "user_id" => to_string(employee.id),
+          "kind" => "top_sales"
+        })
+
+      assert html =~ employee.name
+      assert html =~ "Mayor ventas"
+      assert html =~ "Confirmar"
+    end
+
+    test "open_recognition_modal with top_speed shows correct label", %{conn: conn} do
+      {conn, admin} = insert_admin(conn)
+      employee = insert_user(%{name: "Emp Speed #{System.unique_integer()}", stations: ["cocina"]})
+      waiter_stat_order(admin, employee)
+
+      {:ok, lv, _} = live(conn, "/admin/rendimiento")
+
+      html =
+        render_click(lv, "open_recognition_modal", %{
+          "user_id" => to_string(employee.id),
+          "kind" => "top_speed"
+        })
+
+      assert html =~ "Mayor velocidad"
+    end
+
+    test "open_recognition_modal with custom shows correct label", %{conn: conn} do
+      {conn, admin} = insert_admin(conn)
+      employee = insert_user(%{name: "Emp Custom #{System.unique_integer()}", stations: ["barra"]})
+      waiter_stat_order(admin, employee)
+
+      {:ok, lv, _} = live(conn, "/admin/rendimiento")
+
+      html =
+        render_click(lv, "open_recognition_modal", %{
+          "user_id" => to_string(employee.id),
+          "kind" => "custom"
+        })
+
+      assert html =~ "Reconocimiento especial"
+    end
+
+    test "close_recognition_modal hides the modal", %{conn: conn} do
+      {conn, admin} = insert_admin(conn)
+      employee = insert_user(%{name: "Emp Close #{System.unique_integer()}", stations: ["sala"]})
+      waiter_stat_order(admin, employee)
+
+      {:ok, lv, _} = live(conn, "/admin/rendimiento")
+
+      render_click(lv, "open_recognition_modal", %{
+        "user_id" => to_string(employee.id),
+        "kind" => "top_speed"
+      })
+
+      html = render_click(lv, "close_recognition_modal", %{})
+      refute html =~ "Confirmar"
+    end
+
+    test "update_recognition_note updates the textarea content", %{conn: conn} do
+      {conn, admin} = insert_admin(conn)
+      employee = insert_user(%{name: "Emp Note #{System.unique_integer()}", stations: ["barra"]})
+      waiter_stat_order(admin, employee)
+
+      {:ok, lv, _} = live(conn, "/admin/rendimiento")
+
+      render_click(lv, "open_recognition_modal", %{
+        "user_id" => to_string(employee.id),
+        "kind" => "custom"
+      })
+
+      html = render_click(lv, "update_recognition_note", %{"note" => "Muy buen trabajo hoy"})
+      assert html =~ "Muy buen trabajo hoy"
+    end
+
+    test "confirm_recognition saves and closes the modal", %{conn: conn} do
+      {conn, admin} = insert_admin(conn)
+      employee = insert_user(%{name: "Emp Confirm #{System.unique_integer()}", stations: ["sala"]})
+      waiter_stat_order(admin, employee)
+
+      {:ok, lv, _} = live(conn, "/admin/rendimiento")
+
+      render_click(lv, "open_recognition_modal", %{
+        "user_id" => to_string(employee.id),
+        "kind" => "top_sales"
+      })
+
+      html = render_click(lv, "confirm_recognition", %{})
+      # Modal should be closed after confirming
+      refute html =~ "Confirmar"
+    end
+
+    test "recognitions_today section shows saved recognitions", %{conn: conn} do
+      {conn, admin} = insert_admin(conn)
+      employee = insert_user(%{name: "Emp Today #{System.unique_integer()}", stations: ["cocina"]})
+
+      CRC.Accounts.give_recognition(admin, %{
+        user_id: employee.id,
+        kind: "top_speed",
+        period_date: Date.utc_today()
+      })
+
+      {:ok, _lv, html} = live(conn, "/admin/rendimiento")
+      assert html =~ employee.name
+      assert html =~ "⚡"
     end
   end
 end

@@ -16,7 +16,7 @@ defmodule CRCWeb.Waiter.HistorialLiveTest do
       Map.merge(
         %{name: "Mesero #{System.unique_integer()}",
           email: "mes#{System.unique_integer()}@cafe.com",
-          role: "empleado", station: "sala", password: "pass123456"},
+          role: "empleado", stations: ["sala"], password: "pass123456"},
         overrides
       )
     {:ok, u} = %User{} |> User.changeset(attrs) |> CRC.Repo.insert()

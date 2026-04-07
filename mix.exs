@@ -10,6 +10,16 @@ defmodule CRC.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
+      test_coverage: [
+        ignore_modules: [
+          CRC.Release,
+          CRCWeb.PageHTML,
+          CRCWeb.SessionHTML,
+          CRCWeb.SitemapXML,
+          CRCWeb.ErrorHTML,
+          CRC.Repo
+        ]
+      ],
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
       releases: [

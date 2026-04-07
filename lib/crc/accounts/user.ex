@@ -4,10 +4,11 @@ defmodule CRC.Accounts.User do
 
   Available roles:
   - `"admin"` — full access, can manage users and the system.
-  - `"empleado"` — restaurant staff; must have an assigned station.
+  - `"empleado"` — restaurant staff; must have at least one assigned station.
   - `"cliente"` — external customer (reservations, own orders).
 
-  Stations (`station`) — only applies to employees:
+  Stations (`stations`) — only apply to employees; an employee may belong to
+  more than one station (e.g., a waiter who also covers the bar):
   - `"cocina"` — prepares dishes.
   - `"barra"` — prepares drinks.
   - `"sala"` — serves tables; can see order status without going to the station.
@@ -27,7 +28,7 @@ defmodule CRC.Accounts.User do
     field :email, :string
     field :phone, :string
     field :role, :string, default: "cliente"
-    field :station, :string
+    field :stations, {:array, :string}, default: []
     field :is_active, :boolean, default: true
     field :password_hash, :string
     field :password, :string, virtual: true
@@ -42,15 +43,15 @@ defmodule CRC.Accounts.User do
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:name, :email, :phone, :role, :station, :is_active, :password])
-    |> normalize_empty_station()
+    |> cast(attrs, [:name, :email, :phone, :role, :stations, :is_active, :password])
+    |> normalize_stations()
     |> validate_required([:name, :email, :role], message: "no puede estar en blanco")
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/,
       message: "tiene formato inválido"
     )
     |> validate_inclusion(:role, @roles, message: "no es una opción válida")
     |> validate_password()
-    |> validate_station()
+    |> validate_stations()
     |> unique_constraint(:email, message: "ya está en uso")
     |> hash_password()
   end
@@ -66,14 +67,20 @@ defmodule CRC.Accounts.User do
     |> validate_required([:is_active])
   end
 
+  @doc "Returns the list of valid station identifiers."
+  def valid_stations, do: @stations
+
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------
 
-  defp normalize_empty_station(changeset) do
-    case get_change(changeset, :station) do
-      "" -> put_change(changeset, :station, nil)
-      _ -> changeset
+  # Filters out blank strings that HTML forms submit for unchecked checkboxes.
+  defp normalize_stations(changeset) do
+    case get_change(changeset, :stations) do
+      nil -> changeset
+      stations ->
+        clean = stations |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == "")) |> Enum.uniq()
+        put_change(changeset, :stations, clean)
     end
   end
 
@@ -94,19 +101,25 @@ defmodule CRC.Accounts.User do
     end
   end
 
-  defp validate_station(changeset) do
+  defp validate_stations(changeset) do
     role = get_field(changeset, :role)
-    station = get_field(changeset, :station)
+    stations = get_field(changeset, :stations) || []
 
     cond do
-      role == "empleado" and is_nil(station) ->
-        add_error(changeset, :station, "no puede estar en blanco")
+      role == "empleado" and stations == [] ->
+        add_error(changeset, :stations, "debe asignarse al menos una estación")
 
-      role == "empleado" and station not in @stations ->
-        add_error(changeset, :station, "no es una opción válida")
+      role == "empleado" ->
+        invalid = Enum.reject(stations, &(&1 in @stations))
 
-      role in ~w(admin cliente) and not is_nil(station) ->
-        add_error(changeset, :station, "debe estar en blanco para este rol")
+        if invalid == [] do
+          changeset
+        else
+          add_error(changeset, :stations, "contiene opciones inválidas: #{Enum.join(invalid, ", ")}")
+        end
+
+      role in ~w(admin cliente) and stations != [] ->
+        put_change(changeset, :stations, [])
 
       true ->
         changeset

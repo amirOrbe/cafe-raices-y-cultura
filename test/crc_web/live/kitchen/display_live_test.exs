@@ -15,7 +15,7 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
     attrs =
       Map.merge(
         %{name: "Cocinero", email: "cocina#{System.unique_integer()}@cafe.com",
-          role: "empleado", station: "cocina", password: "pass123456"},
+          role: "empleado", stations: ["cocina"], password: "pass123456"},
         overrides
       )
 

@@ -14,7 +14,7 @@ defmodule CRC.OrdersTest do
     attrs =
       Map.merge(
         %{name: "Test User", email: "user#{System.unique_integer()}@test.com",
-          role: "empleado", station: "sala", password: "pass123456"},
+          role: "empleado", stations: ["sala"], password: "pass123456"},
         overrides
       )
 
@@ -719,8 +719,8 @@ defmodule CRC.OrdersTest do
       cat = insert_category(%{kind: "food"})
       mi = insert_menu_item(cat.id, %{name: "Tacos", price: "60.00"})
 
-      kitchen_staff = insert_user(%{name: "Carlos Cocina", station: "cocina"})
-      waiter = insert_user(%{name: "Ana Mesera", station: "sala"})
+      kitchen_staff = insert_user(%{name: "Carlos Cocina", stations: ["cocina"]})
+      waiter = insert_user(%{name: "Ana Mesera", stations: ["sala"]})
 
       now = DateTime.utc_now() |> DateTime.truncate(:second)
       sent_at = DateTime.add(now, -600, :second)   # 10 min ago

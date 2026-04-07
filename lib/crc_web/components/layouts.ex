@@ -121,7 +121,7 @@ defmodule CRCWeb.Layouts do
         </div>
 
         <%!-- Navegación --%>
-        <nav class="flex-1 px-3 py-5 space-y-1">
+        <nav class="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
           <a
             href="/admin"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"

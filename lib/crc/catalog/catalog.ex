@@ -12,11 +12,11 @@ defmodule CRC.Catalog do
   # Categories
   # ---------------------------------------------------------------------------
 
-  @doc "Returns all active categories ordered by position, preloading their items with ingredient quantities."
+  @doc "Returns all active categories ordered by name, preloading their items with ingredient quantities."
   def list_categories do
     Category
     |> where(active: true)
-    |> order_by(:position)
+    |> order_by(:name)
     |> preload(menu_items: ^available_items_query())
     |> Repo.all()
     |> Repo.preload(menu_items: [menu_item_ingredients: :product])
@@ -25,7 +25,7 @@ defmodule CRC.Catalog do
   @doc "Returns all categories (including inactive) for admin use."
   def list_all_categories do
     Category
-    |> order_by(:position)
+    |> order_by(:name)
     |> Repo.all()
   end
 
@@ -57,7 +57,7 @@ defmodule CRC.Catalog do
   def list_menu_items do
     MenuItem
     |> where(available: true)
-    |> order_by([:category_id, :position])
+    |> order_by([:category_id, :name])
     |> preload(:category)
     |> Repo.all()
   end
@@ -65,7 +65,7 @@ defmodule CRC.Catalog do
   @doc "Returns all menu items (including unavailable) for admin use."
   def list_all_menu_items do
     MenuItem
-    |> order_by([:category_id, :position])
+    |> order_by([:category_id, :name])
     |> preload(:category)
     |> Repo.all()
   end
@@ -74,7 +74,7 @@ defmodule CRC.Catalog do
   def list_featured_items do
     MenuItem
     |> where(available: true, featured: true)
-    |> order_by(:position)
+    |> order_by(:name)
     |> preload(:category)
     |> Repo.all()
   end
@@ -169,7 +169,7 @@ defmodule CRC.Catalog do
   def list_menu_items_for_category_with_stock(category_id) do
     MenuItem
     |> where(available: true, category_id: ^category_id)
-    |> order_by(:position)
+    |> order_by(:name)
     |> preload([:category, menu_item_ingredients: :product])
     |> Repo.all()
     |> Enum.map(&{&1, available_portions(&1)})
@@ -278,6 +278,6 @@ defmodule CRC.Catalog do
   end
 
   defp available_items_query do
-    from m in MenuItem, where: m.available == true, order_by: m.position
+    from m in MenuItem, where: m.available == true, order_by: m.name
   end
 end

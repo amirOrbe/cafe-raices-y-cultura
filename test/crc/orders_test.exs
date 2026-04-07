@@ -364,7 +364,7 @@ defmodule CRC.OrdersTest do
 
     test "stores total and efectivo amount_paid" do
       cat = insert_category()
-      mi = CRC.Repo.insert!(%CRC.Catalog.MenuItem{name: "X", price: Decimal.new(100), category_id: cat.id, position: 1, available: true, featured: false})
+      mi = CRC.Repo.insert!(%CRC.Catalog.MenuItem{name: "X", price: Decimal.new(100), category_id: cat.id, available: true, featured: false})
       order = insert_order()
       CRC.Repo.insert!(%CRC.Orders.OrderItem{order_id: order.id, menu_item_id: mi.id, quantity: 2, status: "pending"})
       order = Orders.get_order!(order.id)
@@ -677,7 +677,7 @@ defmodule CRC.OrdersTest do
       cat = insert_category()
       mi = CRC.Repo.insert!(%CRC.Catalog.MenuItem{
         name: "Item $100", price: Decimal.new(100),
-        category_id: cat.id, position: 1, available: true, featured: false
+        category_id: cat.id, available: true, featured: false
       })
       order = insert_order()
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
@@ -694,7 +694,7 @@ defmodule CRC.OrdersTest do
       cat = insert_category()
       mi = CRC.Repo.insert!(%CRC.Catalog.MenuItem{
         name: "Item $50", price: Decimal.new(50),
-        category_id: cat.id, position: 1, available: true, featured: false
+        category_id: cat.id, available: true, featured: false
       })
       order = insert_order()
       CRC.Repo.insert!(%CRC.Orders.OrderItem{

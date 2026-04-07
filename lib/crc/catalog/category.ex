@@ -7,7 +7,6 @@ defmodule CRC.Catalog.Category do
   schema "categories" do
     field :name, :string
     field :slug, :string
-    field :position, :integer, default: 0
     field :kind, :string, default: "food"
     field :active, :boolean, default: true
 
@@ -21,7 +20,7 @@ defmodule CRC.Catalog.Category do
   @doc false
   def changeset(category, attrs) do
     category
-    |> cast(attrs, [:name, :slug, :position, :kind, :active])
+    |> cast(attrs, [:name, :slug, :kind, :active])
     |> validate_required([:name, :kind])
     |> validate_inclusion(:kind, @valid_kinds)
     |> maybe_put_slug()

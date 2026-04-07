@@ -8,10 +8,8 @@ defmodule CRC.Catalog.MenuItem do
     field :name, :string
     field :description, :string
     field :price, :decimal
-    field :image_url, :string
     field :available, :boolean, default: true
     field :featured, :boolean, default: false
-    field :position, :integer, default: 0
 
     belongs_to :category, Category
     has_many :menu_item_ingredients, MenuItemIngredient
@@ -19,10 +17,9 @@ defmodule CRC.Catalog.MenuItem do
     timestamps(type: :utc_datetime)
   end
 
-  @doc false
   def changeset(menu_item, attrs) do
     menu_item
-    |> cast(attrs, [:name, :description, :price, :image_url, :available, :featured, :position, :category_id])
+    |> cast(attrs, [:name, :description, :price, :available, :featured, :category_id])
     |> validate_required([:name, :price, :category_id])
     |> validate_number(:price, greater_than: 0)
     |> assoc_constraint(:category)

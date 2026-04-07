@@ -438,23 +438,8 @@ defmodule CRCWeb.Admin.PlatillosLive do
               />
             </div>
 
-            <%!-- Image URL --%>
-            <.input
-              field={@form[:image_url]}
-              type="text"
-              label="URL de imagen (opcional)"
-              placeholder="https://..."
-            />
-
-            <%!-- Position + switches (3 cols) --%>
-            <div class="grid grid-cols-3 gap-3">
-              <.input
-                field={@form[:position]}
-                type="number"
-                label="Posición"
-                placeholder="0"
-                min="0"
-              />
+            <%!-- Switches (2 cols) --%>
+            <div class="grid grid-cols-2 gap-3">
               <.input
                 field={@form[:featured]}
                 type="checkbox"

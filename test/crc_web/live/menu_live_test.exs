@@ -86,8 +86,8 @@ defmodule CRCWeb.MenuLiveTest do
 
   describe "select_category event" do
     test "changes active category", %{conn: conn} do
-      cat1 = insert_category(%{name: "Categoría Uno", position: 1})
-      cat2 = insert_category(%{name: "Categoría Dos", position: 2})
+      cat1 = insert_category(%{name: "Categoría Uno"})
+      cat2 = insert_category(%{name: "Categoría Dos"})
       insert_menu_item(cat1.id, %{name: "Ítem Uno"})
       insert_menu_item(cat2.id, %{name: "Ítem Dos"})
 

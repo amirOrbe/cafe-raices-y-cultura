@@ -98,14 +98,14 @@ defmodule CRC.CatalogTest do
       refute "Inactiva" in names
     end
 
-    test "retorna categorías ordenadas por position" do
-      insert_category(%{name: "Tercera", position: 3})
-      insert_category(%{name: "Primera", position: 1})
-      insert_category(%{name: "Segunda", position: 2})
+    test "retorna categorías ordenadas por nombre" do
+      insert_category(%{name: "Tercera"})
+      insert_category(%{name: "Primera"})
+      insert_category(%{name: "Segunda"})
 
       cats = Catalog.list_categories()
-      positions = Enum.map(cats, & &1.position)
-      assert positions == Enum.sort(positions)
+      names = Enum.map(cats, & &1.name)
+      assert names == Enum.sort(names)
     end
 
     test "retorna categorías con menu_items precargados" do

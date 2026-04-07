@@ -16,7 +16,6 @@ defmodule CRC.InventoryTest do
     Map.merge(
       %{
         name: "Leche entera",
-        category: "lacteos",
         unit: "litros",
         net_cost: "25.00",
         stock_quantity: "10.0",
@@ -164,10 +163,9 @@ defmodule CRC.InventoryTest do
       assert changeset.errors[:name]
     end
 
-    test "invalid without category" do
-      changeset = Product.changeset(%Product{}, product_attrs(%{category: nil}))
-      refute changeset.valid?
-      assert changeset.errors[:category]
+    test "product_category_id is optional" do
+      changeset = Product.changeset(%Product{}, product_attrs(%{product_category_id: nil}))
+      assert changeset.valid?
     end
 
     test "invalid without unit" do
@@ -180,12 +178,6 @@ defmodule CRC.InventoryTest do
       changeset = Product.changeset(%Product{}, product_attrs(%{net_cost: nil}))
       refute changeset.valid?
       assert changeset.errors[:net_cost]
-    end
-
-    test "invalid with unknown category" do
-      changeset = Product.changeset(%Product{}, product_attrs(%{category: "no_existe"}))
-      refute changeset.valid?
-      assert changeset.errors[:category]
     end
 
     test "invalid with unknown unit" do
@@ -231,14 +223,14 @@ defmodule CRC.InventoryTest do
       assert %Supplier{} = product.supplier
     end
 
-    test "returns products ordered by category then name" do
-      insert_product(%{name: "Leche", category: "lacteos"})
-      insert_product(%{name: "Azúcar", category: "alimentos"})
-      insert_product(%{name: "Café", category: "granos"})
+    test "returns products ordered by name" do
+      insert_product(%{name: "Leche"})
+      insert_product(%{name: "Azúcar"})
+      insert_product(%{name: "Café"})
 
       products = Inventory.list_products()
-      pairs = Enum.map(products, &{&1.category, &1.name})
-      assert pairs == Enum.sort(pairs)
+      names = Enum.map(products, & &1.name)
+      assert names == Enum.sort(names)
     end
 
     test "includes both active and inactive products" do
@@ -255,8 +247,7 @@ defmodule CRC.InventoryTest do
         name: "Bajo stock", stock_quantity: "1.0", min_stock: "2.0"
       }))
       {:ok, _ok} = Inventory.create_product(product_attrs(%{
-        name: "Stock ok", stock_quantity: "10.0", min_stock: "2.0",
-        category: "alimentos"
+        name: "Stock ok", stock_quantity: "10.0", min_stock: "2.0"
       }))
 
       result = Inventory.list_low_stock_products()

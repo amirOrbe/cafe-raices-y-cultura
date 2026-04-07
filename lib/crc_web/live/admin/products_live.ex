@@ -19,6 +19,7 @@ defmodule CRCWeb.Admin.ProductsLive do
       |> assign(:products, products)
       |> assign(:low_stock_count, low_stock)
       |> assign(:suppliers, Inventory.list_active_suppliers())
+      |> assign(:categories, Inventory.list_product_categories())
       |> assign(:filter_category, "all")
       |> assign(:status_filter, :active)
       |> assign(:modal, nil)
@@ -40,7 +41,8 @@ defmodule CRCWeb.Admin.ProductsLive do
      socket
      |> assign(:products, products)
      |> assign(:low_stock_count, low_stock)
-     |> assign(:suppliers, Inventory.list_active_suppliers())}
+     |> assign(:suppliers, Inventory.list_active_suppliers())
+     |> assign(:categories, Inventory.list_product_categories())}
   end
 
   # ---------------------------------------------------------------------------
@@ -97,6 +99,7 @@ defmodule CRCWeb.Admin.ProductsLive do
          |> put_flash(:info, "Insumo #{label} correctamente.")
          |> assign(:products, products)
          |> assign(:low_stock_count, low_stock)
+         |> assign(:categories, Inventory.list_product_categories())
          |> assign(:modal, nil)
          |> assign(:form, nil)}
 
@@ -182,10 +185,10 @@ defmodule CRCWeb.Admin.ProductsLive do
       </div>
 
       <%!-- Category filter tabs --%>
-      <div class="flex flex-wrap gap-2">
+      <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         <.filter_tab value="all" current={@filter_category} label="Todos" />
-        <%= for cat <- Product.categories() do %>
-          <.filter_tab value={cat} current={@filter_category} label={category_label(cat)} />
+        <%= for cat <- @categories do %>
+          <.filter_tab value={to_string(cat.id)} current={@filter_category} label={cat.name} />
         <% end %>
       </div>
 
@@ -218,7 +221,9 @@ defmodule CRCWeb.Admin.ProductsLive do
                     </div>
                   </td>
                   <td>
-                    <span class="badge badge-sm badge-ghost">{category_label(product.category)}</span>
+                    <span class="badge badge-sm badge-ghost">
+                      {if product.product_category, do: product.product_category.name, else: "—"}
+                    </span>
                   </td>
                   <td class="text-sm font-medium">
                     <span class={if low_stock?(product), do: "text-warning", else: "text-base-content"}>
@@ -287,7 +292,7 @@ defmodule CRCWeb.Admin.ProductsLive do
 
     <%!-- Modal: new / edit product --%>
     <%= if @modal != nil do %>
-      <.product_modal form={@form} modal={@modal} suppliers={@suppliers} />
+      <.product_modal form={@form} modal={@modal} suppliers={@suppliers} categories={@categories} />
     <% end %>
     """
   end
@@ -299,6 +304,7 @@ defmodule CRCWeb.Admin.ProductsLive do
   attr :form, :map, required: true
   attr :modal, :any, required: true
   attr :suppliers, :list, required: true
+  attr :categories, :list, required: true
 
   defp product_modal(assigns) do
     title = if assigns.modal == :new, do: "Nuevo insumo", else: "Editar insumo"
@@ -334,10 +340,10 @@ defmodule CRCWeb.Admin.ProductsLive do
             <%!-- Category + Unit (2 cols) --%>
             <div class="grid grid-cols-2 gap-3">
               <.input
-                field={@form[:category]}
+                field={@form[:product_category_id]}
                 type="select"
                 label="Categoría"
-                options={category_options()}
+                options={[{"— Sin categoría —", ""} | Enum.map(@categories, &{&1.name, &1.id})]}
               />
               <.input
                 field={@form[:unit]}
@@ -447,30 +453,16 @@ defmodule CRCWeb.Admin.ProductsLive do
   defp filter_by_status(products, :inactive), do: Enum.filter(products, &(!&1.active))
 
   defp filtered_products(products, "all"), do: products
-  defp filtered_products(products, cat), do: Enum.filter(products, &(&1.category == cat))
+  defp filtered_products(products, cat_id) do
+    Enum.filter(products, &(to_string(&1.product_category_id) == cat_id))
+  end
 
   defp low_stock?(%Product{min_stock: nil}), do: false
   defp low_stock?(%Product{stock_quantity: stock, min_stock: min}), do: Decimal.compare(stock, min) != :gt
 
-  defp category_options do
-    [{"— Selecciona categoría —", ""} | Enum.map(Product.categories(), &{category_label(&1), &1})]
-  end
-
   defp unit_options do
     [{"— Selecciona unidad —", ""} | Enum.map(Product.units(), &{unit_label(&1), &1})]
   end
-
-  defp category_label("alimentos"), do: "Alimentos"
-  defp category_label("bebidas"), do: "Bebidas"
-  defp category_label("lacteos"), do: "Lácteos"
-  defp category_label("granos"), do: "Granos de café"
-  defp category_label("panaderia"), do: "Panadería"
-  defp category_label("cocteleria"), do: "Coctelería"
-  defp category_label("desechables"), do: "Desechables"
-  defp category_label("limpieza"), do: "Limpieza"
-  defp category_label("utensilios"), do: "Utensilios"
-  defp category_label("otro"), do: "Otro"
-  defp category_label(other), do: other
 
   defp unit_label("piezas"), do: "Piezas (pza)"
   defp unit_label("gramos"), do: "Gramos (gr)"

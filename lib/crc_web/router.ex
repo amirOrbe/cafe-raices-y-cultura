@@ -86,6 +86,7 @@ defmodule CRCWeb.Router do
       live "/platillos", PlatillosLive
       live "/proveedores", SuppliersLive
       live "/insumos", ProductsLive
+      live "/insumos/categorias", ProductCategoriesLive
       live "/eventos", EventsLive
       live "/colaboradores", CollaboratorsLive
       live "/eventos/tipos", EventTypesLive

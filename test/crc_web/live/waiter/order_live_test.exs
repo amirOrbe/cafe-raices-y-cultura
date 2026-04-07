@@ -831,7 +831,7 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
 
       extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Leche extra #{System.unique_integer()}",
-        category: "lacteos", unit: "ml",
+        unit: "ml",
         net_cost: Decimal.new("0.05"),
         stock_quantity: Decimal.new("3000"), active: true
       })
@@ -860,7 +860,7 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
 
       extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Jarabe #{System.unique_integer()}",
-        category: "otros", unit: "ml",
+        unit: "ml",
         net_cost: Decimal.new("0.10"),
         stock_quantity: Decimal.new("2000"), active: true
       })
@@ -890,7 +890,7 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
 
       extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Extra Otro #{System.unique_integer()}",
-        category: "otros", unit: "ml",
+        unit: "ml",
         net_cost: Decimal.new("0.05"),
         stock_quantity: Decimal.new("1000"), active: true
       })
@@ -920,7 +920,7 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
 
       extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Extra Cancelado #{System.unique_integer()}",
-        category: "otros", unit: "ml",
+        unit: "ml",
         net_cost: Decimal.new("0.05"),
         stock_quantity: Decimal.new("1000"), active: true
       })
@@ -949,7 +949,7 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
 
       extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Extra Waste #{System.unique_integer()}",
-        category: "otros", unit: "ml",
+        unit: "ml",
         net_cost: Decimal.new("0.05"),
         stock_quantity: Decimal.new("1000"), active: true
       })
@@ -980,7 +980,6 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
     defp insert_stocked_product_for_ui(stock) do
       CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Prod UI #{System.unique_integer()}",
-        category: "insumos",
         unit: "g",
         net_cost: Decimal.new("1.00"),
         stock_quantity: Decimal.new(stock),
@@ -1122,7 +1121,6 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
     defp insert_recipe_product(name) do
       CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "#{name}_#{System.unique_integer()}",
-        category: "verduras",
         unit: "g",
         net_cost: Decimal.new("1.00"),
         stock_quantity: Decimal.new("999"),

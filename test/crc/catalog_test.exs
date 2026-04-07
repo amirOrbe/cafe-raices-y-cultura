@@ -134,7 +134,7 @@ defmodule CRC.CatalogTest do
       product =
         CRC.Repo.insert!(%CRC.Inventory.Product{
           name: "Arrachera Prueba #{System.unique_integer()}",
-          category: "carnes",
+          
           unit: "g",
           net_cost: Decimal.new("5.00"),
           stock_quantity: Decimal.new("500"),
@@ -438,7 +438,7 @@ defmodule CRC.CatalogTest do
   defp insert_product(name, stock) do
     CRC.Repo.insert!(%CRC.Inventory.Product{
       name: "#{name}_#{System.unique_integer()}",
-      category: "insumos",
+      
       unit: "g",
       net_cost: Decimal.new("1.00"),
       stock_quantity: Decimal.new(stock),
@@ -512,7 +512,7 @@ defmodule CRC.CatalogTest do
       cat = insert_category()
       prod = CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Prod inactivo #{System.unique_integer()}",
-        category: "insumos",
+        
         unit: "g",
         net_cost: Decimal.new("1.00"),
         stock_quantity: Decimal.new("999"),

@@ -10,6 +10,7 @@ defmodule CRC.Inventory do
 
   alias CRC.Repo
   alias CRC.Inventory.Product
+  alias CRC.Inventory.ProductCategory
   alias CRC.Inventory.Supplier
 
   # ---------------------------------------------------------------------------
@@ -69,14 +70,15 @@ defmodule CRC.Inventory do
   # Products (Insumos)
   # ---------------------------------------------------------------------------
 
-  @doc "Returns all products with their supplier preloaded, ordered by name."
+  @doc "Returns all products with supplier and category preloaded, ordered by name."
   @spec list_products() :: [Product.t()]
   def list_products do
     Repo.all(
       from p in Product,
         left_join: s in assoc(p, :supplier),
-        preload: [supplier: s],
-        order_by: [asc: p.category, asc: p.name]
+        left_join: c in assoc(p, :product_category),
+        preload: [supplier: s, product_category: c],
+        order_by: [asc: c.name, asc: p.name]
     )
   end
 
@@ -97,7 +99,7 @@ defmodule CRC.Inventory do
   def get_product!(id) do
     Product
     |> Repo.get!(id)
-    |> Repo.preload(:supplier)
+    |> Repo.preload([:supplier, :product_category])
   end
 
   @doc "Creates a product."
@@ -131,6 +133,60 @@ defmodule CRC.Inventory do
   @spec change_product(Product.t(), map()) :: Ecto.Changeset.t()
   def change_product(%Product{} = product, attrs \\ %{}) do
     Product.changeset(product, attrs)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Product Categories
+  # ---------------------------------------------------------------------------
+
+  @doc "Returns all product categories ordered by name."
+  @spec list_product_categories() :: [ProductCategory.t()]
+  def list_product_categories do
+    Repo.all(from c in ProductCategory, order_by: [asc: c.name])
+  end
+
+  @doc "Returns product categories with product count."
+  @spec list_product_categories_with_count() :: [map()]
+  def list_product_categories_with_count do
+    Repo.all(
+      from c in ProductCategory,
+        left_join: p in assoc(c, :products),
+        group_by: c.id,
+        select: %{id: c.id, name: c.name, inserted_at: c.inserted_at, product_count: count(p.id)},
+        order_by: [asc: c.name]
+    )
+  end
+
+  @doc "Gets a product category by id. Raises if not found."
+  @spec get_product_category!(integer()) :: ProductCategory.t()
+  def get_product_category!(id), do: Repo.get!(ProductCategory, id)
+
+  @doc "Creates a product category."
+  @spec create_product_category(map()) :: {:ok, ProductCategory.t()} | {:error, Ecto.Changeset.t()}
+  def create_product_category(attrs) do
+    %ProductCategory{}
+    |> ProductCategory.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc "Updates a product category."
+  @spec update_product_category(ProductCategory.t(), map()) :: {:ok, ProductCategory.t()} | {:error, Ecto.Changeset.t()}
+  def update_product_category(%ProductCategory{} = category, attrs) do
+    category
+    |> ProductCategory.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc "Deletes a product category."
+  @spec delete_product_category(ProductCategory.t()) :: {:ok, ProductCategory.t()} | {:error, Ecto.Changeset.t()}
+  def delete_product_category(%ProductCategory{} = category) do
+    Repo.delete(category)
+  end
+
+  @doc "Returns an empty changeset for a product category."
+  @spec change_product_category(ProductCategory.t(), map()) :: Ecto.Changeset.t()
+  def change_product_category(%ProductCategory{} = category, attrs \\ %{}) do
+    ProductCategory.changeset(category, attrs)
   end
 
   # ---------------------------------------------------------------------------

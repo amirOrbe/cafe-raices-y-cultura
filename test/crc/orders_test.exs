@@ -560,7 +560,6 @@ defmodule CRC.OrdersTest do
       product =
         CRC.Repo.insert!(%CRC.Inventory.Product{
           name: "Café Test #{System.unique_integer()}",
-          category: "granos",
           unit: "g",
           net_cost: Decimal.new("1.00"),
           stock_quantity: Decimal.new("100"),
@@ -634,7 +633,6 @@ defmodule CRC.OrdersTest do
       product =
         CRC.Repo.insert!(%CRC.Inventory.Product{
           name: "Leche Test #{System.unique_integer()}",
-          category: "lacteos",
           unit: "ml",
           net_cost: Decimal.new("1.00"),
           stock_quantity: Decimal.new("60"),
@@ -1138,7 +1136,6 @@ defmodule CRC.OrdersTest do
     defp insert_product_with_cost(net_cost) do
       CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Ingrediente #{System.unique_integer()}",
-        category: "granos",
         unit: "g",
         net_cost: Decimal.new(net_cost),
         stock_quantity: Decimal.new("1000"),
@@ -1346,7 +1343,7 @@ defmodule CRC.OrdersTest do
 
       product = CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Ing Waste #{System.unique_integer()}",
-        category: "otros", unit: "g",
+        unit: "g",
         net_cost: Decimal.new("1.00"),
         stock_quantity: Decimal.new("500"), active: true
       })
@@ -1390,7 +1387,7 @@ defmodule CRC.OrdersTest do
       mi = insert_menu_item(cat.id, %{name: "Platillo Costo Waste"})
       product = CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Ing Cost #{System.unique_integer()}",
-        category: "otros", unit: "ml",
+        unit: "ml",
         net_cost: Decimal.new("4.00"),
         stock_quantity: Decimal.new("500"), active: true
       })
@@ -1429,7 +1426,7 @@ defmodule CRC.OrdersTest do
       })
       product = CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Ing Limit #{System.unique_integer()}",
-        category: "otros", unit: "g",
+        unit: "g",
         net_cost: Decimal.new("1.00"),
         stock_quantity: Decimal.new("999"), active: true
       })
@@ -1572,7 +1569,6 @@ defmodule CRC.OrdersTest do
     defp insert_product(overrides \\ %{}) do
       CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Prod #{System.unique_integer()}",
-        category: "verduras",
         unit: "g",
         net_cost: Decimal.new("1.00"),
         stock_quantity: Decimal.new("500"),
@@ -1668,7 +1664,6 @@ defmodule CRC.OrdersTest do
     defp insert_stocked_product(name, stock \\ "1000") do
       CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "#{name}_#{System.unique_integer()}",
-        category: "insumos",
         unit: "g",
         net_cost: Decimal.new("1.00"),
         stock_quantity: Decimal.new(stock),
@@ -1787,7 +1782,6 @@ defmodule CRC.OrdersTest do
     defp insert_stocked_prod(stock \\ "1000") do
       CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "Prod restore #{System.unique_integer()}",
-        category: "insumos",
         unit: "g",
         net_cost: Decimal.new("1.00"),
         stock_quantity: Decimal.new(stock),
@@ -1849,7 +1843,6 @@ defmodule CRC.OrdersTest do
     defp insert_excl_product(net_cost) do
       CRC.Repo.insert!(%CRC.Inventory.Product{
         name: "COGS Excl #{System.unique_integer()}",
-        category: "insumos",
         unit: "g",
         net_cost: Decimal.new(net_cost),
         stock_quantity: Decimal.new("9999"),

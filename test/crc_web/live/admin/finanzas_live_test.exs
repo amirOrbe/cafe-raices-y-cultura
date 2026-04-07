@@ -41,7 +41,6 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
   defp insert_product(net_cost) do
     CRC.Repo.insert!(%CRC.Inventory.Product{
       name: "Ing #{System.unique_integer()}",
-      category: "granos",
       unit: "g",
       net_cost: Decimal.new(net_cost),
       stock_quantity: Decimal.new("1000"),

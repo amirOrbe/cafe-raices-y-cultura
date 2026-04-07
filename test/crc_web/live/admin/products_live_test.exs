@@ -41,12 +41,17 @@ defmodule CRCWeb.Admin.ProductsLiveTest do
     s
   end
 
+  defp insert_product_category(name \\ nil) do
+    n = name || "Categoría #{System.unique_integer()}"
+    {:ok, c} = Inventory.create_product_category(%{name: n})
+    c
+  end
+
   defp insert_product(overrides \\ %{}) do
     attrs =
       Map.merge(
         %{
           name: "Insumo Test #{System.unique_integer()}",
-          category: "lacteos",
           unit: "litros",
           net_cost: "25.00",
           stock_quantity: "10.0",
@@ -107,20 +112,24 @@ defmodule CRCWeb.Admin.ProductsLiveTest do
   describe "category filter" do
     test "filter_category filters by category", %{conn: conn} do
       {conn, _admin} = admin_conn(conn)
-      insert_product(%{name: "Café Especial", category: "granos"})
-      insert_product(%{name: "Leche Especial", category: "lacteos"})
+      cat_a = insert_product_category("Granos")
+      cat_b = insert_product_category("Lácteos")
+      insert_product(%{name: "Café Especial", product_category_id: cat_a.id})
+      insert_product(%{name: "Leche Especial", product_category_id: cat_b.id})
 
       {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
 
-      html = render_click(lv, "filter_category", %{"category" => "granos"})
+      html = render_click(lv, "filter_category", %{"category" => to_string(cat_a.id)})
       assert html =~ "Café Especial"
       refute html =~ "Leche Especial"
     end
 
     test "filter_category 'all' shows all products", %{conn: conn} do
       {conn, _admin} = admin_conn(conn)
-      insert_product(%{name: "Café Granos", category: "granos"})
-      insert_product(%{name: "Leche Lácteos", category: "lacteos"})
+      cat_a = insert_product_category()
+      cat_b = insert_product_category()
+      insert_product(%{name: "Café Granos", product_category_id: cat_a.id})
+      insert_product(%{name: "Leche Lácteos", product_category_id: cat_b.id})
 
       {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
 
@@ -153,7 +162,6 @@ defmodule CRCWeb.Admin.ProductsLiveTest do
         |> form("#product-form",
           product: %{
             name: "Nuevo Insumo Especial",
-            category: "alimentos",
             unit: "kilogramos",
             net_cost: "50.00",
             stock_quantity: "5.0",
@@ -217,7 +225,6 @@ defmodule CRCWeb.Admin.ProductsLiveTest do
         |> form("#product-form",
           product: %{
             name: "Insumo Después Editar",
-            category: "alimentos",
             unit: "kilogramos",
             net_cost: "60.00",
             stock_quantity: "8.0",
@@ -259,7 +266,6 @@ defmodule CRCWeb.Admin.ProductsLiveTest do
       {conn, _admin} = admin_conn(conn)
       {:ok, product} = Inventory.create_product(%{
         name: "Insumo Sin Min",
-        category: "lacteos",
         unit: "litros",
         net_cost: "25.00",
         stock_quantity: "10.0"
@@ -276,13 +282,7 @@ defmodule CRCWeb.Admin.ProductsLiveTest do
       units = ~w(piezas gramos mililitros onzas paquetes)
 
       for unit <- units do
-        insert_product(%{
-          name: "Producto #{unit}",
-          unit: unit,
-          category: "alimentos",
-          stock_quantity: "10.0",
-          min_stock: "2.0"
-        })
+        insert_product(%{name: "Producto #{unit}", unit: unit, stock_quantity: "10.0", min_stock: "2.0"})
       end
 
       {:ok, _lv, html} = live(conn, ~p"/admin/insumos")

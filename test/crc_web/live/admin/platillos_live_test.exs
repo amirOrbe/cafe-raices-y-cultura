@@ -48,7 +48,6 @@ defmodule CRCWeb.Admin.PlatillosLiveTest do
     {:ok, p} =
       Inventory.create_product(%{
         name: "Insumo #{System.unique_integer()}",
-        category: "alimentos",
         unit: "gramos",
         net_cost: "2.00",
         stock_quantity: "500"

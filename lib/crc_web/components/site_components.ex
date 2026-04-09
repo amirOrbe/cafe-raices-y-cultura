@@ -318,6 +318,23 @@ defmodule CRCWeb.Components.SiteComponents do
             </a>
           </div>
         </div>
+
+        <div class="mt-6 pt-5 border-t border-neutral-content/10 text-center">
+          <p class="text-xs text-neutral-content/30">
+            Diseñado y desarrollado por
+            <a
+              href="https://amirOrbe.github.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="hover:text-neutral-content/60 transition-colors underline underline-offset-2"
+            >Amir Orbe</a>
+            ·
+            <a
+              href="mailto:orbebrian@gmail.com"
+              class="hover:text-neutral-content/60 transition-colors"
+            >orbebrian@gmail.com</a>
+          </p>
+        </div>
       </div>
     </footer>
     """

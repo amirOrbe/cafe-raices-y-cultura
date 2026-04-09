@@ -28,13 +28,13 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
     {init_test_session(conn, %{"user_id" => user.id}), user}
   end
 
-  defp insert_category(kind \\ "food") do
-    {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}", kind: kind})
+  defp insert_category(_kind \\ "food") do
+    {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
     cat
   end
 
-  defp insert_menu_item(category_id, name \\ "Platillo") do
-    {:ok, item} = Catalog.create_menu_item(%{name: name, price: "80.00", category_id: category_id})
+  defp insert_menu_item(category_id, name \\ "Platillo", destination \\ "cocina") do
+    {:ok, item} = Catalog.create_menu_item(%{name: name, price: "80.00", category_id: category_id, destination: destination})
     item
   end
 
@@ -74,8 +74,8 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
 
     test "does not show open (unsent) orders", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      food_cat = insert_category("food")
-      mi = insert_menu_item(food_cat.id)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
       order = insert_order(%{status: "open"})
       insert_order_item(order.id, mi.id, %{status: "pending"})
       {:ok, _lv, html} = live(conn, "/cocina")
@@ -84,14 +84,14 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
   end
 
   # ---------------------------------------------------------------------------
-  # Food-only filtering
+  # Cocina filtering (destination: "cocina")
   # ---------------------------------------------------------------------------
 
-  describe "food filtering" do
-    test "shows food items from sent orders", %{conn: conn} do
+  describe "cocina filtering" do
+    test "shows cocina items from sent orders", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      food_cat = insert_category("food")
-      mi = insert_menu_item(food_cat.id, "Enchiladas")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Enchiladas")
       order = insert_order(%{customer_name: "Cliente A", status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "sent"})
       {:ok, _lv, html} = live(conn, "/cocina")
@@ -99,40 +99,22 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
       assert html =~ "Cliente A"
     end
 
-    test "does NOT show drink items", %{conn: conn} do
+    test "does NOT show barra items", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category("drink")
-      drink_mi = insert_menu_item(drink_cat.id, "Margarita")
+      cat = insert_category()
+      drink_mi = insert_menu_item(cat.id, "Margarita", "barra")
       order = insert_order(%{customer_name: "Solo Bebida", status: "sent"})
       insert_order_item(order.id, drink_mi.id, %{status: "sent"})
       {:ok, _lv, html} = live(conn, "/cocina")
       refute html =~ "Margarita"
-      # No food items → order card should NOT appear
       refute html =~ "Solo Bebida"
     end
 
-    test "shows extra-kind items" do
-      # 'extra' category kind should also appear in cocina
-      food_cat = %{} # tested inline below
-      assert true
-    end
-
-    test "shows extra items alongside food items", %{conn: conn} do
+    test "does NOT show pending (not yet sent) cocina items", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      extra_cat = insert_category("extra")
-      mi = insert_menu_item(extra_cat.id, "Postre del día")
-      order = insert_order(%{customer_name: "Cliente Extra", status: "sent"})
-      insert_order_item(order.id, mi.id, %{status: "sent"})
-      {:ok, _lv, html} = live(conn, "/cocina")
-      assert html =~ "Postre del día"
-    end
-
-    test "does NOT show pending (not yet sent) food items", %{conn: conn} do
-      {conn, _} = auth_conn(conn)
-      food_cat = insert_category("food")
-      mi = insert_menu_item(food_cat.id, "Tacos")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Tacos")
       order = insert_order(%{customer_name: "Solo Pending", status: "sent"})
-      # Item is pending (waiter hasn't clicked Enviar yet)
       insert_order_item(order.id, mi.id, %{status: "pending"})
       {:ok, _lv, html} = live(conn, "/cocina")
       refute html =~ "Tacos"
@@ -146,8 +128,8 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
   describe "mark_item_ready" do
     test "marks item as ready and shows badge", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      food_cat = insert_category("food")
-      mi = insert_menu_item(food_cat.id, "Sopa")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Sopa")
       order = insert_order(%{customer_name: "Mesa 2", status: "sent"})
       item = insert_order_item(order.id, mi.id, %{status: "sent"})
       {:ok, lv, _} = live(conn, "/cocina")
@@ -160,14 +142,13 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
 
     test "removes item from queue after marking it ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      food_cat = insert_category("food")
-      mi = insert_menu_item(food_cat.id, "Caldo")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Caldo")
       order = insert_order(%{customer_name: "Mesa 3", status: "sent"})
       item = insert_order_item(order.id, mi.id, %{status: "sent"})
       {:ok, lv, _} = live(conn, "/cocina")
 
       html = render_click(lv, "mark_item_ready", %{"id" => to_string(item.id)})
-      # Item moves to "ready" — disappears from the pending queue
       refute html =~ "Caldo"
     end
   end
@@ -179,8 +160,8 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
   describe "mark_order_ready" do
     test "marks order as ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      food_cat = insert_category("food")
-      mi = insert_menu_item(food_cat.id)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
       order = insert_order(%{customer_name: "Rápido", status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "sent"})
       {:ok, lv, _} = live(conn, "/cocina")
@@ -193,8 +174,8 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
 
     test "moves order to 'listos para servir' section", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      food_cat = insert_category("food")
-      mi = insert_menu_item(food_cat.id)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
       order = insert_order(%{customer_name: "Para Servir", status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "sent"})
       {:ok, lv, _} = live(conn, "/cocina")
@@ -215,8 +196,8 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
       {:ok, lv, html} = live(conn, "/cocina")
       assert html =~ "No hay pedidos pendientes en cocina"
 
-      food_cat = insert_category("food")
-      mi = insert_menu_item(food_cat.id, "Frijoles")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Frijoles")
       order = insert_order(%{customer_name: "PubSub", status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "sent"})
 
@@ -409,9 +390,9 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
 
     test "items already ready are not affected by mark_order_ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      food_cat = insert_category("food")
-      mi1 = insert_menu_item(food_cat.id, "Item Sent")
-      mi2 = insert_menu_item(food_cat.id, "Item Already Ready")
+      cat = insert_category()
+      mi1 = insert_menu_item(cat.id, "Item Sent")
+      mi2 = insert_menu_item(cat.id, "Item Already Ready")
       order = insert_order(%{customer_name: "Mesa Mixta", status: "sent"})
       item_sent  = insert_order_item(order.id, mi1.id, %{status: "sent"})
       item_ready = insert_order_item(order.id, mi2.id, %{status: "ready"})
@@ -425,12 +406,11 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
       assert reloaded_ready.status == "ready"
     end
 
-    test "mark_order_ready does not affect drink items (barra's responsibility)", %{conn: conn} do
+    test "mark_order_ready does not affect barra items (barra's responsibility)", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      food_cat  = insert_category("food")
-      drink_cat = insert_category("drink")
-      food_mi  = insert_menu_item(food_cat.id,  "Tacos Cocina Solo")
-      drink_mi = insert_menu_item(drink_cat.id, "Café Barra Solo")
+      cat = insert_category()
+      food_mi  = insert_menu_item(cat.id, "Tacos Cocina Solo", "cocina")
+      drink_mi = insert_menu_item(cat.id, "Café Barra Solo", "barra")
       order = insert_order(%{customer_name: "Mesa Mixta Barra", status: "sent"})
       food_item  = insert_order_item(order.id, food_mi.id,  %{status: "sent"})
       drink_item = insert_order_item(order.id, drink_mi.id, %{status: "sent"})
@@ -440,15 +420,14 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
 
       reloaded_food  = CRC.Repo.get!(CRC.Orders.OrderItem, food_item.id)
       reloaded_drink = CRC.Repo.get!(CRC.Orders.OrderItem, drink_item.id)
-      # Food item should be ready; drink item should remain sent (barra handles it)
       assert reloaded_food.status == "ready"
       assert reloaded_drink.status == "sent"
     end
 
     test "shows flash message after mark_order_ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      food_cat = insert_category("food")
-      mi = insert_menu_item(food_cat.id, "Platillo Flash")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Platillo Flash")
       order = insert_order(%{customer_name: "Mesa Flash Cocina", status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "sent"})
 

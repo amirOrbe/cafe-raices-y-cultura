@@ -9,7 +9,7 @@ defmodule CRC.CatalogTest do
   # ---------------------------------------------------------------------------
 
   defp category_attrs(overrides \\ %{}) do
-    Map.merge(%{name: "Cafés", kind: "drink"}, overrides)
+    Map.merge(%{name: "Cafés"}, Map.drop(overrides, [:kind, "kind"]))
   end
 
   defp insert_category(overrides \\ %{}) do
@@ -38,7 +38,7 @@ defmodule CRC.CatalogTest do
   # ===========================================================================
 
   describe "Category.changeset/2" do
-    test "válido con nombre y kind requeridos" do
+    test "válido con nombre" do
       changeset = Category.changeset(%Category{}, category_attrs())
       assert changeset.valid?
     end
@@ -49,36 +49,9 @@ defmodule CRC.CatalogTest do
       assert changeset.errors[:name]
     end
 
-    test "inválido sin kind" do
-      changeset = Category.changeset(%Category{}, %{name: "Test"})
-      # kind has a default, so it should still be valid
-      assert changeset.valid? || changeset.errors[:kind] != nil
-    end
-
-    test "inválido con kind desconocido" do
-      changeset = Category.changeset(%Category{}, category_attrs(%{kind: "unknown"}))
-      refute changeset.valid?
-      assert changeset.errors[:kind]
-    end
-
-    test "válido con kind food" do
-      changeset = Category.changeset(%Category{}, category_attrs(%{kind: "food"}))
-      assert changeset.valid?
-    end
-
-    test "válido con kind extra" do
-      changeset = Category.changeset(%Category{}, category_attrs(%{kind: "extra"}))
-      assert changeset.valid?
-    end
-
     test "active tiene default true" do
       {:ok, cat} = Catalog.create_category(category_attrs())
       assert cat.active == true
-    end
-
-    test "position es opcional y tiene default 0" do
-      changeset = Category.changeset(%Category{}, category_attrs())
-      assert changeset.valid?
     end
   end
 
@@ -208,7 +181,7 @@ defmodule CRC.CatalogTest do
     end
 
     test "falla sin nombre" do
-      assert {:error, %Ecto.Changeset{}} = Catalog.create_category(%{kind: "drink"})
+      assert {:error, %Ecto.Changeset{}} = Catalog.create_category(%{active: true})
     end
   end
 

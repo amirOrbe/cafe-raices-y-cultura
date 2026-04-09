@@ -25,8 +25,8 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
     {init_test_session(conn, %{"user_id" => user.id}), user}
   end
 
-  defp insert_category(kind \\ "food") do
-    {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}", kind: kind})
+  defp insert_category(_kind \\ "food") do
+    {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
     cat
   end
 

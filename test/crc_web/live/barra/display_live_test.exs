@@ -28,13 +28,13 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
     {init_test_session(conn, %{"user_id" => user.id}), user}
   end
 
-  defp insert_category(kind \\ "drink") do
-    {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}", kind: kind})
+  defp insert_category(_kind \\ "drink") do
+    {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
     cat
   end
 
-  defp insert_menu_item(category_id, name \\ "Bebida") do
-    {:ok, item} = Catalog.create_menu_item(%{name: name, price: "60.00", category_id: category_id})
+  defp insert_menu_item(category_id, name \\ "Bebida", destination \\ "barra") do
+    {:ok, item} = Catalog.create_menu_item(%{name: name, price: "60.00", category_id: category_id, destination: destination})
     item
   end
 
@@ -74,8 +74,8 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
 
     test "does not show open (unsent) orders", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category("drink")
-      mi = insert_menu_item(drink_cat.id)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
       order = insert_order(%{status: "open"})
       insert_order_item(order.id, mi.id, %{status: "pending"})
       {:ok, _lv, html} = live(conn, "/barra")
@@ -88,10 +88,10 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
   # ---------------------------------------------------------------------------
 
   describe "drink filtering" do
-    test "shows drink items from sent orders", %{conn: conn} do
+    test "shows barra items from sent orders", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category("drink")
-      mi = insert_menu_item(drink_cat.id, "Café de olla")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Café de olla")
       order = insert_order(%{customer_name: "Mesa 5", status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "sent"})
       {:ok, _lv, html} = live(conn, "/barra")
@@ -99,10 +99,10 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       assert html =~ "Mesa 5"
     end
 
-    test "does NOT show food items", %{conn: conn} do
+    test "does NOT show cocina items", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      food_cat = insert_category("food")
-      food_mi = insert_menu_item(food_cat.id, "Chilaquiles")
+      cat = insert_category()
+      food_mi = insert_menu_item(cat.id, "Chilaquiles", "cocina")
       order = insert_order(%{customer_name: "Solo Comida", status: "sent"})
       insert_order_item(order.id, food_mi.id, %{status: "sent"})
       {:ok, _lv, html} = live(conn, "/barra")
@@ -110,21 +110,21 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       refute html =~ "Solo Comida"
     end
 
-    test "does NOT show pending (not yet sent) drink items", %{conn: conn} do
+    test "does NOT show pending (not yet sent) barra items", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category("drink")
-      mi = insert_menu_item(drink_cat.id, "Agua fresca")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Agua fresca")
       order = insert_order(%{customer_name: "Sin Enviar", status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "pending"})
       {:ok, _lv, html} = live(conn, "/barra")
       refute html =~ "Agua fresca"
     end
 
-    test "shows multiple drink items from the same order", %{conn: conn} do
+    test "shows multiple barra items from the same order", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category("drink")
-      mi1 = insert_menu_item(drink_cat.id, "Limonada")
-      mi2 = insert_menu_item(drink_cat.id, "Jamaica")
+      cat = insert_category()
+      mi1 = insert_menu_item(cat.id, "Limonada")
+      mi2 = insert_menu_item(cat.id, "Jamaica")
       order = insert_order(%{customer_name: "Dos Bebidas", status: "sent"})
       insert_order_item(order.id, mi1.id, %{status: "sent"})
       insert_order_item(order.id, mi2.id, %{status: "sent"})
@@ -141,8 +141,8 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
   describe "mark_item_ready" do
     test "marks drink item as ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category("drink")
-      mi = insert_menu_item(drink_cat.id, "Horchata")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Horchata")
       order = insert_order(%{customer_name: "Lista", status: "sent"})
       item = insert_order_item(order.id, mi.id, %{status: "sent"})
       {:ok, lv, _} = live(conn, "/barra")
@@ -155,8 +155,8 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
 
     test "removes drink from queue after marking it ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category("drink")
-      mi = insert_menu_item(drink_cat.id, "Tepache")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Tepache")
       order = insert_order(%{customer_name: "Listo Ya", status: "sent"})
       item = insert_order_item(order.id, mi.id, %{status: "sent"})
       {:ok, lv, _} = live(conn, "/barra")
@@ -177,8 +177,8 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       {:ok, lv, html} = live(conn, "/barra")
       assert html =~ "No hay bebidas pendientes"
 
-      drink_cat = insert_category("drink")
-      mi = insert_menu_item(drink_cat.id, "Michelada")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Michelada")
       order = insert_order(%{customer_name: "PubSub Barra", status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "sent"})
 
@@ -194,12 +194,11 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
   # ---------------------------------------------------------------------------
 
   describe "mixed order" do
-    test "barra only shows drink items from a mixed order", %{conn: conn} do
+    test "barra only shows barra items from a mixed order", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      food_cat = insert_category("food")
-      drink_cat = insert_category("drink")
-      food_mi = insert_menu_item(food_cat.id, "Pozole")
-      drink_mi = insert_menu_item(drink_cat.id, "Agua de tamarindo")
+      cat = insert_category()
+      food_mi = insert_menu_item(cat.id, "Pozole", "cocina")
+      drink_mi = insert_menu_item(cat.id, "Agua de tamarindo")
       order = insert_order(%{customer_name: "Mixto", status: "sent"})
       insert_order_item(order.id, food_mi.id, %{status: "sent"})
       insert_order_item(order.id, drink_mi.id, %{status: "sent"})
@@ -243,8 +242,8 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
   describe "drink item with ready status" do
     test "does NOT show already-ready drinks in the pending queue", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category("drink")
-      mi = insert_menu_item(drink_cat.id, "Agua Lista")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Agua Lista")
       order = insert_order(%{customer_name: "Bebida Lista", status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "ready"})
 
@@ -261,9 +260,9 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
   describe "second batch does not resurface ready drinks (Bug 1)" do
     test "only shows newly-sent drinks when a second batch arrives", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category("drink")
-      mi1 = insert_menu_item(drink_cat.id, "Limonada Servida")
-      mi2 = insert_menu_item(drink_cat.id, "Horchata Nueva")
+      cat = insert_category()
+      mi1 = insert_menu_item(cat.id, "Limonada Servida")
+      mi2 = insert_menu_item(cat.id, "Horchata Nueva")
       order = insert_order(%{customer_name: "Mesa Segundas Barra", status: "sent"})
 
       # First batch: mi1 already served (ready)
@@ -414,8 +413,8 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
 
     test "shows flash message after mark_all_drinks_ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category("drink")
-      mi = insert_menu_item(drink_cat.id, "Bebida Flash Barra")
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, "Bebida Flash Barra")
       order = insert_order(%{customer_name: "Mesa Flash Barra", status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "sent"})
 
@@ -426,9 +425,9 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
 
     test "already-ready drinks are not re-processed", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category("drink")
-      mi1 = insert_menu_item(drink_cat.id, "Ya Lista Barra")
-      mi2 = insert_menu_item(drink_cat.id, "Pendiente Barra")
+      cat = insert_category()
+      mi1 = insert_menu_item(cat.id, "Ya Lista Barra")
+      mi2 = insert_menu_item(cat.id, "Pendiente Barra")
       order = insert_order(%{customer_name: "Mesa Mixta Barra Ready", status: "sent"})
       item_ready = insert_order_item(order.id, mi1.id, %{status: "ready"})
       item_sent  = insert_order_item(order.id, mi2.id, %{status: "sent"})
@@ -442,12 +441,11 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       assert reloaded_sent.status == "ready"
     end
 
-    test "food items in the same order are NOT marked ready by barra", %{conn: conn} do
+    test "cocina items in the same order are NOT marked ready by barra", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category("drink")
-      food_cat  = insert_category("food")
-      drink_mi = insert_menu_item(drink_cat.id, "Bebida Barra")
-      food_mi  = insert_menu_item(food_cat.id,  "Taco No Barra")
+      cat = insert_category()
+      drink_mi = insert_menu_item(cat.id, "Bebida Barra", "barra")
+      food_mi  = insert_menu_item(cat.id, "Taco No Barra", "cocina")
       order = insert_order(%{customer_name: "Mesa Mixta Food Barra", status: "sent"})
       drink_item = insert_order_item(order.id, drink_mi.id, %{status: "sent"})
       food_item  = insert_order_item(order.id, food_mi.id,  %{status: "sent"})
@@ -458,7 +456,6 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       reloaded_drink = CRC.Repo.get!(CRC.Orders.OrderItem, drink_item.id)
       reloaded_food  = CRC.Repo.get!(CRC.Orders.OrderItem, food_item.id)
       assert reloaded_drink.status == "ready"
-      # Food item must remain sent — barra doesn't touch it
       assert reloaded_food.status == "sent"
     end
   end

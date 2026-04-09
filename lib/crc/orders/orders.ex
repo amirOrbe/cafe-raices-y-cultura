@@ -720,7 +720,6 @@ defmodule CRC.Orders do
       items =
         from(oi in OrderItem,
           join: mi in assoc(oi, :menu_item),
-          join: cat in assoc(mi, :category),
           where:
             oi.order_id in ^order_ids and
               not is_nil(oi.sent_at) and
@@ -728,7 +727,7 @@ defmodule CRC.Orders do
               not is_nil(oi.menu_item_id),
           select: %{
             order_id: oi.order_id,
-            kind: cat.kind,
+            kind: mi.destination,
             inserted_at: oi.inserted_at,
             sent_at: oi.sent_at,
             ready_at: oi.ready_at

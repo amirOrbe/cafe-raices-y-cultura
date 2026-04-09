@@ -43,7 +43,7 @@ defmodule CRCWeb.Waiter.HistorialLiveTest do
   end
 
   defp insert_category do
-    {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}", kind: "food"})
+    {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
     cat
   end
 

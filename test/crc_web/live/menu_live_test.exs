@@ -11,7 +11,8 @@ defmodule CRCWeb.MenuLiveTest do
   # ---------------------------------------------------------------------------
 
   defp insert_category(overrides \\ %{}) do
-    attrs = Map.merge(%{name: "Cafés", kind: "drink", active: true}, overrides)
+    base = %{name: "Cafés #{System.unique_integer([:positive])}", active: true}
+    attrs = Map.merge(base, Map.drop(overrides, [:kind, "kind"]))
     {:ok, cat} = Catalog.create_category(attrs)
     cat
   end

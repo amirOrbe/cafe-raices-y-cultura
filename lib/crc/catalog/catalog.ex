@@ -49,6 +49,11 @@ defmodule CRC.Catalog do
   @doc "Deletes a category."
   def delete_category(%Category{} = category), do: Repo.delete(category)
 
+  @doc "Returns a changeset for a category."
+  def change_category(%Category{} = category, attrs \\ %{}) do
+    Category.changeset(category, attrs)
+  end
+
   # ---------------------------------------------------------------------------
   # Menu Items
   # ---------------------------------------------------------------------------

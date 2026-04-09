@@ -29,7 +29,8 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
   end
 
   defp insert_category(overrides \\ %{}) do
-    attrs = Map.merge(%{name: "Cafés", kind: "drink"}, overrides)
+    base = %{name: "Cafés #{System.unique_integer([:positive])}"}
+    attrs = Map.merge(base, Map.drop(overrides, [:kind, "kind"]))
     {:ok, cat} = Catalog.create_category(attrs)
     cat
   end
@@ -512,24 +513,24 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
   end
 
   describe "food category station labels" do
-    test "shows Cocina label for food category items", %{conn: conn} do
+    test "shows Cocina label for cocina destination items", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      food_cat = insert_category(%{name: "Comidas", kind: "food"})
-      mi = insert_menu_item(food_cat.id, %{name: "Enchiladas"})
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Enchiladas", destination: "cocina"})
       order = insert_order()
       insert_order_item(order.id, mi.id)
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
       assert html =~ "Cocina"
     end
 
-    test "shows Cocina label for extra category items", %{conn: conn} do
+    test "shows Barra label for barra destination items", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      extra_cat = insert_category(%{name: "Extras", kind: "extra"})
-      mi = insert_menu_item(extra_cat.id, %{name: "Postre"})
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Limonada", destination: "barra"})
       order = insert_order()
       insert_order_item(order.id, mi.id)
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
-      assert html =~ "Cocina"
+      assert html =~ "Barra"
     end
   end
 
@@ -566,10 +567,9 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
   describe "drinks-ready banner" do
     test "shows banner when drinks are ready but food is still pending", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category(%{name: "Barra Banner", kind: "drink"})
-      food_cat  = insert_category(%{name: "Cocina Banner", kind: "food"})
-      mi_drink  = insert_menu_item(drink_cat.id, %{name: "Limonada"})
-      mi_food   = insert_menu_item(food_cat.id,  %{name: "Enchiladas"})
+      cat = insert_category()
+      mi_drink = insert_menu_item(cat.id, %{name: "Limonada", destination: "barra"})
+      mi_food  = insert_menu_item(cat.id, %{name: "Enchiladas", destination: "cocina"})
       order = insert_order(%{status: "sent"})
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 
@@ -590,8 +590,8 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
 
     test "does not show banner when all items are ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
-      drink_cat = insert_category(%{name: "Barra All", kind: "drink"})
-      mi = insert_menu_item(drink_cat.id, %{name: "Café"})
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Café", destination: "barra"})
       order = insert_order(%{status: "ready"})
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 

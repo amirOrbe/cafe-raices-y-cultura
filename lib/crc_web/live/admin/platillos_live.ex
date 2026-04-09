@@ -438,6 +438,14 @@ defmodule CRCWeb.Admin.PlatillosLive do
               />
             </div>
 
+            <%!-- Destination --%>
+            <.input
+              field={@form[:destination]}
+              type="select"
+              label="Se prepara en"
+              options={[{"Cocina 🍳", "cocina"}, {"Barra ☕", "barra"}]}
+            />
+
             <%!-- Switches (2 cols) --%>
             <div class="grid grid-cols-2 gap-3">
               <.input

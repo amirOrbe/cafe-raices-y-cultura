@@ -250,7 +250,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
 
   # Ingredient extras (product_id set, no menu_item) always go to cocina
   defp kitchen_item?(%{product_id: pid}) when not is_nil(pid), do: true
-  defp kitchen_item?(%{menu_item: mi}) when not is_nil(mi), do: mi.category.kind in ["food", "extra"]
+  defp kitchen_item?(%{menu_item: mi}) when not is_nil(mi), do: mi.destination == "cocina"
   defp kitchen_item?(_), do: false
 
   defp format_qty(%Decimal{} = qty) do

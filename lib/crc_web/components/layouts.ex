@@ -150,6 +150,13 @@ defmodule CRCWeb.Layouts do
             <.icon name="hero-clipboard-document-list" class="size-5 shrink-0" />
             Platillos
           </a>
+          <a
+            href="/admin/platillos/categorias"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-squares-2x2" class="size-5 shrink-0" />
+            Categorías de platillos
+          </a>
 
           <%!-- Inventory section --%>
           <div class="pt-3 pb-1">

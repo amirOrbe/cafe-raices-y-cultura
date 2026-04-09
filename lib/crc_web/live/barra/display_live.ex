@@ -221,7 +221,7 @@ defmodule CRCWeb.Barra.DisplayLive do
   end
 
   defp drink_item?(oi) do
-    not is_nil(oi.menu_item) and oi.menu_item.category.kind == "drink"
+    not is_nil(oi.menu_item) and oi.menu_item.destination == "barra"
   end
 
   # An order is pending in barra if ANY drink item still has status "sent",

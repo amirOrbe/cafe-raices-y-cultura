@@ -597,8 +597,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                             <span class="text-warning font-medium">Cocina</span>
                           <% else %>
                             ${format_price(item.menu_item.price)} c/u
-                            · <span class={station_text_class(item.menu_item.category.kind)}>
-                              {station_label(item.menu_item.category.kind)}
+                            · <span class={station_text_class(item.menu_item.destination)}>
+                              {station_label(item.menu_item.destination)}
                             </span>
                           <% end %>
                         <% end %>
@@ -1085,7 +1085,7 @@ defmodule CRCWeb.Waiter.OrderLive do
     |> length()
   end
 
-  defp item_is_drink?(%{menu_item: %{category: %{kind: "drink"}}}), do: true
+  defp item_is_drink?(%{menu_item: %{destination: "barra"}}), do: true
   defp item_is_drink?(_), do: false
 
   defp item_overdue?(%{status: "sent", sent_at: sent_at}, now) when not is_nil(sent_at) do
@@ -1094,10 +1094,9 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   defp item_overdue?(_, _), do: false
 
-  defp station_label("drink"), do: "Barra"
-  defp station_label("food"), do: "Cocina"
+  defp station_label("barra"), do: "Barra"
   defp station_label(_), do: "Cocina"
 
-  defp station_text_class("drink"), do: "text-info font-medium"
+  defp station_text_class("barra"), do: "text-info font-medium"
   defp station_text_class(_), do: "text-warning font-medium"
 end

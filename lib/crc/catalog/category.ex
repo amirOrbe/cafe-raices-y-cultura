@@ -7,7 +7,6 @@ defmodule CRC.Catalog.Category do
   schema "categories" do
     field :name, :string
     field :slug, :string
-    field :kind, :string, default: "food"
     field :active, :boolean, default: true
 
     has_many :menu_items, MenuItem, on_delete: :delete_all
@@ -15,14 +14,10 @@ defmodule CRC.Catalog.Category do
     timestamps(type: :utc_datetime)
   end
 
-  @valid_kinds ~w(food drink extra)
-
-  @doc false
   def changeset(category, attrs) do
     category
-    |> cast(attrs, [:name, :slug, :kind, :active])
-    |> validate_required([:name, :kind])
-    |> validate_inclusion(:kind, @valid_kinds)
+    |> cast(attrs, [:name, :slug, :active])
+    |> validate_required([:name])
     |> maybe_put_slug()
     |> unique_constraint(:slug)
   end

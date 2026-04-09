@@ -84,6 +84,7 @@ defmodule CRCWeb.Router do
       live "/", DashboardLive
       live "/usuarios", UsersLive
       live "/platillos", PlatillosLive
+      live "/platillos/categorias", CategoriesLive
       live "/proveedores", SuppliersLive
       live "/insumos", ProductsLive
       live "/insumos/categorias", ProductCategoriesLive

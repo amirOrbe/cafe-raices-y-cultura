@@ -198,7 +198,7 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       {conn, _} = auth_conn(conn)
       alias CRC.Catalog
 
-      {:ok, cat} = Catalog.create_category(%{name: "Cat Overdue", kind: "food"})
+      {:ok, cat} = Catalog.create_category(%{name: "Cat Overdue #{System.unique_integer()}"})
       {:ok, mi} = Catalog.create_menu_item(%{name: "Platillo Lento", price: "80.00", category_id: cat.id})
       order = insert_order(%{customer_name: "Overdue Test", status: "sent"})
 
@@ -217,7 +217,7 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       {conn, _} = auth_conn(conn)
       alias CRC.Catalog
 
-      {:ok, cat} = Catalog.create_category(%{name: "Cat Fresh", kind: "food"})
+      {:ok, cat} = Catalog.create_category(%{name: "Cat Fresh #{System.unique_integer()}"})
       {:ok, mi} = Catalog.create_menu_item(%{name: "Platillo Rapido", price: "80.00", category_id: cat.id})
       order = insert_order(%{customer_name: "Fresh Test", status: "sent"})
 
@@ -238,10 +238,9 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       {conn, _} = auth_conn(conn)
       alias CRC.Catalog
 
-      {:ok, drink_cat} = Catalog.create_category(%{name: "Bebidas Test", kind: "drink"})
-      {:ok, food_cat}  = Catalog.create_category(%{name: "Comida Test", kind: "food"})
-      {:ok, mi_drink}  = Catalog.create_menu_item(%{name: "Refresco", price: "30.00", category_id: drink_cat.id})
-      {:ok, mi_food}   = Catalog.create_menu_item(%{name: "Taco", price: "60.00", category_id: food_cat.id})
+      {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
+      {:ok, mi_drink} = Catalog.create_menu_item(%{name: "Refresco", price: "30.00", category_id: cat.id, destination: "barra"})
+      {:ok, mi_food}  = Catalog.create_menu_item(%{name: "Taco", price: "60.00", category_id: cat.id, destination: "cocina"})
 
       order = insert_order(%{customer_name: "Drinks Ready", status: "sent"})
       now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -265,10 +264,9 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       {conn, _} = auth_conn(conn)
       alias CRC.Catalog
 
-      {:ok, drink_cat} = Catalog.create_category(%{name: "Beb All Ready", kind: "drink"})
-      {:ok, food_cat}  = Catalog.create_category(%{name: "Com All Ready", kind: "food"})
-      {:ok, mi_drink}  = Catalog.create_menu_item(%{name: "Agua", price: "20.00", category_id: drink_cat.id})
-      {:ok, mi_food}   = Catalog.create_menu_item(%{name: "Sopa", price: "50.00", category_id: food_cat.id})
+      {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
+      {:ok, mi_drink} = Catalog.create_menu_item(%{name: "Agua", price: "20.00", category_id: cat.id, destination: "barra"})
+      {:ok, mi_food}  = Catalog.create_menu_item(%{name: "Sopa", price: "50.00", category_id: cat.id, destination: "cocina"})
 
       order = insert_order(%{customer_name: "All Ready", status: "ready"})
       now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -302,7 +300,7 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       {conn, _} = auth_conn(conn)
       alias CRC.Catalog
 
-      {:ok, cat} = Catalog.create_category(%{name: "Test Cat", kind: "drink"})
+      {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
       {:ok, mi} = Catalog.create_menu_item(%{name: "Solo Uno", price: "45.00", category_id: cat.id})
       order = insert_order(%{customer_name: "Un Item"})
       Orders.add_item(%{order_id: order.id, menu_item_id: mi.id, quantity: 1})
@@ -315,7 +313,7 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       {conn, _} = auth_conn(conn)
       alias CRC.Catalog
 
-      {:ok, cat} = Catalog.create_category(%{name: "Test Cat2", kind: "drink"})
+      {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
       {:ok, mi1} = Catalog.create_menu_item(%{name: "Bebida A", price: "30.00", category_id: cat.id})
       {:ok, mi2} = Catalog.create_menu_item(%{name: "Bebida B", price: "35.00", category_id: cat.id})
       order = insert_order(%{customer_name: "Dos Items"})

@@ -26,10 +26,8 @@ defmodule CRCWeb.Admin.PlatillosLiveTest do
   end
 
   defp insert_category(overrides \\ %{}) do
-    {:ok, cat} =
-      Catalog.create_category(
-        Map.merge(%{name: "Cat #{System.unique_integer()}", kind: "food"}, overrides)
-      )
+    base = %{name: "Cat #{System.unique_integer()}"}
+    {:ok, cat} = Catalog.create_category(Map.merge(base, Map.drop(overrides, [:kind, "kind"])))
     cat
   end
 

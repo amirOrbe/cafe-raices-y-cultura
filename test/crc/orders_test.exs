@@ -23,7 +23,8 @@ defmodule CRC.OrdersTest do
   end
 
   defp insert_category(overrides \\ %{}) do
-    attrs = Map.merge(%{name: "Cafés", kind: "drink"}, overrides)
+    base = %{name: "Cafés #{System.unique_integer([:positive])}"}
+    attrs = Map.merge(base, Map.drop(overrides, [:kind, "kind"]))
     {:ok, cat} = Catalog.create_category(attrs)
     cat
   end
@@ -126,7 +127,7 @@ defmodule CRC.OrdersTest do
       [loaded] = Orders.list_active_orders() |> Enum.filter(&(&1.id == order.id))
       [item] = loaded.order_items
       assert item.menu_item.name == "Espresso"
-      assert item.menu_item.category.kind == "drink"
+      assert item.menu_item.destination in ~w(cocina barra)
     end
   end
 
@@ -163,7 +164,7 @@ defmodule CRC.OrdersTest do
       loaded = Orders.get_order!(order.id)
       assert loaded.id == order.id
       assert [item] = loaded.order_items
-      assert item.menu_item.category.kind == "drink"
+      assert item.menu_item.destination in ~w(cocina barra)
     end
 
     test "raises Ecto.NoResultsError for unknown id" do
@@ -483,33 +484,32 @@ defmodule CRC.OrdersTest do
       assert Orders.timing_stats() == %{}
     end
 
-    test "returns stats grouped by station kind" do
-      cat_drink = insert_category(%{name: "Bebidas Timing", kind: "drink"})
-      cat_food  = insert_category(%{name: "Comidas Timing", kind: "food"})
-      mi_drink  = insert_menu_item(cat_drink.id)
-      mi_food   = insert_menu_item(cat_food.id)
+    test "returns stats grouped by destination" do
+      cat_barra  = insert_category(%{name: "Bebidas Timing"})
+      cat_cocina = insert_category(%{name: "Comidas Timing"})
+      mi_barra   = insert_menu_item(cat_barra.id, %{destination: "barra"})
+      mi_cocina  = insert_menu_item(cat_cocina.id, %{destination: "cocina"})
 
       order = insert_order()
 
       now = DateTime.utc_now() |> DateTime.truncate(:second)
-      sent   = DateTime.add(now, -600, :second)  # 10 min ago
-      ready  = DateTime.add(now, -300, :second)  # 5 min ago
+      sent      = DateTime.add(now, -600, :second)
+      ready     = DateTime.add(now, -300, :second)
       closed_at = now
 
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi_drink.id,
+        order_id: order.id, menu_item_id: mi_barra.id,
         quantity: 1, status: "ready", sent_at: sent, ready_at: ready,
         inserted_at: DateTime.add(now, -900, :second),
         updated_at: now
       })
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi_food.id,
+        order_id: order.id, menu_item_id: mi_cocina.id,
         quantity: 1, status: "ready", sent_at: sent, ready_at: ready,
         inserted_at: DateTime.add(now, -900, :second),
         updated_at: now
       })
 
-      # Close the order with a closed_at
       order
       |> CRC.Orders.Order.close_changeset(%{
         status: "closed", payment_method: "tarjeta",
@@ -518,10 +518,10 @@ defmodule CRC.OrdersTest do
       |> CRC.Repo.update!()
 
       stats = Orders.timing_stats()
-      assert Map.has_key?(stats, "drink")
-      assert Map.has_key?(stats, "food")
-      assert stats["drink"].prep.avg == 300
-      assert stats["drink"].service.avg == 300
+      assert Map.has_key?(stats, "barra")
+      assert Map.has_key?(stats, "cocina")
+      assert stats["barra"].prep.avg == 300
+      assert stats["barra"].service.avg == 300
     end
 
     test "returns empty map when closed orders have no timestamps" do

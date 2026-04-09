@@ -342,6 +342,6 @@ defmodule CRCWeb.Waiter.TableLive do
     Enum.any?(order.order_items, &(&1.status == "ready"))
   end
 
-  defp item_is_drink?(%{menu_item: %{category: %{kind: "drink"}}}), do: true
+  defp item_is_drink?(%{menu_item: %{destination: "barra"}}), do: true
   defp item_is_drink?(_), do: false
 end

@@ -142,15 +142,6 @@ defmodule CRCWeb.Admin.PackagesLive do
      |> assign(:packages, Catalog.list_all_packages())}
   end
 
-  def handle_event("toggle_featured", %{"id" => id}, socket) do
-    package = Catalog.get_package!(String.to_integer(id))
-    {:ok, _} = Catalog.update_package(package, %{featured: !package.featured})
-
-    {:noreply,
-     socket
-     |> assign(:packages, Catalog.list_all_packages())}
-  end
-
   def handle_event("delete_package", %{"id" => id}, socket) do
     package = Catalog.get_package!(String.to_integer(id))
 
@@ -274,9 +265,6 @@ defmodule CRCWeb.Admin.PackagesLive do
                     <% else %>
                       <span class="badge badge-ghost badge-sm">Inactivo</span>
                     <% end %>
-                    <%= if pkg.featured do %>
-                      <span class="badge badge-accent badge-sm">Destacado</span>
-                    <% end %>
                   </div>
                 </div>
 
@@ -311,14 +299,6 @@ defmodule CRCWeb.Admin.PackagesLive do
                     phx-value-id={pkg.id}
                   >
                     {if pkg.active, do: "Desactivar", else: "Activar"}
-                  </button>
-                  <button
-                    class="btn btn-xs btn-ghost"
-                    phx-click="toggle_featured"
-                    phx-value-id={pkg.id}
-                    title={if pkg.featured, do: "Quitar de destacados", else: "Poner en destacados"}
-                  >
-                    <.icon name={if pkg.featured, do: "hero-star-solid", else: "hero-star"} class="size-3.5 text-accent" />
                   </button>
                   <button
                     class="btn btn-xs btn-ghost text-error ml-auto"
@@ -405,17 +385,6 @@ defmodule CRCWeb.Admin.PackagesLive do
                       checked={@form[:active].value != false && @form[:active].value != "false"}
                     />
                     <span class="text-sm font-medium">Activo</span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="hidden" name="package[featured]" value="false" />
-                    <input
-                      type="checkbox"
-                      name="package[featured]"
-                      value="true"
-                      class="checkbox checkbox-accent checkbox-sm"
-                      checked={@form[:featured].value == true || @form[:featured].value == "true"}
-                    />
-                    <span class="text-sm font-medium">Destacado en menú</span>
                   </label>
                 </div>
               </div>

@@ -10,7 +10,7 @@ defmodule CRCWeb.HomeLive do
   def mount(_params, _session, socket) do
     # Carousel always uses local photos shuffled randomly — every visit shows a different order
     photos = carousel_photos() |> Enum.shuffle()
-    packages = Catalog.list_packages() |> Enum.filter(& &1.featured)
+    packages = Catalog.list_packages()
 
     socket =
       socket

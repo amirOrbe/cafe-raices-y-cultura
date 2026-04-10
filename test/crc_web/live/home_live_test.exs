@@ -99,16 +99,16 @@ defmodule CRCWeb.HomeLiveTest do
   end
 
   describe "packages section" do
-    test "hides packages section when no featured packages exist", %{conn: conn} do
+    test "hides packages section when no active packages exist", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/")
       refute html =~ "Paquetes del día"
     end
 
-    test "shows featured packages section when featured packages exist", %{conn: conn} do
+    test "shows packages section when active packages exist", %{conn: conn} do
       cat_attrs = %{name: "Cafés Pkg #{System.unique_integer()}"}
       {:ok, cat} = CRC.Catalog.create_category(cat_attrs)
       {:ok, item} = CRC.Catalog.create_menu_item(%{name: "Café", price: "40.00", category_id: cat.id})
-      {:ok, pkg} = CRC.Catalog.create_package(%{name: "Combo Especial Test", price: "60.00", featured: true})
+      {:ok, pkg} = CRC.Catalog.create_package(%{name: "Combo Especial Test", price: "60.00"})
       {:ok, _} = CRC.Catalog.set_package_items(pkg, [%{menu_item_id: item.id, quantity: 1}])
 
       {:ok, _lv, html} = live(conn, ~p"/")
@@ -116,10 +116,10 @@ defmodule CRCWeb.HomeLiveTest do
       assert html =~ "Combo Especial Test"
     end
 
-    test "non-featured packages are not shown on homepage", %{conn: conn} do
-      {:ok, _} = CRC.Catalog.create_package(%{name: "Combo Oculto", price: "60.00", featured: false})
+    test "inactive packages are not shown on homepage", %{conn: conn} do
+      {:ok, _} = CRC.Catalog.create_package(%{name: "Combo Inactivo", price: "60.00", active: false})
       {:ok, _lv, html} = live(conn, ~p"/")
-      refute html =~ "Combo Oculto"
+      refute html =~ "Combo Inactivo"
     end
   end
 

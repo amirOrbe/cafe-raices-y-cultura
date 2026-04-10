@@ -223,21 +223,6 @@ defmodule CRCWeb.Admin.PackagesLiveTest do
     end
   end
 
-  describe "toggle_featured" do
-    test "toggles package featured status", %{conn: conn} do
-      {conn, _} = insert_admin(conn)
-      pkg = insert_package(%{name: "Combo Featured", featured: false})
-
-      {:ok, lv, _html} = live(conn, "/admin/paquetes")
-
-      lv
-      |> element("[phx-click='toggle_featured'][phx-value-id='#{pkg.id}']")
-      |> render_click()
-
-      updated = Catalog.get_package!(pkg.id)
-      assert updated.featured == true
-    end
-  end
 
   # ---------------------------------------------------------------------------
   # Delete package

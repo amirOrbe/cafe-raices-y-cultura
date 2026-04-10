@@ -21,5 +21,5 @@ defmodule CRCWeb.Gettext do
 
   See the [Gettext Docs](https://hexdocs.pm/gettext) for detailed usage.
   """
-  use Gettext.Backend, otp_app: :crc
+  use Gettext.Backend, otp_app: :crc, default_locale: "es"
 end

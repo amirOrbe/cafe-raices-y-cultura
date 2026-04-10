@@ -156,7 +156,7 @@ defmodule CRCWeb.Admin.PackagesLiveTest do
         |> form("#package-form", package: %{name: "", price: "90"})
         |> render_submit()
 
-      assert html =~ "can&#39;t be blank"
+      assert html =~ "no puede estar en blanco"
     end
   end
 

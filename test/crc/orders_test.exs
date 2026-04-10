@@ -74,12 +74,12 @@ defmodule CRC.OrdersTest do
 
     test "fails without customer_name" do
       assert {:error, changeset} = Orders.create_order(%{})
-      assert "can't be blank" in errors_on(changeset).customer_name
+      assert "no puede estar en blanco" in errors_on(changeset).customer_name
     end
 
     test "fails with invalid status" do
       assert {:error, changeset} = Orders.create_order(%{customer_name: "X", status: "invalid"})
-      assert "is invalid" in errors_on(changeset).status
+      assert "no es válido" in errors_on(changeset).status
     end
 
     test "accepts optional user_id" do
@@ -199,7 +199,7 @@ defmodule CRC.OrdersTest do
       mi = insert_menu_item(cat.id)
       order = insert_order()
       assert {:error, changeset} = Orders.add_item(%{order_id: order.id, menu_item_id: mi.id, quantity: 0})
-      assert "must be greater than 0" in errors_on(changeset).quantity
+      assert "debe ser mayor que 0" in errors_on(changeset).quantity
     end
   end
 
@@ -225,7 +225,7 @@ defmodule CRC.OrdersTest do
       item = insert_order_item(order.id, mi.id)
 
       assert {:error, changeset} = Orders.update_item(item, %{quantity: 0})
-      assert "must be greater than 0" in errors_on(changeset).quantity
+      assert "debe ser mayor que 0" in errors_on(changeset).quantity
     end
   end
 
@@ -404,7 +404,7 @@ defmodule CRC.OrdersTest do
     test "fails with invalid status" do
       order = insert_order()
       assert {:error, changeset} = Orders.update_order(order, %{status: "nope"})
-      assert "is invalid" in errors_on(changeset).status
+      assert "no es válido" in errors_on(changeset).status
     end
   end
 
@@ -415,7 +415,7 @@ defmodule CRC.OrdersTest do
   describe "create_order/0 default arg" do
     test "returns error with no attrs (required fields missing)" do
       assert {:error, changeset} = Orders.create_order()
-      assert "can't be blank" in errors_on(changeset).customer_name
+      assert "no puede estar en blanco" in errors_on(changeset).customer_name
     end
   end
 

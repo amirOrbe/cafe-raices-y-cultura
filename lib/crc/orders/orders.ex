@@ -7,7 +7,7 @@ defmodule CRC.Orders do
   import Ecto.Query, warn: false
   alias CRC.Repo
   alias CRC.Orders.{Order, OrderItem, OrderItemExclusion}
-  alias CRC.Catalog.MenuItemIngredient
+  alias CRC.Catalog.{MenuItemIngredient, Package}
   alias CRC.Inventory.Product
   alias CRC.Accounts.User
 
@@ -25,7 +25,7 @@ defmodule CRC.Orders do
     Order
     |> where([o], o.status in ["open", "sent", "ready"])
     |> order_by([o], o.inserted_at)
-    |> preload([:user, order_items: [:product, :for_menu_item, exclusions: [:product], menu_item: :category]])
+    |> preload([:user, order_items: [:product, :for_menu_item, exclusions: [:product], menu_item: :category, package: []]])
     |> Repo.all()
   end
 
@@ -34,7 +34,7 @@ defmodule CRC.Orders do
     Order
     |> where([o], o.status in ["open", "sent", "ready"])
     |> order_by([o], o.inserted_at)
-    |> preload([:user, order_items: [:product, :for_menu_item, exclusions: [:product], menu_item: :category]])
+    |> preload([:user, order_items: [:product, :for_menu_item, exclusions: [:product], menu_item: :category, package: []]])
     |> Repo.all()
   end
 
@@ -47,6 +47,7 @@ defmodule CRC.Orders do
       order_items: [
         :product,
         :for_menu_item,
+        :package,
         exclusions: [:product],
         menu_item: [:category, menu_item_ingredients: [:product]]
       ]
@@ -75,7 +76,9 @@ defmodule CRC.Orders do
     Enum.reduce(items, Decimal.new(0), fn item, acc ->
       if item.menu_item_id && item.menu_item &&
            item.status not in ["cancelled", "cancelled_waste"] do
-        line = Decimal.mult(item.menu_item.price, Decimal.new(item.quantity))
+        # unit_price overrides menu_item.price for package items
+        price = item.unit_price || item.menu_item.price
+        line = Decimal.mult(price, Decimal.new(item.quantity))
         Decimal.add(acc, line)
       else
         acc
@@ -145,7 +148,7 @@ defmodule CRC.Orders do
     |> filter_by_period(period)
     |> maybe_filter_user(user_id)
     |> order_by([o], desc: o.closed_at)
-    |> preload([:user, :closed_by, order_items: [:product, :for_menu_item, exclusions: [:product], menu_item: :category]])
+    |> preload([:user, :closed_by, order_items: [:product, :for_menu_item, exclusions: [:product], menu_item: :category, package: []]])
     |> Repo.all()
   end
 
@@ -368,6 +371,74 @@ defmodule CRC.Orders do
 
       error ->
         error
+    end
+  end
+
+  @doc """
+  Adds all items from a package to an order.
+
+  Creates one OrderItem per package_item, distributing the package price
+  proportionally across items (based on individual menu_item prices).
+  All items are tagged with the package_id for display purposes.
+
+  Returns {:ok, [order_items]} or {:error, reason}.
+  """
+  def add_package(%{order_id: order_id} = attrs) do
+    package_id = attrs[:package_id] || attrs["package_id"]
+
+    with %Package{} = package <- CRC.Repo.get(Package, package_id) |> CRC.Repo.preload(package_items: :menu_item),
+         true <- package.active,
+         false <- Enum.empty?(package.package_items) do
+
+      # Calculate proportional unit prices
+      items_with_price = Enum.map(package.package_items, fn pi ->
+        {pi, pi.menu_item.price}
+      end)
+
+      total_individual = Enum.reduce(items_with_price, Decimal.new(0), fn {_pi, p}, acc ->
+        Decimal.add(acc, Decimal.mult(p, Decimal.new(1)))
+      end)
+
+      result =
+        CRC.Repo.transaction(fn ->
+          items_with_price
+          |> Enum.map(fn {pi, item_price} ->
+            unit_price =
+              if Decimal.compare(total_individual, Decimal.new(0)) == :gt do
+                package.price
+                |> Decimal.mult(item_price)
+                |> Decimal.div(total_individual)
+                |> Decimal.round(2)
+              else
+                Decimal.div(package.price, length(items_with_price))
+                |> Decimal.round(2)
+              end
+
+            %OrderItem{}
+            |> OrderItem.changeset(%{
+              order_id: order_id,
+              menu_item_id: pi.menu_item_id,
+              package_id: package.id,
+              unit_price: unit_price,
+              quantity: pi.quantity,
+              status: "pending"
+            })
+            |> CRC.Repo.insert!()
+          end)
+        end)
+
+      case result do
+        {:ok, items} ->
+          broadcast({:order_updated, order_id})
+          {:ok, items}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    else
+      nil -> {:error, :package_not_found}
+      false -> {:error, :package_inactive}
+      true -> {:error, :package_empty}
     end
   end
 

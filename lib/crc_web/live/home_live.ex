@@ -4,11 +4,13 @@ defmodule CRCWeb.HomeLive do
   use CRCWeb, :live_view
 
   alias CRCWeb.Components.SiteComponents
+  alias CRC.Catalog
 
   @impl true
   def mount(_params, _session, socket) do
     # Carousel always uses local photos shuffled randomly — every visit shows a different order
     photos = carousel_photos() |> Enum.shuffle()
+    packages = Catalog.list_packages() |> Enum.filter(& &1.featured)
 
     socket =
       socket
@@ -16,6 +18,7 @@ defmodule CRCWeb.HomeLive do
       |> assign(:photos, photos)
       |> assign(:active_slide, 0)
       |> assign(:nav_open, false)
+      |> assign(:packages, packages)
 
     {:ok, socket}
   end
@@ -47,6 +50,7 @@ defmodule CRCWeb.HomeLive do
       <main class="flex-1">
         <.hero_section photos={@photos} active_slide={@active_slide} />
         <.about_section />
+        <.packages_section :if={@packages != []} packages={@packages} />
         <.contact_section />
       </main>
       <SiteComponents.site_footer />
@@ -279,6 +283,90 @@ defmodule CRCWeb.HomeLive do
           <p class="mt-4 text-primary font-semibold">
             ¡Te esperamos en Café Raíces y Cultura para compartir una experiencia única y auténtica!
           </p>
+        </div>
+
+      </div>
+    </section>
+    """
+  end
+
+  # ---------------------------------------------------------------------------
+  # Packages section
+  # ---------------------------------------------------------------------------
+
+  defp packages_section(assigns) do
+    ~H"""
+    <section id="paquetes" class="py-16 sm:py-20 lg:py-24 bg-base-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <div class="text-center mb-12">
+          <span class="inline-block text-primary font-semibold text-sm uppercase tracking-widest mb-3">
+            Combos especiales
+          </span>
+          <h2 class="text-3xl sm:text-4xl font-bold text-base-content leading-tight">
+            Paquetes del día
+          </h2>
+          <p class="mt-3 text-base-content/60 max-w-xl mx-auto">
+            Lleva más por menos. Combinaciones pensadas para que disfrutes al máximo.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <%= for package <- @packages do %>
+            <div class="bg-base-100 rounded-2xl border border-primary/20 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+              <%!-- Header --%>
+              <div class="bg-primary/10 px-5 py-4 border-b border-primary/15">
+                <div class="flex items-start justify-between gap-3">
+                  <h3 class="font-bold text-base-content text-lg leading-snug">{package.name}</h3>
+                  <span class="badge badge-primary badge-sm whitespace-nowrap shrink-0">Combo</span>
+                </div>
+                <%= if package.description do %>
+                  <p class="text-sm text-base-content/60 mt-1">{package.description}</p>
+                <% end %>
+              </div>
+
+              <%!-- Items included --%>
+              <div class="flex-1 px-5 py-4">
+                <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-3">Incluye:</p>
+                <ul class="space-y-2">
+                  <%= for pi <- package.package_items do %>
+                    <li class="flex items-center gap-2 text-sm text-base-content">
+                      <span class="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <.icon name="hero-check" class="size-3 text-primary" />
+                      </span>
+                      <%= if pi.quantity > 1 do %>
+                        <span class="font-semibold text-primary">{pi.quantity}×</span>
+                      <% end %>
+                      {pi.menu_item.name}
+                    </li>
+                  <% end %>
+                </ul>
+              </div>
+
+              <%!-- Price --%>
+              <div class="px-5 py-4 border-t border-base-200 flex items-center justify-between">
+                <div>
+                  <% individual_total = Enum.reduce(package.package_items, Decimal.new(0), fn pi, acc ->
+                    Decimal.add(acc, Decimal.mult(pi.menu_item.price, pi.quantity))
+                  end) %>
+                  <%= if Decimal.compare(individual_total, package.price) == :gt do %>
+                    <p class="text-xs text-base-content/40 line-through">
+                      ${ individual_total |> Decimal.round(0) |> Decimal.to_string() }
+                    </p>
+                  <% end %>
+                  <p class="text-2xl font-bold text-primary">
+                    ${package.price |> Decimal.round(0) |> Decimal.to_string()}
+                  </p>
+                </div>
+                <%= if Decimal.compare(individual_total, package.price) == :gt do %>
+                  <% savings = Decimal.sub(individual_total, package.price) |> Decimal.round(0) %>
+                  <span class="badge badge-success badge-lg">
+                    Ahorras ${ Decimal.to_string(savings) }
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
         </div>
 
       </div>

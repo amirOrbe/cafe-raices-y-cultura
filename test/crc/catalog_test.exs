@@ -707,6 +707,18 @@ defmodule CRC.CatalogTest do
   end
 
   # ===========================================================================
+  # MenuItem.destinations/0
+  # ===========================================================================
+
+  describe "MenuItem.destinations/0" do
+    alias CRC.Catalog.MenuItem
+
+    test "returns the list of valid destinations" do
+      assert MenuItem.destinations() == ["cocina", "barra"]
+    end
+  end
+
+  # ===========================================================================
   # list_all_menu_items/0
   # ===========================================================================
 
@@ -716,6 +728,162 @@ defmodule CRC.CatalogTest do
       insert_menu_item(cat.id, %{name: "Oculto", available: false})
       items = Catalog.list_all_menu_items()
       assert Enum.any?(items, &(&1.name == "Oculto"))
+    end
+  end
+
+  # ===========================================================================
+  # Package CRUD
+  # ===========================================================================
+
+  defp insert_package(overrides \\ %{}) do
+    base = %{name: "Combo #{System.unique_integer()}", price: "90.00"}
+    {:ok, pkg} = Catalog.create_package(Map.merge(base, overrides))
+    pkg
+  end
+
+  describe "Package.changeset/2" do
+    alias CRC.Catalog.Package
+
+    test "valid with name and price" do
+      changeset = Package.changeset(%Package{}, %{name: "Combo Café", price: "80.00"})
+      assert changeset.valid?
+    end
+
+    test "invalid without name" do
+      changeset = Package.changeset(%Package{}, %{price: "80.00"})
+      refute changeset.valid?
+      assert changeset.errors[:name]
+    end
+
+    test "invalid without price" do
+      changeset = Package.changeset(%Package{}, %{name: "Combo"})
+      refute changeset.valid?
+      assert changeset.errors[:price]
+    end
+
+    test "invalid with price <= 0" do
+      changeset = Package.changeset(%Package{}, %{name: "Combo", price: "0"})
+      refute changeset.valid?
+      assert changeset.errors[:price]
+    end
+
+    test "active defaults to true" do
+      pkg = insert_package()
+      assert pkg.active == true
+    end
+
+    test "featured defaults to false" do
+      pkg = insert_package()
+      assert pkg.featured == false
+    end
+  end
+
+  describe "list_packages/0" do
+    test "returns only active packages" do
+      insert_package(%{active: true})
+      insert_package(%{active: false})
+      pkgs = Catalog.list_packages()
+      assert Enum.all?(pkgs, & &1.active)
+    end
+  end
+
+  describe "list_all_packages/0" do
+    test "returns all packages including inactive" do
+      insert_package(%{active: true})
+      insert_package(%{active: false})
+      pkgs = Catalog.list_all_packages()
+      assert Enum.any?(pkgs, &(not &1.active))
+    end
+  end
+
+  describe "get_package!/1" do
+    test "returns package by id with items preloaded" do
+      pkg = insert_package()
+      found = Catalog.get_package!(pkg.id)
+      assert found.id == pkg.id
+      assert found.package_items == []
+    end
+
+    test "raises for unknown id" do
+      assert_raise Ecto.NoResultsError, fn -> Catalog.get_package!(0) end
+    end
+  end
+
+  describe "create_package/1" do
+    test "creates package successfully" do
+      assert {:ok, pkg} = Catalog.create_package(%{name: "Combo Nuevo", price: "75.00"})
+      assert pkg.name == "Combo Nuevo"
+    end
+
+    test "returns error changeset for invalid attrs" do
+      assert {:error, changeset} = Catalog.create_package(%{})
+      refute changeset.valid?
+    end
+  end
+
+  describe "update_package/2" do
+    test "updates package fields" do
+      pkg = insert_package(%{name: "Original"})
+      {:ok, updated} = Catalog.update_package(pkg, %{name: "Actualizado"})
+      assert updated.name == "Actualizado"
+    end
+  end
+
+  describe "delete_package/1" do
+    test "deletes a package" do
+      pkg = insert_package()
+      assert {:ok, _} = Catalog.delete_package(pkg)
+      assert_raise Ecto.NoResultsError, fn -> Catalog.get_package!(pkg.id) end
+    end
+  end
+
+  describe "change_package/2" do
+    test "returns a changeset" do
+      alias CRC.Catalog.Package
+      changeset = Catalog.change_package(%Package{})
+      assert %Ecto.Changeset{} = changeset
+    end
+  end
+
+  describe "set_package_items/2" do
+    test "sets items for a package" do
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+      pkg = insert_package()
+
+      {:ok, updated} = Catalog.set_package_items(pkg, [%{menu_item_id: item.id, quantity: 2}])
+      assert length(updated.package_items) == 1
+      assert hd(updated.package_items).menu_item_id == item.id
+      assert hd(updated.package_items).quantity == 2
+    end
+
+    test "replaces existing items" do
+      cat = insert_category()
+      item1 = insert_menu_item(cat.id)
+      item2 = insert_menu_item(cat.id)
+      pkg = insert_package()
+
+      {:ok, _} = Catalog.set_package_items(pkg, [%{menu_item_id: item1.id, quantity: 1}])
+      {:ok, updated} = Catalog.set_package_items(pkg, [%{menu_item_id: item2.id, quantity: 1}])
+
+      assert length(updated.package_items) == 1
+      assert hd(updated.package_items).menu_item_id == item2.id
+    end
+  end
+
+  describe "suggest_packages/1" do
+    test "returns empty list when not enough items with cost data" do
+      assert Catalog.suggest_packages() == []
+    end
+  end
+
+  describe "menu_items_with_margin/0" do
+    test "returns empty list when no items have ingredient cost data" do
+      # Items without ingredients have nil cost and are filtered out
+      cat = insert_category()
+      insert_menu_item(cat.id)
+      result = Catalog.menu_items_with_margin()
+      assert result == []
     end
   end
 

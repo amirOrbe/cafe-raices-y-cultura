@@ -147,6 +147,9 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                           <% else %>
                             {item.menu_item.name}
                           <% end %>
+                          <%= if item.package_id do %>
+                            <span class="badge badge-xs badge-primary ml-1">Paquete</span>
+                          <% end %>
                         </p>
                         <%!-- Show which dish this extra belongs to --%>
                         <%= if item.product_id && item.for_menu_item do %>

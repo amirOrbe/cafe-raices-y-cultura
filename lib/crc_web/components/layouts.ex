@@ -157,6 +157,13 @@ defmodule CRCWeb.Layouts do
             <.icon name="hero-squares-2x2" class="size-5 shrink-0" />
             Categorías de platillos
           </a>
+          <a
+            href="/admin/paquetes"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-gift" class="size-5 shrink-0" />
+            Paquetes
+          </a>
 
           <%!-- Inventory section --%>
           <div class="pt-3 pb-1">

@@ -131,6 +131,9 @@ defmodule CRCWeb.Barra.DisplayLive do
                         <p class="text-sm font-medium text-base-content">
                           <span class="font-bold text-primary">{item.quantity}×</span>
                           {item.menu_item && item.menu_item.name}
+                          <%= if item.package_id do %>
+                            <span class="badge badge-xs badge-primary ml-1">Paquete</span>
+                          <% end %>
                         </p>
                         <%!-- Ingredient exclusions requested by customer --%>
                         <%= if item.exclusions != [] do %>

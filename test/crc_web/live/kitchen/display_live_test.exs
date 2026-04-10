@@ -333,6 +333,38 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
     end
   end
 
+  describe "extra product items (product_id set)" do
+    test "shows extra product items in kitchen queue", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order(%{customer_name: "Mesa Extra Cocina", status: "sent"})
+
+      product =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Salsa Extra #{System.unique_integer()}",
+          unit: "ml",
+          net_cost: Decimal.new("0.10"),
+          stock_quantity: Decimal.new("500"),
+          active: true
+        })
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      CRC.Repo.insert!(%CRC.Orders.OrderItem{
+        order_id: order.id,
+        product_id: product.id,
+        quantity: 1,
+        portion_quantity: Decimal.new("30"),
+        status: "sent",
+        sent_at: now,
+        inserted_at: now,
+        updated_at: now
+      })
+
+      {:ok, _lv, html} = live(conn, "/cocina")
+      assert html =~ product.name
+      assert html =~ "Mesa Extra Cocina"
+    end
+  end
+
   describe "food item with notes" do
     test "shows item notes when present", %{conn: conn} do
       {conn, _} = auth_conn(conn)

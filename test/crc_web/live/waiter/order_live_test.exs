@@ -1276,4 +1276,214 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
                order_item_id: item.id, product_id: prod.id))
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # Packages tab
+  # ---------------------------------------------------------------------------
+
+  describe "select_menu_tab" do
+    test "switches to packages tab", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+
+      html = render_click(lv, "select_menu_tab", %{"tab" => "packages"})
+      assert html =~ "Paquetes"
+    end
+
+    test "switches back to menu tab", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "select_menu_tab", %{"tab" => "packages"})
+      html = render_click(lv, "select_menu_tab", %{"tab" => "menu"})
+      assert html =~ "Sin inventario"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Extras (select_menu_item_extras, clear_extras, add_extra)
+  # ---------------------------------------------------------------------------
+
+  describe "select_menu_item_extras" do
+    test "shows extras panel when item exists in loaded menu", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Café Extras Test"})
+      order = insert_order()
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      # Switch to the category so menu_items are loaded
+      render_click(lv, "select_category", %{"id" => to_string(cat.id)})
+      html = render_click(lv, "select_menu_item_extras", %{"id" => to_string(mi.id)})
+      assert html =~ "Extras"
+    end
+
+    test "does nothing when item id is not in loaded menu", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "select_menu_item_extras", %{"id" => "999999"})
+      assert render(lv) =~ order.customer_name
+    end
+  end
+
+  describe "clear_extras" do
+    test "clears the extras panel", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Latte Clear"})
+      order = insert_order()
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "select_category", %{"id" => to_string(cat.id)})
+      render_click(lv, "select_menu_item_extras", %{"id" => to_string(mi.id)})
+      html = render_click(lv, "clear_extras", %{})
+      refute html =~ "Extras — #{mi.name}"
+    end
+  end
+
+  describe "add_extra" do
+    test "adds an extra product to the order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+
+      product =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Leche Extra #{System.unique_integer()}",
+          unit: "ml",
+          net_cost: Decimal.new("0.05"),
+          stock_quantity: Decimal.new("1000"),
+          active: true
+        })
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      html = render_click(lv, "add_extra", %{"product_id" => to_string(product.id), "portion_qty" => "100"})
+      assert html =~ "Extra agregado"
+
+      reloaded = Orders.get_order!(order.id)
+      assert Enum.any?(reloaded.order_items, &(&1.product_id == product.id))
+    end
+
+    test "increments quantity when adding same extra again", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+
+      product =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Azúcar Extra #{System.unique_integer()}",
+          unit: "g",
+          net_cost: Decimal.new("0.01"),
+          stock_quantity: Decimal.new("500"),
+          active: true
+        })
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      render_click(lv, "add_extra", %{"product_id" => to_string(product.id), "portion_qty" => "5"})
+      render_click(lv, "add_extra", %{"product_id" => to_string(product.id), "portion_qty" => "5"})
+
+      reloaded = Orders.get_order!(order.id)
+      extras = Enum.filter(reloaded.order_items, &(&1.product_id == product.id))
+      assert length(extras) == 1
+      assert hd(extras).quantity == 2
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Payment helpers (update_amount_paid, cancel_payment)
+  # ---------------------------------------------------------------------------
+
+  describe "update_amount_paid" do
+    test "calculates change for efectivo payment", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{price: "50.00"})
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "show_payment_step")
+      render_click(lv, "set_payment_method", %{"method" => "efectivo"})
+      render_click(lv, "update_amount_paid", %{"value" => "100"})
+      assert render(lv) =~ "Total a cobrar"
+    end
+
+    test "handles invalid amount input without crashing", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "show_payment_step")
+      render_click(lv, "update_amount_paid", %{"value" => "abc"})
+      assert render(lv) =~ "Total a cobrar"
+    end
+  end
+
+  describe "cancel_payment" do
+    test "hides the payment panel", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      render_click(lv, "show_payment_step")
+      html = render_click(lv, "cancel_payment")
+      refute html =~ "Total a cobrar"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Packages tab
+  # ---------------------------------------------------------------------------
+
+  describe "add_package" do
+    test "adds package items to order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      item1 = insert_menu_item(cat.id, %{name: "Sandwich", price: "60.00"})
+      item2 = insert_menu_item(cat.id, %{name: "Café", price: "40.00"})
+      order = insert_order()
+
+      {:ok, pkg} = Catalog.create_package(%{name: "Combo CRC", price: "80.00"})
+      {:ok, _} = Catalog.set_package_items(pkg, [
+        %{menu_item_id: item1.id, quantity: 1},
+        %{menu_item_id: item2.id, quantity: 1}
+      ])
+
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+
+      html = render_click(lv, "add_package", %{"package_id" => to_string(pkg.id)})
+      assert html =~ "Paquete agregado"
+
+      updated_order = Orders.get_order!(order.id)
+      assert length(updated_order.order_items) == 2
+      assert Enum.all?(updated_order.order_items, &(&1.package_id == pkg.id))
+    end
+
+    test "shows error for non-existent package", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+
+      html = render_click(lv, "add_package", %{"package_id" => "999999"})
+      assert html =~ "no encontrado"
+    end
+
+    test "shows error for inactive package", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+      {:ok, pkg} = Catalog.create_package(%{name: "Inactivo", price: "80.00", active: false})
+
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+      html = render_click(lv, "add_package", %{"package_id" => to_string(pkg.id)})
+      assert html =~ "disponible"
+    end
+  end
 end

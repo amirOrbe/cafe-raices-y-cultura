@@ -5,7 +5,7 @@ defmodule CRC.Catalog do
 
   import Ecto.Query, warn: false
   alias CRC.Repo
-  alias CRC.Catalog.{Category, MenuItem, MenuItemIngredient}
+  alias CRC.Catalog.{Category, MenuItem, MenuItemIngredient, Package, PackageItem}
   alias CRC.Inventory.Product
 
   # ---------------------------------------------------------------------------
@@ -284,5 +284,145 @@ defmodule CRC.Catalog do
 
   defp available_items_query do
     from m in MenuItem, where: m.available == true, order_by: m.name
+  end
+
+  # ---------------------------------------------------------------------------
+  # Packages
+  # ---------------------------------------------------------------------------
+
+  @doc "Returns all active packages, preloading items and menu_items."
+  def list_packages do
+    Package
+    |> where(active: true)
+    |> order_by(:name)
+    |> preload(package_items: :menu_item)
+    |> Repo.all()
+  end
+
+  @doc "Returns all packages (including inactive) for admin, preloading items."
+  def list_all_packages do
+    Package
+    |> order_by(:name)
+    |> preload(package_items: :menu_item)
+    |> Repo.all()
+  end
+
+  @doc "Gets a single package by id with items preloaded. Raises if not found."
+  def get_package!(id) do
+    Package
+    |> Repo.get!(id)
+    |> Repo.preload(package_items: :menu_item)
+  end
+
+  def create_package(attrs \\ %{}) do
+    %Package{}
+    |> Package.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def update_package(%Package{} = package, attrs) do
+    package
+    |> Package.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def delete_package(%Package{} = package) do
+    Repo.delete(package)
+  end
+
+  def change_package(%Package{} = package, attrs \\ %{}) do
+    Package.changeset(package, attrs)
+  end
+
+  @doc "Adds or replaces all package_items for a package given a list of %{menu_item_id, quantity} maps."
+  def set_package_items(%Package{} = package, items) when is_list(items) do
+    Repo.transaction(fn ->
+      Repo.delete_all(from pi in PackageItem, where: pi.package_id == ^package.id)
+
+      Enum.each(items, fn item ->
+        %PackageItem{}
+        |> PackageItem.changeset(Map.put(item, :package_id, package.id))
+        |> Repo.insert!()
+      end)
+
+      get_package!(package.id)
+    end)
+  end
+
+  @doc """
+  Returns menu items with computed cost and margin for package recommendations.
+  Only includes items that have at least one ingredient with a known cost.
+  """
+  def menu_items_with_margin do
+    MenuItem
+    |> where(available: true)
+    |> order_by(:name)
+    |> preload(menu_item_ingredients: :product)
+    |> Repo.all()
+    |> Enum.map(fn mi ->
+      cost = compute_cost(mi)
+      margin = if cost && Decimal.compare(mi.price, Decimal.new(0)) == :gt do
+        mi.price
+        |> Decimal.sub(cost)
+        |> Decimal.div(mi.price)
+        |> Decimal.mult(100)
+        |> Decimal.round(1)
+      end
+
+      %{menu_item: mi, cost: cost, margin: margin}
+    end)
+    |> Enum.filter(& &1.cost != nil)
+    |> Enum.sort_by(& &1.margin, :desc)
+  end
+
+  @doc "Suggests up to `count` package combos based on ingredient cost data."
+  def suggest_packages(count \\ 3) do
+    items = menu_items_with_margin()
+
+    case items do
+      [] -> []
+      [_] -> []
+      _ ->
+        pairs = for i <- items, j <- items, i.menu_item.id < j.menu_item.id, do: {i, j}
+
+        pairs
+        |> Enum.map(fn {a, b} ->
+          normal_price = Decimal.add(a.menu_item.price, b.menu_item.price)
+          total_cost = Decimal.add(a.cost, b.cost)
+          suggested_price = normal_price |> Decimal.mult("0.85") |> Decimal.round(0)
+          package_margin =
+            suggested_price
+            |> Decimal.sub(total_cost)
+            |> Decimal.div(suggested_price)
+            |> Decimal.mult(100)
+            |> Decimal.round(1)
+
+          %{
+            item_a: a,
+            item_b: b,
+            normal_price: normal_price,
+            suggested_price: suggested_price,
+            total_cost: total_cost,
+            package_margin: package_margin,
+            savings: Decimal.sub(normal_price, suggested_price)
+          }
+        end)
+        |> Enum.filter(fn s -> Decimal.compare(s.package_margin, Decimal.new(30)) != :lt end)
+        |> Enum.sort_by(& &1.package_margin, :desc)
+        |> Enum.take(count)
+    end
+  end
+
+  defp compute_cost(%MenuItem{menu_item_ingredients: []}), do: nil
+  defp compute_cost(%MenuItem{menu_item_ingredients: ingredients}) do
+    costs = Enum.map(ingredients, fn mii ->
+      if mii.product && mii.product.net_cost do
+        Decimal.mult(mii.product.net_cost, mii.quantity)
+      end
+    end)
+
+    if Enum.all?(costs, & &1 != nil) do
+      Enum.reduce(costs, Decimal.new(0), &Decimal.add/2)
+    end
   end
 end

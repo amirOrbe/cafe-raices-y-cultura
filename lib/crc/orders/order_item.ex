@@ -3,7 +3,7 @@ defmodule CRC.Orders.OrderItem do
   import Ecto.Changeset
 
   alias CRC.Orders.{Order, OrderItemExclusion}
-  alias CRC.Catalog.MenuItem
+  alias CRC.Catalog.{MenuItem, Package}
   alias CRC.Inventory.Product
 
   schema "order_items" do
@@ -17,9 +17,13 @@ defmodule CRC.Orders.OrderItem do
     field :sent_at, :utc_datetime
     field :ready_at, :utc_datetime
     field :served_at, :utc_datetime
+    # When this item belongs to a package combo, the package price share (overrides menu_item.price for total)
+    field :unit_price, :decimal
 
     belongs_to :order, Order
     belongs_to :menu_item, MenuItem
+    # Nullable: set when this item was added as part of a package combo
+    belongs_to :package, Package
     # Nullable: used for ingredient extras added directly (no menu item)
     belongs_to :product, Product
     # Kitchen/barra staff who marked this item ready (nullable)
@@ -45,7 +49,7 @@ defmodule CRC.Orders.OrderItem do
   @doc false
   def changeset(order_item, attrs) do
     order_item
-    |> cast(attrs, [:quantity, :notes, :status, :order_id, :menu_item_id, :product_id, :portion_quantity, :sent_at, :ready_at, :served_at, :marked_ready_by_id, :served_by_id, :for_menu_item_id])
+    |> cast(attrs, [:quantity, :notes, :status, :order_id, :menu_item_id, :product_id, :package_id, :unit_price, :portion_quantity, :sent_at, :ready_at, :served_at, :marked_ready_by_id, :served_by_id, :for_menu_item_id])
     |> validate_required([:quantity, :status, :order_id])
     |> validate_item_source()
     |> validate_number(:quantity, greater_than: 0)
@@ -53,6 +57,7 @@ defmodule CRC.Orders.OrderItem do
     |> assoc_constraint(:order)
     |> assoc_constraint(:menu_item)
     |> assoc_constraint(:product)
+    |> assoc_constraint(:package)
   end
 
   # An order item must reference either a menu_item OR a product (ingredient extra), not neither.

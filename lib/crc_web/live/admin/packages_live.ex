@@ -327,8 +327,8 @@ defmodule CRCWeb.Admin.PackagesLive do
 
     <%!-- Modal --%>
     <%= if @modal != nil do %>
-      <div class="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/50 overflow-y-auto" phx-click="close_modal">
-        <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-2xl" phx-click-away="close_modal" onclick="event.stopPropagation()">
+      <div class="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/50 overflow-y-auto">
+        <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-2xl">
           <div class="p-5 border-b border-base-200 flex items-center justify-between">
             <h2 class="font-bold text-lg text-base-content">
               {if @modal == :new, do: "Nuevo paquete", else: "Editar paquete"}

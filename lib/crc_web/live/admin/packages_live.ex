@@ -52,6 +52,17 @@ defmodule CRCWeb.Admin.PackagesLive do
     {:noreply, assign(socket, modal: nil, form: nil, selected_items: [])}
   end
 
+  def handle_event("validate_package", %{"package" => params}, socket) do
+    changeset =
+      case socket.assigns.modal do
+        :new -> Catalog.change_package(%Package{}, params)
+        {:edit, pkg} -> Catalog.change_package(pkg, params)
+      end
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, :form, to_form(changeset))}
+  end
+
   def handle_event("toggle_menu_item", %{"id" => id}, socket) do
     item_id = String.to_integer(id)
     selected = socket.assigns.selected_items
@@ -339,7 +350,7 @@ defmodule CRCWeb.Admin.PackagesLive do
           </div>
 
           <div class="p-5 space-y-5">
-            <.form id="package-form" for={@form} phx-submit="save_package" class="space-y-4">
+            <.form id="package-form" for={@form} phx-change="validate_package" phx-submit="save_package" class="space-y-4">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">
                   <label class="label pb-1"><span class="label-text font-medium">Nombre del paquete</span></label>

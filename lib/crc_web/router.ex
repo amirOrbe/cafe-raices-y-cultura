@@ -72,6 +72,19 @@ defmodule CRCWeb.Router do
   end
 
   # ---------------------------------------------------------------------------
+  # Employee self-service — any authenticated non-client user
+  # ---------------------------------------------------------------------------
+
+  scope "/", CRCWeb.Employee, as: :employee do
+    pipe_through [:browser, :require_auth]
+
+    live_session :employee,
+      on_mount: [{CRCWeb.UserAuth, :require_authenticated_user}] do
+      live "/mi-horario", MyScheduleLive
+    end
+  end
+
+  # ---------------------------------------------------------------------------
   # Admin panel — requires admin role
   # ---------------------------------------------------------------------------
 
@@ -95,6 +108,8 @@ defmodule CRCWeb.Router do
       live "/ventas", VentasLive
       live "/rendimiento", RendimientoLive
       live "/finanzas", FinanzasLive
+      live "/horarios", HorariosLive
+      live "/asistencia", AsistenciaLive
     end
   end
 

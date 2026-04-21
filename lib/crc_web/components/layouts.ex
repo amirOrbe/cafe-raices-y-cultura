@@ -247,6 +247,27 @@ defmodule CRCWeb.Layouts do
             <.icon name="hero-scale" class="size-5 shrink-0" />
             Finanzas
           </a>
+
+          <%!-- Personal --%>
+          <div class="pt-3 pb-1">
+            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
+              Personal
+            </p>
+          </div>
+          <a
+            href="/admin/horarios"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-calendar-days" class="size-5 shrink-0" />
+            Horarios
+          </a>
+          <a
+            href="/admin/asistencia"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-finger-print" class="size-5 shrink-0" />
+            Asistencia
+          </a>
         </nav>
 
         <%!-- Usuario y logout --%>

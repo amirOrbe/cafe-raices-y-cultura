@@ -96,6 +96,12 @@ defmodule CRCWeb.Components.SiteComponents do
                         </a>
                       </li>
                       <li>
+                        <a href="/mi-horario" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200">
+                          <.icon name="hero-calendar-days" class="size-4 text-base-content/50" />
+                          Mi horario
+                        </a>
+                      </li>
+                      <li>
                         <a href="/mesa" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200">
                           <.icon name="hero-clipboard-document-list" class="size-4 text-base-content/50" />
                           Comandas
@@ -122,6 +128,12 @@ defmodule CRCWeb.Components.SiteComponents do
                     <% end %>
                     <%!-- Empleado links --%>
                     <%= if @current_user.role == "empleado" do %>
+                      <li>
+                        <a href="/mi-horario" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200">
+                          <.icon name="hero-calendar-days" class="size-4 text-base-content/50" />
+                          Mi horario
+                        </a>
+                      </li>
                       <%= if "sala" in @current_user.stations do %>
                         <li>
                           <a href="/mesa" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200">
@@ -228,6 +240,9 @@ defmodule CRCWeb.Components.SiteComponents do
               <a href="/admin" phx-click="close_nav" class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors">
                 <.icon name="hero-squares-2x2" class="size-5 text-primary" /> Panel de administración
               </a>
+              <a href="/mi-horario" phx-click="close_nav" class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors">
+                <.icon name="hero-calendar-days" class="size-5 text-primary" /> Mi horario
+              </a>
               <a href="/mesa" phx-click="close_nav" class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors">
                 <.icon name="hero-clipboard-document-list" class="size-5 text-primary" /> Comandas
               </a>
@@ -242,6 +257,9 @@ defmodule CRCWeb.Components.SiteComponents do
               </a>
             <% end %>
             <%= if @current_user.role == "empleado" do %>
+              <a href="/mi-horario" phx-click="close_nav" class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors">
+                <.icon name="hero-calendar-days" class="size-5 text-primary" /> Mi horario
+              </a>
               <%= if "sala" in @current_user.stations do %>
                 <a href="/mesa" phx-click="close_nav" class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors">
                   <.icon name="hero-clipboard-document-list" class="size-5 text-primary" /> Comandas
@@ -375,6 +393,28 @@ defmodule CRCWeb.Components.SiteComponents do
             </span>
           <% end %>
         </div>
+
+        <!-- Variant info: one row per ingredient that has active variants -->
+        <% ingredients_with_variants = ingredients_with_active_variants(ingredients) %>
+        <%= if ingredients_with_variants != [] do %>
+          <div class="space-y-1.5">
+            <%= for {product_name, variants} <- ingredients_with_variants do %>
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-xs text-base-content/40 shrink-0">
+                  Tipos de {String.downcase(product_name)}:
+                </span>
+                <%= for v <- variants do %>
+                  <span class="inline-flex items-center gap-0.5 text-xs bg-primary/8 text-primary border border-primary/20 rounded-full px-2 py-0.5">
+                    {v.name}
+                    <%= if Decimal.compare(v.extra_charge, 0) == :gt do %>
+                      <span class="text-primary/60">+${format_price(v.extra_charge)}</span>
+                    <% end %>
+                  </span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
       <% end %>
 
       <!-- Badge -->
@@ -408,4 +448,16 @@ defmodule CRCWeb.Components.SiteComponents do
   end
 
   defp format_qty(qty), do: "#{qty}"
+
+  # Returns [{product_name, [active_variant, ...]}] for ingredients whose
+  # product has at least one active variant, preserving ingredient order.
+  defp ingredients_with_active_variants(ingredients) do
+    ingredients
+    |> Enum.map(fn mii ->
+      variants = Map.get(mii.product, :variants, [])
+      active = Enum.filter(variants, & &1.active)
+      {mii.product.name, active}
+    end)
+    |> Enum.filter(fn {_name, active} -> active != [] end)
+  end
 end

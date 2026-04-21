@@ -48,6 +48,40 @@ const CarouselAutoplay = {
   }
 }
 
+/**
+ * GeolocationClockIn — requests the device's GPS position and pushes it to
+ * the LiveView so the server can verify the employee is near the café.
+ *
+ * Events pushed to the server:
+ *   "clock_in_with_location"  — { latitude, longitude }
+ *   "location_denied"         — {} (user denied permission or unavailable)
+ */
+const GeolocationClockIn = {
+  mounted() {
+    this.el.addEventListener("click", (e) => {
+      e.preventDefault()
+
+      if (!navigator.geolocation) {
+        this.pushEvent("location_denied", {reason: "unavailable"})
+        return
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          this.pushEvent("clock_in_with_location", {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          })
+        },
+        (_err) => {
+          this.pushEvent("location_denied", {reason: "denied"})
+        },
+        {enableHighAccuracy: true, timeout: 10000, maximumAge: 0}
+      )
+    })
+  }
+}
+
 // ---------------------------------------------------------------------------
 // LiveSocket setup
 // ---------------------------------------------------------------------------
@@ -59,6 +93,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
   hooks: {
     ...colocatedHooks,
     CarouselAutoplay,
+    GeolocationClockIn,
   },
 })
 

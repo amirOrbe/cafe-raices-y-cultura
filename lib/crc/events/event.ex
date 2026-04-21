@@ -44,6 +44,7 @@ defmodule CRC.Events.Event do
       :tags,
       :active
     ])
+    |> update_change(:title, &CRC.Utils.title_case/1)
     |> validate_required([:title, :event_date, :start_time, :end_time],
       message: "no puede estar en blanco"
     )

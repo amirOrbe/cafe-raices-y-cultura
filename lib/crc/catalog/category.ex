@@ -17,6 +17,7 @@ defmodule CRC.Catalog.Category do
   def changeset(category, attrs) do
     category
     |> cast(attrs, [:name, :slug, :active])
+    |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name])
     |> maybe_put_slug()
     |> unique_constraint(:slug)

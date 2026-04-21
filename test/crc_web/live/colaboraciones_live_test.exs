@@ -153,11 +153,11 @@ defmodule CRCWeb.ColaboracionesLiveTest do
     test "event_changed PubSub reloads events", %{conn: conn} do
       {:ok, lv, _} = live(conn, ~p"/colaboraciones")
 
-      insert_event(%{title: "Evento PubSub Colabs", event_date: Date.add(cdmx_today(), 2)})
+      insert_event(%{title: "Evento Refresco Colabs", event_date: Date.add(cdmx_today(), 2)})
       Phoenix.PubSub.broadcast(CRC.PubSub, "admin:events", {:event_changed, %{}})
 
       html = render(lv)
-      assert html =~ "Evento PubSub Colabs"
+      assert html =~ "Evento Refresco Colabs"
     end
   end
 
@@ -246,7 +246,7 @@ defmodule CRCWeb.ColaboracionesLiveTest do
   describe "collaborator badges" do
     test "shows instagram link when collaborator has instagram_handle", %{conn: conn} do
       collaborator =
-        insert_collaborator(%{name: "DJ Instagram", instagram_handle: "djinstagram"})
+        insert_collaborator(%{name: "Dj Instagram", instagram_handle: "djinstagram"})
 
       {:ok, _event} =
         Events.create_event(
@@ -262,7 +262,7 @@ defmodule CRCWeb.ColaboracionesLiveTest do
 
       {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
       assert html =~ "instagram.com/djinstagram"
-      assert html =~ "DJ Instagram"
+      assert html =~ "Dj Instagram"
     end
 
     test "shows role in collaborator badge", %{conn: conn} do
@@ -285,12 +285,12 @@ defmodule CRCWeb.ColaboracionesLiveTest do
     end
 
     test "shows collaborator name without instagram link when no handle", %{conn: conn} do
-      collaborator = insert_collaborator(%{name: "Artista Sin IG"})
+      collaborator = insert_collaborator(%{name: "Artista Sin Instagram"})
 
       {:ok, _event} =
         Events.create_event(
           %{
-            title: "Evento Sin IG",
+            title: "Evento Sin Instagram",
             event_date: Date.add(cdmx_today(), 4),
             start_time: ~T[18:00:00],
             end_time: ~T[21:00:00],
@@ -300,7 +300,7 @@ defmodule CRCWeb.ColaboracionesLiveTest do
         )
 
       {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "Artista Sin IG"
+      assert html =~ "Artista Sin Instagram"
     end
   end
 

@@ -45,6 +45,7 @@ defmodule CRC.Accounts.User do
     user
     |> cast(attrs, [:name, :email, :phone, :role, :stations, :is_active, :password])
     |> normalize_stations()
+    |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name, :email, :role], message: "no puede estar en blanco")
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/,
       message: "tiene formato inválido"

@@ -18,6 +18,7 @@ defmodule CRC.Catalog.Package do
   def changeset(package, attrs) do
     package
     |> cast(attrs, [:name, :description, :price, :active, :featured])
+    |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name, :price])
     |> validate_number(:price, greater_than: 0)
     |> unique_constraint(:name)

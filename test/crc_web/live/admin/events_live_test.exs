@@ -84,7 +84,7 @@ defmodule CRCWeb.Admin.EventsLiveTest do
       insert_event(%{title: "Noche de Jazz Test"})
 
       {:ok, _lv, html} = live(conn, ~p"/admin/eventos")
-      assert html =~ "Noche de Jazz Test"
+      assert html =~ "Noche De Jazz Test"
     end
 
     test "shows empty state when no events", %{conn: conn} do
@@ -422,7 +422,7 @@ defmodule CRCWeb.Admin.EventsLiveTest do
   describe "event with collaborators in table" do
     test "shows collaborator names in the events table", %{conn: conn} do
       {conn, _admin} = admin_conn(conn)
-      collab = insert_collaborator(%{name: "DJ Tabla Test"})
+      collab = insert_collaborator(%{name: "Dj Tabla Test"})
       {:ok, event} = Events.create_event(
         %{
           title: "Evento Con Artista",
@@ -435,7 +435,7 @@ defmodule CRCWeb.Admin.EventsLiveTest do
       )
 
       {:ok, _lv, html} = live(conn, ~p"/admin/eventos")
-      assert html =~ "DJ Tabla Test"
+      assert html =~ "Dj Tabla Test"
       assert html =~ "Evento Con Artista"
       _ = event
     end

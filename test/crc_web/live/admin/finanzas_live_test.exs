@@ -266,7 +266,7 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
     test "shows waste items table when waste exists", %{conn: conn} do
       {conn, _} = insert_admin(conn)
       cat = insert_category()
-      mi = insert_menu_item(cat.id, %{name: "Platillo Desperdiciado FIN"})
+      mi = insert_menu_item(cat.id, %{name: "Platillo Desperdiciado Fin"})
       product = insert_product("2.00")
       link_ingredient(mi.id, product.id, "5")
 
@@ -286,7 +286,7 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
         "date_from" => "2027-11-01",
         "date_to" => "2027-11-01"
       })
-      assert html =~ "Platillo Desperdiciado FIN"
+      assert html =~ "Platillo Desperdiciado Fin"
     end
   end
 

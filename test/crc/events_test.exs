@@ -413,7 +413,7 @@ defmodule CRC.EventsTest do
 
   describe "create_event/2" do
     test "creates an event with valid attrs" do
-      assert {:ok, %Event{title: "Noche de Jazz"}} = Events.create_event(event_attrs())
+      assert {:ok, %Event{title: "Noche De Jazz"}} = Events.create_event(event_attrs())
     end
 
     test "new event is active by default" do
@@ -467,7 +467,7 @@ defmodule CRC.EventsTest do
       insert_event(%{event_date: next_week, title: "Evento futuro"})
 
       [first | _] = Events.list_events()
-      assert first.title == "Evento futuro"
+      assert first.title == "Evento Futuro"
     end
 
     test "includes both active and inactive events" do
@@ -617,7 +617,7 @@ defmodule CRC.EventsTest do
     test "updates event fields" do
       event = insert_event()
       assert {:ok, updated} = Events.update_event(event, %{title: "Tarde de Bossa Nova"})
-      assert updated.title == "Tarde de Bossa Nova"
+      assert updated.title == "Tarde De Bossa Nova"
     end
 
     test "returns error changeset with invalid attrs" do
@@ -693,7 +693,7 @@ defmodule CRC.EventsTest do
 
     test "returns a changeset with attrs applied" do
       cs = Events.change_event(%Event{}, event_attrs())
-      assert cs.changes[:title] == "Noche de Jazz"
+      assert cs.changes[:title] == "Noche De Jazz"
     end
   end
 

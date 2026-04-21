@@ -14,6 +14,7 @@ defmodule CRC.Inventory.ProductCategory do
   def changeset(category, attrs) do
     category
     |> cast(attrs, [:name])
+    |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name], message: "no puede estar en blanco")
     |> validate_length(:name, min: 2, max: 60, message: "debe tener entre 2 y 60 caracteres")
     |> unique_constraint(:name, message: "ya existe una categoría con ese nombre")

@@ -25,6 +25,7 @@ defmodule CRC.Events.Collaborator do
   def changeset(collaborator, attrs) do
     collaborator
     |> cast(attrs, [:name, :bio, :instagram_handle, :active])
+    |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name], message: "no puede estar en blanco")
     |> validate_length(:name, min: 2, max: 120, message: "debe tener entre 2 y 120 caracteres")
     |> validate_format(:instagram_handle, ~r/^[a-zA-Z0-9._]*$/,

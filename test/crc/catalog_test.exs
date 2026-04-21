@@ -193,7 +193,7 @@ defmodule CRC.CatalogTest do
     test "actualiza la categoría exitosamente" do
       cat = insert_category()
       assert {:ok, updated} = Catalog.update_category(cat, %{name: "Nuevo nombre"})
-      assert updated.name == "Nuevo nombre"
+      assert updated.name == "Nuevo Nombre"
     end
 
     test "falla con datos inválidos" do

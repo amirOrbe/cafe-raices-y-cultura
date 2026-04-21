@@ -470,7 +470,7 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
     test "updates order when order_updated matches current order", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       cat = insert_category()
-      mi = insert_menu_item(cat.id, %{name: "Ristretto PubSub"})
+      mi = insert_menu_item(cat.id, %{name: "Ristretto Refresco"})
       order = insert_order()
       {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
 
@@ -479,7 +479,7 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       Phoenix.PubSub.broadcast(CRC.PubSub, "orders", {:order_updated, order.id})
 
       html = render(lv)
-      assert html =~ "Ristretto PubSub"
+      assert html =~ "Ristretto Refresco"
     end
 
     test "ignores order_updated for a different order", %{conn: conn} do

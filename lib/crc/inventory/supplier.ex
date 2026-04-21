@@ -29,6 +29,8 @@ defmodule CRC.Inventory.Supplier do
   def changeset(supplier, attrs) do
     supplier
     |> cast(attrs, [:name, :contact_name, :phone, :email, :address, :notes, :active])
+    |> update_change(:name, &CRC.Utils.title_case/1)
+    |> update_change(:contact_name, &CRC.Utils.title_case/1)
     |> validate_required([:name])
     |> validate_length(:name, min: 2, max: 120, message: "debe tener entre 2 y 120 caracteres")
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/,

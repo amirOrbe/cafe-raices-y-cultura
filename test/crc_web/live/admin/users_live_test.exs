@@ -253,11 +253,11 @@ defmodule CRCWeb.Admin.UsersLiveTest do
       {conn, _admin} = admin_session(conn)
       {:ok, lv, _html} = live(conn, ~p"/admin/usuarios")
 
-      insert_user(%{name: "Usuario PubSub", role: "empleado", stations: ["sala"]})
+      insert_user(%{name: "Usuario Refresco", role: "empleado", stations: ["sala"]})
       Phoenix.PubSub.broadcast(CRC.PubSub, "admin:users", {:user_changed, %{}})
 
       html = render(lv)
-      assert html =~ "Usuario PubSub"
+      assert html =~ "Usuario Refresco"
     end
   end
 

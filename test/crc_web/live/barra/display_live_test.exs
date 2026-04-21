@@ -95,7 +95,7 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       order = insert_order(%{customer_name: "Mesa 5", status: "sent"})
       insert_order_item(order.id, mi.id, %{status: "sent"})
       {:ok, _lv, html} = live(conn, "/barra")
-      assert html =~ "Café de olla"
+      assert html =~ "Café De Olla"
       assert html =~ "Mesa 5"
     end
 
@@ -204,7 +204,7 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       insert_order_item(order.id, drink_mi.id, %{status: "sent"})
       {:ok, _lv, html} = live(conn, "/barra")
       refute html =~ "Pozole"
-      assert html =~ "Agua de tamarindo"
+      assert html =~ "Agua De Tamarindo"
     end
   end
 

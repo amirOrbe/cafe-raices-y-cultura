@@ -21,6 +21,7 @@ defmodule CRC.Events.EventType do
   def changeset(event_type, attrs) do
     event_type
     |> cast(attrs, [:name, :active])
+    |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name], message: "no puede estar en blanco")
     |> validate_length(:name, min: 2, max: 100, message: "debe tener entre 2 y 100 caracteres")
   end

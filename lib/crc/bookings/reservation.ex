@@ -24,6 +24,7 @@ defmodule CRC.Bookings.Reservation do
   def changeset(reservation, attrs) do
     reservation
     |> cast(attrs, [:name, :email, :phone, :date, :time, :party_size, :notes, :status])
+    |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name, :phone, :date, :time, :party_size])
     |> validate_length(:name, min: 2, max: 100)
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "debe ser un correo válido")

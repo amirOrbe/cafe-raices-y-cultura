@@ -126,4 +126,90 @@ defmodule CRCWeb.MenuLiveTest do
       assert html =~ "Panel"
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # Packages section
+  # ---------------------------------------------------------------------------
+
+  defp insert_package(overrides \\ %{}) do
+    base = %{name: "Paquete #{System.unique_integer([:positive])}", price: "90.00"}
+    {:ok, pkg} = Catalog.create_package(Map.merge(base, overrides))
+    pkg
+  end
+
+  describe "packages section" do
+    test "shows packages section when active packages exist", %{conn: conn} do
+      cat = insert_category(%{name: "Bebidas Test"})
+      item = insert_menu_item(cat.id, %{name: "Americano", price: "40.00"})
+      pkg = insert_package(%{name: "Combo Mañanero", active: true})
+      {:ok, _} = Catalog.set_package_items(pkg, [%{menu_item_id: item.id, quantity: 1}])
+
+      {:ok, _lv, html} = live(conn, ~p"/menu")
+
+      assert html =~ "Paquetes del día"
+      assert html =~ "Combo Mañanero"
+      assert html =~ "Combos especiales"
+    end
+
+    test "hides packages section when no active packages exist", %{conn: conn} do
+      insert_package(%{name: "Combo Inactivo", active: false})
+
+      {:ok, _lv, html} = live(conn, ~p"/menu")
+
+      refute html =~ "Paquetes del día"
+      refute html =~ "Combo Inactivo"
+    end
+
+    test "shows included menu items inside each package card", %{conn: conn} do
+      cat = insert_category(%{name: "Snacks Test"})
+      item1 = insert_menu_item(cat.id, %{name: "Croissant", price: "35.00"})
+      item2 = insert_menu_item(cat.id, %{name: "Café Latte", price: "50.00"})
+      pkg = insert_package(%{name: "Combo Desayuno", active: true})
+
+      {:ok, _} =
+        Catalog.set_package_items(pkg, [
+          %{menu_item_id: item1.id, quantity: 1},
+          %{menu_item_id: item2.id, quantity: 2}
+        ])
+
+      {:ok, _lv, html} = live(conn, ~p"/menu")
+
+      assert html =~ "Croissant"
+      assert html =~ "Café Latte"
+      # quantity > 1 renders a multiplier badge
+      assert html =~ "2×"
+    end
+
+    test "shows savings badge when package price is lower than sum of items", %{conn: conn} do
+      cat = insert_category(%{name: "Cafés Ahorro"})
+      # Two items totalling $100
+      item1 = insert_menu_item(cat.id, %{name: "Espresso Doble", price: "60.00"})
+      item2 = insert_menu_item(cat.id, %{name: "Muffin", price: "40.00"})
+      # Package at $80 → saves $20
+      pkg = insert_package(%{name: "Combo Ahorro", price: "80.00", active: true})
+
+      {:ok, _} =
+        Catalog.set_package_items(pkg, [
+          %{menu_item_id: item1.id, quantity: 1},
+          %{menu_item_id: item2.id, quantity: 1}
+        ])
+
+      {:ok, _lv, html} = live(conn, ~p"/menu")
+
+      assert html =~ "Ahorras"
+      assert html =~ "$20"
+    end
+
+    test "does not show savings badge when package price equals item total", %{conn: conn} do
+      cat = insert_category(%{name: "Cafés Sin Ahorro"})
+      item = insert_menu_item(cat.id, %{name: "Té Verde", price: "45.00"})
+      # Package at same price as item — no savings
+      pkg = insert_package(%{name: "Combo Sin Ahorro", price: "45.00", active: true})
+      {:ok, _} = Catalog.set_package_items(pkg, [%{menu_item_id: item.id, quantity: 1}])
+
+      {:ok, _lv, html} = live(conn, ~p"/menu")
+
+      refute html =~ "Ahorras"
+    end
+  end
 end

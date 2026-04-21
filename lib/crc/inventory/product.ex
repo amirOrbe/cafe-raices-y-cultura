@@ -20,6 +20,7 @@ defmodule CRC.Inventory.Product do
 
     belongs_to :supplier, CRC.Inventory.Supplier
     belongs_to :product_category, CRC.Inventory.ProductCategory
+    has_many :variants, CRC.Inventory.ProductVariant, preload_order: [asc: :name]
 
     timestamps(type: :utc_datetime)
   end
@@ -39,6 +40,7 @@ defmodule CRC.Inventory.Product do
       :active,
       :supplier_id
     ])
+    |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name, :net_cost, :stock_quantity, :unit],
       message: "no puede estar en blanco"
     )

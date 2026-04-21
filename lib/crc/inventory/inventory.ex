@@ -11,6 +11,7 @@ defmodule CRC.Inventory do
   alias CRC.Repo
   alias CRC.Inventory.Product
   alias CRC.Inventory.ProductCategory
+  alias CRC.Inventory.ProductVariant
   alias CRC.Inventory.Supplier
 
   # ---------------------------------------------------------------------------
@@ -70,7 +71,7 @@ defmodule CRC.Inventory do
   # Products (Insumos)
   # ---------------------------------------------------------------------------
 
-  @doc "Returns all products with supplier and category preloaded, ordered by name."
+  @doc "Returns all products with supplier, category, and variants preloaded, ordered by name."
   @spec list_products() :: [Product.t()]
   def list_products do
     Repo.all(
@@ -80,9 +81,10 @@ defmodule CRC.Inventory do
         preload: [supplier: s, product_category: c],
         order_by: [asc: c.name, asc: p.name]
     )
+    |> Repo.preload(:variants)
   end
 
-  @doc "Returns products with stock at or below minimum threshold."
+  @doc "Returns products (without variants) with stock at or below minimum threshold."
   @spec list_low_stock_products() :: [Product.t()]
   def list_low_stock_products do
     Repo.all(
@@ -94,12 +96,25 @@ defmodule CRC.Inventory do
     )
   end
 
-  @doc "Gets a product by id. Raises if not found."
+  @doc "Returns active variants with stock at or below their minimum threshold."
+  @spec list_low_stock_variants() :: [ProductVariant.t()]
+  def list_low_stock_variants do
+    Repo.all(
+      from v in ProductVariant,
+        where: v.active == true and v.stock_quantity <= v.min_stock,
+        join: p in assoc(v, :product),
+        where: p.active == true,
+        preload: [product: p],
+        order_by: [asc: p.name, asc: v.name]
+    )
+  end
+
+  @doc "Gets a product by id with supplier, category, and variants preloaded. Raises if not found."
   @spec get_product!(integer()) :: Product.t()
   def get_product!(id) do
     Product
     |> Repo.get!(id)
-    |> Repo.preload([:supplier, :product_category])
+    |> Repo.preload([:supplier, :product_category, :variants])
   end
 
   @doc "Creates a product."
@@ -133,6 +148,71 @@ defmodule CRC.Inventory do
   @spec change_product(Product.t(), map()) :: Ecto.Changeset.t()
   def change_product(%Product{} = product, attrs \\ %{}) do
     Product.changeset(product, attrs)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Product Variants (Tipos de insumo)
+  # ---------------------------------------------------------------------------
+
+  @doc "Returns all variants for a product, ordered by name."
+  @spec list_variants_for_product(integer()) :: [ProductVariant.t()]
+  def list_variants_for_product(product_id) do
+    Repo.all(
+      from v in ProductVariant,
+        where: v.product_id == ^product_id,
+        order_by: [asc: v.name]
+    )
+  end
+
+  @doc "Gets a single variant by id. Raises if not found."
+  @spec get_variant!(integer()) :: ProductVariant.t()
+  def get_variant!(id), do: Repo.get!(ProductVariant, id)
+
+  @doc "Creates a variant for the given product."
+  @spec create_variant(integer(), map()) ::
+          {:ok, ProductVariant.t()} | {:error, Ecto.Changeset.t()}
+  def create_variant(product_id, attrs) do
+    %ProductVariant{}
+    |> ProductVariant.changeset(Map.put(attrs, "product_id", product_id))
+    |> Repo.insert()
+    |> broadcast_product_change_for_product(product_id)
+  end
+
+  @doc "Updates an existing variant."
+  @spec update_variant(ProductVariant.t(), map()) ::
+          {:ok, ProductVariant.t()} | {:error, Ecto.Changeset.t()}
+  def update_variant(%ProductVariant{} = variant, attrs) do
+    variant
+    |> ProductVariant.changeset(attrs)
+    |> Repo.update()
+    |> broadcast_product_change_for_product(variant.product_id)
+  end
+
+  @doc "Deletes a variant."
+  @spec delete_variant(ProductVariant.t()) ::
+          {:ok, ProductVariant.t()} | {:error, Ecto.Changeset.t()}
+  def delete_variant(%ProductVariant{} = variant) do
+    product_id = variant.product_id
+
+    variant
+    |> Repo.delete()
+    |> broadcast_product_change_for_product(product_id)
+  end
+
+  @doc "Toggles the active status of a variant."
+  @spec toggle_variant_active(ProductVariant.t()) ::
+          {:ok, ProductVariant.t()} | {:error, Ecto.Changeset.t()}
+  def toggle_variant_active(%ProductVariant{} = variant) do
+    variant
+    |> ProductVariant.changeset(%{active: !variant.active})
+    |> Repo.update()
+    |> broadcast_product_change_for_product(variant.product_id)
+  end
+
+  @doc "Returns a changeset for a variant."
+  @spec change_variant(ProductVariant.t(), map()) :: Ecto.Changeset.t()
+  def change_variant(%ProductVariant{} = variant, attrs \\ %{}) do
+    ProductVariant.changeset(variant, attrs)
   end
 
   # ---------------------------------------------------------------------------
@@ -206,4 +286,12 @@ defmodule CRC.Inventory do
   end
 
   defp broadcast_product_change(error), do: error
+
+  # Broadcast a product_changed event using the product_id (for variant mutations).
+  defp broadcast_product_change_for_product({:ok, record}, product_id) do
+    Phoenix.PubSub.broadcast(CRC.PubSub, "admin:products", {:product_changed, %{id: product_id}})
+    {:ok, record}
+  end
+
+  defp broadcast_product_change_for_product(error, _product_id), do: error
 end

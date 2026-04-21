@@ -19,7 +19,7 @@ defmodule CRC.Catalog do
     |> order_by(:name)
     |> preload(menu_items: ^available_items_query())
     |> Repo.all()
-    |> Repo.preload(menu_items: [menu_item_ingredients: :product])
+    |> Repo.preload(menu_items: [menu_item_ingredients: [product: :variants]])
   end
 
   @doc "Returns all categories (including inactive) for admin use."

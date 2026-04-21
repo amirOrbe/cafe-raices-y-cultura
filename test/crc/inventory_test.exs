@@ -194,7 +194,7 @@ defmodule CRC.InventoryTest do
 
   describe "create_product/1" do
     test "creates a product with valid attrs" do
-      assert {:ok, %Product{name: "Leche entera"}} = Inventory.create_product(product_attrs())
+      assert {:ok, %Product{name: "Leche Entera"}} = Inventory.create_product(product_attrs())
     end
 
     test "new product is active by default" do
@@ -275,7 +275,7 @@ defmodule CRC.InventoryTest do
     test "updates product fields" do
       product = insert_product()
       assert {:ok, updated} = Inventory.update_product(product, %{name: "Leche descremada"})
-      assert updated.name == "Leche descremada"
+      assert updated.name == "Leche Descremada"
     end
 
     test "returns error changeset with invalid attrs" do

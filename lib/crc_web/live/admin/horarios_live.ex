@@ -230,11 +230,11 @@ defmodule CRCWeb.Admin.HorariosLive do
 
                     <%= for day <- @days do %>
                       <% data = @form_data[day] %>
-                      <div class={"flex flex-wrap items-center gap-3 p-3 rounded-xl border transition-colors
+                      <div class={"flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border transition-colors
                         #{if data[:active], do: "border-primary/30 bg-primary/5", else: "border-base-200"}"}>
 
                         <%!-- Day toggle --%>
-                        <label class="flex items-center gap-2 cursor-pointer w-24 shrink-0">
+                        <label class="flex items-center gap-2 cursor-pointer shrink-0">
                           <input
                             type="checkbox"
                             class="checkbox checkbox-primary checkbox-sm"
@@ -242,32 +242,36 @@ defmodule CRCWeb.Admin.HorariosLive do
                             phx-click="toggle_day"
                             phx-value-day={day}
                           />
-                          <span class={"font-semibold text-sm #{if data[:active], do: "text-primary", else: "text-base-content/50"}"}>
+                          <span class={"font-semibold text-sm w-10 #{if data[:active], do: "text-primary", else: "text-base-content/50"}"}>
                             {WorkSchedule.day_short(day)}
                           </span>
                         </label>
 
-                        <%!-- Time inputs --%>
-                        <div class={"flex items-center gap-2 #{if !data[:active], do: "opacity-40 pointer-events-none"}"}>
-                          <label class="text-xs text-base-content/60">Entrada</label>
-                          <input
-                            type="time"
-                            class="input input-bordered input-sm w-32"
-                            value={data[:start]}
-                            phx-blur="update_time"
-                            phx-value-day={day}
-                            phx-value-field="start"
-                          />
-                          <span class="text-base-content/40">—</span>
-                          <label class="text-xs text-base-content/60">Salida</label>
-                          <input
-                            type="time"
-                            class="input input-bordered input-sm w-32"
-                            value={data[:end]}
-                            phx-blur="update_time"
-                            phx-value-day={day}
-                            phx-value-field="end"
-                          />
+                        <%!-- Time inputs: 2-column grid (full width on mobile, flex on sm+) --%>
+                        <div class={"grid grid-cols-2 gap-3 flex-1 sm:flex sm:items-center sm:gap-3
+                          #{if !data[:active], do: "opacity-40 pointer-events-none"}"}>
+                          <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                            <label class="text-xs text-base-content/60 shrink-0">Entrada</label>
+                            <input
+                              type="time"
+                              class="input input-bordered input-sm w-full sm:w-32"
+                              value={data[:start]}
+                              phx-blur="update_time"
+                              phx-value-day={day}
+                              phx-value-field="start"
+                            />
+                          </div>
+                          <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                            <label class="text-xs text-base-content/60 shrink-0">Salida</label>
+                            <input
+                              type="time"
+                              class="input input-bordered input-sm w-full sm:w-32"
+                              value={data[:end]}
+                              phx-blur="update_time"
+                              phx-value-day={day}
+                              phx-value-field="end"
+                            />
+                          </div>
                         </div>
 
                       </div>

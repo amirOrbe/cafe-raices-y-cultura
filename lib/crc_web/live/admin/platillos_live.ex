@@ -287,7 +287,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   </td>
                   <td>
                     <%= if item.featured do %>
-                      <span class="badge badge-sm badge-warning">⭐ Destacado</span>
+                      <span class="badge badge-sm badge-warning gap-1">
+                        <.icon name="hero-star-solid" class="size-3" />
+                        Destacado
+                      </span>
                     <% end %>
                   </td>
                   <td>
@@ -451,7 +454,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
               <.input
                 field={@form[:featured]}
                 type="checkbox"
-                label="Destacado ⭐"
+                label="Destacado"
               />
               <.input
                 field={@form[:available]}

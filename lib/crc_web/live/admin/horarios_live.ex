@@ -15,7 +15,7 @@ defmodule CRCWeb.Admin.HorariosLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    users = Accounts.list_users() |> Enum.reject(&(&1.role == "cliente"))
+    users = Accounts.list_users() |> Enum.reject(&(&1.role == "cliente" or not &1.is_active))
 
     socket =
       socket

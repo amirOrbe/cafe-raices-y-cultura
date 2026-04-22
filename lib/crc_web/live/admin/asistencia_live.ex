@@ -220,12 +220,12 @@ defmodule CRCWeb.Admin.AsistenciaLive do
             <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
               <span class="text-primary font-bold">{String.first(user.name) |> String.upcase()}</span>
             </div>
-            <div class="min-w-0">
+            <div class="flex-1 min-w-0">
               <p class="font-semibold text-base-content truncate">{user.name}</p>
-              <p class="text-xs text-base-content/50 capitalize">{user.role}</p>
-            </div>
-            <div class="ml-auto shrink-0">
-              <.attendance_status_badge record={record} />
+              <div class="flex items-center gap-2 mt-0.5">
+                <p class="text-xs text-base-content/50 capitalize shrink-0">{user.role}</p>
+                <.attendance_status_badge record={record} />
+              </div>
             </div>
           </div>
 

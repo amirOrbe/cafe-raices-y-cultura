@@ -278,7 +278,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                     <% end %>
 
                     <%!-- Actions --%>
-                    <div class="flex gap-3 pt-2">
+                    <div class="flex flex-wrap gap-3 pt-2">
                       <button phx-click="save_schedule" class="btn btn-primary btn-sm gap-2">
                         <.icon name="hero-check" class="size-4" />
                         Guardar horario

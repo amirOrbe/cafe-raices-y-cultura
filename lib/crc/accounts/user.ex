@@ -30,6 +30,7 @@ defmodule CRC.Accounts.User do
     field :role, :string, default: "cliente"
     field :stations, {:array, :string}, default: []
     field :is_active, :boolean, default: true
+    field :confirmed_at, :utc_datetime
     field :password_hash, :string
     field :password, :string, virtual: true
 
@@ -70,6 +71,13 @@ defmodule CRC.Accounts.User do
 
   @doc "Returns the list of valid station identifiers."
   def valid_stations, do: @stations
+
+  @doc "Changeset that marks a user's email as confirmed."
+  @spec confirm_changeset(t()) :: Ecto.Changeset.t()
+  def confirm_changeset(user) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    change(user, confirmed_at: now)
+  end
 
   # ---------------------------------------------------------------------------
   # Private helpers

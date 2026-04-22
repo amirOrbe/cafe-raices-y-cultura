@@ -47,6 +47,7 @@ defmodule CRCWeb.Router do
       live "/", HomeLive
       live "/menu", MenuLive
       live "/colaboraciones", ColaboracionesLive
+      live "/confirmar-email", EmailConfirmLive
     end
   end
 

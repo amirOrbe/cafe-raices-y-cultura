@@ -8,8 +8,8 @@ defmodule CRC.Accounts do
 
   import Ecto.Query, warn: false
 
-  alias CRC.Accounts.{User, EmployeeRecognition}
-  alias CRC.Repo
+  alias CRC.Accounts.{User, EmployeeRecognition, UserEmail}
+  alias CRC.{Mailer, Repo}
 
   # ---------------------------------------------------------------------------
   # Queries
@@ -43,10 +43,20 @@ defmodule CRC.Accounts do
   """
   @spec create_user(User.t(), map()) :: {:ok, User.t()} | {:error, :unauthorized} | {:error, Ecto.Changeset.t()}
   def create_user(%User{role: "admin"}, attrs) do
-    %User{}
-    |> User.changeset(attrs)
-    |> Repo.insert()
-    |> broadcast_user_change()
+    result =
+      %User{}
+      |> User.changeset(attrs)
+      |> Repo.insert()
+      |> broadcast_user_change()
+
+    case result do
+      {:ok, user} ->
+        Task.start(fn -> deliver_welcome_email(user) end)
+        {:ok, user}
+
+      error ->
+        error
+    end
   end
 
   def create_user(%User{}, _attrs), do: {:error, :unauthorized}
@@ -107,6 +117,19 @@ defmodule CRC.Accounts do
   end
 
   def activate_user(%User{}, _user), do: {:error, :unauthorized}
+
+  @doc """
+  Marks a user's email address as confirmed.
+
+  Called from the email-confirmation LiveView when the signed token is valid.
+  Returns `{:ok, user}` or `{:error, changeset}`.
+  """
+  @spec confirm_user_email(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def confirm_user_email(%User{} = user) do
+    user
+    |> User.confirm_changeset()
+    |> Repo.update()
+  end
 
   # ---------------------------------------------------------------------------
   # Employee recognitions
@@ -183,6 +206,30 @@ defmodule CRC.Accounts do
   end
 
   defp broadcast_user_change(error), do: error
+
+  # Builds a signed, 7-day confirmation URL for the given user.
+  defp build_confirmation_url(user) do
+    token = Phoenix.Token.sign(CRCWeb.Endpoint, "email_confirm", user.id)
+    "#{CRCWeb.Endpoint.url()}/confirmar-email?token=#{token}"
+  end
+
+  # Sends the welcome/confirmation email. Runs inside a Task so it never
+  # blocks the caller. Delivery errors are logged but do not surface to the UI.
+  defp deliver_welcome_email(user) do
+    url = build_confirmation_url(user)
+
+    user
+    |> UserEmail.welcome_confirmation(url)
+    |> Mailer.deliver()
+    |> case do
+      {:ok, _} ->
+        :ok
+
+      {:error, reason} ->
+        require Logger
+        Logger.error("Failed to deliver welcome email to #{user.email}: #{inspect(reason)}")
+    end
+  end
 
   defp do_authenticate(nil, _password) do
     # Prevents timing attacks: always runs a dummy verification

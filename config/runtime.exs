@@ -99,21 +99,22 @@ if config_env() == :prod do
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
 
-  # ## Configuring the mailer
-  #
-  # In production you need to configure the mailer to use a different adapter.
-  # Here is an example configuration for Mailgun:
-  #
-  #     config :crc, CRC.Mailer,
-  #       adapter: Swoosh.Adapters.Mailgun,
-  #       api_key: System.get_env("MAILGUN_API_KEY"),
-  #       domain: System.get_env("MAILGUN_DOMAIN")
-  #
-  # Most non-SMTP adapters require an API client. Swoosh supports Req, Hackney,
-  # and Finch out-of-the-box. This configuration is typically done at
-  # compile-time in your config/prod.exs:
-  #
-  #     config :swoosh, :api_client, Swoosh.ApiClient.Req
-  #
-  # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+  # Mailer — Resend adapter for production.
+  # Set the RESEND_API_KEY environment variable in your deployment platform.
+  resend_api_key =
+    System.get_env("RESEND_API_KEY") ||
+      raise "environment variable RESEND_API_KEY is missing"
+
+  config :crc, CRC.Mailer,
+    adapter: Swoosh.Adapters.Resend,
+    api_key: resend_api_key
+
+  # Sender address — must match a verified domain in your Resend account.
+  # Set MAILER_FROM_ADDRESS=noreply@tudominio.com in your deployment platform.
+  if from_address = System.get_env("MAILER_FROM_ADDRESS") do
+    config :crc, mailer_from_address: from_address
+  end
+
+  # Resend (and other non-SMTP adapters) require an HTTP API client.
+  config :swoosh, :api_client, Swoosh.ApiClient.Req
 end

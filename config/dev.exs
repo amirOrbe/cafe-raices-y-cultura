@@ -84,5 +84,12 @@ config :phoenix_live_view,
   # Enable helpful, but potentially expensive runtime checks
   enable_expensive_runtime_checks: true
 
-# Disable swoosh api client as it is only required for production adapters.
+# Disable swoosh api client for the Local adapter (dev default).
+# Overridden to Swoosh.ApiClient.Req in dev.secret.exs when using Resend.
 config :swoosh, :api_client, false
+
+# Import local secrets (API keys, etc.) — never committed to git.
+# Create config/dev.secret.exs from the .example file and fill in your keys.
+if File.exists?(Path.join(__DIR__, "dev.secret.exs")) do
+  import_config "dev.secret.exs"
+end

@@ -224,7 +224,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
               <p class="font-semibold text-base-content truncate">{user.name}</p>
               <p class="text-xs text-base-content/50 capitalize">{user.role}</p>
             </div>
-            <div class="ml-auto">
+            <div class="ml-auto shrink-0">
               <.attendance_status_badge record={record} />
             </div>
           </div>
@@ -305,8 +305,8 @@ defmodule CRCWeb.Admin.AsistenciaLive do
           <p>Sin datos de asistencia para este período.</p>
         </div>
       <% else %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-          <table class="table table-zebra w-full text-sm">
+        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-x-auto">
+          <table class="table table-zebra w-full text-sm min-w-[640px]">
             <thead>
               <tr>
                 <th>Empleado</th>

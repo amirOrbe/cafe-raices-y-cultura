@@ -445,7 +445,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
 
   defp attendance_status_badge(%{record: nil} = assigns) do
     ~H"""
-    <span class="badge badge-ghost badge-sm">Sin datos</span>
+    <span class="badge badge-ghost badge-sm whitespace-nowrap">Sin datos</span>
     """
   end
 
@@ -462,7 +462,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
     assigns = assign(assigns, label: label, cls: cls)
 
     ~H"""
-    <span class={"badge badge-sm #{@cls}"}>{@label}</span>
+    <span class={"badge badge-sm whitespace-nowrap #{@cls}"}>{@label}</span>
     """
   end
 

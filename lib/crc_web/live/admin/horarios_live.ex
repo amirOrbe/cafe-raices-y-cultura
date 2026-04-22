@@ -172,9 +172,9 @@ defmodule CRCWeb.Admin.HorariosLive do
             <%= if @selected_user do %>
               <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
                 <%!-- Header --%>
-                <div class="px-6 py-4 border-b border-base-200 flex items-center justify-between">
-                  <div>
-                    <h2 class="font-bold text-base-content">{@selected_user.name}</h2>
+                <div class="px-6 py-4 border-b border-base-200 flex flex-wrap items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <h2 class="font-bold text-base-content truncate">{@selected_user.name}</h2>
                     <p class="text-sm text-base-content/50 capitalize">{@selected_user.role}</p>
                   </div>
                   <%= if !@editing do %>

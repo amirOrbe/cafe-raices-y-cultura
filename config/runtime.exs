@@ -100,21 +100,20 @@ if config_env() == :prod do
   # Check `Plug.SSL` for all available options in `force_ssl`.
 
   # Mailer — Resend adapter for production.
-  # Set the RESEND_API_KEY environment variable in your deployment platform.
-  resend_api_key =
-    System.get_env("RESEND_API_KEY") ||
-      raise "environment variable RESEND_API_KEY is missing"
+  # If RESEND_API_KEY is not set the mailer simply stays disabled (no emails sent).
+  # Set RESEND_API_KEY when you are ready to enable transactional emails.
+  if resend_api_key = System.get_env("RESEND_API_KEY") do
+    config :crc, CRC.Mailer,
+      adapter: Swoosh.Adapters.Resend,
+      api_key: resend_api_key
 
-  config :crc, CRC.Mailer,
-    adapter: Swoosh.Adapters.Resend,
-    api_key: resend_api_key
+    # Resend requires an HTTP API client.
+    config :swoosh, :api_client, Swoosh.ApiClient.Req
 
-  # Sender address — must match a verified domain in your Resend account.
-  # Set MAILER_FROM_ADDRESS=noreply@tudominio.com in your deployment platform.
-  if from_address = System.get_env("MAILER_FROM_ADDRESS") do
-    config :crc, mailer_from_address: from_address
+    # Sender address — must match a verified domain in your Resend account.
+    # Set MAILER_FROM_ADDRESS=noreply@tudominio.com in your deployment platform.
+    if from_address = System.get_env("MAILER_FROM_ADDRESS") do
+      config :crc, mailer_from_address: from_address
+    end
   end
-
-  # Resend (and other non-SMTP adapters) require an HTTP API client.
-  config :swoosh, :api_client, Swoosh.ApiClient.Req
 end

@@ -550,14 +550,13 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
               <%!-- Upload area (shown when no current image, or after remove) --%>
               <%= if !@current_img || @remove_image do %>
-                <label class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-base-300 rounded-xl p-5 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors">
-                  <.icon name="hero-arrow-up-tray" class="size-7 text-base-content/30" />
-                  <span class="text-sm text-base-content/60">
-                    Arrastra una foto o haz clic para seleccionar
-                  </span>
-                  <span class="text-xs text-base-content/40">JPG, PNG o WebP · Máx. 5 MB</span>
-                  <.live_file_input upload={@uploads.photo} class="sr-only" />
-                </label>
+                <div class="flex flex-col gap-1.5">
+                  <.live_file_input
+                    upload={@uploads.photo}
+                    class="file-input file-input-bordered file-input-sm w-full"
+                  />
+                  <p class="text-xs text-base-content/40">JPG, PNG o WebP · Máx. 5 MB</p>
+                </div>
               <% end %>
 
               <%!-- Preview of selected (not yet saved) file --%>

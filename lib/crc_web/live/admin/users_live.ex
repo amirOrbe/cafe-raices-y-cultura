@@ -5,6 +5,7 @@ defmodule CRCWeb.Admin.UsersLive do
 
   alias CRC.Accounts
   alias CRC.Accounts.User
+  alias CRC.Cloudinary
 
   @impl true
   def mount(_params, _session, socket) do
@@ -18,6 +19,13 @@ defmodule CRCWeb.Admin.UsersLive do
       |> assign(:modal, nil)
       |> assign(:form, nil)
       |> assign(:form_role, "admin")
+      |> assign(:remove_avatar, false)
+      |> allow_upload(:avatar,
+        accept: ~w(.jpg .jpeg .png .webp),
+        max_entries: 1,
+        max_file_size: 5_000_000,
+        auto_upload: true
+      )
 
     {:ok, socket}
   end
@@ -47,7 +55,8 @@ defmodule CRCWeb.Admin.UsersLive do
      socket
      |> assign(:modal, :new)
      |> assign(:form, to_form(changeset))
-     |> assign(:form_role, "admin")}
+     |> assign(:form_role, "admin")
+     |> assign(:remove_avatar, false)}
   end
 
   def handle_event("edit_user", %{"id" => id}, socket) do
@@ -58,7 +67,8 @@ defmodule CRCWeb.Admin.UsersLive do
      socket
      |> assign(:modal, {:edit, user})
      |> assign(:form, to_form(changeset))
-     |> assign(:form_role, user.role)}
+     |> assign(:form_role, user.role)
+     |> assign(:remove_avatar, false)}
   end
 
   def handle_event("role_changed", %{"user" => %{"role" => role}}, socket) do
@@ -66,11 +76,43 @@ defmodule CRCWeb.Admin.UsersLive do
   end
 
   def handle_event("close_modal", _params, socket) do
-    {:noreply, assign(socket, modal: nil, form: nil, form_role: "admin")}
+    {:noreply, assign(socket, modal: nil, form: nil, form_role: "admin", remove_avatar: false)}
+  end
+
+  def handle_event("validate_upload", _params, socket), do: {:noreply, socket}
+
+  def handle_event("cancel_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :avatar, ref)}
+  end
+
+  def handle_event("remove_avatar", _params, socket) do
+    {:noreply, assign(socket, :remove_avatar, true)}
   end
 
   def handle_event("save_user", %{"user" => params}, socket) do
     admin = socket.assigns.current_user
+
+    # Upload avatar to Cloudinary if one was selected
+    uploaded_avatar_url =
+      consume_uploaded_entries(socket, :avatar, fn %{path: path}, entry ->
+        case Cloudinary.upload(path, folder: "avatars", content_type: entry.client_type) do
+          {:ok, url} ->
+            {:ok, url}
+
+          {:error, reason} ->
+            require Logger
+            Logger.error("Avatar upload failed: #{inspect(reason)}")
+            {:ok, nil}
+        end
+      end)
+      |> List.first()
+
+    params =
+      cond do
+        uploaded_avatar_url -> Map.put(params, "avatar_url", uploaded_avatar_url)
+        socket.assigns.remove_avatar -> Map.put(params, "avatar_url", nil)
+        true -> params
+      end
 
     result =
       case socket.assigns.modal do
@@ -98,7 +140,8 @@ defmodule CRCWeb.Admin.UsersLive do
          |> put_flash(:info, "Usuario #{label} correctamente.")
          |> assign(:users, Accounts.list_users())
          |> assign(:modal, nil)
-         |> assign(:form, nil)}
+         |> assign(:form, nil)
+         |> assign(:remove_avatar, false)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
@@ -208,10 +251,14 @@ defmodule CRCWeb.Admin.UsersLive do
                 <tr class="hover:bg-base-200/50 transition-colors">
                   <td>
                     <div class="flex items-center gap-3">
-                      <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <span class="text-primary font-semibold text-xs">
-                          {String.first(user.name) |> String.upcase()}
-                        </span>
+                      <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden border border-base-300">
+                        <%= if user.avatar_url do %>
+                          <img src={user.avatar_url} alt={user.name} class="size-8 object-cover" />
+                        <% else %>
+                          <span class="text-primary font-semibold text-xs">
+                            {String.first(user.name) |> String.upcase()}
+                          </span>
+                        <% end %>
                       </div>
                       <span class="font-medium text-sm text-base-content">{user.name}</span>
                     </div>
@@ -278,7 +325,13 @@ defmodule CRCWeb.Admin.UsersLive do
 
     <%!-- Modal: new / edit user --%>
     <%= if @modal != nil do %>
-      <.user_modal form={@form} modal={@modal} form_role={@form_role} />
+      <.user_modal
+        form={@form}
+        modal={@modal}
+        form_role={@form_role}
+        uploads={@uploads}
+        remove_avatar={@remove_avatar}
+      />
     <% end %>
     """
   end
@@ -290,6 +343,8 @@ defmodule CRCWeb.Admin.UsersLive do
   attr :form, :map, required: true
   attr :modal, :any, required: true
   attr :form_role, :string, required: true
+  attr :uploads, :map, required: true
+  attr :remove_avatar, :boolean, default: false
 
   defp user_modal(assigns) do
     title =
@@ -298,7 +353,13 @@ defmodule CRCWeb.Admin.UsersLive do
         {:edit, _} -> "Editar usuario"
       end
 
-    assigns = assign(assigns, :title, title)
+    current_avatar =
+      case assigns.modal do
+        {:edit, user} -> user.avatar_url
+        _ -> nil
+      end
+
+    assigns = assigns |> assign(:title, title) |> assign(:current_avatar, current_avatar)
 
     ~H"""
     <div
@@ -322,7 +383,50 @@ defmodule CRCWeb.Admin.UsersLive do
 
         <%!-- Form --%>
         <div class="px-6 py-5">
-          <.form id="user-form" for={@form} phx-submit="save_user" class="space-y-1">
+          <.form id="user-form" for={@form} phx-submit="save_user" phx-change="validate_upload" class="space-y-1">
+
+            <%!-- ── Avatar ──────────────────────────────────────────────────────── --%>
+            <div class="pb-2">
+              <p class="text-sm font-medium text-base-content mb-2">
+                Foto de perfil <span class="text-base-content/40 font-normal">(opcional)</span>
+              </p>
+
+              <%= if @current_avatar && !@remove_avatar do %>
+                <div class="flex items-center gap-3 p-3 bg-base-200 rounded-xl mb-2">
+                  <img src={@current_avatar} class="size-14 rounded-full object-cover border border-base-300 shrink-0" />
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-base-content">Foto actual</p>
+                    <button type="button" class="btn btn-xs btn-error btn-outline gap-1 mt-1" phx-click="remove_avatar">
+                      <.icon name="hero-trash" class="size-3" /> Eliminar foto
+                    </button>
+                  </div>
+                </div>
+              <% end %>
+
+              <%= if !@current_avatar || @remove_avatar do %>
+                <div class="flex flex-col gap-1.5">
+                  <.live_file_input upload={@uploads.avatar} class="file-input file-input-bordered file-input-sm w-full" />
+                  <p class="text-xs text-base-content/40">JPG, PNG o WebP · Máx. 5 MB</p>
+                </div>
+              <% end %>
+
+              <%= for entry <- @uploads.avatar.entries do %>
+                <div class="flex items-center gap-3 mt-2 p-2 bg-base-200 rounded-lg">
+                  <.live_img_preview entry={entry} class="size-10 object-cover rounded-full shrink-0" />
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate">{entry.client_name}</p>
+                    <div class="w-full bg-base-300 rounded-full h-1 mt-1">
+                      <div class="bg-primary h-1 rounded-full transition-all" style={"width: #{entry.progress}%"} />
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-ghost btn-xs btn-circle text-error" phx-click="cancel_upload" phx-value-ref={entry.ref}>
+                    <.icon name="hero-x-mark" class="size-3.5" />
+                  </button>
+                </div>
+              <% end %>
+            </div>
+            <%!-- ── End Avatar ───────────────────────────────────────────────────── --%>
+
             <.input field={@form[:name]} type="text" label="Nombre completo" placeholder="Ej. Ana García López" />
             <.input field={@form[:email]} type="email" label="Correo electrónico" placeholder="correo@ejemplo.com" />
             <.input field={@form[:phone]} type="text" label="Teléfono (opcional)" placeholder="55 1234 5678" />

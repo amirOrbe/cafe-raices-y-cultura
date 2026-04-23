@@ -63,8 +63,12 @@ defmodule CRCWeb.Components.SiteComponents do
               <div class="hidden md:block">
                 <div class="dropdown dropdown-end">
                   <button tabindex="0" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-base-200 border border-base-300 hover:bg-base-300 transition-colors cursor-pointer">
-                    <div class="size-6 rounded-full bg-primary flex items-center justify-center text-primary-content text-xs font-bold shrink-0">
-                      {String.first(@current_user.name) |> String.upcase()}
+                    <div class="size-6 rounded-full bg-primary flex items-center justify-center text-primary-content text-xs font-bold shrink-0 overflow-hidden">
+                      <%= if @current_user.avatar_url do %>
+                        <img src={@current_user.avatar_url} alt={@current_user.name} class="size-6 object-cover" />
+                      <% else %>
+                        {String.first(@current_user.name) |> String.upcase()}
+                      <% end %>
                     </div>
                     <span class="text-xs font-medium text-base-content/80 max-w-[100px] truncate hidden lg:block">
                       {@current_user.name}
@@ -222,8 +226,12 @@ defmodule CRCWeb.Components.SiteComponents do
         <%= if @current_user do %>
           <%!-- User identity --%>
           <div class="flex items-center gap-3 py-3 px-2 mt-2 border-t border-base-300">
-            <div class="size-9 rounded-full bg-primary flex items-center justify-center text-primary-content text-sm font-bold shrink-0">
-              {String.first(@current_user.name) |> String.upcase()}
+            <div class="size-9 rounded-full bg-primary flex items-center justify-center text-primary-content text-sm font-bold shrink-0 overflow-hidden">
+              <%= if @current_user.avatar_url do %>
+                <img src={@current_user.avatar_url} alt={@current_user.name} class="size-9 object-cover" />
+              <% else %>
+                {String.first(@current_user.name) |> String.upcase()}
+              <% end %>
             </div>
             <div class="min-w-0">
               <p class="text-sm font-semibold text-base-content truncate">{@current_user.name}</p>

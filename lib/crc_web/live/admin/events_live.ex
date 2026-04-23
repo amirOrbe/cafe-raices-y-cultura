@@ -3,6 +3,7 @@ defmodule CRCWeb.Admin.EventsLive do
 
   use CRCWeb, :live_view
 
+  alias CRC.Cloudinary
   alias CRC.Events
   alias CRC.Events.Event
   alias CRC.Settings
@@ -28,6 +29,13 @@ defmodule CRCWeb.Admin.EventsLive do
       |> assign(:selected_collaborator_id, "")
       |> assign(:collaborator_role_input, "")
       |> assign(:timeline, nil)
+      |> assign(:event_photos, [])
+      |> allow_upload(:event_photo,
+        accept: ~w(.jpg .jpeg .png .webp),
+        max_entries: 5,
+        max_file_size: 5_000_000,
+        auto_upload: true
+      )
 
     {:ok, socket}
   end
@@ -106,6 +114,7 @@ defmodule CRCWeb.Admin.EventsLive do
       |> assign(:selected_collaborator_id, "")
       |> assign(:collaborator_role_input, "")
       |> assign(:timeline, timeline)
+      |> assign(:event_photos, Events.list_event_photos(event.id))
       |> update_available_collaborators()
 
     {:noreply, socket}
@@ -119,7 +128,54 @@ defmodule CRCWeb.Admin.EventsLive do
      |> assign(:collaborators_draft, [])
      |> assign(:selected_collaborator_id, "")
      |> assign(:collaborator_role_input, "")
-     |> assign(:timeline, nil)}
+     |> assign(:timeline, nil)
+     |> assign(:event_photos, [])}
+  end
+
+  def handle_event("validate_upload", _params, socket), do: {:noreply, socket}
+
+  def handle_event("cancel_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :event_photo, ref)}
+  end
+
+  def handle_event("upload_event_photos", _params, socket) do
+    event_id =
+      case socket.assigns.modal do
+        {:edit, event} -> event.id
+        _ -> nil
+      end
+
+    if event_id do
+      consume_uploaded_entries(socket, :event_photo, fn %{path: path}, entry ->
+        case Cloudinary.upload(path, folder: "events", content_type: entry.client_type) do
+          {:ok, url} ->
+            Events.add_event_photo(event_id, url)
+            {:ok, url}
+
+          {:error, reason} ->
+            require Logger
+            Logger.error("Event photo upload failed: #{inspect(reason)}")
+            {:ok, nil}
+        end
+      end)
+
+      {:noreply, assign(socket, :event_photos, Events.list_event_photos(event_id))}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("delete_event_photo", %{"id" => id}, socket) do
+    Events.delete_event_photo(String.to_integer(id))
+
+    event_id =
+      case socket.assigns.modal do
+        {:edit, event} -> event.id
+        _ -> nil
+      end
+
+    photos = if event_id, do: Events.list_event_photos(event_id), else: []
+    {:noreply, assign(socket, :event_photos, photos)}
   end
 
   def handle_event("form_changed", %{"event" => params}, socket) do
@@ -375,6 +431,8 @@ defmodule CRCWeb.Admin.EventsLive do
         selected_collaborator_id={@selected_collaborator_id}
         collaborator_role_input={@collaborator_role_input}
         timeline={@timeline}
+        event_photos={@event_photos}
+        uploads={@uploads}
       />
     <% end %>
     """
@@ -418,6 +476,8 @@ defmodule CRCWeb.Admin.EventsLive do
   attr :selected_collaborator_id, :string, required: true
   attr :collaborator_role_input, :string, required: true
   attr :timeline, :any, default: nil
+  attr :event_photos, :list, default: []
+  attr :uploads, :map, required: true
 
   defp event_modal(assigns) do
     title = if assigns.modal == :new, do: "Nuevo evento", else: "Editar evento"
@@ -582,6 +642,88 @@ defmodule CRCWeb.Admin.EventsLive do
               </button>
             </div>
           </.form>
+
+          <%!-- ── Galería de fotos (solo en modo edición) ──────────────────────── --%>
+          <%= if @modal != :new do %>
+            <div class="mt-5 pt-4 border-t border-base-300">
+              <div class="flex items-center gap-2 mb-3">
+                <.icon name="hero-photo" class="size-4 text-base-content/60" />
+                <h3 class="text-sm font-semibold text-base-content">Fotos del evento</h3>
+                <span class="badge badge-xs badge-ghost">{length(@event_photos)}</span>
+              </div>
+
+              <%!-- Grid de fotos existentes --%>
+              <%= if @event_photos != [] do %>
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                  <%= for photo <- @event_photos do %>
+                    <div class="relative group aspect-square overflow-hidden rounded-xl border border-base-300">
+                      <img
+                        src={photo.image_url}
+                        alt={photo.caption || "Foto del evento"}
+                        class="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <div class="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                        <button
+                          type="button"
+                          class="opacity-0 group-hover:opacity-100 transition-opacity btn btn-circle btn-sm btn-error"
+                          phx-click="delete_event_photo"
+                          phx-value-id={photo.id}
+                          data-confirm="¿Eliminar esta foto del evento?"
+                        >
+                          <.icon name="hero-trash" class="size-4" />
+                        </button>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+
+              <%!-- Subir nuevas fotos --%>
+              <form phx-submit="upload_event_photos" phx-change="validate_upload" class="space-y-2">
+                <div class="flex gap-2 items-center">
+                  <.live_file_input
+                    upload={@uploads.event_photo}
+                    class="file-input file-input-bordered file-input-sm flex-1"
+                  />
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-outline gap-1 shrink-0"
+                    disabled={@uploads.event_photo.entries == []}
+                  >
+                    <.icon name="hero-arrow-up-tray" class="size-4" />
+                    Subir
+                  </button>
+                </div>
+                <p class="text-xs text-base-content/40">JPG, PNG o WebP · Máx. 5 MB · Hasta 5 fotos a la vez</p>
+
+                <%!-- Previews de archivos seleccionados --%>
+                <%= for entry <- @uploads.event_photo.entries do %>
+                  <div class="flex items-center gap-3 p-2 bg-base-200 rounded-lg">
+                    <.live_img_preview entry={entry} class="w-12 h-12 object-cover rounded-lg shrink-0" />
+                    <div class="flex-1 min-w-0">
+                      <p class="text-xs font-medium text-base-content truncate">{entry.client_name}</p>
+                      <div class="w-full bg-base-300 rounded-full h-1 mt-1">
+                        <div
+                          class="bg-primary h-1 rounded-full transition-all"
+                          style={"width: #{entry.progress}%"}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-ghost btn-xs btn-circle text-error"
+                      phx-click="cancel_upload"
+                      phx-value-ref={entry.ref}
+                    >
+                      <.icon name="hero-x-mark" class="size-3.5" />
+                    </button>
+                  </div>
+                <% end %>
+              </form>
+            </div>
+          <% end %>
+          <%!-- ── Fin galería ─────────────────────────────────────────────────── --%>
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ defmodule CRC.Events do
   alias CRC.Events.Collaborator
   alias CRC.Events.Event
   alias CRC.Events.EventCollaborator
+  alias CRC.Events.EventPhoto
   alias CRC.Events.EventType
 
   # ---------------------------------------------------------------------------
@@ -322,6 +323,36 @@ defmodule CRC.Events do
   @spec change_event(Event.t(), map()) :: Ecto.Changeset.t()
   def change_event(%Event{} = event, attrs \\ %{}) do
     Event.changeset(event, attrs)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Event Photos
+  # ---------------------------------------------------------------------------
+
+  @doc "Returns all photos for the given event, oldest first."
+  @spec list_event_photos(integer()) :: [EventPhoto.t()]
+  def list_event_photos(event_id) do
+    Repo.all(
+      from p in EventPhoto,
+        where: p.event_id == ^event_id,
+        order_by: [asc: p.inserted_at]
+    )
+  end
+
+  @doc "Adds a photo URL to an event."
+  @spec add_event_photo(integer(), String.t(), String.t() | nil) ::
+          {:ok, EventPhoto.t()} | {:error, Ecto.Changeset.t()}
+  def add_event_photo(event_id, image_url, caption \\ nil) do
+    %EventPhoto{}
+    |> EventPhoto.changeset(%{event_id: event_id, image_url: image_url, caption: caption})
+    |> Repo.insert()
+  end
+
+  @doc "Deletes an event photo by id."
+  @spec delete_event_photo(integer()) :: {:ok, EventPhoto.t()} | {:error, Ecto.Changeset.t()}
+  def delete_event_photo(photo_id) do
+    photo = Repo.get!(EventPhoto, photo_id)
+    Repo.delete(photo)
   end
 
   # ---------------------------------------------------------------------------

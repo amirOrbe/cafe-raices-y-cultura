@@ -23,6 +23,7 @@ defmodule CRC.Events.Event do
     belongs_to :event_type, CRC.Events.EventType
 
     has_many :event_collaborators, CRC.Events.EventCollaborator, on_replace: :delete
+    has_many :event_photos, CRC.Events.EventPhoto, on_delete: :delete_all
 
     many_to_many :collaborators, CRC.Events.Collaborator,
       join_through: CRC.Events.EventCollaborator,

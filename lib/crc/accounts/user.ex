@@ -29,6 +29,7 @@ defmodule CRC.Accounts.User do
     field :phone, :string
     field :role, :string, default: "cliente"
     field :stations, {:array, :string}, default: []
+    field :avatar_url, :string
     field :is_active, :boolean, default: true
     field :confirmed_at, :utc_datetime
     field :password_hash, :string
@@ -44,7 +45,7 @@ defmodule CRC.Accounts.User do
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:name, :email, :phone, :role, :stations, :is_active, :password])
+    |> cast(attrs, [:name, :email, :phone, :role, :stations, :is_active, :password, :avatar_url])
     |> normalize_stations()
     |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name, :email, :role], message: "no puede estar en blanco")

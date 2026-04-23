@@ -106,8 +106,6 @@ defmodule CRCWeb.Admin.PlatillosLive do
   def handle_event("save_item", %{"menu_item" => params}, socket) do
     # Track whether a photo was selected before consuming (entries are cleared after)
     had_photo = socket.assigns.uploads.photo.entries != []
-    require Logger
-    Logger.info("[PlatillosLive] save_item — entries: #{inspect(socket.assigns.uploads.photo.entries)}")
 
     # Upload photo to Cloudinary if one was selected
     uploaded_url =

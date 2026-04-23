@@ -4,7 +4,6 @@ defmodule CRCWeb.ColaboracionesLiveTest do
   import Phoenix.LiveViewTest
 
   alias CRC.Events
-  alias CRC.Events.{Event, EventType, Collaborator}
 
   # ---------------------------------------------------------------------------
   # Helpers
@@ -22,11 +21,20 @@ defmodule CRCWeb.ColaboracionesLiveTest do
     c
   end
 
-  # CDMX-adjusted today, matching the logic used in the Events context (UTC-6).
+  # Returns today in CDMX time (UTC-6), matching the LiveView logic.
   defp cdmx_today do
     DateTime.utc_now()
     |> DateTime.add(-6 * 3600, :second)
     |> DateTime.to_date()
+  end
+
+  # Returns a date that is guaranteed to be in the current month and in the
+  # future. Falls back to tomorrow if near end of month.
+  defp upcoming_date_this_month do
+    today = cdmx_today()
+    days_in_month = Date.days_in_month(today)
+    offset = if today.day + 3 <= days_in_month, do: 3, else: 1
+    Date.add(today, offset)
   end
 
   defp insert_event(overrides \\ %{}) do
@@ -34,7 +42,7 @@ defmodule CRCWeb.ColaboracionesLiveTest do
       Map.merge(
         %{
           title: "Evento Test #{System.unique_integer()}",
-          event_date: Date.add(cdmx_today(), 5),
+          event_date: upcoming_date_this_month(),
           start_time: ~T[18:00:00],
           end_time: ~T[21:00:00],
           active: true
@@ -47,7 +55,7 @@ defmodule CRCWeb.ColaboracionesLiveTest do
   end
 
   # ---------------------------------------------------------------------------
-  # Tests
+  # Basic rendering
   # ---------------------------------------------------------------------------
 
   describe "GET /colaboraciones" do
@@ -56,54 +64,139 @@ defmodule CRCWeb.ColaboracionesLiveTest do
       assert html =~ "Colaboraciones"
     end
 
-    test "always shows the '¿Tienes una propuesta?' CTA section", %{conn: conn} do
+    test "always shows the CTA section", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
       assert html =~ "¿Tienes una propuesta?"
     end
 
-    test "shows upcoming events section when events exist", %{conn: conn} do
-      insert_event(%{
-        title: "Jazz Night Próxima",
-        event_date: Date.add(cdmx_today(), 3),
-        active: true
-      })
-
+    test "shows current month name in calendar navigation", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "Jazz Night Próxima"
-      assert html =~ "Próximas colaboraciones"
+      months = ~w(Enero Febrero Marzo Abril Mayo Junio Julio Agosto Septiembre Octubre Noviembre Diciembre)
+      assert Enum.any?(months, &String.contains?(html, &1))
     end
 
-    test "shows past events in historial section", %{conn: conn} do
-      # We test this by looking for the historial section
-      # Past events have event_date < today
-      # We can't easily insert past dates without bypassing validation,
-      # but we can check the section header appears when there are past events
+    test "event title appears in calendar pill for current-month events", %{conn: conn} do
+      insert_event(%{title: "Jazz Night Calendario"})
+
       {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      # The page should still render fine even with no past events
-      assert html =~ "Colaboraciones"
+      assert html =~ "Jazz Night Calendario"
     end
 
-    test "shows event date formatted in Spanish", %{conn: conn} do
-      insert_event(%{
-        title: "Evento Fecha Test",
-        event_date: Date.add(cdmx_today(), 2),
-        active: true
-      })
+    test "inactive events are not shown", %{conn: conn} do
+      insert_event(%{title: "Evento Inactivo Test", active: false})
 
       {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      # Spanish month names should appear somewhere in the page
+      refute html =~ "Evento Inactivo Test"
+    end
+
+    test "shows empty-month message when navigated to a month with no events", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+
+      for _ <- 1..24, do: render_click(lv, "next_month", %{})
+
+      assert render(lv) =~ "Sin eventos para este mes"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Calendar day detail panel
+  # ---------------------------------------------------------------------------
+
+  describe "day detail panel" do
+    test "clicking a day with an event reveals full event details", %{conn: conn} do
+      event = insert_event(%{
+        title: "Concierto De Jazz",
+        description: "Una noche de jazz en vivo."
+      })
+
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      render_click(lv, "select_day", %{"date" => Date.to_iso8601(event.event_date)})
+      html = render(lv)
+
+      assert html =~ "Concierto De Jazz"
+      assert html =~ "Una noche de jazz en vivo."
+    end
+
+    test "clicking the same day again closes the detail panel", %{conn: conn} do
+      event = insert_event(%{
+        title: "Evento Toggle",
+        description: "Descripción única togglable."
+      })
+
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      date_str = Date.to_iso8601(event.event_date)
+
+      render_click(lv, "select_day", %{"date" => date_str})
+      assert render(lv) =~ "Descripción única togglable."
+
+      render_click(lv, "select_day", %{"date" => date_str})
+      refute render(lv) =~ "Descripción única togglable."
+    end
+
+    test "shows event tags in detail panel", %{conn: conn} do
+      event = insert_event(%{
+        title: "Evento Con Tags",
+        tags: ["Música", "Noche"]
+      })
+
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      render_click(lv, "select_day", %{"date" => Date.to_iso8601(event.event_date)})
+      html = render(lv)
+
+      assert html =~ "Música"
+      assert html =~ "Noche"
+    end
+
+    test "shows event type badge in detail panel", %{conn: conn} do
+      et = insert_event_type(%{name: "Festival Acústico"})
+      event = insert_event(%{title: "Evento Con Tipo", event_type_id: et.id})
+
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      render_click(lv, "select_day", %{"date" => Date.to_iso8601(event.event_date)})
+      assert render(lv) =~ "Festival Acústico"
+    end
+
+    test "shows formatted full date with Spanish month in detail panel", %{conn: conn} do
+      event = insert_event(%{title: "Evento Fecha Detalle"})
+
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      render_click(lv, "select_day", %{"date" => Date.to_iso8601(event.event_date)})
+      html = render(lv)
+
       months = ~w(enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre)
       assert Enum.any?(months, &String.contains?(html, &1))
     end
 
-    test "shows collaborator names in events", %{conn: conn} do
+    test "shows past badge for past-month events after navigating", %{conn: conn} do
+      today = cdmx_today()
+      {prev_year, prev_month} = if today.month == 1, do: {today.year - 1, 12}, else: {today.year, today.month - 1}
+      past_date = Date.new!(prev_year, prev_month, 10)
+
+      insert_event(%{title: "Evento Pasado Mes", event_date: past_date, active: true})
+
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      render_click(lv, "prev_month", %{})
+      render_click(lv, "select_day", %{"date" => Date.to_iso8601(past_date)})
+      html = render(lv)
+
+      assert html =~ "Evento Pasado Mes"
+      assert html =~ "Pasado"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Collaborator badges
+  # ---------------------------------------------------------------------------
+
+  describe "collaborator badges in detail panel" do
+    test "shows collaborator name and role", %{conn: conn} do
       collaborator = insert_collaborator(%{name: "Músico Especial"})
 
       {:ok, event} =
         Events.create_event(
           %{
-            title: "Evento con Músico",
-            event_date: Date.add(cdmx_today(), 4),
+            title: "Evento Con Músico",
+            event_date: upcoming_date_this_month(),
             start_time: ~T[19:00:00],
             end_time: ~T[22:00:00],
             active: true
@@ -111,21 +204,109 @@ defmodule CRCWeb.ColaboracionesLiveTest do
           [{collaborator.id, "Guitarrista"}]
         )
 
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      render_click(lv, "select_day", %{"date" => Date.to_iso8601(event.event_date)})
+      html = render(lv)
+
       assert html =~ "Músico Especial"
+      assert html =~ "Guitarrista"
     end
 
-    test "inactive events are not shown", %{conn: conn} do
-      insert_event(%{
-        title: "Evento Inactivo Test",
-        event_date: Date.add(cdmx_today(), 2),
-        active: false
-      })
+    test "shows instagram link when collaborator has a handle", %{conn: conn} do
+      collaborator = insert_collaborator(%{name: "Dj Instagram", instagram_handle: "djinstagram"})
 
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      refute html =~ "Evento Inactivo Test"
+      {:ok, event} =
+        Events.create_event(
+          %{
+            title: "Evento Instagram",
+            event_date: upcoming_date_this_month(),
+            start_time: ~T[19:00:00],
+            end_time: ~T[22:00:00],
+            active: true
+          },
+          [{collaborator.id, "DJ"}]
+        )
+
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      render_click(lv, "select_day", %{"date" => Date.to_iso8601(event.event_date)})
+      html = render(lv)
+
+      assert html =~ "instagram.com/djinstagram"
+      assert html =~ "Dj Instagram"
+    end
+
+    test "shows collaborator name without link when no instagram handle", %{conn: conn} do
+      collaborator = insert_collaborator(%{name: "Artista Sin Instagram"})
+
+      {:ok, event} =
+        Events.create_event(
+          %{
+            title: "Evento Sin Instagram",
+            event_date: upcoming_date_this_month(),
+            start_time: ~T[18:00:00],
+            end_time: ~T[21:00:00],
+            active: true
+          },
+          [{collaborator.id, ""}]
+        )
+
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      render_click(lv, "select_day", %{"date" => Date.to_iso8601(event.event_date)})
+      assert render(lv) =~ "Artista Sin Instagram"
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # Month navigation
+  # ---------------------------------------------------------------------------
+
+  describe "month navigation" do
+    test "prev_month navigates to previous month", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      render_click(lv, "prev_month", %{})
+      assert render(lv) =~ "Colaboraciones"
+    end
+
+    test "next_month navigates to next month", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      render_click(lv, "next_month", %{})
+      assert render(lv) =~ "Colaboraciones"
+    end
+
+    test "changing month clears the selected day panel", %{conn: conn} do
+      event = insert_event(%{
+        title: "Evento Para Limpiar",
+        description: "Descripción que desaparece al navegar."
+      })
+
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      render_click(lv, "select_day", %{"date" => Date.to_iso8601(event.event_date)})
+      assert render(lv) =~ "Descripción que desaparece al navegar."
+
+      render_click(lv, "next_month", %{})
+      refute render(lv) =~ "Descripción que desaparece al navegar."
+    end
+
+    test "crossing year boundary backwards renders December of previous year", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      today = cdmx_today()
+      # Going back `today.month` times from the current month lands on December
+      for _ <- 1..today.month, do: render_click(lv, "prev_month", %{})
+      assert render(lv) =~ "Diciembre"
+    end
+
+    test "crossing year boundary forward renders January of next year", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
+      today = cdmx_today()
+      months_forward = 13 - today.month
+      for _ <- 1..months_forward, do: render_click(lv, "next_month", %{})
+      assert render(lv) =~ "Enero"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Nav events
+  # ---------------------------------------------------------------------------
 
   describe "nav events" do
     test "toggle_nav works", %{conn: conn} do
@@ -143,33 +324,38 @@ defmodule CRCWeb.ColaboracionesLiveTest do
     end
   end
 
+  # ---------------------------------------------------------------------------
+  # PubSub and timer
+  # ---------------------------------------------------------------------------
+
   describe "PubSub and timer" do
-    test "tick handle_info reloads events", %{conn: conn} do
+    test "tick reloads events", %{conn: conn} do
       {:ok, lv, _} = live(conn, ~p"/colaboraciones")
       send(lv.pid, :tick)
       assert render(lv) =~ "Colaboraciones"
     end
 
-    test "event_changed PubSub reloads events", %{conn: conn} do
+    test "event_changed PubSub reloads the calendar", %{conn: conn} do
       {:ok, lv, _} = live(conn, ~p"/colaboraciones")
 
-      insert_event(%{title: "Evento Refresco Colabs", event_date: Date.add(cdmx_today(), 2)})
+      insert_event(%{title: "Evento Refresco Colabs"})
       Phoenix.PubSub.broadcast(CRC.PubSub, "admin:events", {:event_changed, %{}})
 
-      html = render(lv)
-      assert html =~ "Evento Refresco Colabs"
+      assert render(lv) =~ "Evento Refresco Colabs"
     end
   end
 
+  # ---------------------------------------------------------------------------
+  # EN VIVO section
+  # ---------------------------------------------------------------------------
+
   describe "current event section" do
-    test "shows EN VIVO section for today's ongoing event", %{conn: conn} do
-      # An event spanning the full day is always current regardless of CI time
+    test "shows EN VIVO banner for today's ongoing event", %{conn: conn} do
       insert_event(%{
         title: "Evento En Curso",
         event_date: cdmx_today(),
         start_time: ~T[00:00:00],
-        end_time: ~T[23:59:59],
-        active: true
+        end_time: ~T[23:59:59]
       })
 
       {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
@@ -177,7 +363,7 @@ defmodule CRCWeb.ColaboracionesLiveTest do
       assert html =~ "Evento En Curso"
     end
 
-    test "shows event type in current event section", %{conn: conn} do
+    test "shows event type in EN VIVO section", %{conn: conn} do
       et = insert_event_type(%{name: "Concierto Tipo"})
 
       insert_event(%{
@@ -185,148 +371,19 @@ defmodule CRCWeb.ColaboracionesLiveTest do
         event_date: cdmx_today(),
         start_time: ~T[00:00:00],
         end_time: ~T[23:59:59],
-        active: true,
         event_type_id: et.id
       })
 
       {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
       assert html =~ "Concierto Tipo"
     end
-  end
 
-  describe "past events section" do
-    test "shows historial section when past events exist", %{conn: conn} do
-      insert_event(%{
-        title: "Evento Pasado Test",
-        event_date: Date.add(cdmx_today(), -5),
-        active: true
-      })
-
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "Historial de colaboraciones"
-      assert html =~ "Evento Pasado Test"
-    end
-
-    test "shows collaborator badges in past events (small=true)", %{conn: conn} do
-      collaborator = insert_collaborator(%{name: "Artista Pasado"})
-
-      {:ok, _event} =
-        Events.create_event(
-          %{
-            title: "Concierto Pasado",
-            event_date: Date.add(cdmx_today(), -2),
-            start_time: ~T[20:00:00],
-            end_time: ~T[23:00:00],
-            active: true
-          },
-          [{collaborator.id, "Bajista"}]
-        )
-
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "Artista Pasado"
-    end
-
-    test "shows event type badge in past events", %{conn: conn} do
-      et = insert_event_type(%{name: "Tipo Pasado"})
-
-      insert_event(%{
-        title: "Evento Tipo Pasado",
-        event_date: Date.add(cdmx_today(), -1),
-        start_time: ~T[18:00:00],
-        end_time: ~T[21:00:00],
-        active: true,
-        event_type_id: et.id
-      })
-
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "Tipo Pasado"
-    end
-  end
-
-  describe "collaborator badges" do
-    test "shows instagram link when collaborator has instagram_handle", %{conn: conn} do
-      collaborator =
-        insert_collaborator(%{name: "Dj Instagram", instagram_handle: "djinstagram"})
-
-      {:ok, _event} =
-        Events.create_event(
-          %{
-            title: "Evento Instagram",
-            event_date: Date.add(cdmx_today(), 3),
-            start_time: ~T[19:00:00],
-            end_time: ~T[22:00:00],
-            active: true
-          },
-          [{collaborator.id, "DJ"}]
-        )
-
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "instagram.com/djinstagram"
-      assert html =~ "Dj Instagram"
-    end
-
-    test "shows role in collaborator badge", %{conn: conn} do
-      collaborator = insert_collaborator(%{name: "Músico Rol"})
-
-      {:ok, _event} =
-        Events.create_event(
-          %{
-            title: "Evento Con Rol",
-            event_date: Date.add(cdmx_today(), 6),
-            start_time: ~T[20:00:00],
-            end_time: ~T[23:00:00],
-            active: true
-          },
-          [{collaborator.id, "Guitarrista"}]
-        )
-
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "Guitarrista"
-    end
-
-    test "shows collaborator name without instagram link when no handle", %{conn: conn} do
-      collaborator = insert_collaborator(%{name: "Artista Sin Instagram"})
-
-      {:ok, _event} =
-        Events.create_event(
-          %{
-            title: "Evento Sin Instagram",
-            event_date: Date.add(cdmx_today(), 4),
-            start_time: ~T[18:00:00],
-            end_time: ~T[21:00:00],
-            active: true
-          },
-          [{collaborator.id, ""}]
-        )
-
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "Artista Sin Instagram"
-    end
-  end
-
-  describe "tags in upcoming events" do
-    test "shows event tags", %{conn: conn} do
-      insert_event(%{
-        title: "Evento Con Tags",
-        event_date: Date.add(cdmx_today(), 3),
-        active: true,
-        tags: ["Música", "Noche"]
-      })
-
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "Música"
-      assert html =~ "Noche"
-    end
-  end
-
-  describe "current event with description and collaborators" do
-    test "shows description in current event section", %{conn: conn} do
+    test "shows description in EN VIVO section", %{conn: conn} do
       insert_event(%{
         title: "Evento Descripción Hoy",
         event_date: cdmx_today(),
         start_time: ~T[00:00:00],
         end_time: ~T[23:59:59],
-        active: true,
         description: "Una noche especial de café y música."
       })
 
@@ -334,7 +391,7 @@ defmodule CRCWeb.ColaboracionesLiveTest do
       assert html =~ "Una noche especial de café y música."
     end
 
-    test "shows collaborators in current event section", %{conn: conn} do
+    test "shows collaborators in EN VIVO section", %{conn: conn} do
       collaborator = insert_collaborator(%{name: "Artista Hoy", instagram_handle: "artistahoy"})
 
       {:ok, _event} =
@@ -351,79 +408,6 @@ defmodule CRCWeb.ColaboracionesLiveTest do
 
       {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
       assert html =~ "Artista Hoy"
-    end
-  end
-
-  describe "upcoming events with description" do
-    test "shows description in upcoming event card", %{conn: conn} do
-      insert_event(%{
-        title: "Evento Próximo Desc",
-        event_date: Date.add(cdmx_today(), 4),
-        active: true,
-        description: "Taller interactivo de barismo."
-      })
-
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "Taller interactivo de barismo."
-    end
-  end
-
-  describe "format_event_date months coverage" do
-    test "covers additional months in past events", %{conn: conn} do
-      # Insert past events spread across different months to cover format_event_date branches
-      past_months = [
-        {"2026-01-05", "Enero Pasado"},  # enero (1)
-        {"2026-02-06", "Febrero Pasado"},  # febrero (2) - also a Friday for "Viernes"
-        {"2025-05-09", "Mayo Pasado"},    # mayo (5)
-        {"2025-06-05", "Junio Pasado"},   # junio (6)
-        {"2025-07-04", "Julio Pasado"},   # julio (7)
-        {"2025-08-01", "Agosto Pasado"},  # agosto (8)
-        {"2025-09-12", "Septiembre Pasado"},  # septiembre (9)
-        {"2025-10-10", "Octubre Pasado"},  # octubre (10)
-        {"2025-11-07", "Noviembre Pasado"},  # noviembre (11)
-        {"2025-12-05", "Diciembre Pasado"},  # diciembre (12)
-      ]
-
-      for {date_str, title} <- past_months do
-        insert_event(%{
-          title: title,
-          event_date: Date.from_iso8601!(date_str),
-          active: true
-        })
-      end
-
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "enero" or html =~ "Enero Pasado"
-    end
-
-    test "covers Viernes weekday in format_event_date", %{conn: conn} do
-      # 2026-01-02 is a Friday
-      insert_event(%{
-        title: "Evento Viernes",
-        event_date: ~D[2026-01-02],
-        active: true
-      })
-
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "Viernes"
-    end
-
-    test "covers additional weekdays in format_event_date", %{conn: conn} do
-      # Cover Lunes, Martes, Miercoles, Sabado, Domingo via past events
-      weekday_dates = [
-        {~D[2026-01-05], "Lunes Pasado"},   # Monday
-        {~D[2026-01-06], "Martes Pasado"},  # Tuesday
-        {~D[2026-01-07], "Mier Pasado"},    # Wednesday
-        {~D[2026-01-03], "Sabado Pasado"},  # Saturday
-        {~D[2026-01-04], "Domingo Pasado"}, # Sunday
-      ]
-
-      for {date, title} <- weekday_dates do
-        insert_event(%{title: title, event_date: date, active: true})
-      end
-
-      {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      assert html =~ "Historial de colaboraciones"
     end
   end
 end

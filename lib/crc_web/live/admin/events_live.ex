@@ -5,6 +5,7 @@ defmodule CRCWeb.Admin.EventsLive do
 
   alias CRC.Events
   alias CRC.Events.Event
+  alias CRC.Settings
 
   @impl true
   def mount(_params, _session, socket) do
@@ -26,6 +27,7 @@ defmodule CRCWeb.Admin.EventsLive do
       |> assign(:available_collaborators, [])
       |> assign(:selected_collaborator_id, "")
       |> assign(:collaborator_role_input, "")
+      |> assign(:timeline, nil)
 
     {:ok, socket}
   end
@@ -36,9 +38,7 @@ defmodule CRCWeb.Admin.EventsLive do
 
   @impl true
   def handle_info({:event_changed, _event}, socket) do
-    {:noreply,
-     socket
-     |> assign(:events, Events.list_events())}
+    {:noreply, assign(socket, :events, Events.list_events())}
   end
 
   def handle_info({:event_type_changed, _event_type}, socket) do
@@ -71,6 +71,7 @@ defmodule CRCWeb.Admin.EventsLive do
       |> assign(:collaborators_draft, [])
       |> assign(:selected_collaborator_id, "")
       |> assign(:collaborator_role_input, "")
+      |> assign(:timeline, nil)
       |> update_available_collaborators()
 
     {:noreply, socket}
@@ -89,6 +90,14 @@ defmodule CRCWeb.Admin.EventsLive do
         }
       end)
 
+    timeline =
+      compute_timeline(
+        Date.to_iso8601(event.event_date),
+        format_time(event.start_time),
+        format_time(event.end_time),
+        event.id
+      )
+
     socket =
       socket
       |> assign(:modal, {:edit, event})
@@ -96,6 +105,7 @@ defmodule CRCWeb.Admin.EventsLive do
       |> assign(:collaborators_draft, draft)
       |> assign(:selected_collaborator_id, "")
       |> assign(:collaborator_role_input, "")
+      |> assign(:timeline, timeline)
       |> update_available_collaborators()
 
     {:noreply, socket}
@@ -108,8 +118,43 @@ defmodule CRCWeb.Admin.EventsLive do
      |> assign(:form, nil)
      |> assign(:collaborators_draft, [])
      |> assign(:selected_collaborator_id, "")
-     |> assign(:collaborator_role_input, "")}
+     |> assign(:collaborator_role_input, "")
+     |> assign(:timeline, nil)}
   end
+
+  def handle_event("form_changed", %{"event" => params}, socket) do
+    date_str = params["event_date"] || ""
+    start_str = params["start_time"] || ""
+    end_str = params["end_time"] || ""
+
+    editing_event_id =
+      case socket.assigns.modal do
+        {:edit, ev} -> ev.id
+        _ -> nil
+      end
+
+    timeline =
+      with {:ok, new_date} <- Date.from_iso8601(date_str) do
+        current_date = socket.assigns.timeline && socket.assigns.timeline.date
+
+        if new_date == current_date do
+          # Date unchanged — just update time positions, no DB call
+          %{socket.assigns.timeline |
+            new_start: parse_time_opt(start_str),
+            new_end: parse_time_opt(end_str)
+          }
+        else
+          compute_timeline(date_str, start_str, end_str, editing_event_id)
+        end
+      else
+        _ -> nil
+      end
+
+    {:noreply, assign(socket, :timeline, timeline)}
+  end
+
+  # Ignore form_changed if it doesn't include the event key (e.g. collaborator selects)
+  def handle_event("form_changed", _params, socket), do: {:noreply, socket}
 
   def handle_event("save_event", %{"event" => params}, socket) do
     collaborators_with_roles =
@@ -117,16 +162,12 @@ defmodule CRCWeb.Admin.EventsLive do
         {entry.collaborator_id, entry.role}
       end)
 
-    # Parse tags from comma-separated string to list
     params = parse_tags(params)
 
     result =
       case socket.assigns.modal do
-        :new ->
-          Events.create_event(params, collaborators_with_roles)
-
-        {:edit, event} ->
-          Events.update_event(event, params, collaborators_with_roles)
+        :new -> Events.create_event(params, collaborators_with_roles)
+        {:edit, event} -> Events.update_event(event, params, collaborators_with_roles)
       end
 
     case result do
@@ -141,7 +182,8 @@ defmodule CRCWeb.Admin.EventsLive do
          |> assign(:form, nil)
          |> assign(:collaborators_draft, [])
          |> assign(:selected_collaborator_id, "")
-         |> assign(:collaborator_role_input, "")}
+         |> assign(:collaborator_role_input, "")
+         |> assign(:timeline, nil)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
@@ -332,6 +374,7 @@ defmodule CRCWeb.Admin.EventsLive do
         available_collaborators={@available_collaborators}
         selected_collaborator_id={@selected_collaborator_id}
         collaborator_role_input={@collaborator_role_input}
+        timeline={@timeline}
       />
     <% end %>
     """
@@ -374,6 +417,7 @@ defmodule CRCWeb.Admin.EventsLive do
   attr :available_collaborators, :list, required: true
   attr :selected_collaborator_id, :string, required: true
   attr :collaborator_role_input, :string, required: true
+  attr :timeline, :any, default: nil
 
   defp event_modal(assigns) do
     title = if assigns.modal == :new, do: "Nuevo evento", else: "Editar evento"
@@ -389,7 +433,7 @@ defmodule CRCWeb.Admin.EventsLive do
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
 
       <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh]">
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between sticky top-0 bg-base-100">
+        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between sticky top-0 bg-base-100 z-10">
           <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
           <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
             <.icon name="hero-x-mark" class="size-5" />
@@ -397,7 +441,13 @@ defmodule CRCWeb.Admin.EventsLive do
         </div>
 
         <div class="px-6 py-5">
-          <.form id="event-form" for={@form} phx-submit="save_event" class="space-y-3">
+          <.form
+            id="event-form"
+            for={@form}
+            phx-submit="save_event"
+            phx-change="form_changed"
+            class="space-y-3"
+          >
             <%!-- Title (full width) --%>
             <.input
               field={@form[:title]}
@@ -434,6 +484,9 @@ defmodule CRCWeb.Admin.EventsLive do
                 label="Hora de fin"
               />
             </div>
+
+            <%!-- Day timeline --%>
+            <.day_timeline timeline={@timeline} />
 
             <%!-- Tags --%>
             <.input
@@ -536,15 +589,187 @@ defmodule CRCWeb.Admin.EventsLive do
   end
 
   # ---------------------------------------------------------------------------
+  # Day timeline component
+  # ---------------------------------------------------------------------------
+
+  attr :timeline, :any, default: nil
+
+  # No date selected yet → render nothing
+  defp day_timeline(%{timeline: nil} = assigns), do: ~H""
+
+  # Date selected but no café hours configured for that day
+  defp day_timeline(%{timeline: %{cafe_hours: nil, date: date}} = assigns) do
+    day_name =
+      case Date.day_of_week(date) do
+        1 -> "lunes"
+        2 -> "martes"
+        3 -> "miércoles"
+        4 -> "jueves"
+        5 -> "viernes"
+        6 -> "sábado"
+        7 -> "domingo"
+      end
+
+    assigns = assign(assigns, :day_name, day_name)
+
+    ~H"""
+    <div class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-base-200 border border-base-300 text-sm text-base-content/60">
+      <.icon name="hero-clock" class="size-4 shrink-0 text-base-content/40" />
+      <span>El café no tiene horario configurado para los <strong>{@day_name}</strong>.</span>
+      <a
+        href="/admin/configuracion"
+        target="_blank"
+        class="link link-primary text-xs ml-auto shrink-0 whitespace-nowrap"
+      >
+        Configurar →
+      </a>
+    </div>
+    """
+  end
+
+  # Full timeline rendering
+  defp day_timeline(assigns) do
+    tl = assigns.timeline
+    {opening, closing} = tl.cafe_hours
+
+    event_blocks =
+      Enum.map(tl.other_events, fn e ->
+        %{
+          left: time_to_pct(e.start_time, opening, closing),
+          width: time_to_pct_range(e.start_time, e.end_time, opening, closing),
+          title: e.title
+        }
+      end)
+
+    {new_block, has_conflict, outside_hours} =
+      case {tl.new_start, tl.new_end} do
+        {nil, _} ->
+          {nil, false, false}
+
+        {_, nil} ->
+          {nil, false, false}
+
+        {s, e} ->
+          if Time.compare(e, s) != :gt do
+            {nil, false, false}
+          else
+            conflict = has_conflict?(s, e, tl.other_events)
+            outside = outside_hours?(s, e, opening, closing)
+
+            block = %{
+              left: time_to_pct(s, opening, closing),
+              width: time_to_pct_range(s, e, opening, closing)
+            }
+
+            {block, conflict, outside}
+          end
+      end
+
+    ticks = hour_ticks(opening, closing)
+
+    assigns =
+      assigns
+      |> assign(:opening, opening)
+      |> assign(:closing, closing)
+      |> assign(:event_blocks, event_blocks)
+      |> assign(:new_block, new_block)
+      |> assign(:ticks, ticks)
+      |> assign(:has_conflict, has_conflict)
+      |> assign(:outside_hours, outside_hours)
+
+    ~H"""
+    <div class="space-y-1 pb-1">
+      <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide">
+        Disponibilidad del día
+      </p>
+
+      <%!-- Timeline bar --%>
+      <div class="relative h-9 bg-base-200 rounded-lg overflow-hidden border border-base-300">
+
+        <%!-- Existing event blocks --%>
+        <%= for block <- @event_blocks do %>
+          <div
+            class="absolute inset-y-0 bg-error/25 border-x border-error/50 flex items-center overflow-hidden"
+            style={"left: #{block.left}%; width: #{block.width}%;"}
+            title={block.title}
+          >
+            <span class="text-xs text-error/80 px-1.5 truncate leading-none font-medium">
+              {block.title}
+            </span>
+          </div>
+        <% end %>
+
+        <%!-- New event block --%>
+        <%= if @new_block do %>
+          <div
+            class={"absolute inset-y-0 flex items-center overflow-hidden border-x
+              #{if @has_conflict, do: "bg-warning/30 border-warning", else: "bg-primary/25 border-primary/60"}"}
+            style={"left: #{@new_block.left}%; width: #{@new_block.width}%;"}
+          >
+            <span class={"text-xs px-1.5 truncate leading-none font-semibold
+              #{if @has_conflict, do: "text-warning-content", else: "text-primary"}"}>
+              Este evento
+            </span>
+          </div>
+        <% end %>
+
+      </div>
+
+      <%!-- Hour tick labels --%>
+      <div class="relative h-4">
+        <%= for {label, pct} <- @ticks do %>
+          <span
+            class="absolute text-xs text-base-content/35 -translate-x-1/2 leading-none"
+            style={"left: #{pct}%;"}
+          >
+            {label}
+          </span>
+        <% end %>
+      </div>
+
+      <%!-- Warnings --%>
+      <%= if @has_conflict do %>
+        <div class="flex items-center gap-1.5 text-xs text-warning font-medium">
+          <.icon name="hero-exclamation-triangle" class="size-3.5 shrink-0" />
+          Este horario se superpone con otro evento del mismo día.
+        </div>
+      <% end %>
+
+      <%= if @outside_hours do %>
+        <div class="flex items-center gap-1.5 text-xs text-base-content/50">
+          <.icon name="hero-information-circle" class="size-3.5 shrink-0" />
+          El evento se extiende fuera del horario de apertura
+          ({format_time(@opening)} – {format_time(@closing)}).
+        </div>
+      <% end %>
+
+      <%!-- Legend + time range --%>
+      <div class="flex items-center gap-3 text-xs text-base-content/40 pt-0.5 flex-wrap">
+        <%= if @event_blocks != [] do %>
+          <div class="flex items-center gap-1">
+            <div class="w-3 h-3 rounded-sm bg-error/25 border border-error/50 shrink-0"></div>
+            Otros eventos
+          </div>
+        <% end %>
+        <div class="flex items-center gap-1">
+          <div class="w-3 h-3 rounded-sm bg-primary/25 border border-primary/60 shrink-0"></div>
+          Este evento
+        </div>
+        <span class="ml-auto whitespace-nowrap">
+          Apertura {format_time(@opening)} – Cierre {format_time(@closing)}
+        </span>
+      </div>
+    </div>
+    """
+  end
+
+  # ---------------------------------------------------------------------------
   # Helpers
   # ---------------------------------------------------------------------------
 
   defp update_available_collaborators(socket) do
     draft_ids = Enum.map(socket.assigns.collaborators_draft, & &1.collaborator_id)
-
-    available =
-      Enum.reject(socket.assigns.all_collaborators, fn c -> c.id in draft_ids end)
-
+    available = Enum.reject(socket.assigns.all_collaborators, fn c -> c.id in draft_ids end)
     assign(socket, :available_collaborators, available)
   end
 
@@ -567,6 +792,111 @@ defmodule CRCWeb.Admin.EventsLive do
 
       true ->
         :past
+    end
+  end
+
+  # Builds the timeline map for a given date/start/end string combination.
+  # Returns nil when the date string is absent or invalid.
+  defp compute_timeline(date_str, start_str, end_str, editing_event_id) do
+    case Date.from_iso8601(date_str || "") do
+      {:ok, date} ->
+        cafe_hours = Settings.hours_for_date(date)
+        all_events = Events.list_events_for_date(date)
+
+        other_events =
+          case editing_event_id do
+            nil -> all_events
+            id -> Enum.reject(all_events, &(&1.id == id))
+          end
+
+        %{
+          date: date,
+          cafe_hours: cafe_hours,
+          other_events: other_events,
+          new_start: parse_time_opt(start_str),
+          new_end: parse_time_opt(end_str)
+        }
+
+      _ ->
+        nil
+    end
+  end
+
+  # Parses "HH:MM" or "HH:MM:SS" into a Time struct; returns nil on failure.
+  defp parse_time_opt(nil), do: nil
+  defp parse_time_opt(""), do: nil
+
+  defp parse_time_opt(str) do
+    case Time.from_iso8601(str) do
+      {:ok, t} -> t
+      _ ->
+        case Time.from_iso8601(str <> ":00") do
+          {:ok, t} -> t
+          _ -> nil
+        end
+    end
+  end
+
+  # Returns the seconds-since-midnight value of a Time struct.
+  defp time_secs(%Time{hour: h, minute: m, second: s}), do: h * 3600 + m * 60 + s
+
+  # Returns the percentage offset of `t` within [opening, closing], clamped to [0, 100].
+  defp time_to_pct(t, opening, closing) do
+    total = time_secs(closing) - time_secs(opening)
+    if total <= 0 do
+      0.0
+    else
+      raw = (time_secs(t) - time_secs(opening)) / total * 100
+      max(0.0, min(100.0, raw))
+    end
+  end
+
+  # Returns the width percentage of the [start_t, end_t] block clipped to [opening, closing].
+  # Minimum 1% so very short events are still visible.
+  defp time_to_pct_range(start_t, end_t, opening, closing) do
+    total = time_secs(closing) - time_secs(opening)
+
+    if total <= 0 do
+      0.0
+    else
+      s = max(time_secs(opening), time_secs(start_t))
+      e = min(time_secs(closing), time_secs(end_t))
+      max(1.0, (e - s) / total * 100)
+    end
+  end
+
+  # Returns true if the [new_start, new_end] window overlaps any event in `events`.
+  defp has_conflict?(new_start, new_end, events) do
+    Enum.any?(events, fn e ->
+      Time.compare(new_start, e.end_time) == :lt and
+        Time.compare(new_end, e.start_time) == :gt
+    end)
+  end
+
+  # Returns true if the new event extends beyond the café's opening window.
+  defp outside_hours?(new_start, new_end, opening, closing) do
+    Time.compare(new_start, opening) == :lt or Time.compare(new_end, closing) == :gt
+  end
+
+  # Returns [{label, pct}] for every even hour within [opening, closing].
+  defp hour_ticks(opening, closing) do
+    total = time_secs(closing) - time_secs(opening)
+
+    if total <= 0 do
+      []
+    else
+      open_h = opening.hour
+      # Include the closing hour only if it falls on the hour exactly
+      close_h = closing.hour + if(closing.minute > 0 or closing.second > 0, do: 1, else: 0)
+
+      open_h..close_h
+      |> Enum.filter(fn h -> rem(h, 2) == 0 end)
+      |> Enum.map(fn h ->
+        t = Time.new!(h, 0, 0)
+        pct = (time_secs(t) - time_secs(opening)) / total * 100
+        {format_time(t), pct}
+      end)
+      |> Enum.filter(fn {_, pct} -> pct >= 0.0 and pct <= 100.0 end)
     end
   end
 

@@ -5,6 +5,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
   alias CRC.Catalog
   alias CRC.Catalog.MenuItem
+  alias CRC.Cloudinary
 
   @impl true
   def mount(_params, _session, socket) do
@@ -21,6 +22,12 @@ defmodule CRCWeb.Admin.PlatillosLive do
       |> assign(:ingredients_draft, [])
       |> assign(:selected_product_id, "")
       |> assign(:ingredient_quantity_input, "")
+      |> assign(:remove_image, false)
+      |> allow_upload(:photo,
+        accept: ~w(.jpg .jpeg .png .webp),
+        max_entries: 1,
+        max_file_size: 5_000_000
+      )
 
     {:ok, socket}
   end
@@ -51,7 +58,8 @@ defmodule CRCWeb.Admin.PlatillosLive do
      |> assign(:form, to_form(changeset))
      |> assign(:ingredients_draft, [])
      |> assign(:selected_product_id, "")
-     |> assign(:ingredient_quantity_input, "")}
+     |> assign(:ingredient_quantity_input, "")
+     |> assign(:remove_image, false)}
   end
 
   def handle_event("edit_item", %{"id" => id}, socket) do
@@ -74,14 +82,47 @@ defmodule CRCWeb.Admin.PlatillosLive do
      |> assign(:form, to_form(changeset))
      |> assign(:ingredients_draft, draft)
      |> assign(:selected_product_id, "")
-     |> assign(:ingredient_quantity_input, "")}
+     |> assign(:ingredient_quantity_input, "")
+     |> assign(:remove_image, false)}
   end
 
   def handle_event("close_modal", _params, socket) do
-    {:noreply, assign(socket, modal: nil, form: nil, ingredients_draft: [])}
+    {:noreply,
+     assign(socket,
+       modal: nil,
+       form: nil,
+       ingredients_draft: [],
+       remove_image: false
+     )}
   end
 
   def handle_event("save_item", %{"menu_item" => params}, socket) do
+    # Upload photo to Cloudinary if one was selected
+    uploaded_url =
+      consume_uploaded_entries(socket, :photo, fn %{path: path}, _entry ->
+        case Cloudinary.upload(path, folder: "menu") do
+          {:ok, url} ->
+            {:ok, url}
+
+          {:error, reason} ->
+            require Logger
+            Logger.error("Cloudinary upload failed: #{inspect(reason)}")
+            {:ok, nil}
+        end
+      end)
+      |> List.first()
+
+    # Decide final image_url:
+    #   - New upload takes priority
+    #   - "Remove" flag clears it
+    #   - Otherwise leave the existing value untouched (don't send the key)
+    params =
+      cond do
+        uploaded_url -> Map.put(params, "image_url", uploaded_url)
+        socket.assigns.remove_image -> Map.put(params, "image_url", nil)
+        true -> params
+      end
+
     result =
       case socket.assigns.modal do
         :new -> Catalog.create_menu_item(params)
@@ -90,11 +131,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
     case result do
       {:ok, item} ->
-        Catalog.set_menu_item_ingredients(
-          item.id,
-          socket.assigns.ingredients_draft
-        )
-
+        Catalog.set_menu_item_ingredients(item.id, socket.assigns.ingredients_draft)
         label = if socket.assigns.modal == :new, do: "creado", else: "actualizado"
 
         {:noreply,
@@ -103,7 +140,8 @@ defmodule CRCWeb.Admin.PlatillosLive do
          |> assign(:items, Catalog.list_all_menu_items())
          |> assign(:modal, nil)
          |> assign(:form, nil)
-         |> assign(:ingredients_draft, [])}
+         |> assign(:ingredients_draft, [])
+         |> assign(:remove_image, false)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
@@ -140,6 +178,14 @@ defmodule CRCWeb.Admin.PlatillosLive do
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "No se pudo cambiar la disponibilidad.")}
     end
+  end
+
+  def handle_event("remove_image", _params, socket) do
+    {:noreply, assign(socket, :remove_image, true)}
+  end
+
+  def handle_event("cancel_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :photo, ref)}
   end
 
   # ---------------------------------------------------------------------------
@@ -270,11 +316,25 @@ defmodule CRCWeb.Admin.PlatillosLive do
               <%= for item <- visible do %>
                 <tr class="hover:bg-base-200/50 transition-colors">
                   <td>
-                    <div>
-                      <p class="font-medium text-sm text-base-content">{item.name}</p>
-                      <%= if item.description do %>
-                        <p class="text-xs text-base-content/50 line-clamp-1">{item.description}</p>
+                    <div class="flex items-center gap-3">
+                      <%!-- Thumbnail --%>
+                      <%= if item.image_url do %>
+                        <img
+                          src={item.image_url}
+                          class="w-10 h-10 rounded-lg object-cover shrink-0 border border-base-300"
+                          loading="lazy"
+                        />
+                      <% else %>
+                        <div class="w-10 h-10 rounded-lg bg-base-200 flex items-center justify-center shrink-0 border border-base-300">
+                          <.icon name="hero-photo" class="size-5 text-base-content/25" />
+                        </div>
                       <% end %>
+                      <div class="min-w-0">
+                        <p class="font-medium text-sm text-base-content">{item.name}</p>
+                        <%= if item.description do %>
+                          <p class="text-xs text-base-content/50 line-clamp-1">{item.description}</p>
+                        <% end %>
+                      </div>
                     </div>
                   </td>
                   <td>
@@ -366,6 +426,8 @@ defmodule CRCWeb.Admin.PlatillosLive do
         available_products={@available_products}
         selected_product_id={@selected_product_id}
         ingredient_quantity_input={@ingredient_quantity_input}
+        uploads={@uploads}
+        remove_image={@remove_image}
       />
     <% end %>
     """
@@ -382,10 +444,13 @@ defmodule CRCWeb.Admin.PlatillosLive do
   attr :available_products, :list, required: true
   attr :selected_product_id, :string, required: true
   attr :ingredient_quantity_input, :string, required: true
+  attr :uploads, :map, required: true
+  attr :remove_image, :boolean, default: false
 
   defp item_modal(assigns) do
     title = if assigns.modal == :new, do: "Nuevo platillo", else: "Editar platillo"
-    assigns = assign(assigns, :title, title)
+    current_img = item_image(assigns.modal)
+    assigns = assigns |> assign(:title, title) |> assign(:current_img, current_img)
 
     ~H"""
     <div
@@ -406,7 +471,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
         </div>
 
         <div class="px-6 py-5">
-          <.form id="item-form" for={@form} phx-submit="save_item" class="space-y-1">
+          <.form id="item-form" for={@form} phx-submit="save_item" class="space-y-3">
             <%!-- Name --%>
             <.input
               field={@form[:name]}
@@ -451,17 +516,83 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
             <%!-- Switches (2 cols) --%>
             <div class="grid grid-cols-2 gap-3">
-              <.input
-                field={@form[:featured]}
-                type="checkbox"
-                label="Destacado"
-              />
-              <.input
-                field={@form[:available]}
-                type="checkbox"
-                label="Visible en menú"
-              />
+              <.input field={@form[:featured]} type="checkbox" label="Destacado" />
+              <.input field={@form[:available]} type="checkbox" label="Visible en menú" />
             </div>
+
+            <%!-- ── Photo upload ───────────────────────────────────────────────── --%>
+            <div class="pt-1">
+              <p class="text-sm font-medium text-base-content mb-2">
+                Foto del platillo <span class="text-base-content/40 font-normal">(opcional)</span>
+              </p>
+
+              <%!-- Show current image when editing (unless user hit "remove") --%>
+              <%= if @current_img && !@remove_image do %>
+                <div class="flex items-start gap-3 p-3 bg-base-200 rounded-xl mb-2">
+                  <img
+                    src={@current_img}
+                    class="w-20 h-20 rounded-lg object-cover shrink-0 border border-base-300"
+                  />
+                  <div class="flex-1 min-w-0 space-y-1">
+                    <p class="text-sm font-medium text-base-content">Foto actual</p>
+                    <p class="text-xs text-base-content/50 break-all">{@current_img}</p>
+                    <button
+                      type="button"
+                      class="btn btn-xs btn-error btn-outline gap-1 mt-1"
+                      phx-click="remove_image"
+                    >
+                      <.icon name="hero-trash" class="size-3" />
+                      Eliminar foto
+                    </button>
+                  </div>
+                </div>
+              <% end %>
+
+              <%!-- Upload area (shown when no current image, or after remove) --%>
+              <%= if !@current_img || @remove_image do %>
+                <label class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-base-300 rounded-xl p-5 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors">
+                  <.icon name="hero-arrow-up-tray" class="size-7 text-base-content/30" />
+                  <span class="text-sm text-base-content/60">
+                    Arrastra una foto o haz clic para seleccionar
+                  </span>
+                  <span class="text-xs text-base-content/40">JPG, PNG o WebP · Máx. 5 MB</span>
+                  <.live_file_input upload={@uploads.photo} class="sr-only" />
+                </label>
+              <% end %>
+
+              <%!-- Preview of selected (not yet saved) file --%>
+              <%= for entry <- @uploads.photo.entries do %>
+                <div class="flex items-center gap-3 mt-2 p-2 bg-base-200 rounded-lg">
+                  <.live_img_preview entry={entry} class="w-14 h-14 object-cover rounded-lg shrink-0" />
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-base-content truncate">{entry.client_name}</p>
+                    <p class="text-xs text-base-content/50">
+                      {Float.round(entry.client_size / 1_000, 1)} KB
+                    </p>
+                    <%!-- Upload progress bar --%>
+                    <div class="w-full bg-base-300 rounded-full h-1 mt-1">
+                      <div
+                        class="bg-primary h-1 rounded-full transition-all"
+                        style={"width: #{entry.progress}%;"}
+                      >
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-xs btn-circle text-error"
+                    phx-click="cancel_upload"
+                    phx-value-ref={entry.ref}
+                  >
+                    <.icon name="hero-x-mark" class="size-3.5" />
+                  </button>
+                </div>
+                <%= for err <- upload_errors(@uploads.photo, entry) do %>
+                  <p class="text-xs text-error mt-1">{upload_error_to_string(err)}</p>
+                <% end %>
+              <% end %>
+            </div>
+            <%!-- ── End Photo upload ───────────────────────────────────────────── --%>
 
             <%!-- ── Ingredients section ──────────────────────────────────────── --%>
             <div class="mt-5 pt-4 border-t border-base-300">
@@ -507,10 +638,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   >
                     <option value="">— Selecciona insumo —</option>
                     <%= for p <- @available_products do %>
-                      <option
-                        value={p.id}
-                        selected={to_string(p.id) == @selected_product_id}
-                      >
+                      <option value={p.id} selected={to_string(p.id) == @selected_product_id}>
                         {p.name} ({unit_abbr(p.unit)})
                       </option>
                     <% end %>
@@ -541,7 +669,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
               <%= if @available_products == [] do %>
                 <p class="text-xs text-base-content/50 mt-2">
-                  No hay insumos sin proveedor disponibles. Crea insumos sin asignar proveedor en
+                  No hay insumos disponibles. Crea insumos en
                   <a href="/admin/insumos" class="link link-primary">Inventario → Insumos</a>.
                 </p>
               <% end %>
@@ -596,6 +724,15 @@ defmodule CRCWeb.Admin.PlatillosLive do
     {id, _} = Integer.parse(cat_id)
     Enum.filter(items, &(&1.category_id == id))
   end
+
+  # Returns the existing image_url for the item being edited, or nil for new items.
+  defp item_image(:new), do: nil
+  defp item_image({:edit, item}), do: item.image_url
+
+  defp upload_error_to_string(:too_large), do: "El archivo es demasiado grande (máx. 5 MB)."
+  defp upload_error_to_string(:not_accepted), do: "Formato no aceptado. Usa JPG, PNG o WebP."
+  defp upload_error_to_string(:too_many_files), do: "Solo se puede subir una foto a la vez."
+  defp upload_error_to_string(_), do: "Error al subir el archivo."
 
   defp format_price(%Decimal{} = d), do: Decimal.to_string(d)
   defp format_price(val), do: to_string(val)

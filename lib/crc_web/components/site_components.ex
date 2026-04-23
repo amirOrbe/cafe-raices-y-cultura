@@ -366,7 +366,20 @@ defmodule CRCWeb.Components.SiteComponents do
 
   def menu_item_card(assigns) do
     ~H"""
-    <div class="bg-base-100 border border-base-300 rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col gap-3">
+    <div class="bg-base-100 border border-base-300 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
+      <%!-- Photo (only shown when item has an image) --%>
+      <%= if Map.get(@item, :image_url) do %>
+        <div class="aspect-[4/3] overflow-hidden">
+          <img
+            src={@item.image_url}
+            alt={@item.name}
+            class="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      <% end %>
+
+      <div class="p-5 sm:p-6 flex flex-col gap-3 flex-1">
       <!-- Name + Price row -->
       <div class="flex items-start justify-between gap-4">
         <h3 class="text-base sm:text-lg font-bold text-base-content leading-snug">
@@ -423,6 +436,7 @@ defmodule CRCWeb.Components.SiteComponents do
           Recomendado
         </span>
       </div>
+      </div><%!-- end inner padding div --%>
     </div>
     """
   end

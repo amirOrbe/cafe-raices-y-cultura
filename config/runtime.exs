@@ -99,6 +99,15 @@ if config_env() == :prod do
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
 
+  # Cloudinary — image uploads. Set CLOUDINARY_API_SECRET in Gigalixir env vars.
+  # CLOUD_NAME and API_KEY are not sensitive and are hardcoded below.
+  if cloudinary_secret = System.get_env("CLOUDINARY_API_SECRET") do
+    config :crc, :cloudinary,
+      cloud_name: "dekekqq8b",
+      api_key: "263497645159344",
+      api_secret: cloudinary_secret
+  end
+
   # Mailer — Resend adapter for production.
   # If RESEND_API_KEY is not set the mailer simply stays disabled (no emails sent).
   # Set RESEND_API_KEY when you are ready to enable transactional emails.

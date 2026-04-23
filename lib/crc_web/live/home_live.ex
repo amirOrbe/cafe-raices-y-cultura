@@ -5,12 +5,14 @@ defmodule CRCWeb.HomeLive do
 
   alias CRCWeb.Components.SiteComponents
   alias CRC.Catalog
+  alias CRC.Settings
 
   @impl true
   def mount(_params, _session, socket) do
     # Carousel always uses local photos shuffled randomly — every visit shows a different order
     photos = carousel_photos() |> Enum.shuffle()
     packages = Catalog.list_packages()
+    cafe_hours = Settings.grouped_hours()
 
     socket =
       socket
@@ -19,6 +21,7 @@ defmodule CRCWeb.HomeLive do
       |> assign(:active_slide, 0)
       |> assign(:nav_open, false)
       |> assign(:packages, packages)
+      |> assign(:cafe_hours, cafe_hours)
 
     {:ok, socket}
   end
@@ -49,9 +52,9 @@ defmodule CRCWeb.HomeLive do
       <SiteComponents.site_navbar nav_open={@nav_open} current_page={:home} current_user={@current_user} />
       <main class="flex-1">
         <.hero_section photos={@photos} active_slide={@active_slide} />
-        <.about_section />
+        <.about_section cafe_hours={@cafe_hours} />
         <.packages_section :if={@packages != []} packages={@packages} />
-        <.contact_section />
+        <.contact_section cafe_hours={@cafe_hours} />
       </main>
       <SiteComponents.site_footer />
     </div>
@@ -63,6 +66,8 @@ defmodule CRCWeb.HomeLive do
   # ---------------------------------------------------------------------------
 
   # All 19 real CRC photos — shuffled on every mount so each visit looks different
+  defp format_time(%Time{} = t), do: Calendar.strftime(t, "%H:%M")
+
   defp carousel_photos do
     [
       %{url: "/images/carousel/crc-01.jpg", caption: "Café Raíces y Cultura"},
@@ -158,6 +163,8 @@ defmodule CRCWeb.HomeLive do
   # About section
   # ---------------------------------------------------------------------------
 
+  attr :cafe_hours, :list, default: []
+
   defp about_section(assigns) do
     ~H"""
     <section id="nosotros" class="py-16 sm:py-20 lg:py-24 bg-base-100">
@@ -197,11 +204,25 @@ defmodule CRCWeb.HomeLive do
               crear experiencias significativas.
             </p>
             <!-- Horarios -->
-            <div class="grid grid-cols-1 gap-4">
-              <div class="bg-base-200 rounded-xl p-4 text-center">
-                <p class="text-xl font-bold text-primary">Lun – Vie</p>
-                <p class="text-sm text-base-content/60 mt-1">8:00 – 21:00</p>
-              </div>
+            <div class={[
+              "grid gap-4",
+              if(length(@cafe_hours) >= 2, do: "grid-cols-2", else: "grid-cols-1")
+            ]}>
+              <%= if @cafe_hours == [] do %>
+                <div class="bg-base-200 rounded-xl p-4 text-center">
+                  <p class="text-xl font-bold text-primary">Lun – Vie</p>
+                  <p class="text-sm text-base-content/60 mt-1">8:00 – 21:00</p>
+                </div>
+              <% else %>
+                <%= for group <- @cafe_hours do %>
+                  <div class="bg-base-200 rounded-xl p-4 text-center">
+                    <p class="text-xl font-bold text-primary">{group.label}</p>
+                    <p class="text-sm text-base-content/60 mt-1">
+                      {format_time(group.opening)} – {format_time(group.closing)}
+                    </p>
+                  </div>
+                <% end %>
+              <% end %>
             </div>
           </div>
         </div>
@@ -378,6 +399,8 @@ defmodule CRCWeb.HomeLive do
   # Contact / Social / Map section
   # ---------------------------------------------------------------------------
 
+  attr :cafe_hours, :list, default: []
+
   defp contact_section(assigns) do
     ~H"""
     <section id="contacto" class="py-16 sm:py-20 lg:py-24 bg-base-200">
@@ -420,9 +443,17 @@ defmodule CRCWeb.HomeLive do
               </div>
               <div>
                 <p class="font-semibold text-base-content">Horario</p>
-                <p class="text-base-content/70 mt-0.5">
-                  Lunes – Viernes: 8:00 – 21:00
-                </p>
+                <%= if @cafe_hours == [] do %>
+                  <p class="text-base-content/70 mt-0.5">Lunes – Viernes: 8:00 – 21:00</p>
+                <% else %>
+                  <div class="space-y-0.5 mt-0.5">
+                    <%= for group <- @cafe_hours do %>
+                      <p class="text-base-content/70">
+                        {group.label}: {format_time(group.opening)} – {format_time(group.closing)}
+                      </p>
+                    <% end %>
+                  </div>
+                <% end %>
               </div>
             </div>
 

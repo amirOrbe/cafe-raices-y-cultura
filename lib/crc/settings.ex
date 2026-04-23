@@ -36,6 +36,43 @@ defmodule CRC.Settings do
   end
 
   @doc """
+  Returns business hours grouped by consecutive days that share the same schedule.
+
+  Each element is a map:
+    `%{label: "Lun – Vie", opening: ~T[10:00:00], closing: ~T[21:00:00]}`
+
+  Closed or unconfigured days are omitted. Returns an empty list when no hours
+  have been saved yet (callers should fall back to a hardcoded default).
+
+  ## Examples
+
+      # Mon–Fri same hours, Sat different, Sun closed → 2 groups
+      [
+        %{label: "Lun – Vie", opening: ~T[10:00:00], closing: ~T[21:00:00]},
+        %{label: "Sáb",       opening: ~T[11:00:00], closing: ~T[20:00:00]}
+      ]
+  """
+  @spec grouped_hours() :: [%{label: String.t(), opening: Time.t(), closing: Time.t()}]
+  def grouped_hours do
+    by_day = cafe_hours_by_day()
+
+    if map_size(by_day) == 0 do
+      []
+    else
+      1..7
+      |> Enum.map(fn day ->
+        case Map.get(by_day, day) do
+          nil -> {day, :skip}
+          %{is_closed: true} -> {day, :skip}
+          row -> {day, {row.opening_time, row.closing_time}}
+        end
+      end)
+      |> Enum.reject(fn {_day, v} -> v == :skip end)
+      |> group_consecutive_days()
+    end
+  end
+
+  @doc """
   Atomically replaces all cafe_hours rows.
 
   `entries` is a list of maps with keys:
@@ -180,4 +217,36 @@ defmodule CRC.Settings do
 
   defp format_time(%Time{} = t), do: Calendar.strftime(t, "%H:%M")
   defp format_time(nil), do: "10:00"
+
+  # ---------------------------------------------------------------------------
+  # Consecutive-day grouping helpers (used by grouped_hours/0)
+  # ---------------------------------------------------------------------------
+
+  defp group_consecutive_days([]), do: []
+
+  defp group_consecutive_days([{day, schedule} | rest]) do
+    do_group_days(rest, day, day, schedule, [])
+  end
+
+  # Extend the current group when the next day is consecutive AND has the same schedule.
+  defp do_group_days([{day, schedule} | rest], first, last, schedule, acc)
+       when day == last + 1 do
+    do_group_days(rest, first, day, schedule, acc)
+  end
+
+  # Next day breaks the group → emit the current group and start a new one.
+  defp do_group_days([{day, new_schedule} | rest], first, last, {opening, closing}, acc) do
+    group = %{label: days_label(first, last), opening: opening, closing: closing}
+    do_group_days(rest, day, day, new_schedule, [group | acc])
+  end
+
+  # List exhausted → emit the last group.
+  defp do_group_days([], first, last, {opening, closing}, acc) do
+    group = %{label: days_label(first, last), opening: opening, closing: closing}
+    Enum.reverse([group | acc])
+  end
+
+  # "Lun" for a single day, "Lun – Vie" for a range.
+  defp days_label(day, day), do: CafeHours.day_short(day)
+  defp days_label(first, last), do: "#{CafeHours.day_short(first)} – #{CafeHours.day_short(last)}"
 end

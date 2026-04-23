@@ -353,7 +353,7 @@ defmodule CRCWeb.ColaboracionesLive do
 
                         <%!-- Description --%>
                         <%= if event.description do %>
-                          <p class="text-sm sm:text-base text-base-content/60 leading-relaxed mb-4">
+                          <p class="text-sm sm:text-base text-base-content/60 leading-relaxed mb-4 break-words">
                             {event.description}
                           </p>
                         <% end %>

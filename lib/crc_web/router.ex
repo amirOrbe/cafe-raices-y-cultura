@@ -111,6 +111,7 @@ defmodule CRCWeb.Router do
       live "/finanzas", FinanzasLive
       live "/horarios", HorariosLive
       live "/asistencia", AsistenciaLive
+      live "/configuracion", ConfiguracionLive
     end
   end
 

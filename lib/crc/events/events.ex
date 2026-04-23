@@ -241,6 +241,19 @@ defmodule CRC.Events do
     )
   end
 
+  @doc """
+  Returns all active events for a specific date, ordered by start time.
+  Used by the availability calculator.
+  """
+  @spec list_events_for_date(Date.t()) :: [Event.t()]
+  def list_events_for_date(%Date{} = date) do
+    Repo.all(
+      from e in Event,
+        where: e.active == true and e.event_date == ^date,
+        order_by: [asc: e.start_time]
+    )
+  end
+
   @doc "Gets an event by id with event_type and event_collaborators preloaded. Raises if not found."
   @spec get_event!(integer()) :: Event.t()
   def get_event!(id) do

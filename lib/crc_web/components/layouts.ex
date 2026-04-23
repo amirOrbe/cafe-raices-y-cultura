@@ -268,6 +268,13 @@ defmodule CRCWeb.Layouts do
             <.icon name="hero-finger-print" class="size-5 shrink-0" />
             Asistencia
           </a>
+          <a
+            href="/admin/configuracion"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-cog-6-tooth" class="size-5 shrink-0" />
+            Configuración
+          </a>
         </nav>
 
         <%!-- Usuario y logout --%>

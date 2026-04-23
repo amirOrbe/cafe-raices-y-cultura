@@ -369,13 +369,49 @@ defmodule CRCWeb.ColaboracionesLive do
 
                         <%!-- Collaborators --%>
                         <%= if event.event_collaborators != [] do %>
-                          <div class="flex flex-wrap gap-2 pt-3 border-t border-base-300">
+                          <div class={[
+                            "flex flex-wrap gap-2 pt-3",
+                            if(event.event_photos != [], do: "", else: "border-t border-base-300")
+                          ]}>
                             <%= for ec <- event.event_collaborators do %>
                               <.collaborator_badge
                                 collaborator={ec.collaborator}
                                 role={ec.role_in_event}
                               />
                             <% end %>
+                          </div>
+                        <% end %>
+
+                        <%!-- Photo gallery --%>
+                        <%= if event.event_photos != [] do %>
+                          <div class="pt-4 border-t border-base-300 mt-3">
+                            <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-3">
+                              Galería
+                            </p>
+                            <div class={[
+                              "grid gap-2",
+                              case length(event.event_photos) do
+                                1 -> "grid-cols-1"
+                                2 -> "grid-cols-2"
+                                _ -> "grid-cols-3"
+                              end
+                            ]}>
+                              <%= for photo <- event.event_photos do %>
+                                <a
+                                  href={photo.image_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  class="block aspect-square overflow-hidden rounded-xl group"
+                                >
+                                  <img
+                                    src={photo.image_url}
+                                    alt={photo.caption || event.title}
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    loading="lazy"
+                                  />
+                                </a>
+                              <% end %>
+                            </div>
                           </div>
                         <% end %>
                       </div>

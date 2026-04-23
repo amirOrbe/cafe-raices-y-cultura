@@ -231,15 +231,18 @@ defmodule CRC.Events do
     first = Date.new!(year, month, 1)
     last = Date.new!(year, month, Date.days_in_month(first))
 
-    Repo.all(
-      from e in Event,
-        left_join: et in assoc(e, :event_type),
-        left_join: ec in assoc(e, :event_collaborators),
-        left_join: c in assoc(ec, :collaborator),
-        where: e.active == true and e.event_date >= ^first and e.event_date <= ^last,
-        preload: [event_type: et, event_collaborators: {ec, collaborator: c}],
-        order_by: [asc: e.event_date, asc: e.start_time]
-    )
+    events =
+      Repo.all(
+        from e in Event,
+          left_join: et in assoc(e, :event_type),
+          left_join: ec in assoc(e, :event_collaborators),
+          left_join: c in assoc(ec, :collaborator),
+          where: e.active == true and e.event_date >= ^first and e.event_date <= ^last,
+          preload: [event_type: et, event_collaborators: {ec, collaborator: c}],
+          order_by: [asc: e.event_date, asc: e.start_time]
+      )
+
+    Repo.preload(events, :event_photos)
   end
 
   @doc """

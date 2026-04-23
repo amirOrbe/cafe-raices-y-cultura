@@ -97,10 +97,13 @@ defmodule CRCWeb.Admin.PlatillosLive do
   end
 
   def handle_event("save_item", %{"menu_item" => params}, socket) do
+    # Track whether a photo was selected before consuming (entries are cleared after)
+    had_photo = socket.assigns.uploads.photo.entries != []
+
     # Upload photo to Cloudinary if one was selected
     uploaded_url =
-      consume_uploaded_entries(socket, :photo, fn %{path: path}, _entry ->
-        case Cloudinary.upload(path, folder: "menu") do
+      consume_uploaded_entries(socket, :photo, fn %{path: path}, entry ->
+        case Cloudinary.upload(path, folder: "menu", content_type: entry.client_type) do
           {:ok, url} ->
             {:ok, url}
 
@@ -111,6 +114,9 @@ defmodule CRCWeb.Admin.PlatillosLive do
         end
       end)
       |> List.first()
+
+    # Detect silent upload failure (file was selected but URL came back nil)
+    upload_failed = had_photo && is_nil(uploaded_url)
 
     # Decide final image_url:
     #   - New upload takes priority
@@ -134,14 +140,23 @@ defmodule CRCWeb.Admin.PlatillosLive do
         Catalog.set_menu_item_ingredients(item.id, socket.assigns.ingredients_draft)
         label = if socket.assigns.modal == :new, do: "creado", else: "actualizado"
 
-        {:noreply,
-         socket
-         |> put_flash(:info, "Platillo #{label} correctamente.")
-         |> assign(:items, Catalog.list_all_menu_items())
-         |> assign(:modal, nil)
-         |> assign(:form, nil)
-         |> assign(:ingredients_draft, [])
-         |> assign(:remove_image, false)}
+        socket =
+          socket
+          |> put_flash(:info, "Platillo #{label} correctamente.")
+          |> assign(:items, Catalog.list_all_menu_items())
+          |> assign(:modal, nil)
+          |> assign(:form, nil)
+          |> assign(:ingredients_draft, [])
+          |> assign(:remove_image, false)
+
+        socket =
+          if upload_failed do
+            put_flash(socket, :error, "La foto no pudo subirse a Cloudinary. El platillo se guardó sin imagen.")
+          else
+            socket
+          end
+
+        {:noreply, socket}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}

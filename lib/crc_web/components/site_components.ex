@@ -391,7 +391,7 @@ defmodule CRCWeb.Components.SiteComponents do
       </div>
 
       <!-- Description -->
-      <p :if={not is_nil(Map.get(@item, :description)) and Map.get(@item, :description) != ""} class="text-sm text-base-content/60 leading-relaxed">
+      <p :if={not is_nil(Map.get(@item, :description)) and Map.get(@item, :description) != ""} class="text-sm text-base-content/60 leading-relaxed line-clamp-3">
         {Map.get(@item, :description)}
       </p>
 

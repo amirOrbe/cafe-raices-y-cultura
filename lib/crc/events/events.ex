@@ -342,20 +342,43 @@ defmodule CRC.Events do
     )
   end
 
-  @doc "Adds a photo URL to an event."
+  @doc "Adds a photo URL to an event and broadcasts the event change."
   @spec add_event_photo(integer(), String.t(), String.t() | nil) ::
           {:ok, EventPhoto.t()} | {:error, Ecto.Changeset.t()}
   def add_event_photo(event_id, image_url, caption \\ nil) do
-    %EventPhoto{}
-    |> EventPhoto.changeset(%{event_id: event_id, image_url: image_url, caption: caption})
-    |> Repo.insert()
+    result =
+      %EventPhoto{}
+      |> EventPhoto.changeset(%{event_id: event_id, image_url: image_url, caption: caption})
+      |> Repo.insert()
+
+    case result do
+      {:ok, _photo} ->
+        event = get_event!(event_id)
+        broadcast_event_change({:ok, event})
+
+      _ ->
+        :ok
+    end
+
+    result
   end
 
-  @doc "Deletes an event photo by id."
+  @doc "Deletes an event photo by id and broadcasts the event change."
   @spec delete_event_photo(integer()) :: {:ok, EventPhoto.t()} | {:error, Ecto.Changeset.t()}
   def delete_event_photo(photo_id) do
     photo = Repo.get!(EventPhoto, photo_id)
-    Repo.delete(photo)
+    result = Repo.delete(photo)
+
+    case result do
+      {:ok, deleted_photo} ->
+        event = get_event!(deleted_photo.event_id)
+        broadcast_event_change({:ok, event})
+
+      _ ->
+        :ok
+    end
+
+    result
   end
 
   # ---------------------------------------------------------------------------

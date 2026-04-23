@@ -391,9 +391,11 @@ defmodule CRCWeb.Components.SiteComponents do
       </div>
 
       <!-- Description -->
-      <p :if={not is_nil(Map.get(@item, :description)) and Map.get(@item, :description) != ""} class="text-sm text-base-content/60 leading-relaxed line-clamp-3 break-words">
-        {Map.get(@item, :description)}
-      </p>
+      <div :if={not is_nil(Map.get(@item, :description)) and Map.get(@item, :description) != ""} class="max-h-[4.5rem] overflow-y-auto pr-1">
+        <p class="text-sm text-base-content/60 leading-relaxed break-words">
+          {Map.get(@item, :description)}
+        </p>
+      </div>
 
       <!-- Ingredient quantities -->
       <% ingredients = Map.get(@item, :menu_item_ingredients, []) %>

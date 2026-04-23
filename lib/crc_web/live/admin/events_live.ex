@@ -138,33 +138,6 @@ defmodule CRCWeb.Admin.EventsLive do
     {:noreply, cancel_upload(socket, :event_photo, ref)}
   end
 
-  def handle_event("upload_event_photos", _params, socket) do
-    event_id =
-      case socket.assigns.modal do
-        {:edit, event} -> event.id
-        _ -> nil
-      end
-
-    if event_id do
-      consume_uploaded_entries(socket, :event_photo, fn %{path: path}, entry ->
-        case Cloudinary.upload(path, folder: "events", content_type: entry.client_type) do
-          {:ok, url} ->
-            Events.add_event_photo(event_id, url)
-            {:ok, url}
-
-          {:error, reason} ->
-            require Logger
-            Logger.error("Event photo upload failed: #{inspect(reason)}")
-            {:ok, nil}
-        end
-      end)
-
-      {:noreply, assign(socket, :event_photos, Events.list_event_photos(event_id))}
-    else
-      {:noreply, socket}
-    end
-  end
-
   def handle_event("delete_event_photo", %{"id" => id}, socket) do
     Events.delete_event_photo(String.to_integer(id))
 
@@ -314,6 +287,39 @@ defmodule CRCWeb.Admin.EventsLive do
 
   def handle_event("update_collaborator_role", %{"collab_role" => value}, socket) do
     {:noreply, assign(socket, :collaborator_role_input, value)}
+  end
+
+  # Automatically fires when each file finishes transferring to the server.
+  # We upload to Cloudinary immediately — no manual "Subir" button needed.
+  def handle_progress(:event_photo, entry, socket) do
+    if entry.done? do
+      event_id =
+        case socket.assigns.modal do
+          {:edit, event} -> event.id
+          _ -> nil
+        end
+
+      if event_id do
+        consume_uploaded_entries(socket, :event_photo, fn %{path: path}, e ->
+          case Cloudinary.upload(path, folder: "events", content_type: e.client_type) do
+            {:ok, url} ->
+              Events.add_event_photo(event_id, url)
+              {:ok, url}
+
+            {:error, reason} ->
+              require Logger
+              Logger.error("[EventPhoto] #{e.client_name} falló: #{inspect(reason)}")
+              {:ok, nil}
+          end
+        end)
+
+        {:noreply, assign(socket, :event_photos, Events.list_event_photos(event_id))}
+      else
+        {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -679,25 +685,17 @@ defmodule CRCWeb.Admin.EventsLive do
                 </div>
               <% end %>
 
-              <%!-- Subir nuevas fotos --%>
-              <form phx-submit="upload_event_photos" phx-change="validate_upload" class="space-y-2">
-                <div class="flex gap-2 items-center">
-                  <.live_file_input
-                    upload={@uploads.event_photo}
-                    class="file-input file-input-bordered file-input-sm flex-1"
-                  />
-                  <button
-                    type="submit"
-                    class="btn btn-sm btn-outline gap-1 shrink-0"
-                    disabled={@uploads.event_photo.entries == []}
-                  >
-                    <.icon name="hero-arrow-up-tray" class="size-4" />
-                    Subir
-                  </button>
-                </div>
-                <p class="text-xs text-base-content/40">JPG, PNG o WebP · Máx. 5 MB · Hasta 5 fotos a la vez</p>
+              <%!-- Subir nuevas fotos — se suben automáticamente al seleccionarlas --%>
+              <div class="space-y-2">
+                <.live_file_input
+                  upload={@uploads.event_photo}
+                  class="file-input file-input-bordered file-input-sm w-full"
+                />
+                <p class="text-xs text-base-content/40">
+                  JPG, PNG o WebP · Máx. 5 MB · Hasta 5 fotos a la vez · Se suben automáticamente
+                </p>
 
-                <%!-- Previews de archivos seleccionados --%>
+                <%!-- Progreso por archivo --%>
                 <%= for entry <- @uploads.event_photo.entries do %>
                   <div class="flex items-center gap-3 p-2 bg-base-200 rounded-lg">
                     <.live_img_preview entry={entry} class="w-12 h-12 object-cover rounded-lg shrink-0" />
@@ -720,7 +718,7 @@ defmodule CRCWeb.Admin.EventsLive do
                     </button>
                   </div>
                 <% end %>
-              </form>
+              </div>
             </div>
           <% end %>
           <%!-- ── Fin galería ─────────────────────────────────────────────────── --%>

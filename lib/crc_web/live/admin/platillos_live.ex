@@ -26,7 +26,8 @@ defmodule CRCWeb.Admin.PlatillosLive do
       |> allow_upload(:photo,
         accept: ~w(.jpg .jpeg .png .webp),
         max_entries: 1,
-        max_file_size: 5_000_000
+        max_file_size: 5_000_000,
+        auto_upload: true
       )
 
     {:ok, socket}
@@ -96,9 +97,17 @@ defmodule CRCWeb.Admin.PlatillosLive do
      )}
   end
 
+  # Triggered by phx-change on the form — needed so auto_upload fires immediately
+  # when the user selects a file. No server-side work needed here.
+  def handle_event("validate_upload", _params, socket) do
+    {:noreply, socket}
+  end
+
   def handle_event("save_item", %{"menu_item" => params}, socket) do
     # Track whether a photo was selected before consuming (entries are cleared after)
     had_photo = socket.assigns.uploads.photo.entries != []
+    require Logger
+    Logger.info("[PlatillosLive] save_item — entries: #{inspect(socket.assigns.uploads.photo.entries)}")
 
     # Upload photo to Cloudinary if one was selected
     uploaded_url =
@@ -486,7 +495,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
         </div>
 
         <div class="px-6 py-5">
-          <.form id="item-form" for={@form} phx-submit="save_item" class="space-y-3">
+          <.form id="item-form" for={@form} phx-submit="save_item" phx-change="validate_upload" class="space-y-3">
             <%!-- Name --%>
             <.input
               field={@form[:name]}

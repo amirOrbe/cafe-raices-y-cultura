@@ -381,28 +381,94 @@ defmodule CRCWeb.Admin.EventsLive do
         </button>
       </div>
 
-      <%!-- Table --%>
-      <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
+      <div class="md:hidden flex flex-col gap-2">
+        <%= if @events == [] do %>
+          <div class="text-center py-12 text-base-content/40 text-sm bg-base-100 rounded-2xl border border-base-300">
+            No hay eventos registrados. Crea el primero.
+          </div>
+        <% end %>
+        <%= for event <- @events do %>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-start gap-3">
+            <%!-- Date block --%>
+            <div class="shrink-0 w-11 flex flex-col items-center justify-center bg-primary/10 rounded-xl py-1.5 px-1 text-center">
+              <span class="text-xs font-bold text-primary leading-none">
+                {Calendar.strftime(event.event_date, "%d")}
+              </span>
+              <span class="text-[10px] text-primary/70 uppercase font-medium leading-none mt-0.5">
+                {Calendar.strftime(event.event_date, "%b")}
+              </span>
+            </div>
+            <%!-- Info --%>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <p class="font-semibold text-sm text-base-content line-clamp-2 leading-snug">{event.title}</p>
+                <.event_status_badge event={event} />
+              </div>
+              <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                <%= if event.event_type do %>
+                  <span class="badge badge-xs badge-ghost">{event.event_type.name}</span>
+                <% end %>
+                <span class="text-xs text-base-content/50">
+                  {format_time(event.start_time)} – {format_time(event.end_time)}
+                </span>
+              </div>
+              <%= if event.event_collaborators != [] do %>
+                <div class="flex flex-wrap gap-1 mt-1.5">
+                  <%= for ec <- event.event_collaborators do %>
+                    <span class="badge badge-xs badge-ghost">{ec.collaborator.name}</span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+            <%!-- Actions --%>
+            <div class="flex flex-col items-center gap-1 shrink-0">
+              <button
+                class="btn btn-ghost btn-xs btn-circle"
+                phx-click="edit_event"
+                phx-value-id={event.id}
+                title="Editar"
+              >
+                <.icon name="hero-pencil" class="size-4" />
+              </button>
+              <button
+                class={["btn btn-ghost btn-xs btn-circle", if(event.active, do: "text-error", else: "text-success")]}
+                phx-click="toggle_active"
+                phx-value-id={event.id}
+                title={if event.active, do: "Desactivar", else: "Activar"}
+              >
+                <.icon
+                  name={if event.active, do: "hero-no-symbol", else: "hero-check-circle"}
+                  class="size-4"
+                />
+              </button>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
+      <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="table table-zebra w-full">
+          <table class="table table-zebra table-fixed w-full">
             <thead>
               <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th>Título</th>
-                <th>Tipo</th>
-                <th>Fecha</th>
-                <th>Horario</th>
-                <th>Estado</th>
-                <th>Colaboradores</th>
-                <th class="text-right">Acciones</th>
+                <th class="w-[28%]">Título</th>
+                <th class="w-[13%]">Tipo</th>
+                <th class="w-[11%]">Fecha</th>
+                <th class="w-[13%]">Horario</th>
+                <th class="w-[10%]">Estado</th>
+                <th class="w-[18%]">Colaboradores</th>
+                <th class="w-[7%] text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <%= for event <- @events do %>
                 <tr class="hover:bg-base-200/50 transition-colors">
-                  <td class="font-medium text-sm text-base-content max-w-xs">
-                    <span class="line-clamp-2">{event.title}</span>
+                  <td class="max-w-0 font-medium text-sm text-base-content">
+                    <span class="truncate block">{event.title}</span>
                   </td>
-                  <td class="text-sm text-base-content/70">
+                  <td class="text-sm text-base-content/70 truncate">
                     {if event.event_type, do: event.event_type.name, else: "—"}
                   </td>
                   <td class="text-sm text-base-content/70 whitespace-nowrap">

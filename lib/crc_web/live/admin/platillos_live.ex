@@ -320,26 +320,108 @@ defmodule CRCWeb.Admin.PlatillosLive do
         <% end %>
       </div>
 
-      <%!-- Table --%>
-      <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
+      <div class="md:hidden flex flex-col gap-2">
+        <%= if visible == [] do %>
+          <div class="text-center py-12 text-base-content/40 text-sm bg-base-100 rounded-2xl border border-base-300">
+            {cond do
+              @status_filter == :unavailable && @filter_category == "all" ->
+                "No hay platillos ocultos."
+              @filter_category != "all" ->
+                "No hay platillos en esta categoría."
+              true ->
+                "No hay platillos registrados. Crea el primero."
+            end}
+          </div>
+        <% end %>
+        <%= for item <- visible do %>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-center gap-3">
+            <%!-- Thumbnail --%>
+            <%= if item.image_url do %>
+              <img
+                src={item.image_url}
+                class="w-14 h-14 rounded-xl object-cover shrink-0 border border-base-300"
+                loading="lazy"
+              />
+            <% else %>
+              <div class="w-14 h-14 rounded-xl bg-base-200 flex items-center justify-center shrink-0 border border-base-300">
+                <.icon name="hero-photo" class="size-6 text-base-content/25" />
+              </div>
+            <% end %>
+            <%!-- Info --%>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <p class="font-semibold text-sm text-base-content truncate">{item.name}</p>
+                <%= if item.featured do %>
+                  <.icon name="hero-star-solid" class="size-3 text-warning shrink-0" />
+                <% end %>
+              </div>
+              <%= if item.description do %>
+                <p class="text-xs text-base-content/50 truncate mt-0.5">{item.description}</p>
+              <% end %>
+              <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span class="badge badge-xs badge-ghost">
+                  {if item.category, do: item.category.name, else: "Sin categoría"}
+                </span>
+                <span class="text-xs font-semibold text-base-content">${format_price(item.price)}</span>
+                <%= if item.available do %>
+                  <span class="badge badge-xs badge-success">Visible</span>
+                <% else %>
+                  <span class="badge badge-xs badge-ghost">Oculto</span>
+                <% end %>
+              </div>
+            </div>
+            <%!-- Actions --%>
+            <div class="flex flex-col items-center gap-1 shrink-0">
+              <button
+                class="btn btn-ghost btn-xs btn-circle"
+                phx-click="edit_item"
+                phx-value-id={item.id}
+                title="Editar"
+              >
+                <.icon name="hero-pencil" class="size-4" />
+              </button>
+              <button
+                class={["btn btn-ghost btn-xs btn-circle", if(item.available, do: "text-warning", else: "text-success")]}
+                phx-click="toggle_available"
+                phx-value-id={item.id}
+                title={if item.available, do: "Ocultar del menú", else: "Publicar en menú"}
+              >
+                <.icon name={if item.available, do: "hero-eye-slash", else: "hero-eye"} class="size-4" />
+              </button>
+              <button
+                class="btn btn-ghost btn-xs btn-circle text-error"
+                phx-click="delete_item"
+                phx-value-id={item.id}
+                title="Eliminar"
+                data-confirm={"¿Eliminar «#{item.name}»? Esta acción no se puede deshacer."}
+              >
+                <.icon name="hero-trash" class="size-4" />
+              </button>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
+      <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="table table-zebra w-full">
+          <table class="table table-zebra table-fixed w-full">
             <thead>
               <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th>Platillo</th>
-                <th>Categoría</th>
-                <th>Precio</th>
-                <th>Destacado</th>
-                <th>Estado</th>
-                <th class="text-right">Acciones</th>
+                <th class="w-[45%]">Platillo</th>
+                <th class="w-[15%]">Categoría</th>
+                <th class="w-[10%]">Precio</th>
+                <th class="w-[12%]">Destacado</th>
+                <th class="w-[10%]">Estado</th>
+                <th class="w-[8%] text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <%= for item <- visible do %>
                 <tr class="hover:bg-base-200/50 transition-colors">
-                  <td>
+                  <td class="max-w-0">
                     <div class="flex items-center gap-3">
-                      <%!-- Thumbnail --%>
                       <%= if item.image_url do %>
                         <img
                           src={item.image_url}
@@ -351,10 +433,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
                           <.icon name="hero-photo" class="size-5 text-base-content/25" />
                         </div>
                       <% end %>
-                      <div class="min-w-0">
-                        <p class="font-medium text-sm text-base-content">{item.name}</p>
+                      <div class="min-w-0 flex-1">
+                        <p class="font-medium text-sm text-base-content truncate">{item.name}</p>
                         <%= if item.description do %>
-                          <p class="text-xs text-base-content/50 line-clamp-1">{item.description}</p>
+                          <p class="text-xs text-base-content/50 truncate">{item.description}</p>
                         <% end %>
                       </div>
                     </div>

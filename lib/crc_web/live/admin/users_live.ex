@@ -232,26 +232,89 @@ defmodule CRCWeb.Admin.UsersLive do
         </button>
       </div>
 
-      <%!-- Table --%>
-      <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
+      <div class="md:hidden flex flex-col gap-2">
+        <%= if visible == [] do %>
+          <div class="text-center py-12 text-base-content/40 text-sm bg-base-100 rounded-2xl border border-base-300">
+            {if @status_filter == :active,
+              do: "No hay usuarios activos.",
+              else: "No hay usuarios inactivos."}
+          </div>
+        <% end %>
+        <%= for user <- visible do %>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-center gap-3">
+            <%!-- Avatar --%>
+            <div class="size-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden border border-base-300">
+              <%= if user.avatar_url do %>
+                <img src={user.avatar_url} alt={user.name} class="size-11 object-cover" />
+              <% else %>
+                <span class="text-primary font-bold text-sm">
+                  {String.first(user.name) |> String.upcase()}
+                </span>
+              <% end %>
+            </div>
+            <%!-- Info --%>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <p class="font-semibold text-sm text-base-content truncate">{user.name}</p>
+                <.role_badge role={user.role} />
+              </div>
+              <p class="text-xs text-base-content/50 truncate mt-0.5">{user.email}</p>
+              <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                <.status_badge is_active={user.is_active} />
+                <%= for s <- user.stations do %>
+                  <span class="badge badge-xs badge-ghost">{station_label(s)}</span>
+                <% end %>
+              </div>
+            </div>
+            <%!-- Actions --%>
+            <div class="flex flex-col items-center gap-1 shrink-0">
+              <button
+                id={"btn-edit-mobile-#{user.id}"}
+                class="btn btn-ghost btn-xs btn-circle"
+                phx-click="edit_user"
+                phx-value-id={user.id}
+                title="Editar"
+              >
+                <.icon name="hero-pencil" class="size-4" />
+              </button>
+              <button
+                id={"btn-toggle-mobile-#{user.id}"}
+                class={["btn btn-ghost btn-xs btn-circle", if(user.is_active, do: "text-error", else: "text-success")]}
+                phx-click="toggle_active"
+                phx-value-id={user.id}
+                title={if user.is_active, do: "Desactivar", else: "Activar"}
+              >
+                <.icon
+                  name={if user.is_active, do: "hero-no-symbol", else: "hero-check-circle"}
+                  class="size-4"
+                />
+              </button>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
+      <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="table table-zebra w-full">
+          <table class="table table-zebra table-fixed w-full">
             <thead>
               <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>Estación</th>
-                <th>Estado</th>
-                <th class="text-right">Acciones</th>
+                <th class="w-[25%]">Nombre</th>
+                <th class="w-[28%]">Correo</th>
+                <th class="w-[12%]">Rol</th>
+                <th class="w-[18%]">Estación</th>
+                <th class="w-[10%]">Estado</th>
+                <th class="w-[7%] text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <%= for user <- visible do %>
                 <tr class="hover:bg-base-200/50 transition-colors">
-                  <td>
+                  <td class="max-w-0">
                     <div class="flex items-center gap-3">
-                      <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden border border-base-300">
+                      <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden border border-base-300">
                         <%= if user.avatar_url do %>
                           <img src={user.avatar_url} alt={user.name} class="size-8 object-cover" />
                         <% else %>
@@ -260,10 +323,10 @@ defmodule CRCWeb.Admin.UsersLive do
                           </span>
                         <% end %>
                       </div>
-                      <span class="font-medium text-sm text-base-content">{user.name}</span>
+                      <span class="font-medium text-sm text-base-content truncate">{user.name}</span>
                     </div>
                   </td>
-                  <td class="text-sm text-base-content/70 max-w-[160px] truncate">{user.email}</td>
+                  <td class="max-w-0 text-sm text-base-content/70 truncate">{user.email}</td>
                   <td>
                     <.role_badge role={user.role} />
                   </td>

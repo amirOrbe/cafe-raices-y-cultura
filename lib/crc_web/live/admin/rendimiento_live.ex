@@ -214,35 +214,29 @@ defmodule CRCWeb.Admin.RendimientoLive do
                     <span class="text-base">💰</span>
                     <h3 class="font-semibold text-sm text-base-content">Mayor venta</h3>
                   </div>
-                  <div class="space-y-2">
+                  <div class="space-y-3">
                     <%= for entry <- @revenue_ranking do %>
                       <% medal = medal_for(entry.rank) %>
-                      <div class="flex items-start justify-between gap-2">
-                        <div class="flex items-center gap-2 min-w-0">
-                          <span class="text-lg shrink-0">{medal}</span>
-                          <div class="size-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                            {String.first(entry.name) |> String.upcase()}
-                          </div>
-                          <span class="text-sm font-medium text-base-content">{entry.name}</span>
+                      <div class="flex items-start gap-2">
+                        <span class="text-lg shrink-0 mt-0.5">{medal}</span>
+                        <div class="size-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0 mt-0.5">
+                          {String.first(entry.name) |> String.upcase()}
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                          <div class="text-right">
-                            <p class="text-sm font-bold text-success">
-                              $<%= Decimal.round(entry.revenue, 2) %>
-                            </p>
-                            <p class="text-xs text-base-content/40">{entry.order_count} comandas</p>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-base-content">{entry.name}</p>
+                          <div class="flex items-center gap-2 mt-0.5">
+                            <p class="text-sm font-bold text-success">$<%= Decimal.round(entry.revenue, 2) %></p>
+                            <p class="text-xs text-base-content/40">· {entry.order_count} comandas</p>
+                            <%= if @current_user.role == "admin" do %>
+                              <button
+                                class="btn btn-xs btn-ghost border border-base-300 ml-auto"
+                                phx-click="open_recognition_modal"
+                                phx-value-user_id={entry.user_id}
+                                phx-value-kind="top_sales"
+                                title="Dar reconocimiento"
+                              >🎖️</button>
+                            <% end %>
                           </div>
-                          <%= if @current_user.role == "admin" do %>
-                            <button
-                              class="btn btn-xs btn-ghost border border-base-300"
-                              phx-click="open_recognition_modal"
-                              phx-value-user_id={entry.user_id}
-                              phx-value-kind="top_sales"
-                              title="Dar reconocimiento"
-                            >
-                              🎖️
-                            </button>
-                          <% end %>
                         </div>
                       </div>
                     <% end %>
@@ -257,38 +251,32 @@ defmodule CRCWeb.Admin.RendimientoLive do
                     <span class="text-base">⚡</span>
                     <h3 class="font-semibold text-sm text-base-content">Mayor velocidad</h3>
                   </div>
-                  <div class="space-y-2">
+                  <div class="space-y-3">
                     <%= for entry <- @speed_ranking do %>
                       <% medal = medal_for(entry.rank) %>
-                      <div class="flex items-start justify-between gap-2">
-                        <div class="flex items-center gap-2 min-w-0">
-                          <span class="text-lg shrink-0">{medal}</span>
-                          <div class="size-7 rounded-full bg-secondary/10 flex items-center justify-center text-xs font-bold text-secondary shrink-0">
-                            {String.first(entry.name) |> String.upcase()}
-                          </div>
-                          <div class="min-w-0">
-                            <p class="text-sm font-medium text-base-content">{entry.name}</p>
-                            <%= if entry.station && entry.station != "—" do %>
-                              <p class="text-xs text-base-content/40 truncate">{entry.station}</p>
+                      <div class="flex items-start gap-2">
+                        <span class="text-lg shrink-0 mt-0.5">{medal}</span>
+                        <div class="size-7 rounded-full bg-secondary/10 flex items-center justify-center text-xs font-bold text-secondary shrink-0 mt-0.5">
+                          {String.first(entry.name) |> String.upcase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-base-content">{entry.name}</p>
+                          <%= if entry.station && entry.station != "—" do %>
+                            <p class="text-xs text-base-content/40 truncate">{entry.station}</p>
+                          <% end %>
+                          <div class="flex items-center gap-2 mt-0.5">
+                            <p class="text-sm font-bold text-info">{format_duration(entry.avg_secs)}</p>
+                            <p class="text-xs text-base-content/40">· {entry.count} ítems</p>
+                            <%= if @current_user.role == "admin" do %>
+                              <button
+                                class="btn btn-xs btn-ghost border border-base-300 ml-auto"
+                                phx-click="open_recognition_modal"
+                                phx-value-user_id={entry.user_id}
+                                phx-value-kind="top_speed"
+                                title="Dar reconocimiento"
+                              >🎖️</button>
                             <% end %>
                           </div>
-                        </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                          <div class="text-right">
-                            <p class="text-sm font-bold text-info">{format_duration(entry.avg_secs)}</p>
-                            <p class="text-xs text-base-content/40">{entry.count} ítems</p>
-                          </div>
-                          <%= if @current_user.role == "admin" do %>
-                            <button
-                              class="btn btn-xs btn-ghost border border-base-300"
-                              phx-click="open_recognition_modal"
-                              phx-value-user_id={entry.user_id}
-                              phx-value-kind="top_speed"
-                              title="Dar reconocimiento"
-                            >
-                              🎖️
-                            </button>
-                          <% end %>
                         </div>
                       </div>
                     <% end %>

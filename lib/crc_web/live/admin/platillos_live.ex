@@ -732,8 +732,9 @@ defmodule CRCWeb.Admin.PlatillosLive do
               <% end %>
 
               <%!-- Add ingredient picker --%>
-              <div class="flex gap-2 items-end flex-wrap sm:flex-nowrap">
-                <div class="flex-1 min-w-0">
+              <div class="flex flex-col sm:flex-row gap-2 sm:items-end">
+                <%!-- Insumo select — full width on mobile, flex-1 on desktop --%>
+                <div class="w-full sm:flex-1 min-w-0">
                   <label class="label text-xs pb-0.5">Insumo</label>
                   <select
                     class="select select-sm w-full"
@@ -748,27 +749,30 @@ defmodule CRCWeb.Admin.PlatillosLive do
                     <% end %>
                   </select>
                 </div>
-                <div class="w-28 shrink-0">
-                  <label class="label text-xs pb-0.5">Cantidad</label>
-                  <input
-                    type="number"
-                    class="input input-sm w-full"
-                    placeholder="0"
-                    step="0.001"
-                    min="0"
-                    value={@ingredient_quantity_input}
-                    phx-change="set_ingredient_qty"
-                    name="ingredient_quantity"
-                  />
+                <%!-- Cantidad + Agregar — share a row on mobile --%>
+                <div class="flex gap-2 items-end">
+                  <div class="flex-1 sm:w-28 sm:flex-none">
+                    <label class="label text-xs pb-0.5">Cantidad</label>
+                    <input
+                      type="number"
+                      class="input input-sm w-full"
+                      placeholder="0"
+                      step="0.001"
+                      min="0"
+                      value={@ingredient_quantity_input}
+                      phx-change="set_ingredient_qty"
+                      name="ingredient_quantity"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline btn-primary shrink-0"
+                    phx-click="add_ingredient"
+                  >
+                    <.icon name="hero-plus" class="size-3.5" />
+                    Agregar
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline btn-primary shrink-0"
-                  phx-click="add_ingredient"
-                >
-                  <.icon name="hero-plus" class="size-3.5" />
-                  Agregar
-                </button>
               </div>
 
               <%= if @available_products == [] do %>

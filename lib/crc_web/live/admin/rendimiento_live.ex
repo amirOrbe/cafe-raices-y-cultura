@@ -266,10 +266,12 @@ defmodule CRCWeb.Admin.RendimientoLive do
                           <div class="size-7 rounded-full bg-secondary/10 flex items-center justify-center text-xs font-bold text-secondary shrink-0">
                             {String.first(entry.name) |> String.upcase()}
                           </div>
-                          <span class="text-sm font-medium text-base-content truncate">{entry.name}</span>
-                          <%= if entry.station do %>
-                            <span class="badge badge-xs badge-ghost">{entry.station}</span>
-                          <% end %>
+                          <div class="min-w-0">
+                            <p class="text-sm font-medium text-base-content truncate">{entry.name}</p>
+                            <%= if entry.station && entry.station != "—" do %>
+                              <p class="text-xs text-base-content/40 truncate">{entry.station}</p>
+                            <% end %>
+                          </div>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
                           <div class="text-right">
@@ -325,9 +327,9 @@ defmodule CRCWeb.Admin.RendimientoLive do
         <%!-- Station staff: cocina & barra --%>
         <%= if @station_stats != [] do %>
           <div class="space-y-4">
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <h2 class="text-base font-semibold text-base-content">Cocina y Barra — Preparación</h2>
-              <span class="badge badge-sm badge-ghost">{length(@station_stats)} empleados</span>
+              <span class="badge badge-sm badge-ghost shrink-0">{length(@station_stats)} empleados</span>
             </div>
             <p class="text-xs text-base-content/40 -mt-2">
               Tiempo desde que el pedido llega a la estación hasta que se marca listo.
@@ -339,9 +341,9 @@ defmodule CRCWeb.Admin.RendimientoLive do
         <%!-- Waiters --%>
         <%= if @waiter_stats != [] do %>
           <div class="space-y-4">
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <h2 class="text-base font-semibold text-base-content">Meseros — Tiempo de servicio</h2>
-              <span class="badge badge-sm badge-ghost">{length(@waiter_stats)} meseros</span>
+              <span class="badge badge-sm badge-ghost shrink-0">{length(@waiter_stats)} meseros</span>
             </div>
             <p class="text-xs text-base-content/40 -mt-2">
               Tiempo total de la cuenta (apertura → cobro) y tiempo de recogida (platillo listo → servido).

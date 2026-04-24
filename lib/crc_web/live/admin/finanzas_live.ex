@@ -92,12 +92,12 @@ defmodule CRCWeb.Admin.FinanzasLive do
             <% end %>
           </div>
 
-          <form phx-change="set_date_range" class="flex flex-col gap-1">
+          <form phx-change="set_date_range" class="flex flex-col gap-1 w-full sm:w-auto">
             <span class="text-xs text-base-content/50">Rango personalizado</span>
-            <div class="flex gap-2 items-center">
-              <input type="date" name="date_from" value={@date_from} class="input input-sm input-bordered w-40" />
-              <span class="text-base-content/40 text-xs">—</span>
-              <input type="date" name="date_to" value={@date_to} class="input input-sm input-bordered w-40" />
+            <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+              <input type="date" name="date_from" value={@date_from} class="input input-sm input-bordered w-full sm:w-36" />
+              <span class="text-base-content/40 text-xs text-center sm:text-left">—</span>
+              <input type="date" name="date_to" value={@date_to} class="input input-sm input-bordered w-full sm:w-36" />
             </div>
           </form>
         </div>

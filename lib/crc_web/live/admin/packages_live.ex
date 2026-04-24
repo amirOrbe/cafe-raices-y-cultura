@@ -192,10 +192,10 @@ defmodule CRCWeb.Admin.PackagesLive do
       <%= if @suggestions != [] do %>
         <div class="card bg-base-100 border border-accent/30">
           <div class="card-body p-4 sm:p-6">
-            <div class="flex items-center gap-2 mb-4">
+            <div class="flex flex-wrap items-center gap-2 mb-4">
               <.icon name="hero-light-bulb" class="size-5 text-accent shrink-0" />
               <h2 class="font-semibold text-base-content">Sugerencias de paquetes</h2>
-              <span class="badge badge-accent badge-sm">basado en costos reales</span>
+              <span class="badge badge-accent badge-sm whitespace-nowrap">basado en costos reales</span>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <%= for s <- @suggestions do %>

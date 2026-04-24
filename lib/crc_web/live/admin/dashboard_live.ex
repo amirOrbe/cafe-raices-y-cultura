@@ -125,13 +125,13 @@ defmodule CRCWeb.Admin.DashboardLive do
 
   defp stat_card(%{variant: :primary} = assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 flex items-center gap-4">
-      <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-        <.icon name={@icon} class="size-6 text-primary" />
+    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 sm:p-5 flex items-center gap-2 sm:gap-4">
+      <div class="size-9 sm:size-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+        <.icon name={@icon} class="size-5 sm:size-6 text-primary" />
       </div>
-      <div>
-        <p class="text-2xl font-bold text-base-content">{@value}</p>
-        <p class="text-xs text-base-content/50 mt-0.5">{@label}</p>
+      <div class="min-w-0">
+        <p class="text-xl sm:text-2xl font-bold text-base-content leading-none">{@value}</p>
+        <p class="text-xs text-base-content/50 mt-1 leading-tight">{@label}</p>
       </div>
     </div>
     """
@@ -139,13 +139,13 @@ defmodule CRCWeb.Admin.DashboardLive do
 
   defp stat_card(%{variant: :secondary} = assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 flex items-center gap-4">
-      <div class="size-12 rounded-xl bg-secondary/10 flex items-center justify-center flex-shrink-0">
-        <.icon name={@icon} class="size-6 text-secondary" />
+    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 sm:p-5 flex items-center gap-2 sm:gap-4">
+      <div class="size-9 sm:size-12 rounded-xl bg-secondary/10 flex items-center justify-center flex-shrink-0">
+        <.icon name={@icon} class="size-5 sm:size-6 text-secondary" />
       </div>
-      <div>
-        <p class="text-2xl font-bold text-base-content">{@value}</p>
-        <p class="text-xs text-base-content/50 mt-0.5">{@label}</p>
+      <div class="min-w-0">
+        <p class="text-xl sm:text-2xl font-bold text-base-content leading-none">{@value}</p>
+        <p class="text-xs text-base-content/50 mt-1 leading-tight">{@label}</p>
       </div>
     </div>
     """
@@ -153,13 +153,13 @@ defmodule CRCWeb.Admin.DashboardLive do
 
   defp stat_card(%{variant: :accent} = assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 flex items-center gap-4">
-      <div class="size-12 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
-        <.icon name={@icon} class="size-6 text-accent" />
+    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 sm:p-5 flex items-center gap-2 sm:gap-4">
+      <div class="size-9 sm:size-12 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
+        <.icon name={@icon} class="size-5 sm:size-6 text-accent" />
       </div>
-      <div>
-        <p class="text-2xl font-bold text-base-content">{@value}</p>
-        <p class="text-xs text-base-content/50 mt-0.5">{@label}</p>
+      <div class="min-w-0">
+        <p class="text-xl sm:text-2xl font-bold text-base-content leading-none">{@value}</p>
+        <p class="text-xs text-base-content/50 mt-1 leading-tight">{@label}</p>
       </div>
     </div>
     """
@@ -167,13 +167,13 @@ defmodule CRCWeb.Admin.DashboardLive do
 
   defp stat_card(%{variant: :success} = assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 flex items-center gap-4">
-      <div class="size-12 rounded-xl bg-success/10 flex items-center justify-center flex-shrink-0">
-        <.icon name={@icon} class="size-6 text-success" />
+    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 sm:p-5 flex items-center gap-2 sm:gap-4">
+      <div class="size-9 sm:size-12 rounded-xl bg-success/10 flex items-center justify-center flex-shrink-0">
+        <.icon name={@icon} class="size-5 sm:size-6 text-success" />
       </div>
-      <div>
-        <p class="text-2xl font-bold text-base-content">{@value}</p>
-        <p class="text-xs text-base-content/50 mt-0.5">{@label}</p>
+      <div class="min-w-0">
+        <p class="text-xl sm:text-2xl font-bold text-base-content leading-none">{@value}</p>
+        <p class="text-xs text-base-content/50 mt-1 leading-tight">{@label}</p>
       </div>
     </div>
     """
@@ -181,13 +181,13 @@ defmodule CRCWeb.Admin.DashboardLive do
 
   defp stat_card(%{variant: :error} = assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 flex items-center gap-4">
-      <div class="size-12 rounded-xl bg-error/10 flex items-center justify-center flex-shrink-0">
-        <.icon name={@icon} class="size-6 text-error" />
+    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 sm:p-5 flex items-center gap-2 sm:gap-4">
+      <div class="size-9 sm:size-12 rounded-xl bg-error/10 flex items-center justify-center flex-shrink-0">
+        <.icon name={@icon} class="size-5 sm:size-6 text-error" />
       </div>
-      <div>
-        <p class="text-2xl font-bold text-base-content">{@value}</p>
-        <p class="text-xs text-base-content/50 mt-0.5">{@label}</p>
+      <div class="min-w-0">
+        <p class="text-xl sm:text-2xl font-bold text-base-content leading-none">{@value}</p>
+        <p class="text-xs text-base-content/50 mt-1 leading-tight">{@label}</p>
       </div>
     </div>
     """
@@ -195,13 +195,13 @@ defmodule CRCWeb.Admin.DashboardLive do
 
   defp stat_card(%{variant: :warning} = assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 flex items-center gap-4">
-      <div class="size-12 rounded-xl bg-warning/10 flex items-center justify-center flex-shrink-0">
-        <.icon name={@icon} class="size-6 text-warning" />
+    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 sm:p-5 flex items-center gap-2 sm:gap-4">
+      <div class="size-9 sm:size-12 rounded-xl bg-warning/10 flex items-center justify-center flex-shrink-0">
+        <.icon name={@icon} class="size-5 sm:size-6 text-warning" />
       </div>
-      <div>
-        <p class="text-2xl font-bold text-base-content">{@value}</p>
-        <p class="text-xs text-base-content/50 mt-0.5">{@label}</p>
+      <div class="min-w-0">
+        <p class="text-xl sm:text-2xl font-bold text-base-content leading-none">{@value}</p>
+        <p class="text-xs text-base-content/50 mt-1 leading-tight">{@label}</p>
       </div>
     </div>
     """

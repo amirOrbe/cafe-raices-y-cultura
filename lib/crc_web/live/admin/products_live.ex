@@ -571,7 +571,7 @@ defmodule CRCWeb.Admin.ProductsLive do
             />
 
             <%!-- Category + Unit (2 cols) --%>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <.input
                 field={@form[:product_category_id]}
                 type="select"
@@ -587,7 +587,7 @@ defmodule CRCWeb.Admin.ProductsLive do
             </div>
 
             <%!-- Net cost + Sale price (2 cols) --%>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <.input
                 field={@form[:net_cost]}
                 type="number"
@@ -599,7 +599,7 @@ defmodule CRCWeb.Admin.ProductsLive do
               <.input
                 field={@form[:sale_price]}
                 type="number"
-                label="Precio de venta ($) (opcional)"
+                label="Precio venta ($) (opcional)"
                 placeholder="0.00"
                 step="0.01"
                 min="0"
@@ -607,7 +607,7 @@ defmodule CRCWeb.Admin.ProductsLive do
             </div>
 
             <%!-- Stock + Min stock (2 cols) --%>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <.input
                 field={@form[:stock_quantity]}
                 type="number"

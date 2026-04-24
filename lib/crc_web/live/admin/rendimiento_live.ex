@@ -217,15 +217,15 @@ defmodule CRCWeb.Admin.RendimientoLive do
                   <div class="space-y-2">
                     <%= for entry <- @revenue_ranking do %>
                       <% medal = medal_for(entry.rank) %>
-                      <div class="flex items-center justify-between gap-2">
+                      <div class="flex items-start justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
                           <span class="text-lg shrink-0">{medal}</span>
                           <div class="size-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                             {String.first(entry.name) |> String.upcase()}
                           </div>
-                          <span class="text-sm font-medium text-base-content truncate">{entry.name}</span>
+                          <span class="text-sm font-medium text-base-content">{entry.name}</span>
                         </div>
-                        <div class="flex items-center gap-3 shrink-0">
+                        <div class="flex items-center gap-1.5 shrink-0">
                           <div class="text-right">
                             <p class="text-sm font-bold text-success">
                               $<%= Decimal.round(entry.revenue, 2) %>
@@ -234,7 +234,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
                           </div>
                           <%= if @current_user.role == "admin" do %>
                             <button
-                              class="btn btn-xs btn-ghost border border-base-300 gap-1"
+                              class="btn btn-xs btn-ghost border border-base-300"
                               phx-click="open_recognition_modal"
                               phx-value-user_id={entry.user_id}
                               phx-value-kind="top_sales"
@@ -260,27 +260,27 @@ defmodule CRCWeb.Admin.RendimientoLive do
                   <div class="space-y-2">
                     <%= for entry <- @speed_ranking do %>
                       <% medal = medal_for(entry.rank) %>
-                      <div class="flex items-center justify-between gap-2">
+                      <div class="flex items-start justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
                           <span class="text-lg shrink-0">{medal}</span>
                           <div class="size-7 rounded-full bg-secondary/10 flex items-center justify-center text-xs font-bold text-secondary shrink-0">
                             {String.first(entry.name) |> String.upcase()}
                           </div>
                           <div class="min-w-0">
-                            <p class="text-sm font-medium text-base-content truncate">{entry.name}</p>
+                            <p class="text-sm font-medium text-base-content">{entry.name}</p>
                             <%= if entry.station && entry.station != "—" do %>
                               <p class="text-xs text-base-content/40 truncate">{entry.station}</p>
                             <% end %>
                           </div>
                         </div>
-                        <div class="flex items-center gap-3 shrink-0">
+                        <div class="flex items-center gap-1.5 shrink-0">
                           <div class="text-right">
                             <p class="text-sm font-bold text-info">{format_duration(entry.avg_secs)}</p>
                             <p class="text-xs text-base-content/40">{entry.count} ítems</p>
                           </div>
                           <%= if @current_user.role == "admin" do %>
                             <button
-                              class="btn btn-xs btn-ghost border border-base-300 gap-1"
+                              class="btn btn-xs btn-ghost border border-base-300"
                               phx-click="open_recognition_modal"
                               phx-value-user_id={entry.user_id}
                               phx-value-kind="top_speed"

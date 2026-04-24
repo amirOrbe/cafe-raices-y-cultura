@@ -68,32 +68,27 @@ defmodule CRCWeb.HomeLive do
   # All 19 real CRC photos — shuffled on every mount so each visit looks different
   defp format_time(%Time{} = t), do: Calendar.strftime(t, "%H:%M")
 
-  # Cloudinary CDN URLs with automatic format + quality optimisation.
-  # The `f_auto,q_auto,w_1400` transformation lets Cloudinary pick the best
-  # format (WebP / AVIF) and quality for each browser, capped at 1 400 px wide.
-  @cloudinary_base "https://res.cloudinary.com/dekekqq8b/image/upload/f_auto,q_auto,w_1400"
-
   defp carousel_photos do
     [
-      %{url: "#{@cloudinary_base}/carousel/vl0ov59eurjtarsfhqbe.jpg", caption: "Café Raíces y Cultura"},
-      %{url: "#{@cloudinary_base}/carousel/vrr8xrsrqhjlinoi95je.jpg", caption: "Un espacio para conectar"},
-      %{url: "#{@cloudinary_base}/carousel/mv721tgsso6ush1p6mhx.jpg", caption: "Café de origen seleccionado"},
-      %{url: "#{@cloudinary_base}/carousel/ijpiaby23mp9r5msynyw.jpg", caption: "Arte y sabor en cada taza"},
-      %{url: "#{@cloudinary_base}/carousel/d13drdmv1xxvtwkbk7uk.jpg", caption: "Tu refugio en Santa María la Ribera"},
-      %{url: "#{@cloudinary_base}/carousel/ox0vrohw4xytc5ef0y7d.jpg", caption: "Café Raíces y Cultura"},
-      %{url: "#{@cloudinary_base}/carousel/x9zketlbthyzua5pjk4h.jpg", caption: "Hecho con amor y detalle"},
-      %{url: "#{@cloudinary_base}/carousel/lko5alcsqdfrnfjfy5pp.jpg", caption: "Raíces que nos sostienen"},
-      %{url: "#{@cloudinary_base}/carousel/dq0nbzgixgwvdmdibd5e.jpg", caption: "Cultura que inspira"},
-      %{url: "#{@cloudinary_base}/carousel/skxtksa3ql0eohomzzgo.jpg", caption: "Un proyecto familiar"},
-      %{url: "#{@cloudinary_base}/carousel/kzlw9by4zi93u9bxpqdm.jpg", caption: "Granos de origen seleccionado"},
-      %{url: "#{@cloudinary_base}/carousel/dbzqbtezy8jom2yn97fr.jpg", caption: "Santa María la Ribera · CDMX"},
-      %{url: "#{@cloudinary_base}/carousel/nnk96o5g2axjlja5la3e.jpg", caption: "Café Raíces y Cultura"},
-      %{url: "#{@cloudinary_base}/carousel/tmeqmw7cyrqcv1wjrx1e.jpg", caption: "Cada taza, una historia"},
-      %{url: "#{@cloudinary_base}/carousel/lscdviwhjqd78z8rq93m.jpg", caption: "Bienvenidos a CRC"},
-      %{url: "#{@cloudinary_base}/carousel/q7ynfygg4oluibumjwny.jpg", caption: "Arte, café y cultura"},
-      %{url: "#{@cloudinary_base}/carousel/skmjaa4apnzjcb5r2fq8.jpg", caption: "Compromiso con la comunidad"},
-      %{url: "#{@cloudinary_base}/carousel/cmzaf6hhjxlucx0lhmbp.jpg", caption: "Lo artesanal en cada detalle"},
-      %{url: "#{@cloudinary_base}/carousel/eixwx1if8pfwtcfav6ac.jpg", caption: "Ven y descúbrenos"}
+      %{url: "/images/carousel/crc-01.jpg", caption: "Café Raíces y Cultura"},
+      %{url: "/images/carousel/crc-02.jpg", caption: "Un espacio para conectar"},
+      %{url: "/images/carousel/crc-03.jpg", caption: "Café de origen seleccionado"},
+      %{url: "/images/carousel/crc-04.jpg", caption: "Arte y sabor en cada taza"},
+      %{url: "/images/carousel/crc-05.jpg", caption: "Tu refugio en Santa María la Ribera"},
+      %{url: "/images/carousel/crc-06.jpg", caption: "Café Raíces y Cultura"},
+      %{url: "/images/carousel/crc-07.jpg", caption: "Hecho con amor y detalle"},
+      %{url: "/images/carousel/crc-08.jpg", caption: "Raíces que nos sostienen"},
+      %{url: "/images/carousel/crc-09.jpg", caption: "Cultura que inspira"},
+      %{url: "/images/carousel/crc-10.jpg", caption: "Un proyecto familiar"},
+      %{url: "/images/carousel/crc-11.jpg", caption: "Granos de origen seleccionado"},
+      %{url: "/images/carousel/crc-12.jpg", caption: "Santa María la Ribera · CDMX"},
+      %{url: "/images/carousel/crc-13.jpg", caption: "Café Raíces y Cultura"},
+      %{url: "/images/carousel/crc-14.jpg", caption: "Cada taza, una historia"},
+      %{url: "/images/carousel/crc-15.jpg", caption: "Bienvenidos a CRC"},
+      %{url: "/images/carousel/crc-16.jpg", caption: "Arte, café y cultura"},
+      %{url: "/images/carousel/crc-17.jpg", caption: "Compromiso con la comunidad"},
+      %{url: "/images/carousel/crc-18.jpg", caption: "Lo artesanal en cada detalle"},
+      %{url: "/images/carousel/crc-19.jpg", caption: "Ven y descúbrenos"}
     ]
   end
 

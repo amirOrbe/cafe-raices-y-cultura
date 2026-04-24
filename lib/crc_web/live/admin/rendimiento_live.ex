@@ -224,12 +224,14 @@ defmodule CRCWeb.Admin.RendimientoLive do
                         </div>
                         <div class="flex-1 min-w-0">
                           <p class="text-sm font-medium text-base-content">{entry.name}</p>
-                          <div class="flex items-center gap-2 mt-0.5">
-                            <p class="text-sm font-bold text-success">$<%= Decimal.round(entry.revenue, 2) %></p>
-                            <p class="text-xs text-base-content/40">· {entry.order_count} comandas</p>
+                          <div class="flex items-center justify-between gap-1 mt-0.5">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                              <p class="text-sm font-bold text-success shrink-0">$<%= Decimal.round(entry.revenue, 2) %></p>
+                              <p class="text-xs text-base-content/40 truncate">· {entry.order_count} comandas</p>
+                            </div>
                             <%= if @current_user.role == "admin" do %>
                               <button
-                                class="btn btn-xs btn-ghost border border-base-300 ml-auto"
+                                class="btn btn-xs btn-ghost border border-base-300 shrink-0"
                                 phx-click="open_recognition_modal"
                                 phx-value-user_id={entry.user_id}
                                 phx-value-kind="top_sales"
@@ -264,12 +266,14 @@ defmodule CRCWeb.Admin.RendimientoLive do
                           <%= if entry.station && entry.station != "—" do %>
                             <p class="text-xs text-base-content/40 truncate">{entry.station}</p>
                           <% end %>
-                          <div class="flex items-center gap-2 mt-0.5">
-                            <p class="text-sm font-bold text-info">{format_duration(entry.avg_secs)}</p>
-                            <p class="text-xs text-base-content/40">· {entry.count} ítems</p>
+                          <div class="flex items-center justify-between gap-1 mt-0.5">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                              <p class="text-sm font-bold text-info shrink-0">{format_duration(entry.avg_secs)}</p>
+                              <p class="text-xs text-base-content/40 truncate">· {entry.count} ítems</p>
+                            </div>
                             <%= if @current_user.role == "admin" do %>
                               <button
-                                class="btn btn-xs btn-ghost border border-base-300 ml-auto"
+                                class="btn btn-xs btn-ghost border border-base-300 shrink-0"
                                 phx-click="open_recognition_modal"
                                 phx-value-user_id={entry.user_id}
                                 phx-value-kind="top_speed"

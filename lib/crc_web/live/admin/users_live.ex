@@ -404,22 +404,31 @@ defmodule CRCWeb.Admin.UsersLive do
               <% end %>
 
               <%= if !@current_avatar || @remove_avatar do %>
-                <div class="flex flex-col gap-1.5">
-                  <.live_file_input upload={@uploads.avatar} class="file-input file-input-bordered file-input-sm w-full" />
-                  <p class="text-xs text-base-content/40">JPG, PNG o WebP · Máx. 5 MB</p>
-                </div>
+                <label
+                  for={@uploads.avatar.ref}
+                  class="flex flex-col items-center justify-center gap-2 w-full py-5 px-4 rounded-2xl border-2 border-dashed border-base-300 hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all duration-200"
+                >
+                  <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                    <.icon name="hero-user-circle" class="size-5 text-primary" />
+                  </div>
+                  <div class="text-center">
+                    <p class="text-sm font-medium text-base-content">Selecciona una foto de perfil</p>
+                    <p class="text-xs text-base-content/40 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
+                  </div>
+                  <.live_file_input upload={@uploads.avatar} class="sr-only" />
+                </label>
               <% end %>
 
               <%= for entry <- @uploads.avatar.entries do %>
-                <div class="flex items-center gap-3 mt-2 p-2 bg-base-200 rounded-lg">
+                <div class="flex items-center gap-3 mt-2 p-2.5 bg-base-200 rounded-xl">
                   <.live_img_preview entry={entry} class="size-10 object-cover rounded-full shrink-0" />
                   <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium truncate">{entry.client_name}</p>
-                    <div class="w-full bg-base-300 rounded-full h-1 mt-1">
-                      <div class="bg-primary h-1 rounded-full transition-all" style={"width: #{entry.progress}%"} />
+                    <div class="w-full bg-base-300 rounded-full h-1.5 mt-1.5">
+                      <div class="bg-primary h-1.5 rounded-full transition-all duration-300" style={"width: #{entry.progress}%"} />
                     </div>
                   </div>
-                  <button type="button" class="btn btn-ghost btn-xs btn-circle text-error" phx-click="cancel_upload" phx-value-ref={entry.ref}>
+                  <button type="button" class="btn btn-ghost btn-xs btn-circle text-error shrink-0" phx-click="cancel_upload" phx-value-ref={entry.ref}>
                     <.icon name="hero-x-mark" class="size-3.5" />
                   </button>
                 </div>

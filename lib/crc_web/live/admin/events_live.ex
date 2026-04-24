@@ -723,47 +723,58 @@ defmodule CRCWeb.Admin.EventsLive do
               <% end %>
 
               <%!-- Subir nuevas fotos --%>
-              <form phx-submit="upload_event_photos" phx-change="validate_upload" class="space-y-2">
-                <div class="flex gap-2 items-center">
-                  <.live_file_input
-                    upload={@uploads.event_photo}
-                    class="file-input file-input-bordered file-input-sm flex-1"
-                  />
-                  <button
-                    type="submit"
-                    class="btn btn-sm btn-primary gap-1 shrink-0"
-                    disabled={@uploads.event_photo.entries == []}
-                  >
-                    <.icon name="hero-arrow-up-tray" class="size-3.5" />
-                    Subir
-                  </button>
-                </div>
-                <p class="text-xs text-base-content/40">
-                  JPG, PNG o WebP · Máx. 5 MB · Hasta 5 fotos a la vez
-                </p>
-
-                <%!-- Progreso por archivo --%>
-                <%= for entry <- @uploads.event_photo.entries do %>
-                  <div class="flex items-center gap-3 p-2 bg-base-200 rounded-lg">
-                    <.live_img_preview entry={entry} class="w-12 h-12 object-cover rounded-lg shrink-0" />
-                    <div class="flex-1 min-w-0">
-                      <p class="text-xs font-medium text-base-content truncate">{entry.client_name}</p>
-                      <div class="w-full bg-base-300 rounded-full h-1 mt-1">
-                        <div
-                          class="bg-primary h-1 rounded-full transition-all"
-                          style={"width: #{entry.progress}%"}
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      class="btn btn-ghost btn-xs btn-circle text-error"
-                      phx-click="cancel_upload"
-                      phx-value-ref={entry.ref}
-                    >
-                      <.icon name="hero-x-mark" class="size-3.5" />
-                    </button>
+              <form phx-submit="upload_event_photos" phx-change="validate_upload" class="space-y-3">
+                <%!-- Drop zone — click abre el selector de archivos --%>
+                <label
+                  for={@uploads.event_photo.ref}
+                  class="flex flex-col items-center justify-center gap-2 w-full py-6 px-4 rounded-2xl border-2 border-dashed border-base-300 hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all duration-200"
+                >
+                  <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                    <.icon name="hero-arrow-up-tray" class="size-5 text-primary" />
                   </div>
+                  <div class="text-center">
+                    <p class="text-sm font-medium text-base-content">
+                      Selecciona o arrastra fotos aquí
+                    </p>
+                    <p class="text-xs text-base-content/40 mt-0.5">
+                      JPG, PNG o WebP · Máx. 5 MB · Hasta 5 a la vez
+                    </p>
+                  </div>
+                  <.live_file_input upload={@uploads.event_photo} class="sr-only" />
+                </label>
+
+                <%!-- Previews + progreso — solo cuando hay archivos seleccionados --%>
+                <%= if @uploads.event_photo.entries != [] do %>
+                  <div class="space-y-2">
+                    <%= for entry <- @uploads.event_photo.entries do %>
+                      <div class="flex items-center gap-3 p-2.5 bg-base-200 rounded-xl">
+                        <.live_img_preview entry={entry} class="w-10 h-10 object-cover rounded-lg shrink-0" />
+                        <div class="flex-1 min-w-0">
+                          <p class="text-xs font-medium text-base-content truncate">{entry.client_name}</p>
+                          <div class="w-full bg-base-300 rounded-full h-1.5 mt-1.5">
+                            <div
+                              class="bg-primary h-1.5 rounded-full transition-all duration-300"
+                              style={"width: #{entry.progress}%"}
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
+                          phx-click="cancel_upload"
+                          phx-value-ref={entry.ref}
+                        >
+                          <.icon name="hero-x-mark" class="size-3.5" />
+                        </button>
+                      </div>
+                    <% end %>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary btn-sm w-full gap-2">
+                    <.icon name="hero-arrow-up-tray" class="size-4" />
+                    Subir {length(@uploads.event_photo.entries)}
+                    {if length(@uploads.event_photo.entries) == 1, do: "foto", else: "fotos"}
+                  </button>
                 <% end %>
               </form>
             </div>

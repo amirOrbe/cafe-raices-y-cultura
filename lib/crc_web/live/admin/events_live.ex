@@ -289,9 +289,45 @@ defmodule CRCWeb.Admin.EventsLive do
     {:noreply, assign(socket, :collaborator_role_input, value)}
   end
 
-  # Automatically fires when each file finishes transferring to the server.
-  # We upload to Cloudinary immediately — no manual "Subir" button needed.
+  # Manual fallback: fires when the admin clicks "Subir fotos".
+  # Handles entries that weren't auto-consumed by handle_progress.
+  def handle_event("upload_event_photos", _params, socket) do
+    require Logger
+    entries = socket.assigns.uploads.event_photo.entries
+    Logger.info("[EventPhoto] upload_event_photos triggered, entries: #{length(entries)}")
+
+    event_id =
+      case socket.assigns.modal do
+        {:edit, event} -> event.id
+        _ -> nil
+      end
+
+    if event_id && entries != [] do
+      consume_uploaded_entries(socket, :event_photo, fn %{path: path}, e ->
+        Logger.info("[EventPhoto] Manual upload: #{e.client_name}")
+
+        case Cloudinary.upload(path, folder: "events", content_type: e.client_type) do
+          {:ok, url} ->
+            Events.add_event_photo(event_id, url)
+            {:ok, url}
+
+          {:error, reason} ->
+            Logger.error("[EventPhoto] #{e.client_name} falló: #{inspect(reason)}")
+            {:ok, nil}
+        end
+      end)
+
+      {:noreply, assign(socket, :event_photos, Events.list_event_photos(event_id))}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  # Automatically fires when each file finishes transferring to the server (auto_upload: true).
   def handle_progress(:event_photo, entry, socket) do
+    require Logger
+    Logger.info("[EventPhoto] handle_progress: #{entry.client_name}, done=#{entry.done?}, progress=#{entry.progress}")
+
     if entry.done? do
       event_id =
         case socket.assigns.modal do
@@ -301,13 +337,14 @@ defmodule CRCWeb.Admin.EventsLive do
 
       if event_id do
         consume_uploaded_entries(socket, :event_photo, fn %{path: path}, e ->
+          Logger.info("[EventPhoto] Enviando a Cloudinary: #{e.client_name}")
+
           case Cloudinary.upload(path, folder: "events", content_type: e.client_type) do
             {:ok, url} ->
               Events.add_event_photo(event_id, url)
               {:ok, url}
 
             {:error, reason} ->
-              require Logger
               Logger.error("[EventPhoto] #{e.client_name} falló: #{inspect(reason)}")
               {:ok, nil}
           end
@@ -685,14 +722,24 @@ defmodule CRCWeb.Admin.EventsLive do
                 </div>
               <% end %>
 
-              <%!-- Subir nuevas fotos — se suben automáticamente al seleccionarlas --%>
-              <div class="space-y-2">
-                <.live_file_input
-                  upload={@uploads.event_photo}
-                  class="file-input file-input-bordered file-input-sm w-full"
-                />
+              <%!-- Subir nuevas fotos --%>
+              <form phx-submit="upload_event_photos" phx-change="validate_upload" class="space-y-2">
+                <div class="flex gap-2 items-center">
+                  <.live_file_input
+                    upload={@uploads.event_photo}
+                    class="file-input file-input-bordered file-input-sm flex-1"
+                  />
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-primary gap-1 shrink-0"
+                    disabled={@uploads.event_photo.entries == []}
+                  >
+                    <.icon name="hero-arrow-up-tray" class="size-3.5" />
+                    Subir
+                  </button>
+                </div>
                 <p class="text-xs text-base-content/40">
-                  JPG, PNG o WebP · Máx. 5 MB · Hasta 5 fotos a la vez · Se suben automáticamente
+                  JPG, PNG o WebP · Máx. 5 MB · Hasta 5 fotos a la vez
                 </p>
 
                 <%!-- Progreso por archivo --%>
@@ -718,7 +765,7 @@ defmodule CRCWeb.Admin.EventsLive do
                     </button>
                   </div>
                 <% end %>
-              </div>
+              </form>
             </div>
           <% end %>
           <%!-- ── Fin galería ─────────────────────────────────────────────────── --%>

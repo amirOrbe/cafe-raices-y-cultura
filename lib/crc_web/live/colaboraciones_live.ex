@@ -382,34 +382,32 @@ defmodule CRCWeb.ColaboracionesLive do
                           </div>
                         <% end %>
 
-                        <%!-- Photo gallery --%>
+                        <%!-- Photo carousel --%>
                         <%= if event.event_photos != [] do %>
                           <div class="pt-4 border-t border-base-300 mt-3">
                             <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-3">
                               Galería
+                              <span class="font-normal normal-case">
+                                · {length(event.event_photos)} {if length(event.event_photos) == 1, do: "foto", else: "fotos"}
+                              </span>
                             </p>
-                            <div class={[
-                              "grid gap-2",
-                              case length(event.event_photos) do
-                                1 -> "grid-cols-1"
-                                2 -> "grid-cols-2"
-                                _ -> "grid-cols-3"
-                              end
-                            ]}>
+                            <div class="carousel carousel-center gap-2 w-full">
                               <%= for photo <- event.event_photos do %>
-                                <a
-                                  href={photo.image_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  class="block aspect-square overflow-hidden rounded-xl group"
-                                >
-                                  <img
-                                    src={photo.image_url}
-                                    alt={photo.caption || event.title}
-                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                    loading="lazy"
-                                  />
-                                </a>
+                                <div class="carousel-item">
+                                  <a
+                                    href={photo.image_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="block overflow-hidden rounded-xl group"
+                                  >
+                                    <img
+                                      src={photo.image_url}
+                                      alt={photo.caption || event.title}
+                                      class="h-44 w-44 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                                      loading="lazy"
+                                    />
+                                  </a>
+                                </div>
                               <% end %>
                             </div>
                           </div>

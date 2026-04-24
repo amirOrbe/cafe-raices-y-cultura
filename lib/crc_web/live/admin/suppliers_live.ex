@@ -155,27 +155,87 @@ defmodule CRCWeb.Admin.SuppliersLive do
         </button>
       </div>
 
-      <%!-- Table --%>
-      <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
+      <div class="md:hidden flex flex-col gap-2">
+        <%= if visible == [] do %>
+          <div class="text-center py-12 text-base-content/40 text-sm bg-base-100 rounded-2xl border border-base-300">
+            {if @status_filter == :active,
+              do: "No hay proveedores activos.",
+              else: "No hay proveedores inactivos."}
+          </div>
+        <% end %>
+        <%= for supplier <- visible do %>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-center gap-3">
+            <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 shrink-0">
+              <.icon name="hero-truck" class="size-5 text-primary" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="font-semibold text-sm text-base-content truncate">{supplier.name}</p>
+                <%= if supplier.active do %>
+                  <span class="badge badge-xs badge-success shrink-0">Activo</span>
+                <% else %>
+                  <span class="badge badge-xs badge-error shrink-0">Inactivo</span>
+                <% end %>
+              </div>
+              <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                <%= if supplier.contact_name do %>
+                  <span class="text-xs text-base-content/60 truncate">{supplier.contact_name}</span>
+                <% end %>
+                <%= if supplier.phone do %>
+                  <span class="text-xs text-base-content/40">{supplier.phone}</span>
+                <% end %>
+              </div>
+              <%= if supplier.email do %>
+                <p class="text-xs text-base-content/40 truncate mt-0.5">{supplier.email}</p>
+              <% end %>
+            </div>
+            <div class="flex flex-col items-center gap-1 shrink-0">
+              <button
+                class="btn btn-ghost btn-xs btn-circle"
+                phx-click="edit_supplier"
+                phx-value-id={supplier.id}
+                title="Editar"
+              >
+                <.icon name="hero-pencil" class="size-4" />
+              </button>
+              <button
+                class={["btn btn-ghost btn-xs btn-circle", if(supplier.active, do: "text-error", else: "text-success")]}
+                phx-click="toggle_active"
+                phx-value-id={supplier.id}
+                title={if supplier.active, do: "Desactivar", else: "Activar"}
+              >
+                <.icon
+                  name={if supplier.active, do: "hero-no-symbol", else: "hero-check-circle"}
+                  class="size-4"
+                />
+              </button>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
+      <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="table table-zebra w-full">
+          <table class="table table-zebra table-fixed w-full">
             <thead>
               <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th>Nombre</th>
-                <th>Contacto</th>
-                <th>Teléfono</th>
-                <th>Correo</th>
-                <th>Estado</th>
-                <th class="text-right">Acciones</th>
+                <th class="w-[25%]">Nombre</th>
+                <th class="w-[18%]">Contacto</th>
+                <th class="w-[15%]">Teléfono</th>
+                <th class="w-[25%]">Correo</th>
+                <th class="w-[10%]">Estado</th>
+                <th class="w-[7%] text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <%= for supplier <- visible do %>
                 <tr class="hover:bg-base-200/50 transition-colors">
-                  <td class="font-medium text-sm text-base-content">{supplier.name}</td>
-                  <td class="text-sm text-base-content/70">{supplier.contact_name || "—"}</td>
+                  <td class="max-w-0 font-medium text-sm text-base-content truncate">{supplier.name}</td>
+                  <td class="max-w-0 text-sm text-base-content/70 truncate">{supplier.contact_name || "—"}</td>
                   <td class="text-sm text-base-content/70">{supplier.phone || "—"}</td>
-                  <td class="text-sm text-base-content/70">{supplier.email || "—"}</td>
+                  <td class="max-w-0 text-sm text-base-content/70 truncate">{supplier.email || "—"}</td>
                   <td>
                     <%= if supplier.active do %>
                       <span class="badge badge-sm badge-success">Activo</span>

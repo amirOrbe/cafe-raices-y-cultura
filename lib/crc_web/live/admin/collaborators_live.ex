@@ -155,34 +155,85 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
         </button>
       </div>
 
-      <%!-- Table --%>
-      <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
+      <div class="md:hidden flex flex-col gap-2">
+        <%= if visible == [] do %>
+          <div class="text-center py-12 text-base-content/40 text-sm bg-base-100 rounded-2xl border border-base-300">
+            {if @status_filter == :active,
+              do: "No hay colaboradores activos.",
+              else: "No hay colaboradores inactivos."}
+          </div>
+        <% end %>
+        <%= for collaborator <- visible do %>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-center gap-3">
+            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 shrink-0">
+              <.icon name="hero-user" class="size-5 text-primary" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="font-semibold text-sm text-base-content truncate">{collaborator.name}</p>
+                <%= if collaborator.active do %>
+                  <span class="badge badge-xs badge-success shrink-0">Activo</span>
+                <% else %>
+                  <span class="badge badge-xs badge-error shrink-0">Inactivo</span>
+                <% end %>
+              </div>
+              <%= if collaborator.instagram_handle do %>
+                <p class="text-xs text-primary/70 mt-0.5">@{collaborator.instagram_handle}</p>
+              <% end %>
+              <%= if collaborator.bio do %>
+                <p class="text-xs text-base-content/50 truncate mt-0.5">{collaborator.bio}</p>
+              <% end %>
+            </div>
+            <div class="flex flex-col items-center gap-1 shrink-0">
+              <button
+                class="btn btn-ghost btn-xs btn-circle"
+                phx-click="edit_collaborator"
+                phx-value-id={collaborator.id}
+                title="Editar"
+              >
+                <.icon name="hero-pencil" class="size-4" />
+              </button>
+              <button
+                class={["btn btn-ghost btn-xs btn-circle", if(collaborator.active, do: "text-error", else: "text-success")]}
+                phx-click="toggle_active"
+                phx-value-id={collaborator.id}
+                title={if collaborator.active, do: "Desactivar", else: "Activar"}
+              >
+                <.icon
+                  name={if collaborator.active, do: "hero-no-symbol", else: "hero-check-circle"}
+                  class="size-4"
+                />
+              </button>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
+      <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="table table-zebra w-full">
+          <table class="table table-zebra table-fixed w-full">
             <thead>
               <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th>Nombre</th>
-                <th>Instagram</th>
-                <th>Bio</th>
-                <th>Estado</th>
-                <th class="text-right">Acciones</th>
+                <th class="w-[25%]">Nombre</th>
+                <th class="w-[20%]">Instagram</th>
+                <th class="w-[40%]">Bio</th>
+                <th class="w-[8%]">Estado</th>
+                <th class="w-[7%] text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <%= for collaborator <- visible do %>
                 <tr class="hover:bg-base-200/50 transition-colors">
-                  <td class="font-medium text-sm text-base-content">{collaborator.name}</td>
+                  <td class="max-w-0 font-medium text-sm text-base-content truncate">{collaborator.name}</td>
                   <td class="text-sm text-base-content/70">
                     {if collaborator.instagram_handle,
                       do: "@#{collaborator.instagram_handle}",
                       else: "—"}
                   </td>
-                  <td class="text-sm text-base-content/60 max-w-xs">
-                    <%= if collaborator.bio do %>
-                      <span class="line-clamp-1">{collaborator.bio}</span>
-                    <% else %>
-                      —
-                    <% end %>
+                  <td class="max-w-0 text-sm text-base-content/60 truncate">
+                    {collaborator.bio || "—"}
                   </td>
                   <td>
                     <%= if collaborator.active do %>

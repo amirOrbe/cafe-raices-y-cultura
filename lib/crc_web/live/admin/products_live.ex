@@ -308,21 +308,103 @@ defmodule CRCWeb.Admin.ProductsLive do
         <% end %>
       </div>
 
-      <%!-- Table --%>
-      <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
+      <div class="md:hidden flex flex-col gap-2">
+        <%= if visible == [] do %>
+          <div class="text-center py-12 text-base-content/40 text-sm bg-base-100 rounded-2xl border border-base-300">
+            {cond do
+              @status_filter == :inactive && @filter_category == "all" -> "No hay insumos inactivos."
+              @status_filter == :inactive -> "No hay insumos inactivos en esta categoría."
+              @filter_category != "all" -> "No hay insumos en esta categoría."
+              true -> "No hay insumos registrados. Crea el primero."
+            end}
+          </div>
+        <% end %>
+        <%= for product <- visible do %>
+          <% has_variants = product.variants != [] %>
+          <% variant_low_stock = Enum.any?(product.variants, &variant_low_stock?/1) %>
+          <% is_low = low_stock?(product) or variant_low_stock %>
+          <div class={["bg-base-100 rounded-2xl border shadow-sm p-3 flex items-center gap-3", if(is_low, do: "border-warning/40 bg-warning/5", else: "border-base-300")]}>
+            <div class={["flex items-center justify-center w-10 h-10 rounded-xl shrink-0", if(is_low, do: "bg-warning/15", else: "bg-primary/10")]}>
+              <%= if is_low do %>
+                <.icon name="hero-exclamation-triangle" class="size-5 text-warning" />
+              <% else %>
+                <.icon name="hero-beaker" class="size-5 text-primary" />
+              <% end %>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <p class="font-semibold text-sm text-base-content truncate">{product.name}</p>
+                <%= if product.active do %>
+                  <span class="badge badge-xs badge-success shrink-0">Activo</span>
+                <% else %>
+                  <span class="badge badge-xs badge-error shrink-0">Inactivo</span>
+                <% end %>
+              </div>
+              <div class="flex items-center gap-2 mt-1 flex-wrap">
+                <%= if product.product_category do %>
+                  <span class="badge badge-xs badge-ghost">{product.product_category.name}</span>
+                <% end %>
+                <span class={["text-xs font-medium", if(low_stock?(product), do: "text-warning", else: "text-base-content/70")]}>
+                  Stock: {format_quantity(product.stock_quantity)} {unit_abbr(product.unit)}
+                </span>
+                <span class="text-xs text-base-content/40">
+                  Mín: {format_quantity(product.min_stock)} {unit_abbr(product.unit)}
+                </span>
+              </div>
+              <div class="flex items-center gap-3 mt-1">
+                <span class="text-xs text-base-content/70">${format_price(product.net_cost)} costo</span>
+                <%= if product.sale_price do %>
+                  <span class="text-xs text-base-content/50">${format_price(product.sale_price)} venta</span>
+                <% end %>
+                <%= if product.supplier do %>
+                  <span class="text-xs text-base-content/40 truncate">{product.supplier.name}</span>
+                <% end %>
+              </div>
+              <%= if has_variants and variant_low_stock do %>
+                <p class="text-xs text-warning mt-0.5">Stock bajo en algún tipo</p>
+              <% end %>
+            </div>
+            <div class="flex flex-col items-center gap-1 shrink-0">
+              <button
+                class="btn btn-ghost btn-xs btn-circle"
+                phx-click="edit_product"
+                phx-value-id={product.id}
+                title="Editar"
+              >
+                <.icon name="hero-pencil" class="size-4" />
+              </button>
+              <button
+                class={["btn btn-ghost btn-xs btn-circle", if(product.active, do: "text-error", else: "text-success")]}
+                phx-click="toggle_active"
+                phx-value-id={product.id}
+                title={if product.active, do: "Desactivar", else: "Activar"}
+              >
+                <.icon
+                  name={if product.active, do: "hero-no-symbol", else: "hero-check-circle"}
+                  class="size-4"
+                />
+              </button>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
+      <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="table table-zebra w-full">
+          <table class="table table-zebra table-fixed w-full">
             <thead>
               <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th>Nombre</th>
-                <th>Categoría</th>
-                <th>Stock</th>
-                <th>Mín.</th>
-                <th>Costo neto</th>
-                <th>Precio venta</th>
-                <th>Proveedor</th>
-                <th>Estado</th>
-                <th class="text-right">Acciones</th>
+                <th class="w-[22%]">Nombre</th>
+                <th class="w-[12%]">Categoría</th>
+                <th class="w-[10%]">Stock</th>
+                <th class="w-[8%]">Mín.</th>
+                <th class="w-[10%]">Costo neto</th>
+                <th class="w-[10%]">Precio venta</th>
+                <th class="w-[14%]">Proveedor</th>
+                <th class="w-[8%]">Estado</th>
+                <th class="w-[6%] text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -330,18 +412,18 @@ defmodule CRCWeb.Admin.ProductsLive do
                 <% has_variants = product.variants != [] %>
                 <% variant_low_stock = Enum.any?(product.variants, &variant_low_stock?/1) %>
                 <tr class={["hover:bg-base-200/50 transition-colors", if(low_stock?(product) or variant_low_stock, do: "bg-warning/5")]}>
-                  <td>
+                  <td class="max-w-0">
                     <div class="flex items-center gap-2">
                       <%= if low_stock?(product) or variant_low_stock do %>
                         <.icon name="hero-exclamation-triangle" class="size-4 text-warning shrink-0" />
                       <% end %>
-                      <div>
-                        <span class="font-medium text-sm text-base-content">{product.name}</span>
+                      <div class="min-w-0">
+                        <span class="font-medium text-sm text-base-content truncate block">{product.name}</span>
                         <%= if has_variants do %>
-                          <p class="text-xs text-base-content/40 mt-0.5">
+                          <p class="text-xs text-base-content/40 mt-0.5 truncate">
                             {length(product.variants)} tipo{if length(product.variants) != 1, do: "s", else: ""}
                             <%= if variant_low_stock do %>
-                              · <span class="text-warning">stock bajo en algún tipo</span>
+                              · <span class="text-warning">stock bajo</span>
                             <% end %>
                           </p>
                         <% end %>
@@ -365,7 +447,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                   <td class="text-sm text-base-content/70">
                     {if product.sale_price, do: "$#{format_price(product.sale_price)}", else: "—"}
                   </td>
-                  <td class="text-sm text-base-content/60">
+                  <td class="max-w-0 text-sm text-base-content/60 truncate">
                     {if product.supplier, do: product.supplier.name, else: "—"}
                   </td>
                   <td>

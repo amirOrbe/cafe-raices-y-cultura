@@ -100,14 +100,55 @@ defmodule CRCWeb.Admin.ProductCategoriesLive do
           <p class="text-base-content/30 text-xs mt-1">Crea la primera para organizar tus insumos.</p>
         </div>
       <% else %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+        <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
+        <div class="md:hidden flex flex-col gap-2">
+          <%= for cat <- @categories do %>
+            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-center gap-3">
+              <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 shrink-0">
+                <.icon name="hero-tag" class="size-5 text-primary" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-sm text-base-content truncate">{cat.name}</p>
+                <p class="text-xs text-base-content/50 mt-0.5">
+                  {cat.product_count} {if cat.product_count == 1, do: "insumo", else: "insumos"}
+                </p>
+              </div>
+              <div class="flex flex-col items-center gap-1 shrink-0">
+                <button
+                  class="btn btn-ghost btn-xs btn-circle"
+                  phx-click="edit_category"
+                  phx-value-id={cat.id}
+                  title="Editar"
+                >
+                  <.icon name="hero-pencil" class="size-4" />
+                </button>
+                <button
+                  class="btn btn-ghost btn-xs btn-circle text-error"
+                  phx-click="delete_category"
+                  phx-value-id={cat.id}
+                  title="Eliminar"
+                  data-confirm={
+                    if cat.product_count > 0,
+                      do: "Esta categoría tiene #{cat.product_count} insumo(s). Al eliminarla quedarán sin categoría. ¿Continuar?",
+                      else: "¿Eliminar la categoría \"#{cat.name}\"?"
+                  }
+                >
+                  <.icon name="hero-trash" class="size-4" />
+                </button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
+        <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="table table-zebra w-full">
+            <table class="table table-zebra table-fixed w-full">
               <thead>
                 <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                  <th>Nombre</th>
-                  <th class="text-center">Insumos</th>
-                  <th class="text-right">Acciones</th>
+                  <th class="w-[65%]">Nombre</th>
+                  <th class="w-[15%] text-center">Insumos</th>
+                  <th class="w-[20%] text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>

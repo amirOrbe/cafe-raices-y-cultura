@@ -58,58 +58,46 @@ const CarouselAutoplay = {
  */
 const SoundNotifier = {
   mounted() {
-    this._ctx = null
+    this._userInteracted = false
 
-    // Unlock AudioContext on first user interaction (browser autoplay policy)
-    const unlock = () => {
-      if (!this._ctx) {
-        this._ctx = new (window.AudioContext || window.webkitAudioContext)()
-      }
-      if (this._ctx.state === "suspended") this._ctx.resume()
-    }
-    document.addEventListener("click",    unlock, { passive: true })
-    document.addEventListener("touchend", unlock, { passive: true })
+    // Track first user interaction so the AudioContext can be created unlocked
+    const onInteract = () => { this._userInteracted = true }
+    document.addEventListener("click",    onInteract, { passive: true })
+    document.addEventListener("touchend", onInteract, { passive: true })
 
     this.handleEvent("play_sound", ({ type }) => {
-      if (!this._ctx) {
-        this._ctx = new (window.AudioContext || window.webkitAudioContext)()
-      }
-      if (this._ctx.state === "suspended") {
-        this._ctx.resume().then(() => this._play(type))
-      } else {
-        this._play(type)
-      }
+      this._play(type)
     })
   },
 
-  destroyed() {
-    if (this._ctx) { this._ctx.close(); this._ctx = null }
-  },
-
-  _tone(freq, startOffset, duration, vol = 0.28) {
-    const ctx = this._ctx
-    const osc  = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.type = "sine"
-    osc.frequency.value = freq
-    gain.gain.setValueAtTime(vol, ctx.currentTime + startOffset)
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startOffset + duration)
-    osc.start(ctx.currentTime + startOffset)
-    osc.stop(ctx.currentTime + startOffset + duration + 0.05)
-  },
-
+  // Creates a short-lived AudioContext, plays the sound, then closes it
+  // immediately so the browser never shows persistent media controls.
   _play(type) {
-    if (type === "new_order") {
-      // Two short bell hits — "¡Nueva comanda!"
-      this._tone(880, 0,    0.22)
-      this._tone(880, 0.26, 0.22)
-    } else if (type === "item_ready") {
-      // C5 → E5 → G5 ascending chime — "¡Listo para servir!"
-      this._tone(523.25, 0,    0.20)
-      this._tone(659.25, 0.14, 0.20)
-      this._tone(783.99, 0.28, 0.38)
+    try {
+      const ctx  = new (window.AudioContext || window.webkitAudioContext)()
+      const tones = type === "new_order"
+        ? [{ freq: 880, t: 0, dur: 0.22 }, { freq: 880, t: 0.26, dur: 0.22 }]
+        : [{ freq: 523.25, t: 0, dur: 0.20 }, { freq: 659.25, t: 0.14, dur: 0.20 }, { freq: 783.99, t: 0.28, dur: 0.38 }]
+
+      const totalDuration = Math.max(...tones.map(n => n.t + n.dur))
+
+      tones.forEach(({ freq, t, dur }) => {
+        const osc  = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.type = "sine"
+        osc.frequency.value = freq
+        gain.gain.setValueAtTime(0.28, ctx.currentTime + t)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + dur)
+        osc.start(ctx.currentTime + t)
+        osc.stop(ctx.currentTime + t + dur + 0.05)
+      })
+
+      // Close the context once all tones have finished — no lingering session
+      setTimeout(() => ctx.close(), (totalDuration + 0.15) * 1000)
+    } catch (_e) {
+      // AudioContext unavailable — silently ignore
     }
   }
 }

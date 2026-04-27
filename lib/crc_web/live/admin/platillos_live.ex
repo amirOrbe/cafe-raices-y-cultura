@@ -467,7 +467,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   <td>
                     <div class="flex items-center justify-end gap-1">
                       <button
-                        class="btn btn-ghost btn-sm"
+                        class="btn btn-ghost btn-xs btn-circle"
                         phx-click="edit_item"
                         phx-value-id={item.id}
                         title="Editar"
@@ -475,7 +475,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                         <.icon name="hero-pencil" class="size-4" />
                       </button>
                       <button
-                        class={["btn btn-ghost btn-sm", if(item.available, do: "text-warning", else: "text-success")]}
+                        class={["btn btn-ghost btn-xs btn-circle", if(item.available, do: "text-warning", else: "text-success")]}
                         phx-click="toggle_available"
                         phx-value-id={item.id}
                         title={if item.available, do: "Ocultar del menú", else: "Publicar en menú"}
@@ -486,7 +486,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                         />
                       </button>
                       <button
-                        class="btn btn-ghost btn-sm text-error"
+                        class="btn btn-ghost btn-xs btn-circle text-error"
                         phx-click="delete_item"
                         phx-value-id={item.id}
                         title="Eliminar"

@@ -203,7 +203,7 @@ defmodule CRCWeb.Admin.CategoriesLive do
                     <td>
                       <div class="flex items-center justify-end gap-1">
                         <button
-                          class="btn btn-ghost btn-sm"
+                          class="btn btn-ghost btn-xs btn-circle"
                           phx-click="edit_category"
                           phx-value-id={cat.id}
                           title="Editar"
@@ -211,7 +211,7 @@ defmodule CRCWeb.Admin.CategoriesLive do
                           <.icon name="hero-pencil" class="size-4" />
                         </button>
                         <button
-                          class={["btn btn-ghost btn-sm", if(cat.active, do: "text-warning", else: "text-success")]}
+                          class={["btn btn-ghost btn-xs btn-circle", if(cat.active, do: "text-warning", else: "text-success")]}
                           phx-click="toggle_active"
                           phx-value-id={cat.id}
                           title={if cat.active, do: "Desactivar", else: "Activar"}
@@ -222,7 +222,7 @@ defmodule CRCWeb.Admin.CategoriesLive do
                           />
                         </button>
                         <button
-                          class="btn btn-ghost btn-sm text-error"
+                          class="btn btn-ghost btn-xs btn-circle text-error"
                           phx-click="delete_category"
                           phx-value-id={cat.id}
                           title="Eliminar"

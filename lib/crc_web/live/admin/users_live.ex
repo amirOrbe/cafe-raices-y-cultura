@@ -348,7 +348,7 @@ defmodule CRCWeb.Admin.UsersLive do
                     <div class="flex items-center justify-end gap-1">
                       <button
                         id={"btn-edit-#{user.id}"}
-                        class="btn btn-ghost btn-sm"
+                        class="btn btn-ghost btn-xs btn-circle"
                         phx-click="edit_user"
                         phx-value-id={user.id}
                         title="Editar"
@@ -357,7 +357,7 @@ defmodule CRCWeb.Admin.UsersLive do
                       </button>
                       <button
                         id={"btn-toggle-#{user.id}"}
-                        class={["btn btn-ghost btn-sm", if(user.is_active, do: "text-error", else: "text-success")]}
+                        class={["btn btn-ghost btn-xs btn-circle", if(user.is_active, do: "text-error", else: "text-success")]}
                         phx-click="toggle_active"
                         phx-value-id={user.id}
                         title={if user.is_active, do: "Desactivar", else: "Activar"}

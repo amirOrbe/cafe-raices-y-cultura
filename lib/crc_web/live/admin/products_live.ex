@@ -460,7 +460,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                   <td>
                     <div class="flex items-center justify-end gap-1">
                       <button
-                        class="btn btn-ghost btn-sm"
+                        class="btn btn-ghost btn-xs btn-circle"
                         phx-click="edit_product"
                         phx-value-id={product.id}
                         title="Editar"
@@ -468,7 +468,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                         <.icon name="hero-pencil" class="size-4" />
                       </button>
                       <button
-                        class={["btn btn-ghost btn-sm", if(product.active, do: "text-error", else: "text-success")]}
+                        class={["btn btn-ghost btn-xs btn-circle", if(product.active, do: "text-error", else: "text-success")]}
                         phx-click="toggle_active"
                         phx-value-id={product.id}
                         title={if product.active, do: "Desactivar", else: "Activar"}

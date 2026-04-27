@@ -230,7 +230,7 @@ defmodule CRCWeb.Admin.EventTypesLive do
                   <td>
                     <div class="flex items-center justify-end gap-1">
                       <button
-                        class="btn btn-ghost btn-sm"
+                        class="btn btn-ghost btn-xs btn-circle"
                         phx-click="edit_event_type"
                         phx-value-id={event_type.id}
                         title="Editar"
@@ -238,7 +238,7 @@ defmodule CRCWeb.Admin.EventTypesLive do
                         <.icon name="hero-pencil" class="size-4" />
                       </button>
                       <button
-                        class={["btn btn-ghost btn-sm", if(event_type.active, do: "text-error", else: "text-success")]}
+                        class={["btn btn-ghost btn-xs btn-circle", if(event_type.active, do: "text-error", else: "text-success")]}
                         phx-click="toggle_active"
                         phx-value-id={event_type.id}
                         title={if event_type.active, do: "Desactivar", else: "Activar"}

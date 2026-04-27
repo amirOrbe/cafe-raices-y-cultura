@@ -131,7 +131,7 @@ defmodule CRC.Catalog do
   """
   def list_ingredient_products do
     from(p in Product,
-      where: is_nil(p.supplier_id) and p.active == true,
+      where: p.active == true,
       order_by: p.name
     )
     |> Repo.all()

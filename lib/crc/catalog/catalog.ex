@@ -71,7 +71,7 @@ defmodule CRC.Catalog do
   def list_all_menu_items do
     MenuItem
     |> order_by([:category_id, :name])
-    |> preload(:category)
+    |> preload([:category, menu_item_ingredients: :product])
     |> Repo.all()
   end
 
@@ -413,16 +413,23 @@ defmodule CRC.Catalog do
     end
   end
 
-  defp compute_cost(%MenuItem{menu_item_ingredients: []}), do: nil
-  defp compute_cost(%MenuItem{menu_item_ingredients: ingredients}) do
-    costs = Enum.map(ingredients, fn mii ->
-      if mii.product && mii.product.net_cost do
-        Decimal.mult(mii.product.net_cost, mii.quantity)
-      end
-    end)
+  @doc """
+  Computes the ingredient cost of a menu item from its recipe.
+  Returns a Decimal if all ingredient costs are known, nil otherwise.
+  The menu item must have `menu_item_ingredients: :product` preloaded.
+  """
+  def item_cost(%MenuItem{menu_item_ingredients: []}), do: nil
+  def item_cost(%MenuItem{menu_item_ingredients: ingredients}) do
+    costs =
+      Enum.map(ingredients, fn mii ->
+        if mii.product && mii.product.net_cost,
+          do: Decimal.mult(mii.product.net_cost, mii.quantity)
+      end)
 
-    if Enum.all?(costs, & &1 != nil) do
-      Enum.reduce(costs, Decimal.new(0), &Decimal.add/2)
-    end
+    if Enum.all?(costs, & &1 != nil),
+      do: Enum.reduce(costs, Decimal.new(0), &Decimal.add/2)
   end
+
+  # kept for internal callers that still use the private name
+  defp compute_cost(item), do: item_cost(item)
 end

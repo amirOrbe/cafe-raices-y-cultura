@@ -90,6 +90,10 @@ defmodule CRCWeb.Admin.VentasLive do
             <h1 class="text-2xl font-bold text-base-content">Ventas</h1>
             <p class="text-base-content/60 mt-1 text-sm">Resumen de comandas cerradas</p>
           </div>
+          <.link navigate={~p"/admin/ventas/manual"} class="btn btn-outline btn-sm gap-2 shrink-0">
+            <.icon name="hero-pencil-square" class="size-4" />
+            Venta manual
+          </.link>
 
           <%!-- Period tabs --%>
           <div class="flex gap-1 bg-base-200 rounded-xl p-1 self-start sm:self-auto">
@@ -158,6 +162,23 @@ defmodule CRCWeb.Admin.VentasLive do
           <% end %>
         </div>
       </div>
+
+      <%!-- Contextual help --%>
+      <details class="group rounded-xl border border-info/30 bg-info/5 text-sm">
+        <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium text-info list-none select-none">
+          <.icon name="hero-information-circle" class="size-4 shrink-0" />
+          <span class="flex-1">¿Cómo se calculan estas métricas?</span>
+          <.icon name="hero-chevron-down" class="size-4 shrink-0 transition-transform group-open:rotate-180" />
+        </summary>
+        <div class="px-4 pb-4 text-base-content/70 space-y-1.5 text-xs leading-relaxed">
+          <p><strong>Total ingresos</strong> — suma del campo <em>total</em> de todas las comandas cerradas (cobradas) en el período. Solo incluye comandas en estado "cerrada"; las abiertas o en preparación no cuentan.</p>
+          <p><strong>Comandas cerradas</strong> — número de cuentas que ya fueron cobradas. Una comanda puede tener varios artículos y distintos métodos de pago mezclados, pero siempre se cierra de una vez.</p>
+          <p><strong>Ticket promedio</strong> — Total ingresos / Comandas cerradas. Indica cuánto gasta en promedio cada mesa por visita. Subir este número es una palanca directa de crecimiento: más artículos por mesa, combos, o bebidas adicionales.</p>
+          <p><strong>Por método de pago</strong> — desglose de los ingresos según si se pagó en efectivo, tarjeta o transferencia. Útil para anticipar cuánto efectivo real habrá en caja al final del día.</p>
+          <p><strong>Top platillos más vendidos</strong> — conteo de unidades vendidas por platillo en el período, incluyendo artículos de paquetes. Sirve para saber qué preparar más y qué quitar del menú.</p>
+          <p><strong>Tiempos de preparación</strong> — medidos desde que el mesero envía el pedido hasta que la estación lo marca como listo. La barra roja indica que el promedio superó 15 minutos.</p>
+        </div>
+      </details>
 
       <%!-- Summary cards --%>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -320,8 +341,11 @@ defmodule CRCWeb.Admin.VentasLive do
               <tbody>
                 <%= for order <- @orders do %>
                   <tr class="hover:bg-base-50 border-b border-base-200">
-                    <td class="text-sm font-medium text-base-content py-3 max-w-[120px] truncate">
-                      {order.customer_name}
+                    <td class="text-sm font-medium text-base-content py-3 max-w-[150px]">
+                      <p class="truncate">{order.customer_name}</p>
+                      <%= if order.manual_entry do %>
+                        <span class="badge badge-xs badge-ghost mt-0.5">📝 Manual</span>
+                      <% end %>
                     </td>
                     <td class="text-sm font-bold text-primary text-right">
                       ${ format_price(order.total || Decimal.new(0)) }
@@ -330,7 +354,7 @@ defmodule CRCWeb.Admin.VentasLive do
                       <.payment_badge method={order.payment_method} />
                     </td>
                     <td class="text-xs text-base-content/50">
-                      { format_datetime(order.inserted_at) }
+                      { format_datetime(order.closed_at || order.inserted_at) }
                     </td>
                   </tr>
                 <% end %>

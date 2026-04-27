@@ -484,4 +484,38 @@ defmodule CRCWeb.Components.SiteComponents do
     end)
     |> Enum.filter(fn {_name, active} -> active != [] end)
   end
+
+  # ---------------------------------------------------------------------------
+  # Contextual help banner
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Renders a collapsible info banner explaining the purpose of a form or page.
+
+  ## Attributes
+    - `title`   — Short headline, e.g. "¿Para qué sirve este formulario?"
+    - `inner_block` — Content (text, lists, etc.) rendered inside the banner.
+
+  ## Example
+      <SiteComponents.help_banner title="¿Cómo funciona el precio neto?">
+        <p>El <strong>precio neto</strong> es el costo real de adquisición por unidad...</p>
+      </SiteComponents.help_banner>
+  """
+  attr :title, :string, default: "¿Cómo funciona esto?"
+  slot :inner_block, required: true
+
+  def help_banner(assigns) do
+    ~H"""
+    <details class="group rounded-xl border border-info/30 bg-info/5 text-sm mb-4">
+      <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium text-info list-none select-none">
+        <.icon name="hero-information-circle" class="size-4 shrink-0" />
+        <span class="flex-1">{@title}</span>
+        <.icon name="hero-chevron-down" class="size-4 shrink-0 transition-transform group-open:rotate-180" />
+      </summary>
+      <div class="px-4 pb-4 text-base-content/70 space-y-1.5 text-xs leading-relaxed">
+        {render_slot(@inner_block)}
+      </div>
+    </details>
+    """
+  end
 end

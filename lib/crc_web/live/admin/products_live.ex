@@ -6,6 +6,7 @@ defmodule CRCWeb.Admin.ProductsLive do
   alias CRC.Inventory
   alias CRC.Inventory.Product
   alias CRC.Inventory.ProductVariant
+  alias CRCWeb.Components.SiteComponents
 
   @impl true
   def mount(_params, _session, socket) do
@@ -560,6 +561,12 @@ defmodule CRCWeb.Admin.ProductsLive do
         </div>
 
         <div class="px-6 py-5 space-y-6">
+          <SiteComponents.help_banner title="¿Para qué sirve cada campo?">
+            <p><strong>Costo neto</strong> — precio real que pagas por unidad (litro, kilo, pieza…). Se usa para calcular el costo de producción de tus platillos y el margen de ganancia. <em>No</em> es el precio que le cobras al cliente.</p>
+            <p><strong>Stock actual</strong> — cantidad disponible hoy. Se descuenta automáticamente cada vez que se envía un pedido a cocina/barra. Actualízalo al recibir mercancía o registra un ajuste en "Merma" si hubo pérdida.</p>
+            <p><strong>Stock mínimo</strong> — umbral de alerta. Cuando el stock baja de este valor el sistema te avisa en el dashboard. Recomendación: ponlo en lo que necesitas para operar 2–3 días.</p>
+            <p><strong>Unidad</strong> — debe coincidir con la unidad que usas en las recetas de tus platillos. Si registras leche en litros, la receta debe indicar la cantidad en litros (ej. 0.200).</p>
+          </SiteComponents.help_banner>
           <%!-- Product form --%>
           <.form id="product-form" for={@form} phx-submit="save_product" class="space-y-1">
             <%!-- Name --%>

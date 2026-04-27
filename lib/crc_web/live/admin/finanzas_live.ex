@@ -78,6 +78,23 @@ defmodule CRCWeb.Admin.FinanzasLive do
           </p>
         </div>
 
+        <%!-- Contextual help --%>
+        <details class="group rounded-xl border border-info/30 bg-info/5 text-sm">
+          <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium text-info list-none select-none">
+            <.icon name="hero-information-circle" class="size-4 shrink-0" />
+            <span class="flex-1">¿Cómo se calculan estas métricas?</span>
+            <.icon name="hero-chevron-down" class="size-4 shrink-0 transition-transform group-open:rotate-180" />
+          </summary>
+          <div class="px-4 pb-4 text-base-content/70 space-y-1.5 text-xs leading-relaxed">
+            <p><strong>Ingresos</strong> — suma del total de todas las órdenes cerradas (cobradas) en el período.</p>
+            <p><strong>Costo de ventas (COGS)</strong> — suma del costo de ingredientes de cada platillo vendido, calculado con el costo neto de los insumos × cantidad de la receta. Solo incluye platillos que tienen receta registrada; los que no tienen receta no suman al costo.</p>
+            <p><strong>Utilidad bruta</strong> — Ingresos − Costo de ventas. Lo que queda antes de descontar la merma.</p>
+            <p><strong>Margen bruto</strong> — Utilidad bruta / Ingresos × 100. En cafeterías un margen saludable está entre 55% y 75%.</p>
+            <p><strong>Merma</strong> — costo de los platillos cancelados <em>después</em> de haber sido preparados (cancelados como desperdicio). El food ya se hizo pero no se cobró.</p>
+            <p><strong>Utilidad neta estimada</strong> — Utilidad bruta − Merma. No incluye gastos fijos (renta, nómina, servicios).</p>
+          </div>
+        </details>
+
         <%!-- Period filter --%>
         <div class="flex flex-wrap items-end gap-4">
           <div class="flex gap-2 flex-wrap">

@@ -143,6 +143,24 @@ defmodule CRCWeb.Admin.RendimientoLive do
           </p>
         </div>
 
+        <%!-- Contextual help --%>
+        <details class="group rounded-xl border border-info/30 bg-info/5 text-sm">
+          <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium text-info list-none select-none">
+            <.icon name="hero-information-circle" class="size-4 shrink-0" />
+            <span class="flex-1">¿Cómo se mide el rendimiento?</span>
+            <.icon name="hero-chevron-down" class="size-4 shrink-0 transition-transform group-open:rotate-180" />
+          </summary>
+          <div class="px-4 pb-4 text-base-content/70 space-y-1.5 text-xs leading-relaxed">
+            <p><strong>Cocina y Barra — Preparación</strong> — tiempo desde que el mesero envía el artículo (estado "enviado") hasta que la estación lo marca como "listo". El umbral de alerta es <strong>15 minutos</strong>; si el promedio lo supera, la tarjeta se muestra en rojo.</p>
+            <p><strong>Meseros — Tiempo de servicio</strong> — tiempo total desde que la comanda se abre hasta que el mesero la cierra (cobra). El umbral de alerta es <strong>60 minutos</strong>. Refleja la agilidad del mesero en atender y cobrar, no el tiempo de cocina.</p>
+            <p><strong>Ítems preparados</strong> — cantidad de artículos que el empleado marcó como "listo" en el período. Para cocina y barra es la medida de volumen de trabajo.</p>
+            <p><strong>Ranking de ingresos</strong> — ordena a los meseros por el total de dinero cobrado en sus comandas cerradas. Un mesero con más mesas atendidas o tickets más altos aparece primero.</p>
+            <p><strong>Ranking de velocidad</strong> — ordena al personal de estación (cocina/barra) por tiempo promedio de preparación de menor a mayor. El más rápido aparece primero.</p>
+            <p><strong>Reconocimientos</strong> — notas positivas que los administradores pueden dejar a cualquier empleado. Se guardan con fecha y aparecen en el historial del empleado. No afectan ningún cálculo, son solo retroalimentación.</p>
+            <p class="text-base-content/40 italic">Solo aparecen datos de empleados con sesión iniciada que hayan atendido comandas en el período seleccionado.</p>
+          </div>
+        </details>
+
         <%!-- Period filter --%>
         <div class="flex flex-wrap items-end gap-4">
           <div class="flex gap-2 flex-wrap">

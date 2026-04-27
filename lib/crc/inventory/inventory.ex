@@ -12,6 +12,7 @@ defmodule CRC.Inventory do
   alias CRC.Inventory.Product
   alias CRC.Inventory.ProductCategory
   alias CRC.Inventory.ProductVariant
+  alias CRC.Inventory.StockAdjustment
   alias CRC.Inventory.Supplier
 
   # ---------------------------------------------------------------------------
@@ -267,6 +268,83 @@ defmodule CRC.Inventory do
   @spec change_product_category(ProductCategory.t(), map()) :: Ecto.Changeset.t()
   def change_product_category(%ProductCategory{} = category, attrs \\ %{}) do
     ProductCategory.changeset(category, attrs)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Stock adjustments (merma / ajuste manual)
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Returns the adjustment history for a product, newest first.
+  Preloads the user who made the adjustment.
+  """
+  def list_adjustments_for_product(product_id, limit \\ 50) do
+    from(a in StockAdjustment,
+      where: a.product_id == ^product_id,
+      order_by: [desc: a.inserted_at],
+      limit: ^limit,
+      preload: :adjusted_by
+    )
+    |> Repo.all()
+  end
+
+  @doc "Returns the most recent adjustments across all products."
+  def list_recent_adjustments(limit \\ 100) do
+    from(a in StockAdjustment,
+      order_by: [desc: a.inserted_at],
+      limit: ^limit,
+      preload: [:adjusted_by, :product]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Creates a stock adjustment and updates the product's stock_quantity atomically.
+  `attrs` must include :product_id, :quantity (negative = loss), and :reason.
+  `user_id` is the id of the user registering the adjustment (may be nil).
+  """
+  def create_stock_adjustment(attrs, user_id \\ nil) do
+    attrs_with_user = Map.put(attrs, :adjusted_by_id, user_id)
+
+    Repo.transaction(fn ->
+      changeset = StockAdjustment.changeset(%StockAdjustment{}, attrs_with_user)
+
+      adj =
+        case Repo.insert(changeset) do
+          {:ok, a}    -> a
+          {:error, cs} -> Repo.rollback(cs)
+        end
+
+      quantity = adj.quantity
+
+      from(p in Product, where: p.id == ^adj.product_id)
+      |> Repo.update_all(inc: [stock_quantity: quantity])
+
+      adj
+    end)
+  end
+
+  @doc "Returns an empty changeset for a stock adjustment form."
+  def change_stock_adjustment(attrs \\ %{}) do
+    StockAdjustment.changeset(%StockAdjustment{}, attrs)
+  end
+
+  @doc "Human-readable labels for adjustment reasons."
+  def adjustment_reason_label("caducidad"),    do: "Caducidad"
+  def adjustment_reason_label("derrame"),      do: "Derrame / rotura"
+  def adjustment_reason_label("robo"),         do: "Robo / extravío"
+  def adjustment_reason_label("ajuste_manual"),do: "Ajuste de inventario"
+  def adjustment_reason_label("otro"),         do: "Otro"
+  def adjustment_reason_label(r),              do: r
+
+  def adjustment_reasons do
+    [
+      {"Caducidad",             "caducidad"},
+      {"Derrame / rotura",      "derrame"},
+      {"Robo / extravío",       "robo"},
+      {"Ajuste de inventario",  "ajuste_manual"},
+      {"Otro",                  "otro"}
+    ]
   end
 
   # ---------------------------------------------------------------------------

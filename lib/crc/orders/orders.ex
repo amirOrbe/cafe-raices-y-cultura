@@ -131,6 +131,48 @@ defmodule CRC.Orders do
   end
 
   # ---------------------------------------------------------------------------
+  # Manual (retroactive) orders
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Creates a fully-closed order from a paper ticket or other offline source.
+
+  The order is inserted directly in "closed" status with all items in "served"
+  state. It is flagged `manual_entry: true` so it is included in financial
+  totals but excluded from rendimiento/timing metrics.
+
+  `items` is a list of maps: [%{menu_item_id: id, quantity: n}]
+  `attrs` must include: customer_name, payment_method, total, closed_at.
+  """
+  def create_manual_order(attrs, items, closed_by_id \\ nil) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Repo.transaction(fn ->
+      order =
+        %Order{}
+        |> Order.manual_changeset(
+          Map.merge(attrs, %{closed_by_id: closed_by_id, manual_entry: true})
+        )
+        |> Repo.insert!()
+
+      Enum.each(items, fn %{menu_item_id: menu_item_id, quantity: qty} ->
+        %OrderItem{}
+        |> OrderItem.changeset(%{
+          order_id:     order.id,
+          menu_item_id: menu_item_id,
+          quantity:     qty,
+          status:       "served",
+          served_at:    now
+        })
+        |> Repo.insert!()
+      end)
+
+      broadcast({:order_updated, order.id})
+      order
+    end)
+  end
+
+  # ---------------------------------------------------------------------------
   # Sales reporting
   # ---------------------------------------------------------------------------
 
@@ -799,7 +841,7 @@ defmodule CRC.Orders do
   def timing_stats(period \\ :all) do
     closed_orders =
       Order
-      |> where([o], o.status == "closed" and not is_nil(o.closed_at))
+      |> where([o], o.status == "closed" and not is_nil(o.closed_at) and o.manual_entry == false)
       |> filter_by_period(period)
       |> select([o], %{id: o.id, closed_at: o.closed_at})
       |> Repo.all()
@@ -883,7 +925,7 @@ defmodule CRC.Orders do
   def employee_stats(period \\ :all) do
     closed_order_ids =
       Order
-      |> where([o], o.status == "closed")
+      |> where([o], o.status == "closed" and o.manual_entry == false)
       |> filter_by_period(period)
       |> select([o], o.id)
       |> Repo.all()
@@ -911,7 +953,7 @@ defmodule CRC.Orders do
   def employee_rankings(period \\ :all) do
     closed_order_ids =
       Order
-      |> where([o], o.status == "closed")
+      |> where([o], o.status == "closed" and o.manual_entry == false)
       |> filter_by_period(period)
       |> select([o], o.id)
       |> Repo.all()
@@ -1113,8 +1155,11 @@ defmodule CRC.Orders do
   defp deduct_ingredients_for_items([]), do: :ok
 
   defp deduct_ingredients_for_items(pending_items) do
+    # Variant items (variant_id set, no menu_item_id/product_id) carry no stock to deduct.
+    deductible = Enum.reject(pending_items, fn oi -> not is_nil(oi.variant_id) end)
+
     # Split: regular menu items (deduct via recipe) vs direct product extras
-    {menu_items, extras} = Enum.split_with(pending_items, &(&1.menu_item_id != nil))
+    {menu_items, extras} = Enum.split_with(deductible, &(&1.menu_item_id != nil))
 
     # Build deduction map from menu item recipes
     deductions = build_recipe_deductions(menu_items)

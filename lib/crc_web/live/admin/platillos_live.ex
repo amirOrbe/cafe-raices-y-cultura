@@ -6,6 +6,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
   alias CRC.Catalog
   alias CRC.Catalog.MenuItem
   alias CRC.Cloudinary
+  alias CRCWeb.Components.SiteComponents
 
   @impl true
   def mount(_params, _session, socket) do
@@ -290,6 +291,23 @@ defmodule CRCWeb.Admin.PlatillosLive do
         </button>
       </div>
 
+      <%!-- Margin legend --%>
+      <details class="group rounded-xl border border-base-300 bg-base-100 text-sm shadow-sm">
+        <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium text-base-content/60 list-none select-none">
+          <.icon name="hero-information-circle" class="size-4 shrink-0 text-info" />
+          <span class="flex-1 text-xs">¿Qué significa el % de margen?</span>
+          <.icon name="hero-chevron-down" class="size-4 shrink-0 transition-transform group-open:rotate-180" />
+        </summary>
+        <div class="px-4 pb-4 text-xs text-base-content/60 space-y-1.5 leading-relaxed">
+          <p>El margen es <strong>(precio de venta − costo de ingredientes) / precio de venta × 100</strong>. Solo se calcula si el platillo tiene todos sus ingredientes con costo registrado.</p>
+          <div class="flex flex-wrap gap-3 mt-2">
+            <span class="badge badge-success">≥ 60% — saludable</span>
+            <span class="badge badge-warning">35–59% — revisar precio o receta</span>
+            <span class="badge badge-error">&lt; 35% — margen crítico</span>
+          </div>
+        </div>
+      </details>
+
       <%!-- Status filter tabs --%>
       <div class="flex gap-2">
         <button
@@ -364,6 +382,17 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   {if item.category, do: item.category.name, else: "Sin categoría"}
                 </span>
                 <span class="text-xs font-semibold text-base-content">${format_price(item.price)}</span>
+                <% cost = Catalog.item_cost(item) %>
+                <%= if cost do %>
+                  <% margin = item_margin(item.price, cost) %>
+                  <span class={"badge badge-xs #{margin_badge_class(margin)}"} title="Margen sobre precio de venta">
+                    {margin}% margen
+                  </span>
+                <% else %>
+                  <span class="badge badge-xs badge-ghost" title="Agrega ingredientes con costo para ver el margen">
+                    Sin costo
+                  </span>
+                <% end %>
                 <%= if item.available do %>
                   <span class="badge badge-xs badge-success">Visible</span>
                 <% else %>
@@ -409,12 +438,13 @@ defmodule CRCWeb.Admin.PlatillosLive do
           <table class="table table-zebra table-fixed w-full">
             <thead>
               <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th class="w-[45%]">Platillo</th>
-                <th class="w-[15%]">Categoría</th>
-                <th class="w-[10%]">Precio</th>
-                <th class="w-[12%]">Destacado</th>
-                <th class="w-[10%]">Estado</th>
-                <th class="w-[8%] text-right">Acciones</th>
+                <th class="w-[36%]">Platillo</th>
+                <th class="w-[13%]">Categoría</th>
+                <th class="w-[16%]">Precio / Costo</th>
+                <th class="w-[10%]">Margen</th>
+                <th class="w-[10%]">Destacado</th>
+                <th class="w-[8%]">Estado</th>
+                <th class="w-[7%] text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -446,8 +476,22 @@ defmodule CRCWeb.Admin.PlatillosLive do
                       {if item.category, do: item.category.name, else: "—"}
                     </span>
                   </td>
-                  <td class="text-sm font-medium text-base-content">
-                    ${format_price(item.price)}
+                  <% cost = Catalog.item_cost(item) %>
+                  <td>
+                    <p class="text-sm font-medium text-base-content">${format_price(item.price)}</p>
+                    <%= if cost do %>
+                      <p class="text-xs text-base-content/45 mt-0.5">costo $<%= format_price(cost) %></p>
+                    <% end %>
+                  </td>
+                  <td>
+                    <%= if cost do %>
+                      <% margin = item_margin(item.price, cost) %>
+                      <span class={"badge badge-sm #{margin_badge_class(margin)}"}>
+                        {margin}%
+                      </span>
+                    <% else %>
+                      <span class="text-base-content/30 text-sm">—</span>
+                    <% end %>
                   </td>
                   <td>
                     <%= if item.featured do %>
@@ -575,6 +619,12 @@ defmodule CRCWeb.Admin.PlatillosLive do
         </div>
 
         <div class="px-6 py-5">
+          <SiteComponents.help_banner title="¿Cómo funciona este formulario?">
+            <p><strong>Precio de venta</strong> — lo que el cliente paga. Aparece en el menú y en la comanda.</p>
+            <p><strong>Destino</strong> — a dónde va la comanda: <em>Cocina</em> para platillos con preparación caliente/fría, <em>Barra</em> para bebidas.</p>
+            <p><strong>Ingredientes (receta)</strong> — lista los insumos y la cantidad por porción. El sistema descuenta automáticamente ese stock cada vez que se envía el platillo a cocina/barra. También calcula el <strong>costo de producción</strong> y el margen de ganancia que ves en la lista.</p>
+            <p>Si un platillo no tiene ingredientes registrados, el stock no se descuenta automáticamente.</p>
+          </SiteComponents.help_banner>
           <.form id="item-form" for={@form} phx-submit="save_item" phx-change="validate_upload" class="space-y-3">
             <%!-- Name --%>
             <.input
@@ -863,4 +913,24 @@ defmodule CRCWeb.Admin.PlatillosLive do
   defp unit_abbr("onzas"), do: "oz"
   defp unit_abbr("paquetes"), do: "paq"
   defp unit_abbr(other), do: other
+
+  # Margin as an integer percentage: (price - cost) / price * 100
+  defp item_margin(price, cost) do
+    price_d = Decimal.new(to_string(price))
+    if Decimal.compare(price_d, Decimal.new(0)) == :gt do
+      price_d
+      |> Decimal.sub(cost)
+      |> Decimal.div(price_d)
+      |> Decimal.mult(Decimal.new(100))
+      |> Decimal.round(0)
+      |> Decimal.to_integer()
+    else
+      0
+    end
+  end
+
+  # Badge colour based on margin health
+  defp margin_badge_class(m) when m >= 60, do: "badge-success"
+  defp margin_badge_class(m) when m >= 35, do: "badge-warning"
+  defp margin_badge_class(_), do: "badge-error"
 end

@@ -103,10 +103,12 @@ defmodule CRCWeb.Router do
       live "/proveedores", SuppliersLive
       live "/insumos", ProductsLive
       live "/insumos/categorias", ProductCategoriesLive
+      live "/insumos/merma", MermaLive
       live "/eventos", EventsLive
       live "/colaboradores", CollaboratorsLive
       live "/eventos/tipos", EventTypesLive
       live "/ventas", VentasLive
+      live "/ventas/manual", VentaManualLive
       live "/rendimiento", RendimientoLive
       live "/finanzas", FinanzasLive
       live "/horarios", HorariosLive

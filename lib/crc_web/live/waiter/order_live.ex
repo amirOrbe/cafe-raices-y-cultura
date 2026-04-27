@@ -49,6 +49,8 @@ defmodule CRCWeb.Waiter.OrderLive do
       |> assign(:payment_method, nil)
       |> assign(:amount_paid_input, "")
       |> assign(:change_due, nil)
+      |> assign(:split_count, nil)
+      |> assign(:split_input, "")
       |> assign(:cancelling_item, nil)
       |> assign(:now, DateTime.utc_now())
       |> assign(:low_stock_threshold, @low_stock_threshold)
@@ -474,7 +476,26 @@ defmodule CRCWeb.Waiter.OrderLive do
      |> assign(:payment_step, false)
      |> assign(:payment_method, nil)
      |> assign(:amount_paid_input, "")
-     |> assign(:change_due, nil)}
+     |> assign(:change_due, nil)
+     |> assign(:split_count, nil)
+     |> assign(:split_input, "")}
+  end
+
+  def handle_event("update_split_input", %{"value" => value}, socket) do
+    count =
+      case Integer.parse(value) do
+        {n, ""} when n >= 2 -> n
+        _ -> nil
+      end
+
+    {:noreply,
+     socket
+     |> assign(:split_input, value)
+     |> assign(:split_count, count)}
+  end
+
+  def handle_event("clear_split", _params, socket) do
+    {:noreply, socket |> assign(:split_count, nil) |> assign(:split_input, "")}
   end
 
   def handle_event("set_payment_method", %{"method" => method}, socket) do
@@ -906,10 +927,46 @@ defmodule CRCWeb.Waiter.OrderLive do
                       </button>
                     </div>
 
-                    <%!-- Total reminder --%>
-                    <div class="text-center py-1">
+                    <%!-- Total + split --%>
+                    <div class="text-center py-1 space-y-2">
                       <p class="text-xs text-base-content/50">Total a cobrar</p>
                       <p class="text-3xl font-bold text-primary">${format_price(total)}</p>
+
+                      <%!-- Split bill row --%>
+                      <div class="flex items-center justify-center gap-2 mt-1">
+                        <.icon name="hero-users" class="size-3.5 text-base-content/40" />
+                        <span class="text-xs text-base-content/50">Dividir entre</span>
+                        <input
+                          type="number"
+                          inputmode="numeric"
+                          min="2"
+                          max="20"
+                          class="input input-xs input-bordered w-14 text-center"
+                          placeholder="2"
+                          value={@split_input}
+                          phx-keyup="update_split_input"
+                          phx-value-value={@split_input}
+                          phx-debounce="200"
+                        />
+                        <span class="text-xs text-base-content/50">personas</span>
+                        <%= if @split_count do %>
+                          <button class="btn btn-xs btn-ghost text-base-content/40" phx-click="clear_split" title="Quitar división">
+                            <.icon name="hero-x-mark" class="size-3" />
+                          </button>
+                        <% end %>
+                      </div>
+
+                      <%= if @split_count do %>
+                        <div class="bg-primary/10 rounded-lg px-4 py-2">
+                          <p class="text-xs text-base-content/60">Corresponde a cada persona</p>
+                          <p class="text-2xl font-bold text-primary">
+                            ${format_price(Decimal.div(total, Decimal.new(@split_count)))}
+                          </p>
+                          <p class="text-xs text-base-content/40">
+                            ({@split_count} personas · total ${format_price(total)})
+                          </p>
+                        </div>
+                      <% end %>
                     </div>
 
                     <%!-- Method selector --%>

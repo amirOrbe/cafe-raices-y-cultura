@@ -15,6 +15,9 @@ defmodule CRC.Orders.Order do
     field :total, :decimal
     # Timing — set when the order is closed
     field :closed_at, :utc_datetime
+    # True for orders entered retroactively (e.g., paper tickets during power outage).
+    # These count toward financial totals but are excluded from rendimiento metrics.
+    field :manual_entry, :boolean, default: false
 
     # Waiter who opened this order (user_id FK)
     belongs_to :user, User
@@ -34,6 +37,24 @@ defmodule CRC.Orders.Order do
     |> cast(attrs, [:customer_name, :status, :notes, :user_id])
     |> validate_required([:customer_name, :status])
     |> validate_inclusion(:status, @valid_statuses)
+  end
+
+  @doc """
+  Changeset for creating a manual (retroactive) order.
+  Creates the order already closed, skipping the normal workflow.
+  """
+  def manual_changeset(order, attrs) do
+    order
+    |> cast(attrs, [
+      :customer_name, :notes, :payment_method, :amount_paid,
+      :total, :closed_at, :closed_by_id, :manual_entry
+    ])
+    |> validate_required([:customer_name, :payment_method, :total, :closed_at])
+    |> put_change(:status, "closed")
+    |> put_change(:manual_entry, true)
+    |> validate_inclusion(:payment_method, @valid_payment_methods,
+        message: "debe ser efectivo, tarjeta o transferencia")
+    |> validate_cash_amount()
   end
 
   @doc """

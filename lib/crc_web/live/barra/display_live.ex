@@ -144,8 +144,11 @@ defmodule CRCWeb.Barra.DisplayLive do
                             <% end %>
                           </div>
                         <% end %>
-                        <%= if item.notes do %>
-                          <p class="text-xs text-base-content/50 mt-0.5">{item.notes}</p>
+                        <%= if item.notes && item.notes != "" do %>
+                          <div class="flex items-center gap-1 mt-1 bg-warning/15 rounded px-1.5 py-0.5">
+                            <span class="text-xs shrink-0 select-none">📝</span>
+                            <p class="text-xs font-semibold text-warning">{item.notes}</p>
+                          </div>
                         <% end %>
                       </div>
 

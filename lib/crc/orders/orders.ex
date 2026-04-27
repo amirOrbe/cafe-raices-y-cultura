@@ -496,6 +496,17 @@ defmodule CRC.Orders do
     end
   end
 
+  @doc "Sets the notes text on a pending order item. Broadcasts so kitchen/barra refreshes."
+  def set_item_notes(order_item_id, notes) do
+    case Repo.get(OrderItem, order_item_id) do
+      nil ->
+        {:error, :not_found}
+
+      item ->
+        update_item(item, %{notes: notes})
+    end
+  end
+
   @doc "Removes an OrderItem by id. Broadcasts so kitchen/barra refreshes."
   def remove_item(id) do
     case Repo.get(OrderItem, id) do

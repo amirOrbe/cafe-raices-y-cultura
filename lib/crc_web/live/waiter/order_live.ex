@@ -279,6 +279,25 @@ defmodule CRCWeb.Waiter.OrderLive do
     end
   end
 
+  def handle_event("set_item_note", %{"item_id" => id, "note" => note}, socket) do
+    order_item_id = String.to_integer(id)
+    order = socket.assigns.order
+
+    item = Enum.find(order.order_items, &(&1.id == order_item_id))
+
+    if item && item.status == "pending" do
+      case Orders.set_item_notes(order_item_id, note) do
+        {:ok, _} ->
+          {:noreply, assign(socket, :order, Orders.get_order!(order.id))}
+
+        {:error, _} ->
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("increment_item", %{"id" => id}, socket) do
     item = Enum.find(socket.assigns.order.order_items, &(to_string(&1.id) == id))
 
@@ -659,6 +678,24 @@ defmodule CRCWeb.Waiter.OrderLive do
                         </div>
                       <% end %>
 
+                      <%!-- Note input — editable for pending menu items --%>
+                      <%= if item.status == "pending" and not is_nil(item.menu_item_id) do %>
+                        <form phx-change="set_item_note" class="mt-1.5 pt-1.5 border-t border-base-200">
+                          <input type="hidden" name="item_id" value={item.id} />
+                          <div class="flex items-center gap-1.5">
+                            <span class="text-sm shrink-0 leading-none select-none">📝</span>
+                            <input
+                              type="text"
+                              name="note"
+                              class="input input-xs flex-1 border-base-300 text-xs placeholder-base-content/30"
+                              placeholder="Nota para cocina (ej: término medio)…"
+                              value={item.notes || ""}
+                              phx-debounce="600"
+                            />
+                          </div>
+                        </form>
+                      <% end %>
+
                       <%!-- Read-only exclusion badges for sent/ready/served items --%>
                       <%= if item.status in ["sent", "ready"] and item.exclusions != [] do %>
                         <div class="flex flex-wrap items-center gap-1 mt-1.5">
@@ -666,6 +703,14 @@ defmodule CRCWeb.Waiter.OrderLive do
                           <%= for excl <- item.exclusions do %>
                             <span class="badge badge-xs badge-warning">{excl.product.name}</span>
                           <% end %>
+                        </div>
+                      <% end %>
+
+                      <%!-- Read-only note display for sent/ready items --%>
+                      <%= if item.status in ["sent", "ready"] and not is_nil(item.notes) and item.notes != "" do %>
+                        <div class="flex items-center gap-1 mt-1.5">
+                          <span class="text-xs shrink-0 select-none">📝</span>
+                          <p class="text-xs text-base-content/60 italic">{item.notes}</p>
                         </div>
                       <% end %>
                     </div>

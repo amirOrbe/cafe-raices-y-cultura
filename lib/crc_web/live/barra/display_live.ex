@@ -14,11 +14,14 @@ defmodule CRCWeb.Barra.DisplayLive do
       Phoenix.PubSub.subscribe(CRC.PubSub, "orders")
     end
 
+    orders = Orders.list_open_orders()
+
     socket =
       socket
       |> assign(:page_title, "Barra")
-      |> assign(:orders, Orders.list_open_orders())
+      |> assign(:orders, orders)
       |> assign(:nav_open, false)
+      |> assign(:seen_sent_ids, sent_drink_ids(orders))
 
     {:ok, socket}
   end
@@ -29,7 +32,18 @@ defmodule CRCWeb.Barra.DisplayLive do
 
   @impl true
   def handle_info({:order_updated, _order_id}, socket) do
-    {:noreply, assign(socket, :orders, Orders.list_open_orders())}
+    new_orders = Orders.list_open_orders()
+    new_ids    = sent_drink_ids(new_orders)
+    new_items? = not MapSet.subset?(new_ids, socket.assigns.seen_sent_ids)
+
+    socket =
+      socket
+      |> assign(:orders, new_orders)
+      |> assign(:seen_sent_ids, new_ids)
+
+    socket = if new_items?, do: push_event(socket, "play_sound", %{type: "new_order"}), else: socket
+
+    {:noreply, socket}
   end
 
   # ---------------------------------------------------------------------------
@@ -80,6 +94,7 @@ defmodule CRCWeb.Barra.DisplayLive do
   def render(assigns) do
     ~H"""
     <SiteComponents.site_navbar nav_open={@nav_open} current_page={:barra} current_user={@current_user} />
+    <div id="sound-notifier" phx-hook="SoundNotifier" class="hidden"></div>
     <div class="min-h-screen bg-base-200 pt-20 pb-10 px-4">
       <div class="max-w-6xl mx-auto space-y-6">
 
@@ -245,5 +260,14 @@ defmodule CRCWeb.Barra.DisplayLive do
       drinks = Enum.filter(o.order_items, &drink_item?/1)
       drinks != [] and Enum.all?(drinks, fn oi -> oi.status == "ready" end)
     end)
+  end
+
+  # Returns the set of IDs of drink items currently in "sent" state.
+  # Used to detect newly-arrived items and trigger the notification sound.
+  defp sent_drink_ids(orders) do
+    orders
+    |> Enum.flat_map(& &1.order_items)
+    |> Enum.filter(&(&1.status == "sent" and drink_item?(&1)))
+    |> MapSet.new(& &1.id)
   end
 end

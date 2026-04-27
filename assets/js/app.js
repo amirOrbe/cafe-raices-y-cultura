@@ -49,6 +49,72 @@ const CarouselAutoplay = {
 }
 
 /**
+ * SoundNotifier — plays audio cues via Web Audio API when the server pushes
+ * a "play_sound" event. No audio files required.
+ *
+ * Sound types:
+ *   "new_order"  — two quick bell hits → cocina/barra cuando llega una comanda
+ *   "item_ready" — three-note ascending chime → mesero cuando el platillo está listo
+ */
+const SoundNotifier = {
+  mounted() {
+    this._ctx = null
+
+    // Unlock AudioContext on first user interaction (browser autoplay policy)
+    const unlock = () => {
+      if (!this._ctx) {
+        this._ctx = new (window.AudioContext || window.webkitAudioContext)()
+      }
+      if (this._ctx.state === "suspended") this._ctx.resume()
+    }
+    document.addEventListener("click",    unlock, { passive: true })
+    document.addEventListener("touchend", unlock, { passive: true })
+
+    this.handleEvent("play_sound", ({ type }) => {
+      if (!this._ctx) {
+        this._ctx = new (window.AudioContext || window.webkitAudioContext)()
+      }
+      if (this._ctx.state === "suspended") {
+        this._ctx.resume().then(() => this._play(type))
+      } else {
+        this._play(type)
+      }
+    })
+  },
+
+  destroyed() {
+    if (this._ctx) { this._ctx.close(); this._ctx = null }
+  },
+
+  _tone(freq, startOffset, duration, vol = 0.28) {
+    const ctx = this._ctx
+    const osc  = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.type = "sine"
+    osc.frequency.value = freq
+    gain.gain.setValueAtTime(vol, ctx.currentTime + startOffset)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startOffset + duration)
+    osc.start(ctx.currentTime + startOffset)
+    osc.stop(ctx.currentTime + startOffset + duration + 0.05)
+  },
+
+  _play(type) {
+    if (type === "new_order") {
+      // Two short bell hits — "¡Nueva comanda!"
+      this._tone(880, 0,    0.22)
+      this._tone(880, 0.26, 0.22)
+    } else if (type === "item_ready") {
+      // C5 → E5 → G5 ascending chime — "¡Listo para servir!"
+      this._tone(523.25, 0,    0.20)
+      this._tone(659.25, 0.14, 0.20)
+      this._tone(783.99, 0.28, 0.38)
+    }
+  }
+}
+
+/**
  * GeolocationClockIn — requests the device's GPS position and pushes it to
  * the LiveView so the server can verify the employee is near the café.
  *
@@ -94,6 +160,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
     ...colocatedHooks,
     CarouselAutoplay,
     GeolocationClockIn,
+    SoundNotifier,
   },
 })
 

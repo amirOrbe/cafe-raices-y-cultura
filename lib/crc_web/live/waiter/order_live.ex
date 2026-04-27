@@ -52,6 +52,7 @@ defmodule CRCWeb.Waiter.OrderLive do
       |> assign(:cancelling_item, nil)
       |> assign(:now, DateTime.utc_now())
       |> assign(:low_stock_threshold, @low_stock_threshold)
+      |> assign(:seen_ready_ids, ready_item_ids(order))
 
     {:ok, socket}
   rescue
@@ -69,7 +70,18 @@ defmodule CRCWeb.Waiter.OrderLive do
   @impl true
   def handle_info({:order_updated, order_id}, socket) do
     if socket.assigns.order.id == order_id do
-      {:noreply, assign(socket, :order, Orders.get_order!(order_id))}
+      new_order  = Orders.get_order!(order_id)
+      new_ids    = ready_item_ids(new_order)
+      new_ready? = not MapSet.subset?(new_ids, socket.assigns.seen_ready_ids)
+
+      socket =
+        socket
+        |> assign(:order, new_order)
+        |> assign(:seen_ready_ids, new_ids)
+
+      socket = if new_ready?, do: push_event(socket, "play_sound", %{type: "item_ready"}), else: socket
+
+      {:noreply, socket}
     else
       {:noreply, socket}
     end
@@ -501,6 +513,7 @@ defmodule CRCWeb.Waiter.OrderLive do
   def render(assigns) do
     ~H"""
     <SiteComponents.site_navbar nav_open={@nav_open} current_page={:waiter} current_user={@current_user} />
+    <div id="sound-notifier" phx-hook="SoundNotifier" class="hidden"></div>
     <div class="min-h-screen bg-base-200 pt-20 pb-10">
       <div class="max-w-6xl mx-auto px-4 space-y-4">
 
@@ -1242,4 +1255,12 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   defp station_text_class("barra"), do: "text-info font-medium"
   defp station_text_class(_), do: "text-warning font-medium"
+
+  # Returns the set of IDs of items currently in "ready" state.
+  # Used to detect newly-ready items and trigger the notification sound.
+  defp ready_item_ids(order) do
+    order.order_items
+    |> Enum.filter(&(&1.status == "ready"))
+    |> MapSet.new(& &1.id)
+  end
 end

@@ -4,7 +4,7 @@ defmodule CRC.Orders.OrderItem do
 
   alias CRC.Orders.{Order, OrderItemExclusion}
   alias CRC.Catalog.{MenuItem, Package}
-  alias CRC.Inventory.Product
+  alias CRC.Inventory.{Product, ProductVariant}
 
   schema "order_items" do
     field :quantity, :integer, default: 1
@@ -32,6 +32,8 @@ defmodule CRC.Orders.OrderItem do
     belongs_to :served_by, CRC.Accounts.User, foreign_key: :served_by_id
     # For ingredient extras: the dish this extra was added for, e.g. "Queso gouda → Sandwich Clásico"
     belongs_to :for_menu_item, CRC.Catalog.MenuItem, foreign_key: :for_menu_item_id
+    # Nullable: set when this item represents a variant selection (e.g. "Leche de Avena" for a Matcha)
+    belongs_to :variant, ProductVariant
     # Ingredients explicitly excluded by the customer (e.g. "sin jitomate")
     has_many :exclusions, OrderItemExclusion
 
@@ -49,7 +51,7 @@ defmodule CRC.Orders.OrderItem do
   @doc false
   def changeset(order_item, attrs) do
     order_item
-    |> cast(attrs, [:quantity, :notes, :status, :order_id, :menu_item_id, :product_id, :package_id, :unit_price, :portion_quantity, :sent_at, :ready_at, :served_at, :marked_ready_by_id, :served_by_id, :for_menu_item_id])
+    |> cast(attrs, [:quantity, :notes, :status, :order_id, :menu_item_id, :product_id, :package_id, :unit_price, :portion_quantity, :sent_at, :ready_at, :served_at, :marked_ready_by_id, :served_by_id, :for_menu_item_id, :variant_id])
     |> validate_required([:quantity, :status, :order_id])
     |> validate_item_source()
     |> validate_number(:quantity, greater_than: 0)
@@ -63,10 +65,11 @@ defmodule CRC.Orders.OrderItem do
   # An order item must reference either a menu_item OR a product (ingredient extra), not neither.
   defp validate_item_source(changeset) do
     menu_item_id = get_field(changeset, :menu_item_id)
-    product_id = get_field(changeset, :product_id)
+    product_id   = get_field(changeset, :product_id)
+    variant_id   = get_field(changeset, :variant_id)
 
-    if is_nil(menu_item_id) and is_nil(product_id) do
-      add_error(changeset, :base, "debe referenciar un platillo o un extra de ingrediente")
+    if is_nil(menu_item_id) and is_nil(product_id) and is_nil(variant_id) do
+      add_error(changeset, :base, "debe referenciar un platillo, un extra de ingrediente, o una variante")
     else
       changeset
     end

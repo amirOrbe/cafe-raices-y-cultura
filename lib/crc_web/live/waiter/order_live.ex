@@ -291,6 +291,36 @@ defmodule CRCWeb.Waiter.OrderLive do
     end
   end
 
+  def handle_event("select_variant", %{"menu_item_id" => mi_id, "variant_id" => v_id, "product_id" => p_id}, socket) do
+    menu_item_id = String.to_integer(mi_id)
+    variant_id   = String.to_integer(v_id)
+    product_id   = String.to_integer(p_id)
+    order        = socket.assigns.order
+
+    # Find any existing variant selection for this ingredient + dish combination
+    existing = find_selected_variant(order.order_items, menu_item_id, product_id)
+
+    # Remove the old selection (if any)
+    if existing, do: Orders.remove_item(existing.id)
+
+    # Toggle: clicking the already-selected variant deselects it
+    already_selected? = existing && existing.variant_id == variant_id
+
+    unless already_selected? do
+      variant = CRC.Inventory.get_variant!(variant_id)
+
+      Orders.add_item(%{
+        order_id:          order.id,
+        variant_id:        variant_id,
+        for_menu_item_id:  menu_item_id,
+        unit_price:        variant.extra_charge,
+        quantity:          1
+      })
+    end
+
+    {:noreply, assign(socket, :order, Orders.get_order!(order.id))}
+  end
+
   def handle_event("set_item_note", %{"item_id" => id, "note" => note}, socket) do
     order_item_id = String.to_integer(id)
     order = socket.assigns.order
@@ -670,7 +700,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                         <% end %>
                       </p>
 
-                      <%!-- Ingredient modifier toggles (pending menu items with a recipe) --%>
+                      <%!-- Ingredient modifier toggles + variant selectors (pending menu items) --%>
                       <%= if item.status == "pending" and not is_nil(item.menu_item_id) and item.menu_item.menu_item_ingredients != [] do %>
                         <div class="flex flex-wrap items-center gap-1 mt-1.5 pt-1.5 border-t border-base-200">
                           <span class="text-xs text-base-content/40 shrink-0">Quitar:</span>
@@ -687,6 +717,47 @@ defmodule CRCWeb.Waiter.OrderLive do
                             >
                               {mii.product.name}
                             </button>
+                          <% end %>
+                        </div>
+                        <%!-- One variant-selector row per ingredient that has active types --%>
+                        <%= for mii <- item.menu_item.menu_item_ingredients do %>
+                          <% active_variants = Enum.filter(mii.product.variants, & &1.active) %>
+                          <%= if active_variants != [] do %>
+                            <% sel = find_selected_variant(@order.order_items, item.menu_item_id, mii.product_id) %>
+                            <div class="flex flex-wrap items-center gap-1 mt-1 pt-1 border-t border-base-200/60">
+                              <span class="text-xs text-base-content/40 shrink-0">{mii.product.name}:</span>
+                              <%= for variant <- active_variants do %>
+                                <% selected? = sel != nil and sel.variant_id == variant.id %>
+                                <button
+                                  phx-click="select_variant"
+                                  phx-value-menu_item_id={item.menu_item_id}
+                                  phx-value-variant_id={variant.id}
+                                  phx-value-product_id={mii.product_id}
+                                  class={[
+                                    "badge badge-sm cursor-pointer transition-all select-none",
+                                    if(selected?, do: "badge-primary", else: "badge-ghost hover:badge-primary")
+                                  ]}
+                                >
+                                  {variant.name}
+                                  <%= if Decimal.compare(variant.extra_charge, Decimal.new(0)) == :gt do %>
+                                    <span class="opacity-60 ml-0.5">+${format_price(variant.extra_charge)}</span>
+                                  <% end %>
+                                </button>
+                              <% end %>
+                            </div>
+                          <% end %>
+                        <% end %>
+                      <% end %>
+
+                      <%!-- Read-only variant badges for sent/ready items --%>
+                      <% sent_variants = get_variant_items(@order.order_items, item) %>
+                      <%= if item.status in ["sent", "ready"] and sent_variants != [] do %>
+                        <div class="flex flex-wrap items-center gap-1 mt-1.5">
+                          <%= for vi <- sent_variants do %>
+                            <span class="badge badge-xs badge-primary">{vi.variant.name}</span>
+                            <%= if vi.unit_price && Decimal.compare(vi.unit_price, Decimal.new(0)) == :gt do %>
+                              <span class="text-xs text-primary font-medium">+${format_price(vi.unit_price)}</span>
+                            <% end %>
                           <% end %>
                         </div>
                       <% end %>
@@ -1217,7 +1288,29 @@ defmodule CRCWeb.Waiter.OrderLive do
       _ -> 4
     end
 
-    Enum.sort_by(items, fn item -> rank.(item.status) end)
+    items
+    |> Enum.reject(&(not is_nil(&1.variant_id)))
+    |> Enum.sort_by(fn item -> rank.(item.status) end)
+  end
+
+  # Returns the variant OrderItem currently selected for a given ingredient + dish combo.
+  defp find_selected_variant(order_items, menu_item_id, product_id) do
+    Enum.find(order_items, fn oi ->
+      oi.status == "pending" and
+        not is_nil(oi.variant_id) and
+        oi.for_menu_item_id == menu_item_id and
+        oi.variant != nil and
+        oi.variant.product_id == product_id
+    end)
+  end
+
+  # Returns all variant OrderItems linked to a given menu item OrderItem.
+  defp get_variant_items(order_items, item) do
+    Enum.filter(order_items, fn oi ->
+      not is_nil(oi.variant_id) and
+        oi.for_menu_item_id == item.menu_item_id and
+        oi.status not in ["cancelled", "cancelled_waste"]
+    end)
   end
 
   defp drinks_ready_food_pending?(order) do

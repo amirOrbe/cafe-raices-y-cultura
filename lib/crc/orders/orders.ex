@@ -25,7 +25,7 @@ defmodule CRC.Orders do
     Order
     |> where([o], o.status in ["open", "sent", "ready"])
     |> order_by([o], o.inserted_at)
-    |> preload([:user, order_items: [:product, :for_menu_item, exclusions: [:product], menu_item: :category, package: []]])
+    |> preload([:user, order_items: [:product, :variant, :for_menu_item, exclusions: [:product], menu_item: :category, package: []]])
     |> Repo.all()
   end
 
@@ -34,7 +34,7 @@ defmodule CRC.Orders do
     Order
     |> where([o], o.status in ["open", "sent", "ready"])
     |> order_by([o], o.inserted_at)
-    |> preload([:user, order_items: [:product, :for_menu_item, exclusions: [:product], menu_item: :category, package: []]])
+    |> preload([:user, order_items: [:product, :variant, :for_menu_item, exclusions: [:product], menu_item: :category, package: []]])
     |> Repo.all()
   end
 
@@ -46,10 +46,11 @@ defmodule CRC.Orders do
       :user,
       order_items: [
         :product,
+        :variant,
         :for_menu_item,
         :package,
         exclusions: [:product],
-        menu_item: [:category, menu_item_ingredients: [:product]]
+        menu_item: [:category, menu_item_ingredients: [product: :variants]]
       ]
     ])
   end
@@ -70,18 +71,28 @@ defmodule CRC.Orders do
 
   @doc """
   Calculates the running total for an order from its preloaded items.
-  Only menu_item lines contribute a price; product extras have no price.
+  Menu item lines and variant selections with an extra_charge contribute to the total.
+  Plain product extras have no customer-facing price.
   """
   def calculate_order_total(%Order{order_items: items}) do
     Enum.reduce(items, Decimal.new(0), fn item, acc ->
-      if item.menu_item_id && item.menu_item &&
-           item.status not in ["cancelled", "cancelled_waste"] do
-        # unit_price overrides menu_item.price for package items
-        price = item.unit_price || item.menu_item.price
-        line = Decimal.mult(price, Decimal.new(item.quantity))
-        Decimal.add(acc, line)
-      else
+      if item.status in ["cancelled", "cancelled_waste"] do
         acc
+      else
+        cond do
+          # Menu item (or package item with unit_price override)
+          item.menu_item_id && item.menu_item ->
+            price = item.unit_price || item.menu_item.price
+            Decimal.add(acc, Decimal.mult(price, Decimal.new(item.quantity)))
+
+          # Variant selection with an extra charge
+          item.variant_id && item.unit_price &&
+              Decimal.compare(item.unit_price, Decimal.new(0)) == :gt ->
+            Decimal.add(acc, Decimal.mult(item.unit_price, Decimal.new(item.quantity)))
+
+          true ->
+            acc
+        end
       end
     end)
   end

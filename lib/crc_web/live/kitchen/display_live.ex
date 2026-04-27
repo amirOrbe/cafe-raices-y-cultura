@@ -173,6 +173,15 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                             <span class="font-semibold">{item.for_menu_item.name}</span>
                           </p>
                         <% end %>
+                        <%!-- Variant selections (e.g. leche de avena) --%>
+                        <% item_variants = Enum.filter(order.order_items, fn oi -> not is_nil(oi.variant_id) and oi.for_menu_item_id == item.menu_item_id end) %>
+                        <%= if item_variants != [] do %>
+                          <div class="flex flex-wrap items-center gap-1 mt-1">
+                            <%= for vi <- item_variants do %>
+                              <span class="badge badge-xs badge-primary">{vi.variant.name}</span>
+                            <% end %>
+                          </div>
+                        <% end %>
                         <%!-- Ingredient exclusions requested by customer --%>
                         <%= if item.exclusions != [] do %>
                           <div class="flex flex-wrap items-center gap-1 mt-1">

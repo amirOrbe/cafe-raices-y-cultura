@@ -144,19 +144,15 @@ defmodule CRCWeb.Admin.ProduccionLive do
     ingredient_rows = parse_ingredient_rows_from_params(full_params)
     ingredient_list = build_ingredient_list(ingredient_rows)
 
-    # Auto-resolve output product from recipe name
+    # Auto-resolve (or create) the output product from the recipe name + unit
     recipe_name = params["name"] || ""
+    yield_unit  = params["yield_unit"] || ""
 
-    case Inventory.find_product_by_name(recipe_name) do
-      nil ->
-        {:noreply,
-         put_flash(
-           socket,
-           :error,
-           "No existe ningún insumo llamado \"#{recipe_name}\". Créalo primero en Insumos."
-         )}
+    case Inventory.find_or_create_production_output(recipe_name, yield_unit) do
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "No se pudo crear el insumo de salida. Inténtalo de nuevo.")}
 
-      product ->
+      {:ok, product} ->
         params_with_product = Map.put(params, "output_product_id", product.id)
 
         result =
@@ -457,7 +453,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                   placeholder="Ej: Oleo de Naranja"
                 />
                 <p class="text-xs text-base-content/40 mt-1">
-                  Debe coincidir exactamente con el nombre del insumo registrado en Inventario.
+                  Si no existe en Inventario, se crea automáticamente.
                 </p>
                 <%= for {msg, _} <- @recipe_form[:name].errors do %>
                   <p class="text-xs text-error mt-1">{msg}</p>

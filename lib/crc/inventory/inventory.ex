@@ -110,11 +110,34 @@ defmodule CRC.Inventory do
     )
   end
 
-  @doc "Finds an active product by exact name (case-insensitive). Returns nil if not found."
+  @doc "Finds a product by exact name (case-insensitive). Returns nil if not found."
   def find_product_by_name(name) do
     Product
     |> where([p], fragment("lower(?)", p.name) == ^String.downcase(name))
     |> Repo.one()
+  end
+
+  @doc """
+  Finds a product by name or creates a minimal one for use as a production output.
+  Production outputs start with net_cost 0 — the real cost is derived from the recipe.
+  """
+  def find_or_create_production_output(name, unit) do
+    case find_product_by_name(name) do
+      %Product{} = product ->
+        {:ok, product}
+
+      nil ->
+        %Product{}
+        |> Ecto.Changeset.change(%{
+          name: CRC.Utils.title_case(name),
+          unit: unit,
+          net_cost: Decimal.new(0),
+          stock_quantity: Decimal.new(0),
+          min_stock: Decimal.new(0),
+          active: true
+        })
+        |> Repo.insert()
+    end
   end
 
   @doc "Gets a product by id with supplier, category, and variants preloaded. Raises if not found."

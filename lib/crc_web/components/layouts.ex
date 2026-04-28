@@ -199,6 +199,13 @@ defmodule CRCWeb.Layouts do
             <.icon name="hero-tag" class="size-5 shrink-0" />
             Categorías de insumos
           </a>
+          <a
+            href="/admin/produccion"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-beaker" class="size-5 shrink-0" />
+            Producción Interna
+          </a>
 
           <%!-- Colaboraciones section --%>
           <div class="pt-3 pb-1">

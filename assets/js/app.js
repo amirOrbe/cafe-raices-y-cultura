@@ -107,32 +107,47 @@ const SoundNotifier = {
  * the LiveView so the server can verify the employee is near the café.
  *
  * Events pushed to the server:
+ *   "location_requesting"     — {} (GPS query started, show loading state)
  *   "clock_in_with_location"  — { latitude, longitude }
- *   "location_denied"         — {} (user denied permission or unavailable)
+ *   "location_denied"         — { reason: "permission_denied" | "unavailable" | "timeout" }
  */
 const GeolocationClockIn = {
   mounted() {
     this.el.addEventListener("click", (e) => {
       e.preventDefault()
-
-      if (!navigator.geolocation) {
-        this.pushEvent("location_denied", {reason: "unavailable"})
-        return
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          this.pushEvent("clock_in_with_location", {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          })
-        },
-        (_err) => {
-          this.pushEvent("location_denied", {reason: "denied"})
-        },
-        {enableHighAccuracy: true, timeout: 10000, maximumAge: 0}
-      )
+      this.requestLocation()
     })
+  },
+
+  requestLocation() {
+    if (!navigator.geolocation) {
+      this.pushEvent("location_denied", {reason: "unavailable"})
+      return
+    }
+
+    // Notify server that we're waiting for GPS (show loading spinner)
+    this.pushEvent("location_requesting", {})
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.pushEvent("clock_in_with_location", {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        })
+      },
+      (err) => {
+        // GeolocationPositionError codes:
+        //   1 = PERMISSION_DENIED  → user must change browser settings, can't retry
+        //   2 = POSITION_UNAVAILABLE → GPS hardware issue, may retry
+        //   3 = TIMEOUT            → took too long, may retry
+        const reason = err.code === 1 ? "permission_denied"
+                     : err.code === 2 ? "unavailable"
+                     : "timeout"
+        this.pushEvent("location_denied", {reason})
+      },
+      // Allow positions up to 60 s old so slow indoor GPS can still succeed
+      {enableHighAccuracy: true, timeout: 12000, maximumAge: 60000}
+    )
   }
 }
 

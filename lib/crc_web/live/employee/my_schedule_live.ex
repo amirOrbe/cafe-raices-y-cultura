@@ -55,41 +55,56 @@ defmodule CRCWeb.Employee.MyScheduleLive do
     do: {:noreply, assign(socket, :nav_open, false)}
 
   @impl true
+  # GPS query started in the browser — show loading state immediately
+  def handle_event("location_requesting", _params, socket) do
+    {:noreply, assign(socket, clock_status: :requesting, location_error: nil)}
+  end
+
   # Geolocation hook resolved a position — attempt clock-in
   def handle_event("clock_in_with_location", %{"latitude" => lat, "longitude" => lng}, socket) do
     user = socket.assigns.current_user
 
     case HR.clock_in(user, lat, lng) do
       {:ok, record} ->
-        socket =
-          socket
-          |> assign(:today_record, record)
-          |> assign(:clock_status, :clocked_in)
-          |> assign(:location_error, nil)
-
-        {:noreply, socket}
+        {:noreply,
+         socket
+         |> assign(:today_record, record)
+         |> assign(:clock_status, :clocked_in)
+         |> assign(:location_error, nil)}
 
       {:error, :too_far} ->
-        socket =
-          socket
-          |> assign(:clock_status, :idle)
-          |> assign(:location_error, :too_far)
-
-        {:noreply, socket}
+        {:noreply,
+         socket
+         |> assign(:clock_status, :idle)
+         |> assign(:location_error, :too_far)}
 
       {:error, :already_clocked_in} ->
         {:noreply, assign(socket, :clock_status, :clocked_in)}
     end
   end
 
-  # Browser denied location permission or GPS unavailable
-  def handle_event("location_denied", _params, socket) do
-    socket =
-      socket
-      |> assign(:clock_status, :idle)
-      |> assign(:location_error, :denied)
+  # Browser denied location permission or GPS timed out / unavailable
+  def handle_event("location_denied", %{"reason" => reason}, socket) do
+    error =
+      case reason do
+        "permission_denied" -> :permission_denied
+        "unavailable"       -> :gps_unavailable
+        "timeout"           -> :gps_unavailable
+        _                   -> :gps_unavailable
+      end
 
-    {:noreply, socket}
+    {:noreply,
+     socket
+     |> assign(:clock_status, :idle)
+     |> assign(:location_error, error)}
+  end
+
+  # Fallback: old-format event without reason param
+  def handle_event("location_denied", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:clock_status, :idle)
+     |> assign(:location_error, :gps_unavailable)}
   end
 
   # Employee clocks out (no location check needed)
@@ -211,9 +226,10 @@ defmodule CRCWeb.Employee.MyScheduleLive do
   # ---------------------------------------------------------------------------
 
   defp today_card(%{today_record: record} = assigns) do
-    already_in = not is_nil(record.clocked_in_at)
+    already_in  = not is_nil(record.clocked_in_at)
     already_out = not is_nil(record.clocked_out_at)
-    assigns = assign(assigns, already_in: already_in, already_out: already_out)
+    requesting  = assigns.clock_status == :requesting
+    assigns = assign(assigns, already_in: already_in, already_out: already_out, requesting: requesting)
 
     ~H"""
     <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
@@ -230,8 +246,8 @@ defmodule CRCWeb.Employee.MyScheduleLive do
         </div>
         <.status_badge status={cond do
           @already_out -> "out"
-          @already_in -> @today_record.status
-          true -> "absent"
+          @already_in  -> @today_record.status
+          true         -> "absent"
         end} />
       </div>
 
@@ -251,34 +267,99 @@ defmodule CRCWeb.Employee.MyScheduleLive do
         </div>
       </div>
 
-      <%!-- Location error --%>
-      <%= if @location_error do %>
-        <div class="alert alert-warning mb-4 text-sm">
-          <%= case @location_error do %>
-            <% :too_far -> %>
-              <.icon name="hero-map-pin" class="size-4 shrink-0" />
-              Debes estar cerca del café para registrar tu entrada.
-            <% :denied -> %>
-              <.icon name="hero-x-circle" class="size-4 shrink-0" />
-              No se pudo obtener tu ubicación. Actívala o pide al administrador que registre tu llegada.
-            <% :not_clocked_in -> %>
+      <%!-- GPS requesting — inline loading indicator --%>
+      <%= if @requesting do %>
+        <div class="flex items-center gap-2 text-sm text-base-content/60 mb-4 p-3 rounded-xl bg-base-200">
+          <span class="loading loading-spinner loading-sm text-primary"></span>
+          Obteniendo tu ubicación…
+        </div>
+      <% end %>
+
+      <%!-- Location / action errors --%>
+      <%= if @location_error && !@requesting do %>
+        <%= case @location_error do %>
+          <% :too_far -> %>
+            <%!-- GPS funcionó pero indicó que está lejos: puede ser imprecisión → ofrecer reintento --%>
+            <div class="alert alert-warning mb-4 text-sm flex-col items-start gap-2">
+              <div class="flex items-center gap-2">
+                <.icon name="hero-map-pin" class="size-4 shrink-0" />
+                <span>
+                  El GPS indicó que estás lejos del café.
+                  Si ya estás aquí, puede ser imprecisión de la señal — intenta de nuevo.
+                </span>
+              </div>
+              <button
+                id="clock-in-retry-btn"
+                phx-hook="GeolocationClockIn"
+                class="btn btn-warning btn-sm gap-1 self-stretch sm:self-auto"
+              >
+                <.icon name="hero-arrow-path" class="size-4" />
+                Reintentar ubicación
+              </button>
+            </div>
+
+          <% :permission_denied -> %>
+            <%!-- El navegador bloqueó los permisos — JS ya no puede volver a pedir --%>
+            <div class="alert alert-error mb-4 text-sm flex-col items-start gap-1">
+              <div class="flex items-center gap-2">
+                <.icon name="hero-no-symbol" class="size-4 shrink-0" />
+                <span class="font-semibold">Permiso de ubicación bloqueado</span>
+              </div>
+              <p>Tu navegador tiene el permiso desactivado para este sitio. Para habilitarlo:</p>
+              <ul class="list-disc list-inside space-y-0.5 text-xs">
+                <li><span class="font-medium">iPhone/iPad:</span> Ajustes → Safari → Ubicación → Permitir</li>
+                <li><span class="font-medium">Android Chrome:</span> toca el candado 🔒 en la barra de dirección → Permisos → Ubicación</li>
+                <li><span class="font-medium">Android otro:</span> Ajustes del navegador → Permisos de sitio → Ubicación</li>
+              </ul>
+              <p class="text-xs mt-1">
+                También puedes pedir a tu administrador que registre tu llegada manualmente.
+              </p>
+            </div>
+
+          <% :gps_unavailable -> %>
+            <%!-- GPS falló o expiró el tiempo — se puede reintentar --%>
+            <div class="alert alert-warning mb-4 text-sm flex-col items-start gap-2">
+              <div class="flex items-center gap-2">
+                <.icon name="hero-signal-slash" class="size-4 shrink-0" />
+                <span>No se pudo obtener tu ubicación (señal débil o GPS apagado). Intenta de nuevo.</span>
+              </div>
+              <button
+                id="clock-in-retry-btn"
+                phx-hook="GeolocationClockIn"
+                class="btn btn-warning btn-sm gap-1 self-stretch sm:self-auto"
+              >
+                <.icon name="hero-arrow-path" class="size-4" />
+                Reintentar
+              </button>
+            </div>
+
+          <% :not_clocked_in -> %>
+            <div class="alert alert-warning mb-4 text-sm">
               <.icon name="hero-exclamation-triangle" class="size-4 shrink-0" />
               Aún no has registrado tu entrada.
-          <% end %>
-        </div>
+            </div>
+        <% end %>
       <% end %>
 
       <%!-- Actions --%>
       <div class="flex gap-3">
         <%= if !@already_in do %>
-          <button
-            id="clock-in-btn"
-            phx-hook="GeolocationClockIn"
-            class="btn btn-success flex-1 gap-2"
-          >
-            <.icon name="hero-finger-print" class="size-5" />
-            Ya estoy aquí
-          </button>
+          <%!-- Main clock-in button; hidden while a retry button is showing to avoid duplicate hooks --%>
+          <%= if @location_error not in [:too_far, :gps_unavailable] do %>
+            <button
+              id="clock-in-btn"
+              phx-hook="GeolocationClockIn"
+              disabled={@requesting}
+              class={"btn btn-success flex-1 gap-2 #{if @requesting, do: "btn-disabled opacity-70"}"}
+            >
+              <%= if @requesting do %>
+                <span class="loading loading-spinner loading-sm"></span>
+              <% else %>
+                <.icon name="hero-finger-print" class="size-5" />
+              <% end %>
+              Ya estoy aquí
+            </button>
+          <% end %>
         <% end %>
 
         <%= if @already_in and !@already_out do %>

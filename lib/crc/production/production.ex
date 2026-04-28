@@ -85,9 +85,10 @@ defmodule CRC.Production do
   def create_recipe(attrs, ingredient_list) do
     Repo.transaction(fn ->
       recipe =
-        %Recipe{}
-        |> Recipe.changeset(attrs)
-        |> Repo.insert!()
+        case %Recipe{} |> Recipe.changeset(attrs) |> Repo.insert() do
+          {:ok, r} -> r
+          {:error, cs} -> Repo.rollback(cs)
+        end
 
       Enum.each(ingredient_list, fn ing ->
         %RecipeIngredient{}
@@ -104,10 +105,13 @@ defmodule CRC.Production do
   """
   def update_recipe(%Recipe{} = recipe, attrs, ingredient_list) do
     Repo.transaction(fn ->
+      changeset = Recipe.changeset(recipe, attrs)
+
       updated =
-        recipe
-        |> Recipe.changeset(attrs)
-        |> Repo.update!()
+        case Repo.update(changeset) do
+          {:ok, r} -> r
+          {:error, cs} -> Repo.rollback(cs)
+        end
 
       # Replace all ingredients
       from(ri in RecipeIngredient, where: ri.recipe_id == ^recipe.id)

@@ -8,7 +8,6 @@ defmodule CRCWeb.Admin.ProduccionLive do
 
   use CRCWeb, :live_view
 
-  import CRCWeb.Layouts, only: [flash_group: 1]
 
   alias CRC.Inventory
   alias CRC.Production
@@ -588,7 +587,6 @@ defmodule CRCWeb.Admin.ProduccionLive do
       </div>
     <% end %>
 
-    <.flash_group flash={@flash} />
     """
   end
 

@@ -26,7 +26,7 @@ defmodule CRCWeb.ProduccionLive do
       |> assign(:notes_input, "")
       |> assign(:nav_open, false)
 
-    {:ok, socket}
+    {:ok, socket, layout: false}
   end
 
   # ---------------------------------------------------------------------------

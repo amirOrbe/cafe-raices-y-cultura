@@ -198,50 +198,23 @@ defmodule CRC.Catalog do
   end
 
   @doc """
-  Returns extras for a specific menu item as `{%Product{}, portion_quantity}` tuples.
+  Returns the ingredients for a specific menu item as `{%Product{}, portion_quantity}` tuples,
+  using the exact quantities defined in that item's recipe.
 
-  - If the product is an ingredient of the given menu item → uses that item's exact recipe quantity.
-  - If the product belongs to the category but not this item → uses (min + max) / 2 across the category.
+  Only ingredients that belong to this item's recipe are returned — ingredients from
+  other dishes in the same category are intentionally excluded to avoid showing
+  unrelated modifiers (e.g. "filtrado" should not appear on an espresso).
 
   Results are sorted by product name.
   """
-  def list_extras_for_menu_item(menu_item_id, category_id) do
-    all_products =
-      from(p in Product,
-        join: mii in MenuItemIngredient, on: mii.product_id == p.id,
-        join: mi in MenuItem, on: mi.id == mii.menu_item_id,
-        where: mi.category_id == ^category_id and mi.available == true and p.active == true,
-        distinct: p.id,
-        order_by: p.name
-      )
-      |> Repo.all()
-
-    # Exact quantities from this menu item's recipe: %{product_id => quantity}
-    item_quantities =
-      from(mii in MenuItemIngredient, where: mii.menu_item_id == ^menu_item_id)
-      |> Repo.all()
-      |> Map.new(&{&1.product_id, &1.quantity})
-
-    # Category-level avg (min + max) / 2 fallback: %{product_id => avg_quantity}
-    product_ids = Enum.map(all_products, & &1.id)
-
-    category_avgs =
-      from(mii in MenuItemIngredient,
-        join: mi in MenuItem, on: mi.id == mii.menu_item_id,
-        where: mi.category_id == ^category_id and mii.product_id in ^product_ids,
-        group_by: mii.product_id,
-        select: {mii.product_id, fragment("(MIN(?) + MAX(?)) / 2.0", mii.quantity, mii.quantity)}
-      )
-      |> Repo.all()
-      |> Map.new()
-
-    Enum.map(all_products, fn product ->
-      qty =
-        Map.get(item_quantities, product.id) ||
-          Map.get(category_avgs, product.id, Decimal.new(1))
-
-      {product, qty}
-    end)
+  def list_extras_for_menu_item(menu_item_id, _category_id) do
+    from(mii in MenuItemIngredient,
+      join: p in Product, on: p.id == mii.product_id,
+      where: mii.menu_item_id == ^menu_item_id and p.active == true,
+      order_by: p.name,
+      select: {p, mii.quantity}
+    )
+    |> Repo.all()
   end
 
   @doc """

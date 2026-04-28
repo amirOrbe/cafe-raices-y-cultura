@@ -28,13 +28,14 @@ defmodule CRC.HR do
   # ---------------------------------------------------------------------------
 
   # Dr. Mariano Azuela #80, Santa María la Ribera, CDMX
-  @cafe_lat 19.4464
-  @cafe_lng -99.1579
+  # Coordinates extracted from the official Google Maps pin for "Café Raíces y Cultura"
+  @cafe_lat 19.445424998689816
+  @cafe_lng -99.15739759497082
 
   # Maximum distance from the café (metres) to allow clock-in.
-  # 300 m accounts for typical indoor GPS drift (phones often report
-  # 150-250 m off when inside a building or near concrete walls).
-  @max_distance_m 300
+  # 150 m gives enough margin for typical indoor GPS drift (~50-100 m)
+  # while keeping the check meaningful.
+  @max_distance_m 150
 
   # Minutes after scheduled_start before the record is considered "late"
   @grace_minutes 15

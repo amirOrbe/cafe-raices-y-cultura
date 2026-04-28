@@ -118,9 +118,9 @@ defmodule CRCWeb.Admin.ProduccionLive do
     {:noreply, assign(socket, :ingredient_rows, rows)}
   end
 
-  # phx-change fires inside a <form> — value arrives nested in ingredient_rows params,
-  # not as a top-level "value" key.
-  def handle_event("update_ingredient_row", %{"index" => idx_str, "field" => field} = params, socket) do
+  # phx-change inside a <form> does NOT send phx-value-* attributes.
+  # LiveView sends _target with the changed field path + form values nested by name.
+  def handle_event("update_ingredient_row", %{"_target" => [_, idx_str, field]} = params, socket) do
     idx = String.to_integer(idx_str)
     value = get_in(params, ["ingredient_rows", idx_str, field]) || ""
 
@@ -131,6 +131,9 @@ defmodule CRCWeb.Admin.ProduccionLive do
 
     {:noreply, assign(socket, :ingredient_rows, rows)}
   end
+
+  # Fallback: ignore any update_ingredient_row that doesn't match expected shape
+  def handle_event("update_ingredient_row", _params, socket), do: {:noreply, socket}
 
   # ---------------------------------------------------------------------------
   # Save recipe — output product auto-resolved from recipe name
@@ -485,13 +488,20 @@ defmodule CRCWeb.Admin.ProduccionLive do
                   <label class="label">
                     <span class="label-text font-medium">Unidad</span>
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="recipe[yield_unit]"
-                    value={@recipe_form[:yield_unit].value}
-                    class={"input input-bordered w-full #{if @recipe_form[:yield_unit].errors != [], do: "input-error"}"}
-                    placeholder="Ej: ml, gr, pzas"
-                  />
+                    class={"select select-bordered w-full #{if @recipe_form[:yield_unit].errors != [], do: "select-error"}"}
+                  >
+                    <option value="">Seleccionar…</option>
+                    <%= for unit <- units() do %>
+                      <option
+                        value={unit}
+                        selected={@recipe_form[:yield_unit].value == unit}
+                      >
+                        {unit}
+                      </option>
+                    <% end %>
+                  </select>
                   <%= for {msg, _} <- @recipe_form[:yield_unit].errors do %>
                     <p class="text-xs text-error mt-1">{msg}</p>
                   <% end %>
@@ -536,9 +546,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                         class="input input-bordered input-sm w-24"
                         placeholder="Cant."
                         value={row.quantity}
-                        phx-blur="update_ingredient_row"
-                        phx-value-index={idx}
-                        phx-value-field="quantity"
+                        phx-change="update_ingredient_row"
                         name={"ingredient_rows[#{idx}][quantity]"}
                       />
                       <button
@@ -592,6 +600,15 @@ defmodule CRCWeb.Admin.ProduccionLive do
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------
+
+  defp units do
+    [
+      "mililitros", "litros",
+      "gramos", "kilogramos",
+      "piezas", "porciones",
+      "cucharadas", "cucharaditas", "tazas"
+    ]
+  end
 
   defp fresh_row, do: %{id: nil, product_id: "", quantity: ""}
 

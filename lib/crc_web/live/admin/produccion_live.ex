@@ -2,14 +2,15 @@ defmodule CRCWeb.Admin.ProduccionLive do
   @moduledoc """
   Admin view for Producción Interna.
 
-  Lets admins create and edit production recipes (with dynamic ingredient rows)
-  and browse the full production log history.
+  Recipe name = output product name (auto-resolved on save via Inventory lookup).
+  Lets admins create/edit recipes with dynamic ingredient rows and browse history.
   """
 
   use CRCWeb, :live_view
 
   import CRCWeb.Layouts, only: [flash_group: 1]
 
+  alias CRC.Inventory
   alias CRC.Production
   alias CRC.Production.Recipe
 
@@ -26,7 +27,6 @@ defmodule CRCWeb.Admin.ProduccionLive do
       |> assign(:recent_logs, Production.list_recent_logs(100))
       |> assign(:products, Production.list_products_for_select())
       |> assign(:modal, nil)
-      # form state
       |> assign(:recipe_form, nil)
       |> assign(:ingredient_rows, [])
       |> assign(:tab, :recipes)
@@ -35,7 +35,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
   end
 
   # ---------------------------------------------------------------------------
-  # PubSub — refresh when stock changes (production logs from staff view)
+  # PubSub
   # ---------------------------------------------------------------------------
 
   @impl true
@@ -58,7 +58,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Recipe modal — new
+  # Recipe modal — new / edit
   # ---------------------------------------------------------------------------
 
   def handle_event("new_recipe", _params, socket) do
@@ -70,8 +70,6 @@ defmodule CRCWeb.Admin.ProduccionLive do
      |> assign(:recipe_form, to_form(changeset, as: "recipe"))
      |> assign(:ingredient_rows, [fresh_row()])}
   end
-
-  # Recipe modal — edit
 
   def handle_event("edit_recipe", %{"id" => id}, socket) do
     recipe = Production.get_recipe!(String.to_integer(id))
@@ -120,8 +118,11 @@ defmodule CRCWeb.Admin.ProduccionLive do
     {:noreply, assign(socket, :ingredient_rows, rows)}
   end
 
-  def handle_event("update_ingredient_row", %{"index" => idx_str, "field" => field, "value" => value}, socket) do
+  # phx-change fires inside a <form> — value arrives nested in ingredient_rows params,
+  # not as a top-level "value" key.
+  def handle_event("update_ingredient_row", %{"index" => idx_str, "field" => field} = params, socket) do
     idx = String.to_integer(idx_str)
+    value = get_in(params, ["ingredient_rows", idx_str, field]) || ""
 
     rows =
       List.update_at(socket.assigns.ingredient_rows, idx, fn row ->
@@ -132,36 +133,54 @@ defmodule CRCWeb.Admin.ProduccionLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Save recipe
+  # Save recipe — output product auto-resolved from recipe name
   # ---------------------------------------------------------------------------
 
-  def handle_event("save_recipe", %{"recipe" => params}, socket) do
-    ingredient_list = build_ingredient_list(socket.assigns.ingredient_rows)
+  def handle_event("save_recipe", %{"recipe" => params} = full_params, socket) do
+    # Read ingredient rows from form params (most up-to-date values)
+    ingredient_rows = parse_ingredient_rows_from_params(full_params)
+    ingredient_list = build_ingredient_list(ingredient_rows)
 
-    result =
-      case socket.assigns.modal do
-        :new ->
-          Production.create_recipe(params, ingredient_list)
+    # Auto-resolve output product from recipe name
+    recipe_name = params["name"] || ""
 
-        {:edit, recipe} ->
-          Production.update_recipe(recipe, params, ingredient_list)
-      end
-
-    case result do
-      {:ok, _recipe} ->
+    case Inventory.find_product_by_name(recipe_name) do
+      nil ->
         {:noreply,
-         socket
-         |> assign(:modal, nil)
-         |> assign(:recipe_form, nil)
-         |> assign(:ingredient_rows, [])
-         |> assign(:recipes, Production.list_all_recipes())
-         |> put_flash(:info, "Receta guardada.")}
+         put_flash(
+           socket,
+           :error,
+           "No existe ningún insumo llamado \"#{recipe_name}\". Créalo primero en Insumos."
+         )}
 
-      {:error, %Ecto.Changeset{} = cs} ->
-        {:noreply, assign(socket, :recipe_form, to_form(cs, as: "recipe"))}
+      product ->
+        params_with_product = Map.put(params, "output_product_id", product.id)
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "No se pudo guardar la receta.")}
+        result =
+          case socket.assigns.modal do
+            :new ->
+              Production.create_recipe(params_with_product, ingredient_list)
+
+            {:edit, recipe} ->
+              Production.update_recipe(recipe, params_with_product, ingredient_list)
+          end
+
+        case result do
+          {:ok, _recipe} ->
+            {:noreply,
+             socket
+             |> assign(:modal, nil)
+             |> assign(:recipe_form, nil)
+             |> assign(:ingredient_rows, [])
+             |> assign(:recipes, Production.list_all_recipes())
+             |> put_flash(:info, "Receta guardada.")}
+
+          {:error, %Ecto.Changeset{} = cs} ->
+            {:noreply, assign(socket, :recipe_form, to_form(cs, as: "recipe"))}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, "No se pudo guardar la receta.")}
+        end
     end
   end
 
@@ -247,7 +266,6 @@ defmodule CRCWeb.Admin.ProduccionLive do
                       <p class="font-semibold text-base-content">{recipe.name}</p>
                       <p class="text-xs text-base-content/50 mt-0.5">
                         Produce {format_qty(recipe.yield_quantity)} {recipe.yield_unit}
-                        de <span class="font-medium">{recipe.output_product && recipe.output_product.name}</span>
                       </p>
                     </div>
                     <input
@@ -265,13 +283,9 @@ defmodule CRCWeb.Admin.ProduccionLive do
                       </span>
                     <% end %>
                   </div>
-                  <%= if recipe.output_product && recipe.output_product.net_cost do %>
-                    <% cost = Production.recipe_unit_cost(recipe) %>
-                    <%= if cost do %>
-                      <p class="text-xs text-base-content/40">
-                        Costo/u: ${format_qty(cost)}
-                      </p>
-                    <% end %>
+                  <% cost = Production.recipe_unit_cost(recipe) %>
+                  <%= if cost do %>
+                    <p class="text-xs text-base-content/40">Costo/u: ${format_qty(cost)}</p>
                   <% end %>
                   <button
                     class="btn btn-ghost btn-xs w-full"
@@ -290,7 +304,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                 <thead class="bg-base-200 text-xs uppercase tracking-wider text-base-content/50">
                   <tr>
                     <th class="w-48">Nombre</th>
-                    <th class="w-48">Produce</th>
+                    <th class="w-32">Produce</th>
                     <th>Ingredientes</th>
                     <th class="w-28 text-right">Costo/u</th>
                     <th class="w-20 text-center">Activa</th>
@@ -303,9 +317,6 @@ defmodule CRCWeb.Admin.ProduccionLive do
                       <td class="font-semibold text-sm">{recipe.name}</td>
                       <td class="text-sm text-base-content/70">
                         {format_qty(recipe.yield_quantity)} {recipe.yield_unit}
-                        <span class="block text-xs text-base-content/40">
-                          {recipe.output_product && recipe.output_product.name}
-                        </span>
                       </td>
                       <td>
                         <div class="flex flex-wrap gap-1">
@@ -430,10 +441,10 @@ defmodule CRCWeb.Admin.ProduccionLive do
             <%!-- Recipe form --%>
             <.form for={@recipe_form} phx-submit="save_recipe" class="space-y-5">
 
-              <%!-- Name --%>
+              <%!-- Name (= output product) --%>
               <div class="form-control">
                 <label class="label">
-                  <span class="label-text font-medium">Nombre de la receta</span>
+                  <span class="label-text font-medium">Nombre del producto que se produce</span>
                 </label>
                 <input
                   type="text"
@@ -442,37 +453,17 @@ defmodule CRCWeb.Admin.ProduccionLive do
                   class={"input input-bordered w-full #{if @recipe_form[:name].errors != [], do: "input-error"}"}
                   placeholder="Ej: Oleo de Naranja"
                 />
+                <p class="text-xs text-base-content/40 mt-1">
+                  Debe coincidir exactamente con el nombre del insumo registrado en Inventario.
+                </p>
                 <%= for {msg, _} <- @recipe_form[:name].errors do %>
                   <p class="text-xs text-error mt-1">{msg}</p>
                 <% end %>
               </div>
 
-              <%!-- Output product + yield --%>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="form-control sm:col-span-1">
-                  <label class="label">
-                    <span class="label-text font-medium">Producto resultante</span>
-                  </label>
-                  <select
-                    name="recipe[output_product_id]"
-                    class={"select select-bordered w-full #{if @recipe_form[:output_product_id].errors != [], do: "select-error"}"}
-                  >
-                    <option value="">Seleccionar…</option>
-                    <%= for product <- @products do %>
-                      <option
-                        value={product.id}
-                        selected={to_string(@recipe_form[:output_product_id].value) == to_string(product.id)}
-                      >
-                        {product.name}
-                      </option>
-                    <% end %>
-                  </select>
-                  <%= for {msg, _} <- @recipe_form[:output_product_id].errors do %>
-                    <p class="text-xs text-error mt-1">{msg}</p>
-                  <% end %>
-                </div>
-
-                <div class="form-control sm:col-span-1">
+              <%!-- Yield quantity + unit --%>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="form-control">
                   <label class="label">
                     <span class="label-text font-medium">Cantidad que produce</span>
                   </label>
@@ -490,7 +481,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                   <% end %>
                 </div>
 
-                <div class="form-control sm:col-span-1">
+                <div class="form-control">
                   <label class="label">
                     <span class="label-text font-medium">Unidad</span>
                   </label>
@@ -604,6 +595,17 @@ defmodule CRCWeb.Admin.ProduccionLive do
 
   defp fresh_row, do: %{id: nil, product_id: "", quantity: ""}
 
+  # Reads ingredient rows from the submitted form params (most reliable source)
+  defp parse_ingredient_rows_from_params(params) do
+    rows_map = params["ingredient_rows"] || %{}
+
+    rows_map
+    |> Enum.sort_by(fn {k, _} -> String.to_integer(k) end)
+    |> Enum.map(fn {_, row} ->
+      %{product_id: row["product_id"] || "", quantity: row["quantity"] || ""}
+    end)
+  end
+
   defp build_ingredient_list(rows) do
     rows
     |> Enum.reject(fn row ->
@@ -618,7 +620,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
     end)
   end
 
-  defp parse_id(v) when is_binary(v), do: String.to_integer(v)
+  defp parse_id(v) when is_binary(v) and v != "", do: String.to_integer(v)
   defp parse_id(v), do: v
 
   defp format_qty(nil), do: "0"

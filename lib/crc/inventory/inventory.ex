@@ -110,6 +110,13 @@ defmodule CRC.Inventory do
     )
   end
 
+  @doc "Finds an active product by exact name (case-insensitive). Returns nil if not found."
+  def find_product_by_name(name) do
+    Product
+    |> where([p], fragment("lower(?)", p.name) == ^String.downcase(name))
+    |> Repo.one()
+  end
+
   @doc "Gets a product by id with supplier, category, and variants preloaded. Raises if not found."
   @spec get_product!(integer()) :: Product.t()
   def get_product!(id) do

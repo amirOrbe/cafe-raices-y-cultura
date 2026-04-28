@@ -31,8 +31,10 @@ defmodule CRC.HR do
   @cafe_lat 19.4464
   @cafe_lng -99.1579
 
-  # Maximum distance from the café (metres) to allow clock-in
-  @max_distance_m 100
+  # Maximum distance from the café (metres) to allow clock-in.
+  # 300 m accounts for typical indoor GPS drift (phones often report
+  # 150-250 m off when inside a building or near concrete walls).
+  @max_distance_m 300
 
   # Minutes after scheduled_start before the record is considered "late"
   @grace_minutes 15

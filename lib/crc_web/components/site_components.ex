@@ -91,6 +91,13 @@ defmodule CRCWeb.Components.SiteComponents do
                         {if @current_user.stations != [], do: " · #{Enum.join(@current_user.stations, " · ")}", else: ""}
                       </p>
                     </li>
+                    <%!-- Common staff link --%>
+                    <li>
+                      <a href="/bitacora" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200">
+                        <.icon name="hero-clipboard-document-check" class="size-4 text-base-content/50" />
+                        Bitácora de Turno
+                      </a>
+                    </li>
                     <%!-- Admin links --%>
                     <%= if @current_user.role == "admin" do %>
                       <li>
@@ -244,6 +251,10 @@ defmodule CRCWeb.Components.SiteComponents do
 
           <%!-- Staff links --%>
           <div class="space-y-1 pb-1">
+            <%!-- Common staff link --%>
+            <a href="/bitacora" phx-click="close_nav" class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors">
+              <.icon name="hero-clipboard-document-check" class="size-5 text-primary" /> Bitácora de Turno
+            </a>
             <%= if @current_user.role == "admin" do %>
               <a href="/admin" phx-click="close_nav" class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors">
                 <.icon name="hero-squares-2x2" class="size-5 text-primary" /> Panel de administración

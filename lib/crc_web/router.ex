@@ -73,6 +73,19 @@ defmodule CRCWeb.Router do
   end
 
   # ---------------------------------------------------------------------------
+  # Staff tools — any authenticated user (all roles)
+  # ---------------------------------------------------------------------------
+
+  scope "/", CRCWeb do
+    pipe_through [:browser, :require_auth]
+
+    live_session :staff,
+      on_mount: [{CRCWeb.UserAuth, :require_authenticated_user}] do
+      live "/bitacora", BitacoraLive
+    end
+  end
+
+  # ---------------------------------------------------------------------------
   # Employee self-service — any authenticated non-client user
   # ---------------------------------------------------------------------------
 

@@ -130,6 +130,13 @@ defmodule CRCWeb.Layouts do
             Dashboard
           </a>
           <a
+            href="/bitacora"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-clipboard-document-check" class="size-5 shrink-0" />
+            Bitácora de Turno
+          </a>
+          <a
             href="/admin/usuarios"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >

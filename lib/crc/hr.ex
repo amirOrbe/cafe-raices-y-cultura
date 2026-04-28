@@ -134,7 +134,16 @@ defmodule CRC.HR do
   @spec clock_in(User.t(), float(), float()) ::
           {:ok, AttendanceRecord.t()} | {:error, :too_far | :already_clocked_in}
   def clock_in(%User{} = user, lat, lng) do
-    if near_cafe?(lat, lng) do
+    distance = haversine_distance(lat, lng, @cafe_lat, @cafe_lng)
+
+    require Logger
+    Logger.info(
+      "[clock_in] user=#{user.id} lat=#{lat} lng=#{lng} " <>
+      "cafe_lat=#{@cafe_lat} cafe_lng=#{@cafe_lng} " <>
+      "distance_m=#{Float.round(distance, 1)} max_m=#{@max_distance_m}"
+    )
+
+    if distance <= @max_distance_m do
       do_clock_in(user, lat, lng, false)
     else
       {:error, :too_far}

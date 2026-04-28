@@ -8,7 +8,7 @@ defmodule CRC.Orders do
   alias CRC.Repo
   alias CRC.Orders.{Order, OrderItem, OrderItemExclusion}
   alias CRC.Catalog.{MenuItemIngredient, Package}
-  alias CRC.Inventory.Product
+  alias CRC.Inventory.{Product, ProductVariant}
   alias CRC.Accounts.User
 
   # Both cocina and barra subscribe to this topic
@@ -782,6 +782,26 @@ defmodule CRC.Orders do
     |> Repo.update_all(inc: [stock_quantity: restore])
   end
 
+  # Variant selection item: restore from product_variants.stock_quantity using recipe quantity.
+  defp restore_stock_for_item(%OrderItem{variant_id: variant_id, for_menu_item_id: for_menu_item_id, quantity: qty})
+       when not is_nil(variant_id) and not is_nil(for_menu_item_id) do
+    variant = Repo.get!(ProductVariant, variant_id)
+
+    qty_per_unit =
+      from(mii in MenuItemIngredient,
+        where: mii.menu_item_id == ^for_menu_item_id and mii.product_id == ^variant.product_id,
+        select: mii.quantity
+      )
+      |> Repo.one()
+
+    if qty_per_unit do
+      restore = Decimal.mult(qty_per_unit, Decimal.new(qty))
+
+      from(v in ProductVariant, where: v.id == ^variant_id)
+      |> Repo.update_all(inc: [stock_quantity: restore])
+    end
+  end
+
   defp restore_stock_for_item(_), do: :ok
 
   defp filter_by_period(query, :all), do: query
@@ -1155,11 +1175,15 @@ defmodule CRC.Orders do
   defp deduct_ingredients_for_items([]), do: :ok
 
   defp deduct_ingredients_for_items(pending_items) do
-    # Variant items (variant_id set, no menu_item_id/product_id) carry no stock to deduct.
-    deductible = Enum.reject(pending_items, fn oi -> not is_nil(oi.variant_id) end)
+    # Split by type: variant selections vs everything else
+    {variant_items, rest} = Enum.split_with(pending_items, fn oi -> not is_nil(oi.variant_id) end)
 
-    # Split: regular menu items (deduct via recipe) vs direct product extras
-    {menu_items, extras} = Enum.split_with(deductible, &(&1.menu_item_id != nil))
+    # Variant items → deduct from product_variants.stock_quantity using the
+    # quantity defined in the parent menu item's recipe.
+    deduct_variant_stock(variant_items)
+
+    # Split the rest: regular menu items (deduct via recipe) vs direct product extras
+    {menu_items, extras} = Enum.split_with(rest, &(&1.menu_item_id != nil))
 
     # Build deduction map from menu item recipes
     deductions = build_recipe_deductions(menu_items)
@@ -1176,6 +1200,61 @@ defmodule CRC.Orders do
     # Apply one atomic decrement per product
     Enum.each(all_deductions, fn {product_id, deduction} ->
       from(p in Product, where: p.id == ^product_id)
+      |> Repo.update_all(inc: [stock_quantity: Decimal.negate(deduction)])
+    end)
+  end
+
+  # Deducts from product_variants.stock_quantity for variant-selection order items.
+  # Each variant item knows:
+  #   - variant_id        → which specific type (e.g. "Leche de Avena", id=5, product_id=3)
+  #   - for_menu_item_id  → which dish recipe to look up (e.g. "Matcha Latte")
+  #   - quantity          → how many units ordered (e.g. 2)
+  #
+  # The per-unit deduction amount comes from menu_item_ingredients.quantity for
+  # (for_menu_item_id, variant.product_id).  If the parent product is not in the
+  # recipe we skip — it means stock tracking wasn't set up for that ingredient.
+  defp deduct_variant_stock([]), do: :ok
+
+  defp deduct_variant_stock(variant_items) do
+    variant_ids = variant_items |> Enum.map(& &1.variant_id) |> Enum.uniq()
+
+    # Load variants to get parent product_id
+    variants =
+      from(v in ProductVariant, where: v.id in ^variant_ids)
+      |> Repo.all()
+      |> Map.new(fn v -> {v.id, v} end)
+
+    # Load relevant recipe rows: (menu_item_id, product_id) → quantity
+    for_menu_item_ids =
+      variant_items
+      |> Enum.map(& &1.for_menu_item_id)
+      |> Enum.uniq()
+      |> Enum.reject(&is_nil/1)
+
+    recipe_quantities =
+      from(mii in MenuItemIngredient,
+        where: mii.menu_item_id in ^for_menu_item_ids
+      )
+      |> Repo.all()
+      |> Map.new(fn mii -> {{mii.menu_item_id, mii.product_id}, mii.quantity} end)
+
+    # Accumulate deduction per variant_id
+    deductions =
+      Enum.reduce(variant_items, %{}, fn oi, acc ->
+        with %ProductVariant{} = variant <- Map.get(variants, oi.variant_id),
+             false <- is_nil(oi.for_menu_item_id),
+             qty_per_unit when not is_nil(qty_per_unit) <-
+               Map.get(recipe_quantities, {oi.for_menu_item_id, variant.product_id}) do
+          total = Decimal.mult(qty_per_unit, Decimal.new(oi.quantity))
+          Map.update(acc, oi.variant_id, total, &Decimal.add(&1, total))
+        else
+          _ -> acc
+        end
+      end)
+
+    # One atomic decrement per variant
+    Enum.each(deductions, fn {variant_id, deduction} ->
+      from(v in ProductVariant, where: v.id == ^variant_id)
       |> Repo.update_all(inc: [stock_quantity: Decimal.negate(deduction)])
     end)
   end

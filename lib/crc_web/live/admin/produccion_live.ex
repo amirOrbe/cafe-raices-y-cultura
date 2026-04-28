@@ -465,7 +465,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
               </div>
 
               <%!-- Yield quantity + unit --%>
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="form-control">
                   <label class="label">
                     <span class="label-text font-medium">Cantidad que produce</span>

@@ -79,6 +79,30 @@ defmodule CRC.Accounts do
   def update_user(%User{}, _user, _attrs), do: {:error, :unauthorized}
 
   @doc """
+  Updates a user's own profile (name and avatar only).
+  No role, email, or station changes — those are admin-only.
+  """
+  @spec update_own_profile(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def update_own_profile(%User{} = user, attrs) do
+    user
+    |> User.profile_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a user's own password.
+  The caller must have already verified the current password via `authenticate_user/2`
+  before calling this function.
+  """
+  @spec update_own_password(User.t(), String.t()) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def update_own_password(%User{} = user, new_password) do
+    user
+    |> User.password_changeset(%{"password" => new_password})
+    |> Repo.update()
+  end
+
+  @doc """
   Deactivates a user (is_active = false).
 
   Requires the caller to be an administrator and not the same user.

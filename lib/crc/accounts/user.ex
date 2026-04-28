@@ -73,6 +73,35 @@ defmodule CRC.Accounts.User do
   @doc "Returns the list of valid station identifiers."
   def valid_stations, do: @stations
 
+  @doc """
+  Changeset for a user updating their own profile.
+  Only allows changing name and avatar_url — role, email, stations, etc. are locked.
+  """
+  @spec profile_changeset(t(), map()) :: Ecto.Changeset.t()
+  def profile_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:name, :avatar_url])
+    |> update_change(:name, &CRC.Utils.title_case/1)
+    |> validate_required([:name], message: "no puede estar en blanco")
+    |> validate_length(:name, min: 2, max: 100, message: "debe tener al menos %{count} caracteres")
+  end
+
+  @doc """
+  Changeset for updating only the password.
+  Caller must have already verified the current password before using this.
+  """
+  @spec password_changeset(t(), map()) :: Ecto.Changeset.t()
+  def password_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:password])
+    |> validate_required([:password], message: "no puede estar en blanco")
+    |> validate_length(:password,
+      min: @min_password_length,
+      message: "debe tener al menos %{count} caracteres"
+    )
+    |> hash_password()
+  end
+
   @doc "Changeset that marks a user's email as confirmed."
   @spec confirm_changeset(t()) :: Ecto.Changeset.t()
   def confirm_changeset(user) do

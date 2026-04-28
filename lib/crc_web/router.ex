@@ -95,6 +95,7 @@ defmodule CRCWeb.Router do
     live_session :employee,
       on_mount: [{CRCWeb.UserAuth, :require_authenticated_user}] do
       live "/mi-horario", MyScheduleLive
+      live "/mi-perfil", ProfileLive
     end
   end
 

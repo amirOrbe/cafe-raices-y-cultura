@@ -8,7 +8,9 @@ defmodule CRCWeb.Endpoint do
     store: :cookie,
     key: "_crc_key",
     signing_salt: "1xHl+laI",
-    same_site: "Lax"
+    same_site: "Lax",
+    # Session expires after 8 hours of inactivity (renewed on each request)
+    max_age: 8 * 60 * 60
   ]
 
   socket "/live", Phoenix.LiveView.Socket,

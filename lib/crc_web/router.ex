@@ -17,6 +17,7 @@ defmodule CRCWeb.Router do
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug :fetch_current_user
+    plug :touch_session
   end
 
   pipeline :api do
@@ -178,6 +179,19 @@ defmodule CRCWeb.Router do
 
       live_dashboard "/dashboard", metrics: CRCWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Rolling session — touch the cookie on every request so the 8-hour
+  # inactivity timer resets whenever the user opens the app.
+  # ---------------------------------------------------------------------------
+
+  defp touch_session(conn, _opts) do
+    if get_session(conn, "user_id") do
+      put_session(conn, "_active_at", System.system_time(:second))
+    else
+      conn
     end
   end
 end

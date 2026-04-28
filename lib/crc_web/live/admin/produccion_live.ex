@@ -440,68 +440,81 @@ defmodule CRCWeb.Admin.ProduccionLive do
             <%!-- Recipe form --%>
             <.form for={@recipe_form} phx-submit="save_recipe" class="space-y-5">
 
-              <%!-- Name (= output product) --%>
-              <div class="form-control">
-                <label class="label">
-                  <span class="label-text font-medium">Nombre del producto que se produce</span>
-                </label>
-                <input
-                  type="text"
-                  name="recipe[name]"
-                  value={@recipe_form[:name].value}
-                  class={"input input-bordered w-full #{if @recipe_form[:name].errors != [], do: "input-error"}"}
-                  placeholder="Ej: Oleo de Naranja"
-                />
-                <p class="text-xs text-base-content/40 mt-1">
-                  Si no existe en Inventario, se crea automáticamente.
-                </p>
-                <%= for {msg, _} <- @recipe_form[:name].errors do %>
-                  <p class="text-xs text-error mt-1">{msg}</p>
-                <% end %>
-              </div>
+              <%!-- phx-update="ignore" prevents LiveView from overwriting these
+                   inputs when ingredient_rows state changes (which would clear
+                   whatever the user has typed). The form submit still reads the
+                   current DOM values correctly. --%>
+              <div id="recipe-static-fields" phx-update="ignore" class="space-y-5">
 
-              <%!-- Yield quantity + unit --%>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <%!-- Name (= output product) --%>
                 <div class="form-control">
                   <label class="label">
-                    <span class="label-text font-medium">Cantidad que produce</span>
+                    <span class="label-text font-medium">Nombre del producto que se produce</span>
                   </label>
                   <input
-                    type="number"
-                    name="recipe[yield_quantity]"
-                    value={@recipe_form[:yield_quantity].value}
-                    min="0.001"
-                    step="0.001"
-                    class={"input input-bordered w-full #{if @recipe_form[:yield_quantity].errors != [], do: "input-error"}"}
-                    placeholder="Ej: 500"
+                    type="text"
+                    name="recipe[name]"
+                    value={@recipe_form[:name].value}
+                    class="input input-bordered w-full"
+                    placeholder="Ej: Oleo de Naranja"
                   />
-                  <%= for {msg, _} <- @recipe_form[:yield_quantity].errors do %>
-                    <p class="text-xs text-error mt-1">{msg}</p>
-                  <% end %>
+                  <p class="text-xs text-base-content/40 mt-1">
+                    Si no existe en Inventario, se crea automáticamente.
+                  </p>
                 </div>
 
+                <%!-- Yield quantity + unit --%>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-medium">Cantidad que produce</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="recipe[yield_quantity]"
+                      value={@recipe_form[:yield_quantity].value}
+                      min="0.001"
+                      step="0.001"
+                      class="input input-bordered w-full"
+                      placeholder="Ej: 500"
+                    />
+                  </div>
+
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-medium">Unidad</span>
+                    </label>
+                    <select
+                      name="recipe[yield_unit]"
+                      class="select select-bordered w-full"
+                    >
+                      <option value="">Seleccionar…</option>
+                      <%= for unit <- units() do %>
+                        <option
+                          value={unit}
+                          selected={@recipe_form[:yield_unit].value == unit}
+                        >
+                          {unit}
+                        </option>
+                      <% end %>
+                    </select>
+                  </div>
+                </div>
+
+                <%!-- Notes --%>
                 <div class="form-control">
                   <label class="label">
-                    <span class="label-text font-medium">Unidad</span>
+                    <span class="label-text font-medium">Notas internas</span>
+                    <span class="label-text-alt text-base-content/40">Opcional</span>
                   </label>
-                  <select
-                    name="recipe[yield_unit]"
-                    class={"select select-bordered w-full #{if @recipe_form[:yield_unit].errors != [], do: "select-error"}"}
-                  >
-                    <option value="">Seleccionar…</option>
-                    <%= for unit <- units() do %>
-                      <option
-                        value={unit}
-                        selected={@recipe_form[:yield_unit].value == unit}
-                      >
-                        {unit}
-                      </option>
-                    <% end %>
-                  </select>
-                  <%= for {msg, _} <- @recipe_form[:yield_unit].errors do %>
-                    <p class="text-xs text-error mt-1">{msg}</p>
-                  <% end %>
+                  <textarea
+                    name="recipe[notes]"
+                    class="textarea textarea-bordered w-full text-sm"
+                    rows="2"
+                    placeholder="Instrucciones, observaciones…"
+                  >{@recipe_form[:notes].value}</textarea>
                 </div>
+
               </div>
 
               <%!-- Ingredients --%>
@@ -556,20 +569,6 @@ defmodule CRCWeb.Admin.ProduccionLive do
                     </div>
                   <% end %>
                 </div>
-              </div>
-
-              <%!-- Notes --%>
-              <div class="form-control">
-                <label class="label">
-                  <span class="label-text font-medium">Notas internas</span>
-                  <span class="label-text-alt text-base-content/40">Opcional</span>
-                </label>
-                <textarea
-                  name="recipe[notes]"
-                  class="textarea textarea-bordered w-full text-sm"
-                  rows="2"
-                  placeholder="Instrucciones, observaciones…"
-                >{@recipe_form[:notes].value}</textarea>
               </div>
 
               <%!-- Submit --%>

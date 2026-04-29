@@ -110,21 +110,33 @@ defmodule CRCWeb.Admin.ProductsLive do
       end
 
     case result do
-      {:ok, _product} ->
-        label = if socket.assigns.modal == :new, do: "creado", else: "actualizado"
+      {:ok, product} ->
         products = Inventory.list_products()
         low_stock = Enum.count(products, &low_stock?/1)
+        base =
+          socket
+          |> assign(:products, products)
+          |> assign(:low_stock_count, low_stock)
+          |> assign(:categories, Inventory.list_product_categories())
+          |> assign(:variant_form, nil)
+          |> assign(:editing_variant_id, nil)
 
-        {:noreply,
-         socket
-         |> put_flash(:info, "Insumo #{label} correctamente.")
-         |> assign(:products, products)
-         |> assign(:low_stock_count, low_stock)
-         |> assign(:categories, Inventory.list_product_categories())
-         |> assign(:modal, nil)
-         |> assign(:form, nil)
-         |> assign(:variant_form, nil)
-         |> assign(:editing_variant_id, nil)}
+        if socket.assigns.modal == :new do
+          # After creating, open the edit modal so the user can add tipos right away
+          fresh = Inventory.get_product!(product.id)
+          changeset = Inventory.change_product(fresh)
+          {:noreply,
+           base
+           |> put_flash(:info, "Insumo creado. Ahora puedes agregar los tipos.")
+           |> assign(:modal, {:edit, fresh})
+           |> assign(:form, to_form(changeset))}
+        else
+          {:noreply,
+           base
+           |> put_flash(:info, "Insumo actualizado correctamente.")
+           |> assign(:modal, nil)
+           |> assign(:form, nil)}
+        end
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}

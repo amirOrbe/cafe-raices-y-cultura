@@ -264,9 +264,10 @@ defmodule CRCWeb.Admin.MermaLive do
                 name="stock_adjustment[quantity]"
                 min="0.001"
                 step="0.001"
-                placeholder="Ej: 0.5"
+                placeholder="Ej: 0.500"
                 class="input input-bordered w-full"
                 required
+                onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
               />
             </div>
 

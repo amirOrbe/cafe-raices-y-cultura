@@ -622,44 +622,6 @@ defmodule CRCWeb.Components.SiteComponents do
             {Map.get(@item, :description)}
           </p>
         </div>
-        
-    <!-- Ingredient quantities -->
-        <% ingredients = Map.get(@item, :menu_item_ingredients, []) %>
-        <%= if is_list(ingredients) and ingredients != [] do %>
-          <div class="flex flex-wrap gap-1.5">
-            <%= for mii <- ingredients do %>
-              <span class="inline-flex items-center gap-1 text-xs bg-base-200 text-base-content/60 rounded-full px-2.5 py-0.5">
-                {mii.product.name}
-                <span class="font-medium text-base-content/80">
-                  {format_qty(mii.quantity)}{mii.product.unit}
-                </span>
-              </span>
-            <% end %>
-          </div>
-          
-    <!-- Variant info: one row per ingredient that has active variants -->
-          <% ingredients_with_variants = ingredients_with_active_variants(ingredients) %>
-          <%= if ingredients_with_variants != [] do %>
-            <div class="space-y-1.5">
-              <%= for {product_name, variants} <- ingredients_with_variants do %>
-                <div class="flex flex-wrap items-center gap-1.5">
-                  <span class="text-xs text-base-content/40 shrink-0">
-                    Tipos de {String.downcase(product_name)}:
-                  </span>
-                  <%= for v <- variants do %>
-                    <span class="inline-flex items-center gap-0.5 text-xs bg-primary/8 text-primary border border-primary/20 rounded-full px-2 py-0.5">
-                      {v.name}
-                      <%= if Decimal.compare(v.extra_charge, 0) == :gt do %>
-                        <span class="text-primary/60">+${format_price(v.extra_charge)}</span>
-                      <% end %>
-                    </span>
-                  <% end %>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
-        <% end %>
-        
     <!-- Badge -->
         <div :if={Map.get(@item, :featured)} class="mt-auto">
           <span class="inline-block bg-accent/20 text-accent-content border border-accent/40 text-xs font-semibold px-3 py-1 rounded-full">
@@ -682,29 +644,6 @@ defmodule CRCWeb.Components.SiteComponents do
 
   defp format_price(price), do: "#{price}"
 
-  defp format_qty(%Decimal{} = qty) do
-    str = qty |> Decimal.round(3) |> Decimal.to_string()
-
-    if String.contains?(str, ".") do
-      str |> String.trim_trailing("0") |> String.trim_trailing(".")
-    else
-      str
-    end
-  end
-
-  defp format_qty(qty), do: "#{qty}"
-
-  # Returns [{product_name, [active_variant, ...]}] for ingredients whose
-  # product has at least one active variant, preserving ingredient order.
-  defp ingredients_with_active_variants(ingredients) do
-    ingredients
-    |> Enum.map(fn mii ->
-      variants = Map.get(mii.product, :variants, [])
-      active = Enum.filter(variants, & &1.active)
-      {mii.product.name, active}
-    end)
-    |> Enum.filter(fn {_name, active} -> active != [] end)
-  end
 
   # ---------------------------------------------------------------------------
   # Contextual help banner

@@ -330,6 +330,7 @@ defmodule CRCWeb.Admin.InventarioLive do
             class="input input-bordered input-sm w-full focus:input-primary"
             autofocus
             required
+            onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
           />
           <p class="text-xs text-base-content/40 mt-0.5">
             Actual: <strong>{format_qty(@product.stock_quantity)}</strong> {@product.unit}

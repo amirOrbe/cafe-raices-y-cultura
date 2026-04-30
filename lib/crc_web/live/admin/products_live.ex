@@ -28,6 +28,8 @@ defmodule CRCWeb.Admin.ProductsLive do
       |> assign(:form, nil)
       |> assign(:variant_form, nil)
       |> assign(:editing_variant_id, nil)
+      |> assign(:purchase_total, "")
+      |> assign(:purchase_qty, "")
 
     {:ok, socket}
   end
@@ -81,7 +83,9 @@ defmodule CRCWeb.Admin.ProductsLive do
      |> assign(:modal, :new)
      |> assign(:form, to_form(changeset))
      |> assign(:variant_form, nil)
-     |> assign(:editing_variant_id, nil)}
+     |> assign(:editing_variant_id, nil)
+     |> assign(:purchase_total, "")
+     |> assign(:purchase_qty, "")}
   end
 
   def handle_event("edit_product", %{"id" => id}, socket) do
@@ -93,7 +97,35 @@ defmodule CRCWeb.Admin.ProductsLive do
      |> assign(:modal, {:edit, product})
      |> assign(:form, to_form(changeset))
      |> assign(:variant_form, nil)
-     |> assign(:editing_variant_id, nil)}
+     |> assign(:editing_variant_id, nil)
+     |> assign(:purchase_total, "")
+     |> assign(:purchase_qty, "")}
+  end
+
+  # Live-validates the form and auto-calculates net_cost when purchase helpers are filled.
+  def handle_event("validate_product", params, socket) do
+    product_params = Map.get(params, "product", %{})
+    purchase_total = Map.get(params, "purchase_total", "")
+    purchase_qty = Map.get(params, "purchase_qty", "")
+
+    product_params = maybe_calc_unit_cost(product_params, purchase_total, purchase_qty)
+
+    product =
+      case socket.assigns.modal do
+        {:edit, p} -> p
+        _ -> %Product{}
+      end
+
+    changeset =
+      product
+      |> Inventory.change_product(product_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply,
+     socket
+     |> assign(:form, to_form(changeset))
+     |> assign(:purchase_total, purchase_total)
+     |> assign(:purchase_qty, purchase_qty)}
   end
 
   def handle_event("close_modal", _params, socket) do
@@ -639,7 +671,13 @@ defmodule CRCWeb.Admin.ProductsLive do
             </p>
           </SiteComponents.help_banner>
           <%!-- Product form --%>
-          <.form id="product-form" for={@form} phx-submit="save_product" class="space-y-1">
+          <.form
+            id="product-form"
+            for={@form}
+            phx-submit="save_product"
+            phx-change="validate_product"
+            class="space-y-1"
+          >
             <%!-- Name --%>
             <.input
               field={@form[:name]}
@@ -664,14 +702,73 @@ defmodule CRCWeb.Admin.ProductsLive do
               />
             </div>
 
+            <%!-- Purchase helper: auto-calculates net_cost --%>
+            <div class="rounded-xl bg-base-200/60 border border-base-300 p-3 space-y-2">
+              <p class="text-xs font-semibold text-base-content/60 flex items-center gap-1.5">
+                <.icon name="hero-calculator" class="size-3.5" />
+                Calculadora de costo unitario
+                <span class="font-normal text-base-content/40">
+                  — llena estos dos campos y el costo neto se calcula solo
+                </span>
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="form-control">
+                  <label class="label py-0.5">
+                    <span class="label-text text-xs">Precio total pagado ($)</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="purchase_total"
+                    value={@purchase_total}
+                    min="0"
+                    step="0.01"
+                    placeholder="Ej: 100.00"
+                    class="input input-bordered input-sm w-full"
+                  />
+                </div>
+                <div class="form-control">
+                  <label class="label py-0.5">
+                    <span class="label-text text-xs">Cantidad que compraste (en la unidad del insumo)</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="purchase_qty"
+                    value={@purchase_qty}
+                    min="0"
+                    step="0.001"
+                    placeholder="Ej: 250"
+                    class="input input-bordered input-sm w-full"
+                    onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
+                  />
+                </div>
+              </div>
+              <%= if @purchase_total != "" and @purchase_qty != "" do %>
+                <% total = Decimal.parse(@purchase_total) %>
+                <% qty = Decimal.parse(@purchase_qty) %>
+                <%= case {total, qty} do %>
+                  <% {{t, _}, {q, _}} when true -> %>
+                    <%= if Decimal.compare(q, 0) == :gt and Decimal.compare(t, 0) == :gt do %>
+                      <p class="text-xs text-success font-medium">
+                        ✓ Costo unitario calculado:
+                        <strong>
+                          ${t |> Decimal.div(q) |> Decimal.round(4) |> Decimal.to_string()}
+                        </strong>
+                        por unidad
+                      </p>
+                    <% end %>
+                  <% _ -> %>
+                <% end %>
+              <% end %>
+            </div>
+
             <%!-- Net cost + Sale price (2 cols) --%>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <.input
                 field={@form[:net_cost]}
                 type="number"
-                label="Costo neto ($)"
-                placeholder="0.00"
-                step="0.01"
+                label="Costo neto ($) — por unidad"
+                placeholder="0.0000"
+                step="0.0001"
                 min="0"
               />
               <.input
@@ -690,17 +787,19 @@ defmodule CRCWeb.Admin.ProductsLive do
                 field={@form[:stock_quantity]}
                 type="number"
                 label="Cantidad en stock"
-                placeholder="0"
+                placeholder="0.000"
                 step="0.001"
                 min="0"
+                onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
               />
               <.input
                 field={@form[:min_stock]}
                 type="number"
                 label="Stock mínimo (alerta)"
-                placeholder="0"
+                placeholder="0.000"
                 step="0.001"
                 min="0"
+                onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
               />
             </div>
 
@@ -1016,4 +1115,19 @@ defmodule CRCWeb.Admin.ProductsLive do
   end
 
   defp format_quantity(val), do: to_string(val)
+
+  # If both purchase_total and purchase_qty are valid positive numbers,
+  # overwrites the net_cost param with total / qty (rounded to 4 decimals).
+  # Otherwise leaves params untouched so the user can type net_cost directly.
+  defp maybe_calc_unit_cost(params, total_str, qty_str) do
+    with {total, _} <- Decimal.parse(total_str || ""),
+         true <- Decimal.compare(total, Decimal.new(0)) == :gt,
+         {qty, _} <- Decimal.parse(qty_str || ""),
+         true <- Decimal.compare(qty, Decimal.new(0)) == :gt do
+      unit_cost = total |> Decimal.div(qty) |> Decimal.round(4)
+      Map.put(params, "net_cost", Decimal.to_string(unit_cost))
+    else
+      _ -> params
+    end
+  end
 end

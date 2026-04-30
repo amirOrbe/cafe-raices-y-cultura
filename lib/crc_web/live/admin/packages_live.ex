@@ -341,38 +341,41 @@ defmodule CRCWeb.Admin.PackagesLive do
               phx-submit="save_package"
               class="space-y-4"
             >
+              <%!-- Name --%>
+              <div>
+                <label class="label pb-1">
+                  <span class="label-text font-medium">Nombre del paquete</span>
+                </label>
+                <input
+                  type="text"
+                  name="package[name]"
+                  value={@form[:name].value}
+                  class="input input-bordered w-full"
+                  placeholder="Ej. Combo Desayuno, Menú del Día, Paquete Familiar…"
+                  required
+                />
+                <%= if @form[:name].errors != [] do %>
+                  <p class="text-error text-xs mt-1">{translate_error(hd(@form[:name].errors))}</p>
+                <% end %>
+              </div>
+
+              <%!-- Description --%>
+              <div>
+                <label class="label pb-1">
+                  <span class="label-text font-medium">
+                    Descripción <span class="text-base-content/40">(opcional)</span>
+                  </span>
+                </label>
+                <textarea
+                  name="package[description]"
+                  class="textarea textarea-bordered w-full resize-none"
+                  rows="2"
+                  placeholder="Ej. Café + sandwich a precio especial. Ideal para llevar."
+                >{@form[:description].value}</textarea>
+              </div>
+
+              <%!-- Price + Active (2 cols) --%>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="sm:col-span-2">
-                  <label class="label pb-1">
-                    <span class="label-text font-medium">Nombre del paquete</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="package[name]"
-                    value={@form[:name].value}
-                    class="input input-bordered w-full"
-                    placeholder="Ej. Combo Familiar"
-                    required
-                  />
-                  <%= if @form[:name].errors != [] do %>
-                    <p class="text-error text-xs mt-1">{translate_error(hd(@form[:name].errors))}</p>
-                  <% end %>
-                </div>
-
-                <div class="sm:col-span-2">
-                  <label class="label pb-1">
-                    <span class="label-text font-medium">
-                      Descripción <span class="text-base-content/40">(opcional)</span>
-                    </span>
-                  </label>
-                  <textarea
-                    name="package[description]"
-                    class="textarea textarea-bordered w-full resize-none"
-                    rows="2"
-                    placeholder="Ej. 2 sandwiches + 2 cafés a precio especial"
-                  >{@form[:description].value}</textarea>
-                </div>
-
                 <div>
                   <label class="label pb-1">
                     <span class="label-text font-medium">Precio del paquete ($)</span>
@@ -387,12 +390,18 @@ defmodule CRCWeb.Admin.PackagesLive do
                     placeholder="0.00"
                     required
                   />
+                  <p class="text-xs text-base-content/40 mt-1">
+                    Normalmente menor al precio individual de cada platillo.
+                  </p>
                   <%= if @form[:price].errors != [] do %>
                     <p class="text-error text-xs mt-1">{translate_error(hd(@form[:price].errors))}</p>
                   <% end %>
                 </div>
 
-                <div class="flex items-center gap-6 pt-6">
+                <div class="flex flex-col justify-start pt-1">
+                  <label class="label pb-1">
+                    <span class="label-text font-medium">Estado</span>
+                  </label>
                   <label class="flex items-center gap-2 cursor-pointer">
                     <input type="hidden" name="package[active]" value="false" />
                     <input
@@ -404,18 +413,24 @@ defmodule CRCWeb.Admin.PackagesLive do
                     />
                     <span class="text-sm font-medium">Activo</span>
                   </label>
+                  <p class="text-xs text-base-content/40 mt-1.5">
+                    Solo los paquetes activos aparecen en el menú y pueden pedirse en comandas.
+                  </p>
                 </div>
               </div>
 
               <%!-- Item selector --%>
               <div>
-                <label class="label pb-2">
-                  <span class="label-text font-medium">Platillos incluidos</span>
+                <label class="label pb-1">
+                  <span class="label-text font-medium">Platillos incluidos en el paquete</span>
                   <span class="label-text-alt text-base-content/50">
                     {length(@selected_items)} seleccionados
                   </span>
                 </label>
-                <div class="border border-base-200 rounded-xl overflow-hidden">
+                <p class="text-xs text-base-content/40 mb-2">
+                  Marca los platillos que forman el paquete y ajusta la cantidad con + / −.
+                </p>
+                <div class="border border-base-300 rounded-xl overflow-hidden">
                   <div class="max-h-64 overflow-y-auto divide-y divide-base-200">
                     <%= for item <- @all_menu_items do %>
                       <% selected = Enum.find(@selected_items, &(&1.menu_item_id == item.id)) %>
@@ -429,7 +444,7 @@ defmodule CRCWeb.Admin.PackagesLive do
                         />
                         <div class="flex-1 min-w-0">
                           <p class="text-sm font-medium text-base-content truncate">{item.name}</p>
-                          <p class="text-xs text-base-content/50">${item.price}</p>
+                          <p class="text-xs text-base-content/50">${item.price} c/u</p>
                         </div>
                         <span class={"badge badge-xs #{if item.destination == "barra", do: "badge-info", else: "badge-warning"}"}>
                           {if item.destination == "barra", do: "Barra", else: "Cocina"}
@@ -461,6 +476,24 @@ defmodule CRCWeb.Admin.PackagesLive do
                     <% end %>
                   </div>
                 </div>
+
+                <%!-- Price comparison (shown when items selected) --%>
+                <%= if @selected_items != [] do %>
+                  <% individual_total = Enum.reduce(@selected_items, Decimal.new(0), fn si, acc ->
+                    case Enum.find(@all_menu_items, &(&1.id == si.menu_item_id)) do
+                      nil  -> acc
+                      item ->
+                        Decimal.add(acc, Decimal.mult(
+                          Decimal.new(to_string(item.price)),
+                          Decimal.new(si.quantity)
+                        ))
+                    end
+                  end) %>
+                  <div class="mt-2 rounded-lg bg-base-200 px-3 py-2 flex items-center justify-between text-xs text-base-content/60">
+                    <span>Precio individual total:</span>
+                    <span class="font-semibold">${individual_total}</span>
+                  </div>
+                <% end %>
               </div>
 
               <div class="flex justify-end gap-3 pt-2">

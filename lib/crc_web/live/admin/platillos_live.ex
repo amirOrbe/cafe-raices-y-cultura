@@ -6,7 +6,6 @@ defmodule CRCWeb.Admin.PlatillosLive do
   alias CRC.Catalog
   alias CRC.Catalog.MenuItem
   alias CRC.Cloudinary
-  alias CRCWeb.Components.SiteComponents
 
   @impl true
   def mount(_params, _session, socket) do
@@ -649,85 +648,165 @@ defmodule CRCWeb.Admin.PlatillosLive do
           </button>
         </div>
 
-        <div class="px-6 py-5">
-          <SiteComponents.help_banner title="¿Cómo funciona este formulario?">
-            <p>
-              <strong>Precio de venta</strong>
-              — lo que el cliente paga. Aparece en el menú y en la comanda.
-            </p>
-            <p>
-              <strong>Destino</strong>
-              — a dónde va la comanda: <em>Cocina</em>
-              para platillos con preparación caliente/fría, <em>Barra</em>
-              para bebidas.
-            </p>
-            <p>
-              <strong>Ingredientes (receta)</strong>
-              — lista los insumos y la cantidad por porción. El sistema descuenta automáticamente ese stock cada vez que se envía el platillo a cocina/barra. También calcula el
-              <strong>costo de producción</strong>
-              y el margen de ganancia que ves en la lista.
-            </p>
-            <p>
-              Si un platillo no tiene ingredientes registrados, el stock no se descuenta automáticamente.
-            </p>
-          </SiteComponents.help_banner>
+        <div class="px-6 py-5 space-y-4">
+          <%!-- Step flow --%>
+          <div class="flex items-center gap-2 text-xs flex-wrap">
+            <span class="flex items-center gap-1.5 font-semibold text-primary">
+              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-content text-[10px] font-bold shrink-0">
+                1
+              </span>
+              Información
+            </span>
+            <.icon name="hero-chevron-right" class="size-3 text-base-content/30 shrink-0" />
+            <span class="flex items-center gap-1.5 text-base-content/40">
+              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+                2
+              </span>
+              Precio y destino
+            </span>
+            <.icon name="hero-chevron-right" class="size-3 text-base-content/30 shrink-0" />
+            <span class="flex items-center gap-1.5 text-base-content/40">
+              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+                3
+              </span>
+              Ingredientes
+            </span>
+          </div>
+
           <.form
             id="item-form"
             for={@form}
             phx-submit="save_item"
             phx-change="validate_upload"
-            class="space-y-3"
+            class="space-y-4"
           >
-            <%!-- Name --%>
-            <.input
-              field={@form[:name]}
-              type="text"
-              label="Nombre del platillo"
-              placeholder="Ej. Cappuccino, El Favorito, Toast Francés"
-            />
+            <%!-- ── ① Información básica ──────────────────────────────────────── --%>
+            <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+              <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
+                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-content text-[10px] font-bold">
+                  1
+                </span>
+                Información básica
+              </p>
 
-            <%!-- Description --%>
-            <.input
-              field={@form[:description]}
-              type="textarea"
-              label="Descripción (opcional)"
-              placeholder="Descripción breve que aparece en el menú público..."
-            />
+              <%!-- Name --%>
+              <.input
+                field={@form[:name]}
+                type="text"
+                label="Nombre del platillo"
+                placeholder="Ej. Cappuccino, Toast Francés, El Favorito"
+              />
 
-            <%!-- Category + Price (2 cols) --%>
-            <div class="grid grid-cols-2 gap-3">
+              <%!-- Description --%>
               <.input
-                field={@form[:category_id]}
-                type="select"
-                label="Categoría"
-                options={[{"— Selecciona categoría —", ""} | Enum.map(@categories, &{&1.name, &1.id})]}
+                field={@form[:description]}
+                type="textarea"
+                label="Descripción (opcional)"
+                placeholder="Breve texto que aparece bajo el nombre en el menú público..."
               />
-              <.input
-                field={@form[:price]}
-                type="number"
-                label="Precio ($)"
-                placeholder="0.00"
-                step="0.01"
-                min="0.01"
-              />
+
+              <%!-- Category + Featured (2 cols) --%>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <.input
+                  field={@form[:category_id]}
+                  type="select"
+                  label="Categoría"
+                  options={[{"— Selecciona categoría —", ""} | Enum.map(@categories, &{&1.name, &1.id})]}
+                />
+                <div>
+                  <.input field={@form[:featured]} type="checkbox" label="Platillo destacado ⭐" />
+                  <p class="text-xs text-base-content/40 mt-1 ml-7">
+                    Aparece primero con una estrella en el menú.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <%!-- Destination --%>
-            <.input
-              field={@form[:destination]}
-              type="select"
-              label="Se prepara en"
-              options={[{"Cocina 🍳", "cocina"}, {"Barra ☕", "barra"}]}
-            />
+            <%!-- ── ② Precio y destino ─────────────────────────────────────────── --%>
+            <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+              <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
+                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold">
+                  2
+                </span>
+                Precio y destino
+              </p>
 
-            <%!-- Switches (2 cols) --%>
-            <div class="grid grid-cols-2 gap-3">
-              <.input field={@form[:featured]} type="checkbox" label="Destacado" />
-              <.input field={@form[:available]} type="checkbox" label="Visible en menú" />
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <%!-- Price --%>
+                <div>
+                  <.input
+                    field={@form[:price]}
+                    type="number"
+                    label="Precio de venta ($)"
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0.01"
+                  />
+                  <p class="text-xs text-base-content/40 mt-1">
+                    Lo que el cliente paga. Aparece en el menú y en las comandas.
+                  </p>
+                </div>
+
+                <%!-- Available --%>
+                <div class="pt-0 sm:pt-2">
+                  <label class="label pb-1">
+                    <span class="label-text font-medium">Visibilidad</span>
+                  </label>
+                  <.input field={@form[:available]} type="checkbox" label="Visible en el menú" />
+                  <p class="text-xs text-base-content/40 mt-1 ml-7">
+                    Si está activo, los meseros pueden pedirlo en comandas.
+                  </p>
+                </div>
+              </div>
+
+              <%!-- Destination cards (radio styled as visual cards via peer-checked) --%>
+              <div>
+                <label class="label pb-1.5">
+                  <span class="label-text font-medium">¿Dónde se prepara?</span>
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      name="menu_item[destination]"
+                      value="cocina"
+                      class="sr-only peer"
+                      checked={@form[:destination].value not in ["barra"]}
+                    />
+                    <div class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-base-300 peer-checked:border-primary peer-checked:bg-primary/5 hover:border-primary/30 transition-all">
+                      <span class="text-3xl">🍳</span>
+                      <div class="text-center">
+                        <p class="font-semibold text-sm text-base-content">Cocina</p>
+                        <p class="text-xs text-base-content/50 mt-0.5">
+                          Platillos, sandwiches, ensaladas…
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      name="menu_item[destination]"
+                      value="barra"
+                      class="sr-only peer"
+                      checked={@form[:destination].value == "barra"}
+                    />
+                    <div class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-base-300 peer-checked:border-info peer-checked:bg-info/5 hover:border-info/30 transition-all">
+                      <span class="text-3xl">☕</span>
+                      <div class="text-center">
+                        <p class="font-semibold text-sm text-base-content">Barra</p>
+                        <p class="text-xs text-base-content/50 mt-0.5">
+                          Bebidas, cafés, cócteles…
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
             </div>
 
-            <%!-- ── Photo upload ───────────────────────────────────────────────── --%>
-            <div class="pt-1">
+            <%!-- ── Foto del platillo ───────────────────────────────────────────── --%>
+            <div>
               <p class="text-sm font-medium text-base-content mb-2">
                 Foto del platillo <span class="text-base-content/40 font-normal">(opcional)</span>
               </p>
@@ -799,24 +878,32 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 <% end %>
               <% end %>
             </div>
-            <%!-- ── End Photo upload ───────────────────────────────────────────── --%>
 
-            <%!-- ── Ingredients section ──────────────────────────────────────── --%>
-            <div class="mt-5 pt-4 border-t border-base-300">
-              <div class="flex items-center gap-2 mb-3">
-                <.icon name="hero-beaker" class="size-4 text-base-content/60" />
-                <h3 class="text-sm font-semibold text-base-content">Ingredientes</h3>
+            <%!-- ── ③ Ingredientes (receta) ────────────────────────────────────── --%>
+            <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+              <div class="flex items-center gap-1.5">
+                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+                  3
+                </span>
+                <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40">
+                  Ingredientes de la receta
+                </p>
                 <span class="badge badge-xs badge-ghost">{length(@ingredients_draft)}</span>
               </div>
+              <p class="text-xs text-base-content/40 leading-relaxed">
+                Define qué insumos usa este platillo y en qué cantidad <strong>por porción</strong>.
+                El sistema descuenta ese stock automáticamente cada vez que se envía a cocina o barra,
+                y calcula el costo de producción y el margen de ganancia que ves en la lista.
+              </p>
 
               <%!-- Current ingredient list --%>
               <%= if @ingredients_draft != [] do %>
-                <div class="mb-3 space-y-1.5">
+                <div class="space-y-1.5">
                   <%= for ing <- @ingredients_draft do %>
-                    <div class="flex items-center justify-between py-1.5 px-3 bg-base-200 rounded-lg">
+                    <div class="flex items-center justify-between py-1.5 px-3 bg-base-100 border border-base-300 rounded-lg">
                       <span class="text-sm font-medium text-base-content">{ing.product_name}</span>
                       <div class="flex items-center gap-3">
-                        <span class="text-xs text-base-content/60">
+                        <span class="text-xs font-mono text-base-content/60">
                           {format_qty(ing.quantity)} {unit_abbr(ing.unit)}
                         </span>
                         <button
@@ -834,9 +921,12 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 </div>
               <% end %>
 
-              <%!-- Add ingredient picker --%>
+              <%!-- Add ingredient picker — resolves selected product's unit dynamically --%>
+              <% selected_product = Enum.find(@available_products, &(to_string(&1.id) == @selected_product_id)) %>
+              <% selected_unit = if selected_product, do: unit_abbr(selected_product.unit), else: nil %>
+
               <div class="flex flex-col sm:flex-row gap-2 sm:items-end">
-                <%!-- Insumo select — full width on mobile, flex-1 on desktop --%>
+                <%!-- Insumo select --%>
                 <div class="w-full sm:flex-1 min-w-0">
                   <label class="label text-xs pb-0.5">Insumo</label>
                   <select
@@ -852,14 +942,22 @@ defmodule CRCWeb.Admin.PlatillosLive do
                     <% end %>
                   </select>
                 </div>
-                <%!-- Cantidad + Agregar — share a row on mobile --%>
+
+                <%!-- Cantidad con unidad dinámica --%>
                 <div class="flex gap-2 items-end">
-                  <div class="flex-1 sm:w-28 sm:flex-none">
-                    <label class="label text-xs pb-0.5">Cantidad</label>
+                  <div class="flex-1 sm:w-32 sm:flex-none">
+                    <label class="label text-xs pb-0.5">
+                      Cantidad
+                      <%= if selected_unit do %>
+                        <span class="badge badge-xs badge-primary badge-outline ml-1">
+                          {selected_unit}
+                        </span>
+                      <% end %>
+                    </label>
                     <input
                       type="number"
                       class="input input-sm w-full"
-                      placeholder="0"
+                      placeholder={if selected_unit, do: "0.000 #{selected_unit}", else: "0.000"}
                       step="0.001"
                       min="0"
                       value={@ingredient_quantity_input}
@@ -878,17 +976,15 @@ defmodule CRCWeb.Admin.PlatillosLive do
               </div>
 
               <%= if @available_products == [] do %>
-                <p class="text-xs text-base-content/50 mt-2">
-                  No hay insumos disponibles. Crea insumos en <a
-                    href="/admin/insumos"
-                    class="link link-primary"
-                  >Inventario → Insumos</a>.
+                <p class="text-xs text-base-content/50">
+                  No hay insumos disponibles. Crea insumos en
+                  <a href="/admin/insumos" class="link link-primary">Inventario → Insumos</a>.
                 </p>
               <% end %>
             </div>
-            <%!-- ── End Ingredients ──────────────────────────────────────────── --%>
+            <%!-- ── End Ingredientes ───────────────────────────────────────────── --%>
 
-            <div class="flex justify-end gap-3 pt-4">
+            <div class="flex justify-end gap-3 pt-2">
               <button type="button" class="btn btn-ghost" phx-click="close_modal">
                 Cancelar
               </button>

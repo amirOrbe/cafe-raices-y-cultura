@@ -116,7 +116,12 @@ defmodule CRCWeb.ProduccionLive do
         <%!-- Step 1: Select recipe (shown when none selected) --%>
         <%= if is_nil(@selected_recipe) do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 space-y-4">
-            <p class="text-sm font-semibold text-base-content">¿Qué vas a producir?</p>
+            <div>
+              <p class="text-sm font-semibold text-base-content">¿Qué vas a producir?</p>
+              <p class="text-xs text-base-content/40 mt-0.5">
+                Elige una receta — el sistema calculará qué ingredientes se consumen y qué stock se genera.
+              </p>
+            </div>
 
             <%= if @recipes == [] do %>
               <div class="py-10 text-center text-base-content/40 text-sm">
@@ -126,22 +131,27 @@ defmodule CRCWeb.ProduccionLive do
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <%= for recipe <- @recipes do %>
                   <button
-                    class="text-left rounded-xl border border-base-300 bg-base-50 hover:border-primary/40 hover:bg-primary/5 p-4 transition-all group"
+                    class="text-left rounded-xl border border-base-300 bg-base-100 hover:border-primary/40 hover:bg-primary/5 p-4 transition-all group"
                     phx-click="select_recipe"
                     phx-value-id={recipe.id}
                   >
                     <p class="font-semibold text-sm text-base-content group-hover:text-primary transition-colors">
                       {recipe.name}
                     </p>
-                    <p class="text-xs text-base-content/50 mt-1">
-                      Produce {format_qty(recipe.yield_quantity)} {recipe.yield_unit} de
-                      <span class="font-medium">
-                        {recipe.output_product && recipe.output_product.name}
+                    <%!-- "1 lote = X unidad" --%>
+                    <p class="text-xs text-base-content/50 mt-1 flex items-center gap-1">
+                      <span class="badge badge-xs badge-ghost">1 lote</span>
+                      →
+                      <span class="font-medium text-base-content/70">
+                        +{format_qty(recipe.yield_quantity)} {recipe.yield_unit}
+                        de {recipe.output_product && recipe.output_product.name}
                       </span>
                     </p>
+                    <%!-- Ingredients consumed --%>
                     <div class="flex flex-wrap gap-1 mt-2">
                       <%= for ri <- recipe.recipe_ingredients do %>
                         <span class="badge badge-xs badge-ghost">
+                          <.icon name="hero-minus" class="size-2.5 text-error" />
                           {ri.product && ri.product.name}
                         </span>
                       <% end %>
@@ -162,20 +172,25 @@ defmodule CRCWeb.ProduccionLive do
                   Receta seleccionada
                 </p>
                 <p class="text-lg font-bold text-base-content">{@selected_recipe.name}</p>
+                <p class="text-xs text-base-content/40 mt-0.5">
+                  1 lote produce {format_qty(@selected_recipe.yield_quantity)}
+                  {@selected_recipe.yield_unit}
+                  de {@selected_recipe.output_product && @selected_recipe.output_product.name}
+                </p>
               </div>
-              <button
-                class="btn btn-ghost btn-sm btn-circle shrink-0"
-                phx-click="clear_recipe"
-              >
+              <button class="btn btn-ghost btn-sm btn-circle shrink-0" phx-click="clear_recipe">
                 <.icon name="hero-x-mark" class="size-4" />
               </button>
             </div>
 
             <%!-- Batch count input --%>
+            <% batches_d = parse_batches(@batches_input) %>
             <div class="form-control">
-              <label class="label">
-                <span class="label-text font-medium">¿Cuántos lotes hiciste?</span>
-                <span class="label-text-alt text-base-content/40">1 = una receta completa</span>
+              <label class="label pb-1">
+                <span class="label-text font-medium">¿Cuántos lotes realizaste?</span>
+                <span class="label-text-alt text-base-content/40">
+                  1 = la receta completa una vez
+                </span>
               </label>
               <input
                 type="number"
@@ -187,13 +202,18 @@ defmodule CRCWeb.ProduccionLive do
                 phx-value-value={@batches_input}
                 phx-debounce="300"
               />
+              <%!-- Dynamic total produced --%>
+              <p class="text-xs text-success font-medium mt-1.5 text-center">
+                = {format_qty(Decimal.mult(@selected_recipe.yield_quantity, batches_d))}
+                {@selected_recipe.yield_unit} de
+                {@selected_recipe.output_product && @selected_recipe.output_product.name} al stock
+              </p>
             </div>
 
             <%!-- Preview: what will happen --%>
-            <% batches_d = parse_batches(@batches_input) %>
             <div class="rounded-xl bg-base-200 p-4 space-y-2">
-              <p class="text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                Resumen del lote
+              <p class="text-xs font-semibold text-base-content/60 uppercase tracking-wider mb-1">
+                Resumen — qué cambia en el stock
               </p>
               <%!-- Ingredients consumed --%>
               <%= for ri <- @selected_recipe.recipe_ingredients do %>
@@ -202,8 +222,9 @@ defmodule CRCWeb.ProduccionLive do
                     <.icon name="hero-minus-circle" class="size-3.5 text-error inline mr-1" />
                     {ri.product && ri.product.name}
                   </span>
-                  <span class="font-medium text-error">
-                    -{format_qty(Decimal.mult(ri.quantity, batches_d))} {ri.product && ri.product.unit}
+                  <span class="font-medium text-error font-mono">
+                    -{format_qty(Decimal.mult(ri.quantity, batches_d))}
+                    {ri.product && ri.product.unit}
                   </span>
                 </div>
               <% end %>
@@ -213,7 +234,7 @@ defmodule CRCWeb.ProduccionLive do
                   <.icon name="hero-plus-circle" class="size-3.5 text-success inline mr-1" />
                   {@selected_recipe.output_product && @selected_recipe.output_product.name}
                 </span>
-                <span class="font-bold text-success">
+                <span class="font-bold text-success font-mono">
                   +{format_qty(Decimal.mult(@selected_recipe.yield_quantity, batches_d))}
                   {@selected_recipe.yield_unit}
                 </span>
@@ -222,14 +243,14 @@ defmodule CRCWeb.ProduccionLive do
 
             <%!-- Notes --%>
             <div class="form-control">
-              <label class="label">
+              <label class="label pb-1">
                 <span class="label-text font-medium">Notas</span>
                 <span class="label-text-alt text-base-content/40">Opcional</span>
               </label>
               <textarea
                 class="textarea textarea-bordered w-full text-sm"
                 rows="2"
-                placeholder="Ej: Se usaron naranjas de la caja nueva"
+                placeholder="Ej: Se usaron naranjas de la caja nueva, lote preparado a las 8 am…"
                 phx-keyup="update_notes"
                 phx-value-value={@notes_input}
                 phx-debounce="300"
@@ -237,11 +258,9 @@ defmodule CRCWeb.ProduccionLive do
             </div>
 
             <%!-- Submit --%>
-            <button
-              class="btn btn-primary w-full"
-              phx-click="log_production"
-            >
-              <.icon name="hero-check" class="size-5" /> Registrar lote
+            <button class="btn btn-primary w-full" phx-click="log_production">
+              <.icon name="hero-check" class="size-5" /> Registrar {format_qty(batches_d)}
+              {if Decimal.compare(batches_d, Decimal.new(1)) == :eq, do: "lote", else: "lotes"}
             </button>
           </div>
         <% end %>

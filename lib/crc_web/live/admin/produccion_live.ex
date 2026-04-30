@@ -436,71 +436,90 @@ defmodule CRCWeb.Admin.ProduccionLive do
               </button>
             </div>
 
+            <%!-- Info callout --%>
+            <div class="rounded-xl bg-info/10 border border-info/20 px-4 py-3 space-y-1.5 text-xs text-base-content/70 leading-relaxed">
+              <p class="font-semibold text-base-content flex items-center gap-1.5">
+                <.icon name="hero-beaker" class="size-3.5 text-info" /> ¿Qué es una receta?
+              </p>
+              <p>
+                Una receta describe cómo producir un insumo interno a partir de otros ingredientes.
+                Ejemplo: con <strong>500 gr de naranjas</strong>
+                y <strong>50 ml de aceite</strong>
+                produces <strong>200 ml de Oleo de Naranja</strong>.
+              </p>
+              <p>
+                Un <strong>lote</strong>
+                = ejecutar la receta una vez completa. Si registras 3 lotes, el sistema multiplica
+                todos los ingredientes y el resultado por 3 automáticamente.
+              </p>
+            </div>
+
             <%!-- Recipe form --%>
             <.form for={@recipe_form} phx-submit="save_recipe" class="space-y-5">
               <%!-- phx-update="ignore" prevents LiveView from overwriting these
                    inputs when ingredient_rows state changes (which would clear
                    whatever the user has typed). The form submit still reads the
                    current DOM values correctly. --%>
-              <div id="recipe-static-fields" phx-update="ignore" class="space-y-5">
+              <div id="recipe-static-fields" phx-update="ignore" class="space-y-4">
                 <%!-- Name (= output product) --%>
                 <div class="form-control">
-                  <label class="label">
-                    <span class="label-text font-medium">Nombre del producto que se produce</span>
+                  <label class="label pb-1">
+                    <span class="label-text font-medium">Nombre del insumo que produces</span>
                   </label>
                   <input
                     type="text"
                     name="recipe[name]"
                     value={@recipe_form[:name].value}
                     class="input input-bordered w-full"
-                    placeholder="Ej: Oleo de Naranja"
+                    placeholder="Ej: Oleo de Naranja, Jarabe de Vainilla, Caldo Base…"
                   />
                   <p class="text-xs text-base-content/40 mt-1">
-                    Si no existe en Inventario, se crea automáticamente.
+                    Este nombre aparecerá como insumo en Inventario. Si no existe, se crea automáticamente.
                   </p>
                 </div>
 
                 <%!-- Yield quantity + unit --%>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div class="form-control">
-                    <label class="label">
-                      <span class="label-text font-medium">Cantidad que produce</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="recipe[yield_quantity]"
-                      value={@recipe_form[:yield_quantity].value}
-                      min="0.001"
-                      step="0.001"
-                      class="input input-bordered w-full"
-                      placeholder="Ej: 500"
-                    />
-                  </div>
-
-                  <div class="form-control">
-                    <label class="label">
-                      <span class="label-text font-medium">Unidad</span>
-                    </label>
-                    <select
-                      name="recipe[yield_unit]"
-                      class="select select-bordered w-full"
-                    >
-                      <option value="">Seleccionar…</option>
-                      <%= for unit <- units() do %>
-                        <option
-                          value={unit}
-                          selected={@recipe_form[:yield_unit].value == unit}
-                        >
-                          {unit}
-                        </option>
-                      <% end %>
-                    </select>
+                <div>
+                  <label class="label pb-1">
+                    <span class="label-text font-medium">¿Cuánto produce <em>un lote</em>?</span>
+                  </label>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="form-control">
+                      <input
+                        type="number"
+                        name="recipe[yield_quantity]"
+                        value={@recipe_form[:yield_quantity].value}
+                        min="0.001"
+                        step="0.001"
+                        class="input input-bordered w-full"
+                        placeholder="Ej: 200"
+                      />
+                      <p class="text-xs text-base-content/40 mt-1">
+                        Cantidad de insumo que obtienes por lote.
+                      </p>
+                    </div>
+                    <div class="form-control">
+                      <select name="recipe[yield_unit]" class="select select-bordered w-full">
+                        <option value="">Unidad…</option>
+                        <%= for unit <- units() do %>
+                          <option
+                            value={unit}
+                            selected={@recipe_form[:yield_unit].value == unit}
+                          >
+                            {unit}
+                          </option>
+                        <% end %>
+                      </select>
+                      <p class="text-xs text-base-content/40 mt-1">
+                        Ej: mililitros, gramos, porciones…
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 <%!-- Notes --%>
                 <div class="form-control">
-                  <label class="label">
+                  <label class="label pb-1">
                     <span class="label-text font-medium">Notas internas</span>
                     <span class="label-text-alt text-base-content/40">Opcional</span>
                   </label>
@@ -508,7 +527,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                     name="recipe[notes]"
                     class="textarea textarea-bordered w-full text-sm"
                     rows="2"
-                    placeholder="Instrucciones, observaciones…"
+                    placeholder="Instrucciones, temperatura, observaciones…"
                   >{@recipe_form[:notes].value}</textarea>
                 </div>
               </div>
@@ -516,18 +535,24 @@ defmodule CRCWeb.Admin.ProduccionLive do
               <%!-- Ingredients --%>
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
-                  <p class="text-sm font-semibold text-base-content">Ingredientes por lote</p>
+                  <div>
+                    <p class="text-sm font-semibold text-base-content">Ingredientes por lote</p>
+                    <p class="text-xs text-base-content/40 mt-0.5">
+                      Insumos que se consumen cada vez que produces un lote completo.
+                    </p>
+                  </div>
                   <button
                     type="button"
-                    class="btn btn-ghost btn-xs gap-1"
+                    class="btn btn-ghost btn-xs gap-1 shrink-0"
                     phx-click="add_ingredient_row"
                   >
-                    <.icon name="hero-plus" class="size-3.5" /> Agregar
+                    <.icon name="hero-plus" class="size-3.5" /> Agregar fila
                   </button>
                 </div>
 
                 <div class="space-y-2">
                   <%= for {row, idx} <- Enum.with_index(@ingredient_rows) do %>
+                    <% row_product = Enum.find(@products, &(to_string(&1.id) == to_string(row.product_id))) %>
                     <div class="flex items-center gap-2">
                       <select
                         class="select select-bordered select-sm flex-1"
@@ -536,29 +561,36 @@ defmodule CRCWeb.Admin.ProduccionLive do
                         phx-value-field="product_id"
                         name={"ingredient_rows[#{idx}][product_id]"}
                       >
-                        <option value="">Insumo…</option>
+                        <option value="">— Insumo —</option>
                         <%= for product <- @products do %>
                           <option
                             value={product.id}
                             selected={to_string(row.product_id) == to_string(product.id)}
                           >
-                            {product.name}
+                            {product.name} ({product.unit})
                           </option>
                         <% end %>
                       </select>
-                      <input
-                        type="number"
-                        min="0.001"
-                        step="0.001"
-                        class="input input-bordered input-sm w-24"
-                        placeholder="Cant."
-                        value={row.quantity}
-                        phx-change="update_ingredient_row"
-                        name={"ingredient_rows[#{idx}][quantity]"}
-                      />
+                      <div class="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min="0.001"
+                          step="0.001"
+                          class="input input-bordered input-sm w-24"
+                          placeholder="Cant."
+                          value={row.quantity}
+                          phx-change="update_ingredient_row"
+                          name={"ingredient_rows[#{idx}][quantity]"}
+                        />
+                        <%= if row_product do %>
+                          <span class="text-xs text-base-content/40 w-8 shrink-0">
+                            {unit_abbr(row_product.unit)}
+                          </span>
+                        <% end %>
+                      </div>
                       <button
                         type="button"
-                        class="btn btn-ghost btn-sm btn-circle text-error"
+                        class="btn btn-ghost btn-sm btn-circle text-error shrink-0"
                         phx-click="remove_ingredient_row"
                         phx-value-index={idx}
                       >
@@ -605,6 +637,19 @@ defmodule CRCWeb.Admin.ProduccionLive do
   end
 
   defp fresh_row, do: %{id: nil, product_id: "", quantity: ""}
+
+  defp unit_abbr("piezas"), do: "pza"
+  defp unit_abbr("gramos"), do: "gr"
+  defp unit_abbr("kilogramos"), do: "kg"
+  defp unit_abbr("mililitros"), do: "ml"
+  defp unit_abbr("litros"), do: "lt"
+  defp unit_abbr("onzas"), do: "oz"
+  defp unit_abbr("paquetes"), do: "paq"
+  defp unit_abbr("porciones"), do: "por"
+  defp unit_abbr("cucharadas"), do: "cda"
+  defp unit_abbr("cucharaditas"), do: "cdta"
+  defp unit_abbr("tazas"), do: "tz"
+  defp unit_abbr(other), do: other
 
   # Reads ingredient rows from the submitted form params (most reliable source)
   defp parse_ingredient_rows_from_params(params) do

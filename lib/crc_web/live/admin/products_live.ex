@@ -649,177 +649,244 @@ defmodule CRCWeb.Admin.ProductsLive do
           </button>
         </div>
 
-        <div class="px-6 py-5 space-y-6">
-          <SiteComponents.help_banner title="¿Para qué sirve cada campo?">
-            <p>
-              <strong>Costo neto</strong>
-              — precio real que pagas por unidad (litro, kilo, pieza…). Se usa para calcular el costo de producción de tus platillos y el margen de ganancia.
-              <em>No</em>
-              es el precio que le cobras al cliente.
-            </p>
-            <p>
-              <strong>Stock actual</strong>
-              — cantidad disponible hoy. Se descuenta automáticamente cada vez que se envía un pedido a cocina/barra. Actualízalo al recibir mercancía o registra un ajuste en "Merma" si hubo pérdida.
-            </p>
-            <p>
-              <strong>Stock mínimo</strong>
-              — umbral de alerta. Cuando el stock baja de este valor el sistema te avisa en el dashboard. Recomendación: ponlo en lo que necesitas para operar 2–3 días.
-            </p>
-            <p>
-              <strong>Unidad</strong>
-              — debe coincidir con la unidad que usas en las recetas de tus platillos. Si registras leche en litros, la receta debe indicar la cantidad en litros (ej. 0.200).
-            </p>
-          </SiteComponents.help_banner>
+        <div class="px-6 py-5 space-y-5">
+          <%!-- Step flow indicator --%>
+          <div class="flex items-center gap-2 text-xs text-base-content/50 flex-wrap">
+            <span class="flex items-center gap-1 font-semibold text-primary">
+              <span class="size-5 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">1</span>
+              Elige la unidad
+            </span>
+            <span class="text-base-content/30">→</span>
+            <span class="flex items-center gap-1">
+              <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">2</span>
+              Calcula el costo
+            </span>
+            <span class="text-base-content/30">→</span>
+            <span class="flex items-center gap-1">
+              <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">3</span>
+              Registra el stock
+            </span>
+          </div>
+
           <%!-- Product form --%>
           <.form
             id="product-form"
             for={@form}
             phx-submit="save_product"
             phx-change="validate_product"
-            class="space-y-1"
+            class="space-y-4"
           >
-            <%!-- Name --%>
-            <.input
-              field={@form[:name]}
-              type="text"
-              label="Nombre del insumo"
-              placeholder="Ej. Leche, Café de especialidad, Vaso 12oz"
-            />
-
-            <%!-- Category + Unit (2 cols) --%>
+            <%!-- Name + Category (2 cols) --%>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <.input
+                field={@form[:name]}
+                type="text"
+                label="Nombre del insumo"
+                placeholder="Ej. Leche, Café molido, Vaso 12oz"
+              />
               <.input
                 field={@form[:product_category_id]}
                 type="select"
-                label="Categoría"
+                label="Categoría (opcional)"
                 options={[{"— Sin categoría —", ""} | Enum.map(@categories, &{&1.name, &1.id})]}
               />
+            </div>
+
+            <%!-- STEP 1 — Unit (prominent, with warning) --%>
+            <div class="rounded-xl border-2 border-primary/25 bg-primary/4 p-4 space-y-2">
+              <p class="text-xs font-bold text-primary flex items-center gap-1.5">
+                <span class="size-5 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">1</span>
+                Unidad de medida — elige primero
+              </p>
               <.input
                 field={@form[:unit]}
                 type="select"
-                label="Unidad de medida"
+                label=""
                 options={unit_options()}
               />
-            </div>
-
-            <%!-- Purchase helper: auto-calculates net_cost --%>
-            <div class="rounded-xl bg-base-200/60 border border-base-300 p-3 space-y-2">
-              <p class="text-xs font-semibold text-base-content/60 flex items-center gap-1.5">
-                <.icon name="hero-calculator" class="size-3.5" />
-                Calculadora de costo unitario
-                <span class="font-normal text-base-content/40">
-                  — llena estos dos campos y el costo neto se calcula solo
-                </span>
-              </p>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div class="form-control">
-                  <label class="label py-0.5">
-                    <span class="label-text text-xs">Precio total pagado ($)</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="purchase_total"
-                    value={@purchase_total}
-                    min="0"
-                    step="0.01"
-                    placeholder="Ej: 100.00"
-                    class="input input-bordered input-sm w-full"
-                  />
-                </div>
-                <div class="form-control">
-                  <label class="label py-0.5">
-                    <span class="label-text text-xs">Cantidad que compraste (en la unidad del insumo)</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="purchase_qty"
-                    value={@purchase_qty}
-                    min="0"
-                    step="0.001"
-                    placeholder="Ej: 250"
-                    class="input input-bordered input-sm w-full"
-                    onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
-                  />
-                </div>
-              </div>
-              <%= if @purchase_total != "" and @purchase_qty != "" do %>
-                <% total = Decimal.parse(@purchase_total) %>
-                <% qty = Decimal.parse(@purchase_qty) %>
-                <%= case {total, qty} do %>
-                  <% {{t, _}, {q, _}} when true -> %>
-                    <%= if Decimal.compare(q, 0) == :gt and Decimal.compare(t, 0) == :gt do %>
-                      <p class="text-xs text-success font-medium">
-                        ✓ Costo unitario calculado:
-                        <strong>
-                          ${t |> Decimal.div(q) |> Decimal.round(4) |> Decimal.to_string()}
-                        </strong>
-                        por unidad
-                      </p>
-                    <% end %>
-                  <% _ -> %>
-                <% end %>
+              <% unit_val = @form[:unit].value || "" %>
+              <%= if unit_val != "" do %>
+                <p class="text-xs text-base-content/60 leading-relaxed">
+                  <strong>Todo lo demás usa {unit_label(unit_val)}.</strong>
+                  El stock, el stock mínimo, la calculadora y las recetas de tus platillos
+                  deben expresarse siempre en {unit_label(unit_val)}.
+                  {unit_example(unit_val)}
+                </p>
+              <% else %>
+                <p class="text-xs text-warning flex items-center gap-1">
+                  <.icon name="hero-exclamation-triangle" class="size-3.5 shrink-0" />
+                  Selecciona la unidad antes de continuar — todo lo demás depende de ella.
+                </p>
               <% end %>
             </div>
 
-            <%!-- Net cost + Sale price (2 cols) --%>
+            <%!-- STEP 2 — Cost calculator --%>
+            <% unit_val = @form[:unit].value || "" %>
+            <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+              <p class="text-xs font-bold text-base-content/70 flex items-center gap-1.5">
+                <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">2</span>
+                Costo del insumo
+              </p>
+
+              <%!-- Calculator sub-section --%>
+              <div class="rounded-lg border border-dashed border-base-content/20 bg-base-100 p-3 space-y-2">
+                <p class="text-xs text-base-content/50 font-medium">
+                  🧮 Calculadora — si no sabes el costo por unidad, llena estos dos campos
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div class="form-control">
+                    <label class="label py-0.5">
+                      <span class="label-text text-xs font-medium">¿Cuánto pagaste en total? ($)</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="purchase_total"
+                      value={@purchase_total}
+                      min="0"
+                      step="0.01"
+                      placeholder="Ej: 100.00"
+                      class="input input-bordered input-sm w-full"
+                    />
+                    <p class="text-xs text-base-content/40 mt-0.5">El precio que pagaste por toda la compra</p>
+                  </div>
+                  <div class="form-control">
+                    <label class="label py-0.5">
+                      <span class="label-text text-xs font-medium">
+                        ¿Cuánto{if unit_val != "", do: " (en #{unit_label(unit_val)})", else: ""} compraste?
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      name="purchase_qty"
+                      value={@purchase_qty}
+                      min="0"
+                      step="0.001"
+                      placeholder={unit_qty_placeholder(unit_val)}
+                      class="input input-bordered input-sm w-full"
+                      onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
+                    />
+                    <p class="text-xs text-base-content/40 mt-0.5">
+                      {unit_qty_hint(unit_val)}
+                    </p>
+                  </div>
+                </div>
+                <%= if @purchase_total != "" and @purchase_qty != "" do %>
+                  <% total = Decimal.parse(@purchase_total) %>
+                  <% qty = Decimal.parse(@purchase_qty) %>
+                  <%= case {total, qty} do %>
+                    <% {{t, _}, {q, _}} when true -> %>
+                      <%= if Decimal.compare(q, 0) == :gt and Decimal.compare(t, 0) == :gt do %>
+                        <% unit_cost = t |> Decimal.div(q) |> Decimal.round(4) %>
+                        <div class="flex items-center gap-2 rounded-lg bg-success/10 border border-success/30 px-3 py-2">
+                          <.icon name="hero-check-circle" class="size-4 text-success shrink-0" />
+                          <p class="text-xs text-success font-semibold">
+                            Costo por {if unit_val != "", do: unit_label(unit_val), else: "unidad"}:
+                            <span class="text-base">${Decimal.to_string(unit_cost)}</span>
+                            → se aplicó en "Costo neto" abajo
+                          </p>
+                        </div>
+                      <% else %>
+                        <p class="text-xs text-error flex items-center gap-1">
+                          <.icon name="hero-x-circle" class="size-3.5" />
+                          Los valores deben ser mayores a 0.
+                        </p>
+                      <% end %>
+                    <% _ -> %>
+                      <p class="text-xs text-error flex items-center gap-1">
+                        <.icon name="hero-x-circle" class="size-3.5" />
+                        Escribe números válidos en ambos campos.
+                      </p>
+                  <% end %>
+                <% end %>
+              </div>
+
+              <%!-- Net cost (auto-filled or manual) --%>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <.input
+                    field={@form[:net_cost]}
+                    type="number"
+                    label={"Costo neto por #{if unit_val != "", do: unit_label(unit_val), else: "unidad"} ($)"}
+                    placeholder="0.0000"
+                    step="0.0001"
+                    min="0"
+                  />
+                  <p class="text-xs text-base-content/40 mt-1 leading-relaxed">
+                    Lo que te cuesta <strong>una sola {if unit_val != "", do: unit_label(unit_val), else: "unidad"}</strong>.
+                    Si usaste la calculadora ya está listo; si no, escríbelo directo.
+                  </p>
+                </div>
+                <div>
+                  <.input
+                    field={@form[:sale_price]}
+                    type="number"
+                    label="Precio de venta ($) (opcional)"
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                  />
+                  <p class="text-xs text-base-content/40 mt-1">
+                    Solo si vendes este insumo directamente a un cliente (ej. bebidas embotelladas). La mayoría de insumos lo dejan vacío.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <%!-- STEP 3 — Stock --%>
+            <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+              <p class="text-xs font-bold text-base-content/70 flex items-center gap-1.5">
+                <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">3</span>
+                Stock
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <.input
+                    field={@form[:stock_quantity]}
+                    type="number"
+                    label={"¿Cuánto#{if unit_val != "", do: " (#{unit_label(unit_val)})", else: ""} tienes hoy?"}
+                    placeholder="0.000"
+                    step="0.001"
+                    min="0"
+                    onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
+                  />
+                  <p class="text-xs text-base-content/40 mt-1">
+                    El sistema lo descuenta automáticamente cada vez que se envía un pedido a cocina.
+                  </p>
+                </div>
+                <div>
+                  <.input
+                    field={@form[:min_stock]}
+                    type="number"
+                    label={"Avisar cuando baje de#{if unit_val != "", do: " (#{unit_label(unit_val)})", else: ""}"}
+                    placeholder="0.000"
+                    step="0.001"
+                    min="0"
+                    onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
+                  />
+                  <p class="text-xs text-base-content/40 mt-1">
+                    {unit_min_stock_hint(unit_val)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <%!-- Supplier + Notes --%>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <.input
-                field={@form[:net_cost]}
-                type="number"
-                label="Costo neto ($) — por unidad"
-                placeholder="0.0000"
-                step="0.0001"
-                min="0"
+                field={@form[:supplier_id]}
+                type="select"
+                label="Proveedor (opcional)"
+                options={[{"— Sin proveedor —", ""} | Enum.map(@suppliers, &{&1.name, &1.id})]}
               />
               <.input
-                field={@form[:sale_price]}
-                type="number"
-                label="Precio venta ($) (opcional)"
-                placeholder="0.00"
-                step="0.01"
-                min="0"
+                field={@form[:notes]}
+                type="textarea"
+                label="Notas (opcional)"
+                placeholder="Marca, presentación, observaciones..."
               />
             </div>
 
-            <%!-- Stock + Min stock (2 cols) --%>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <.input
-                field={@form[:stock_quantity]}
-                type="number"
-                label="Cantidad en stock"
-                placeholder="0.000"
-                step="0.001"
-                min="0"
-                onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
-              />
-              <.input
-                field={@form[:min_stock]}
-                type="number"
-                label="Stock mínimo (alerta)"
-                placeholder="0.000"
-                step="0.001"
-                min="0"
-                onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
-              />
-            </div>
-
-            <%!-- Supplier --%>
-            <.input
-              field={@form[:supplier_id]}
-              type="select"
-              label="Proveedor (opcional)"
-              options={[{"— Sin proveedor —", ""} | Enum.map(@suppliers, &{&1.name, &1.id})]}
-            />
-
-            <%!-- Notes --%>
-            <.input
-              field={@form[:notes]}
-              type="textarea"
-              label="Notas (opcional)"
-              placeholder="Observaciones, presentación, marca preferida..."
-            />
-
-            <div class="flex justify-end gap-3 pt-2">
+            <div class="flex justify-end gap-3 pt-1">
               <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
               <button type="submit" class="btn btn-primary">
                 {if !@is_edit, do: "Crear insumo", else: "Guardar cambios"}
@@ -1079,17 +1146,109 @@ defmodule CRCWeb.Admin.ProductsLive do
     do: Decimal.compare(stock, min) != :gt
 
   defp unit_options do
-    [{"— Selecciona unidad —", ""} | Enum.map(Product.units(), &{unit_label(&1), &1})]
+    labels = %{
+      "piezas" => "Piezas (pza) — tortillas, vasos, huevos…",
+      "gramos" => "Gramos (gr) — café, azúcar, harina…",
+      "kilogramos" => "Kilogramos (kg) — carne, verduras a granel…",
+      "mililitros" => "Mililitros (ml) — leche, jugos, salsas…",
+      "litros" => "Litros (lt) — aceite, agua, crema…",
+      "onzas" => "Onzas (oz) — especias, queso…",
+      "paquetes" => "Paquetes (paq) — servilletas, sorbetes…"
+    }
+
+    [{"— Selecciona unidad —", ""} | Enum.map(Product.units(), &{Map.get(labels, &1, &1), &1})]
   end
 
-  defp unit_label("piezas"), do: "Piezas (pza)"
-  defp unit_label("gramos"), do: "Gramos (gr)"
-  defp unit_label("kilogramos"), do: "Kilogramos (kg)"
-  defp unit_label("mililitros"), do: "Mililitros (ml)"
-  defp unit_label("litros"), do: "Litros (lt)"
-  defp unit_label("onzas"), do: "Onzas (oz)"
-  defp unit_label("paquetes"), do: "Paquetes (paq)"
+  defp unit_label("piezas"), do: "piezas"
+  defp unit_label("gramos"), do: "gramos"
+  defp unit_label("kilogramos"), do: "kilogramos"
+  defp unit_label("mililitros"), do: "mililitros"
+  defp unit_label("litros"), do: "litros"
+  defp unit_label("onzas"), do: "onzas"
+  defp unit_label("paquetes"), do: "paquetes"
   defp unit_label(other), do: other
+
+  # Contextual example shown after choosing a unit
+  defp unit_example("gramos"),
+    do:
+      "Ejemplo: si usas 18 gramos de café por espresso, en la receta del platillo pondrás 18."
+
+  defp unit_example("kilogramos"),
+    do:
+      "Ejemplo: si usas 0.5 kg de harina por receta, en el platillo pondrás 0.500."
+
+  defp unit_example("mililitros"),
+    do:
+      "Ejemplo: si una porción lleva 200 ml de leche, en el platillo pondrás 200."
+
+  defp unit_example("litros"),
+    do:
+      "Ejemplo: si usas 0.2 litros de crema por platillo, en la receta pondrás 0.200."
+
+  defp unit_example("piezas"),
+    do:
+      "Ejemplo: si cada sope usa 3 tortillas, en la receta del platillo pondrás 3."
+
+  defp unit_example("onzas"),
+    do: "Ejemplo: una porción de 2 oz → pondrás 2 en la receta del platillo."
+
+  defp unit_example("paquetes"),
+    do: "Ejemplo: si cada plato usa medio paquete, pondrás 0.500 en la receta."
+
+  defp unit_example(_), do: ""
+
+  # Placeholder for the purchase qty input, unit-aware
+  defp unit_qty_placeholder("gramos"), do: "Ej: 250.000 (gramos comprados)"
+  defp unit_qty_placeholder("kilogramos"), do: "Ej: 1.000 (kg comprados)"
+  defp unit_qty_placeholder("mililitros"), do: "Ej: 1000.000 (ml comprados)"
+  defp unit_qty_placeholder("litros"), do: "Ej: 4.000 (litros comprados)"
+  defp unit_qty_placeholder("piezas"), do: "Ej: 30.000 (piezas compradas)"
+  defp unit_qty_placeholder("onzas"), do: "Ej: 16.000 (onzas compradas)"
+  defp unit_qty_placeholder("paquetes"), do: "Ej: 12.000 (paquetes comprados)"
+  defp unit_qty_placeholder(_), do: "Ej: 250"
+
+  # Hint below the purchase qty input, unit-aware
+  defp unit_qty_hint("gramos"),
+    do: "Cuántos gramos compraste en total (ej. un bote de 250 g → escribe 250)"
+
+  defp unit_qty_hint("kilogramos"),
+    do: "Cuántos kilogramos compraste (ej. 1 kilo → escribe 1)"
+
+  defp unit_qty_hint("mililitros"),
+    do: "Cuántos mililitros compraste (ej. una botella de 1 litro = 1000 ml → escribe 1000)"
+
+  defp unit_qty_hint("litros"),
+    do: "Cuántos litros compraste (ej. un galón de 4 litros → escribe 4)"
+
+  defp unit_qty_hint("piezas"),
+    do: "Cuántas piezas compraste (ej. una caja de 30 → escribe 30)"
+
+  defp unit_qty_hint("onzas"),
+    do: "Cuántas onzas compraste (ej. 16 oz → escribe 16)"
+
+  defp unit_qty_hint("paquetes"),
+    do: "Cuántos paquetes compraste (ej. una docena → escribe 12)"
+
+  defp unit_qty_hint(_), do: "La cantidad total que recibiste, en la unidad que elegiste arriba"
+
+  # Hint for min_stock, unit-aware
+  defp unit_min_stock_hint("gramos"),
+    do: "Recomendado: lo que necesitas para 2–3 días de operación. Ej: si usas 200 g/día → ponle 400–600."
+
+  defp unit_min_stock_hint("kilogramos"),
+    do: "Ej: si consumes 0.5 kg al día → ponle 1.000 para que te avise cuando quede solo 1 kg."
+
+  defp unit_min_stock_hint("mililitros"),
+    do: "Ej: si usas 500 ml al día → ponle 1000 para tener margen de 2 días."
+
+  defp unit_min_stock_hint("litros"),
+    do: "Ej: si usas 2 litros al día → ponle 4.000 como mínimo de seguridad."
+
+  defp unit_min_stock_hint("piezas"),
+    do: "Ej: si vendes 20 piezas al día → ponle 40 para que te avise con 2 días de anticipación."
+
+  defp unit_min_stock_hint(_),
+    do: "Cuando el stock baje de este número te avisamos en el panel. Ponlo en lo que necesitas para 2–3 días."
 
   defp unit_abbr("piezas"), do: "pza"
   defp unit_abbr("gramos"), do: "gr"

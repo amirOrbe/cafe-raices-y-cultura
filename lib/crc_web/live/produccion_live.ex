@@ -115,7 +115,7 @@ defmodule CRCWeb.ProduccionLive do
 
         <%!-- Step 1: Select recipe (shown when none selected) --%>
         <%= if is_nil(@selected_recipe) do %>
-          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 space-y-4">
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-4 sm:p-5 space-y-4">
             <div>
               <p class="text-sm font-semibold text-base-content">¿Qué vas a producir?</p>
               <p class="text-xs text-base-content/40 mt-0.5">
@@ -131,7 +131,7 @@ defmodule CRCWeb.ProduccionLive do
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <%= for recipe <- @recipes do %>
                   <button
-                    class="text-left rounded-xl border border-base-300 bg-base-100 hover:border-primary/40 hover:bg-primary/5 p-4 transition-all group"
+                    class="text-left rounded-xl border border-base-300 bg-base-100 hover:border-primary/40 hover:bg-primary/5 p-3 sm:p-4 transition-all group"
                     phx-click="select_recipe"
                     phx-value-id={recipe.id}
                   >
@@ -164,7 +164,7 @@ defmodule CRCWeb.ProduccionLive do
 
           <%!-- Step 2: Confirm batch (shown when recipe selected) --%>
         <% else %>
-          <div class="bg-base-100 rounded-2xl border border-primary/30 shadow-sm p-5 space-y-5">
+          <div class="bg-base-100 rounded-2xl border border-primary/30 shadow-sm p-4 sm:p-5 space-y-4 sm:space-y-5">
             <%!-- Recipe header --%>
             <div class="flex items-start justify-between gap-3">
               <div>
@@ -186,7 +186,7 @@ defmodule CRCWeb.ProduccionLive do
             <%!-- Batch count input --%>
             <% batches_d = parse_batches(@batches_input) %>
             <div class="form-control">
-              <label class="label pb-1">
+              <label class="label pb-1 flex-col items-start gap-0.5 sm:flex-row sm:items-center">
                 <span class="label-text font-medium">¿Cuántos lotes realizaste?</span>
                 <span class="label-text-alt text-base-content/40">
                   1 = la receta completa una vez
@@ -211,7 +211,7 @@ defmodule CRCWeb.ProduccionLive do
             </div>
 
             <%!-- Preview: what will happen --%>
-            <div class="rounded-xl bg-base-200 p-4 space-y-2">
+            <div class="rounded-xl bg-base-200 p-3 sm:p-4 space-y-2">
               <p class="text-xs font-semibold text-base-content/60 uppercase tracking-wider mb-1">
                 Resumen — qué cambia en el stock
               </p>

@@ -421,11 +421,11 @@ defmodule CRCWeb.Admin.ProduccionLive do
 
     <%!-- Recipe modal --%>
     <%= if @modal != nil do %>
-      <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" phx-click="close_modal" />
 
-        <div class="relative bg-base-100 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-          <div class="p-6 space-y-5">
+        <div class="relative bg-base-100 rounded-2xl shadow-xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+          <div class="p-4 sm:p-6 space-y-4 sm:space-y-5">
             <%!-- Modal header --%>
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-bold text-base-content">
@@ -553,15 +553,16 @@ defmodule CRCWeb.Admin.ProduccionLive do
                 <div class="space-y-2">
                   <%= for {row, idx} <- Enum.with_index(@ingredient_rows) do %>
                     <% row_product = Enum.find(@products, &(to_string(&1.id) == to_string(row.product_id))) %>
-                    <div class="flex items-center gap-2">
+                    <%!-- Stack on mobile: select full-width, then qty + unit + delete in a row below --%>
+                    <div class="rounded-lg border border-base-300 bg-base-100 p-2 space-y-1.5 sm:space-y-0 sm:bg-transparent sm:border-0 sm:p-0 sm:flex sm:items-center sm:gap-2">
                       <select
-                        class="select select-bordered select-sm flex-1"
+                        class="select select-bordered select-sm w-full sm:flex-1"
                         phx-change="update_ingredient_row"
                         phx-value-index={idx}
                         phx-value-field="product_id"
                         name={"ingredient_rows[#{idx}][product_id]"}
                       >
-                        <option value="">— Insumo —</option>
+                        <option value="">— Selecciona insumo —</option>
                         <%= for product <- @products do %>
                           <option
                             value={product.id}
@@ -571,31 +572,29 @@ defmodule CRCWeb.Admin.ProduccionLive do
                           </option>
                         <% end %>
                       </select>
-                      <div class="flex items-center gap-1">
+                      <div class="flex items-center gap-1.5">
                         <input
                           type="number"
                           min="0.001"
                           step="0.001"
-                          class="input input-bordered input-sm w-24"
+                          class="input input-bordered input-sm flex-1 sm:w-24 sm:flex-none"
                           placeholder="Cant."
                           value={row.quantity}
                           phx-change="update_ingredient_row"
                           name={"ingredient_rows[#{idx}][quantity]"}
                         />
-                        <%= if row_product do %>
-                          <span class="text-xs text-base-content/40 w-8 shrink-0">
-                            {unit_abbr(row_product.unit)}
-                          </span>
-                        <% end %>
+                        <span class="text-xs text-base-content/40 w-8 shrink-0">
+                          {if row_product, do: unit_abbr(row_product.unit), else: ""}
+                        </span>
+                        <button
+                          type="button"
+                          class="btn btn-ghost btn-sm btn-circle text-error shrink-0"
+                          phx-click="remove_ingredient_row"
+                          phx-value-index={idx}
+                        >
+                          <.icon name="hero-trash" class="size-4" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        class="btn btn-ghost btn-sm btn-circle text-error shrink-0"
-                        phx-click="remove_ingredient_row"
-                        phx-value-index={idx}
-                      >
-                        <.icon name="hero-trash" class="size-4" />
-                      </button>
                     </div>
                   <% end %>
                 </div>

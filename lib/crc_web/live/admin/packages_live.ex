@@ -322,9 +322,9 @@ defmodule CRCWeb.Admin.PackagesLive do
 
     <%!-- Modal --%>
     <%= if @modal != nil do %>
-      <div class="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/50 overflow-y-auto">
-        <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-2xl">
-          <div class="p-5 border-b border-base-200 flex items-center justify-between">
+      <div class="fixed inset-0 z-50 flex items-start justify-center p-2 pt-4 sm:p-4 sm:pt-10 bg-black/50 overflow-y-auto">
+        <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-2xl mb-4">
+          <div class="p-4 sm:p-5 border-b border-base-200 flex items-center justify-between">
             <h2 class="font-bold text-lg text-base-content">
               {if @modal == :new, do: "Nuevo paquete", else: "Editar paquete"}
             </h2>
@@ -333,7 +333,7 @@ defmodule CRCWeb.Admin.PackagesLive do
             </button>
           </div>
 
-          <div class="p-5 space-y-5">
+          <div class="p-4 sm:p-5 space-y-4 sm:space-y-5">
             <.form
               id="package-form"
               for={@form}
@@ -431,39 +431,68 @@ defmodule CRCWeb.Admin.PackagesLive do
                   Marca los platillos que forman el paquete y ajusta la cantidad con + / −.
                 </p>
                 <div class="border border-base-300 rounded-xl overflow-hidden">
-                  <div class="max-h-64 overflow-y-auto divide-y divide-base-200">
+                  <div class="max-h-60 sm:max-h-64 overflow-y-auto divide-y divide-base-200">
                     <%= for item <- @all_menu_items do %>
                       <% selected = Enum.find(@selected_items, &(&1.menu_item_id == item.id)) %>
-                      <div class={"flex items-center gap-3 px-4 py-2.5 #{if selected, do: "bg-primary/5"}"}>
-                        <input
-                          type="checkbox"
-                          class="checkbox checkbox-primary checkbox-sm"
-                          checked={selected != nil}
-                          phx-click="toggle_menu_item"
-                          phx-value-id={item.id}
-                        />
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-base-content truncate">{item.name}</p>
-                          <p class="text-xs text-base-content/50">${item.price} c/u</p>
+                      <div class={"px-3 sm:px-4 py-2 sm:py-2.5 #{if selected, do: "bg-primary/5"}"}>
+                        <%!-- Main row: checkbox + name/price + badge --%>
+                        <div class="flex items-center gap-2 sm:gap-3">
+                          <input
+                            type="checkbox"
+                            class="checkbox checkbox-primary checkbox-sm shrink-0"
+                            checked={selected != nil}
+                            phx-click="toggle_menu_item"
+                            phx-value-id={item.id}
+                          />
+                          <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-base-content truncate">{item.name}</p>
+                            <p class="text-xs text-base-content/50">${item.price} c/u</p>
+                          </div>
+                          <span class={"badge badge-xs shrink-0 #{if item.destination == "barra", do: "badge-info", else: "badge-warning"}"}>
+                            {if item.destination == "barra", do: "Barra", else: "Cocina"}
+                          </span>
+                          <%!-- Qty controls (shown on desktop inline; on mobile in a sub-row below) --%>
+                          <%= if selected do %>
+                            <div class="hidden sm:flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                class="btn btn-xs btn-ghost px-1"
+                                phx-click="update_item_qty"
+                                phx-value-id={item.id}
+                                phx-value-qty={max(1, selected.quantity - 1)}
+                              >
+                                −
+                              </button>
+                              <span class="text-sm font-mono w-5 text-center">{selected.quantity}</span>
+                              <button
+                                type="button"
+                                class="btn btn-xs btn-ghost px-1"
+                                phx-click="update_item_qty"
+                                phx-value-id={item.id}
+                                phx-value-qty={selected.quantity + 1}
+                              >
+                                +
+                              </button>
+                            </div>
+                          <% end %>
                         </div>
-                        <span class={"badge badge-xs #{if item.destination == "barra", do: "badge-info", else: "badge-warning"}"}>
-                          {if item.destination == "barra", do: "Barra", else: "Cocina"}
-                        </span>
+                        <%!-- Mobile qty row (only when selected) --%>
                         <%= if selected do %>
-                          <div class="flex items-center gap-1">
+                          <div class="sm:hidden flex items-center gap-1 mt-1 ml-6">
+                            <span class="text-xs text-base-content/40 mr-1">Cantidad:</span>
                             <button
                               type="button"
-                              class="btn btn-xs btn-ghost px-1"
+                              class="btn btn-xs btn-ghost px-2"
                               phx-click="update_item_qty"
                               phx-value-id={item.id}
                               phx-value-qty={max(1, selected.quantity - 1)}
                             >
                               −
                             </button>
-                            <span class="text-sm font-mono w-5 text-center">{selected.quantity}</span>
+                            <span class="text-sm font-mono w-6 text-center">{selected.quantity}</span>
                             <button
                               type="button"
-                              class="btn btn-xs btn-ghost px-1"
+                              class="btn btn-xs btn-ghost px-2"
                               phx-click="update_item_qty"
                               phx-value-id={item.id}
                               phx-value-qty={selected.quantity + 1}

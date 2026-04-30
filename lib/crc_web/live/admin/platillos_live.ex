@@ -633,22 +633,22 @@ defmodule CRCWeb.Admin.PlatillosLive do
     ~H"""
     <div
       id="item-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
       phx-window-keydown="close_modal"
       phx-key="Escape"
     >
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
 
-      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[92vh]">
+      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[95vh] sm:max-h-[92vh]">
         <%!-- Modal header --%>
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between sticky top-0 bg-base-100 z-10">
-          <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
+        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-base-300 flex items-center justify-between sticky top-0 bg-base-100 z-10">
+          <h2 class="text-base sm:text-lg font-semibold text-base-content">{@title}</h2>
           <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
             <.icon name="hero-x-mark" class="size-5" />
           </button>
         </div>
 
-        <div class="px-6 py-5 space-y-4">
+        <div class="px-3 sm:px-6 py-4 sm:py-5 space-y-4">
           <%!-- Step flow --%>
           <div class="flex items-center gap-2 text-xs flex-wrap">
             <span class="flex items-center gap-1.5 font-semibold text-primary">
@@ -681,7 +681,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
             class="space-y-4"
           >
             <%!-- ── ① Información básica ──────────────────────────────────────── --%>
-            <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+            <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
               <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
                 <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-content text-[10px] font-bold">
                   1
@@ -723,7 +723,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
             </div>
 
             <%!-- ── ② Precio y destino ─────────────────────────────────────────── --%>
-            <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+            <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
               <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
                 <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold">
                   2
@@ -748,10 +748,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 </div>
 
                 <%!-- Available --%>
-                <div class="pt-0 sm:pt-2">
-                  <label class="label pb-1">
-                    <span class="label-text font-medium">Visibilidad</span>
-                  </label>
+                <div>
                   <.input field={@form[:available]} type="checkbox" label="Visible en el menú" />
                   <p class="text-xs text-base-content/40 mt-1 ml-7">
                     Si está activo, los meseros pueden pedirlo en comandas.
@@ -764,7 +761,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 <label class="label pb-1.5">
                   <span class="label-text font-medium">¿Dónde se prepara?</span>
                 </label>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-2 sm:gap-3">
                   <label class="cursor-pointer">
                     <input
                       type="radio"
@@ -773,11 +770,11 @@ defmodule CRCWeb.Admin.PlatillosLive do
                       class="sr-only peer"
                       checked={@form[:destination].value not in ["barra"]}
                     />
-                    <div class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-base-300 peer-checked:border-primary peer-checked:bg-primary/5 hover:border-primary/30 transition-all">
-                      <span class="text-3xl">🍳</span>
+                    <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-primary peer-checked:bg-primary/5 hover:border-primary/30 transition-all">
+                      <span class="text-xl sm:text-3xl">🍳</span>
                       <div class="text-center">
-                        <p class="font-semibold text-sm text-base-content">Cocina</p>
-                        <p class="text-xs text-base-content/50 mt-0.5">
+                        <p class="font-semibold text-xs sm:text-sm text-base-content">Cocina</p>
+                        <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
                           Platillos, sandwiches, ensaladas…
                         </p>
                       </div>
@@ -791,11 +788,11 @@ defmodule CRCWeb.Admin.PlatillosLive do
                       class="sr-only peer"
                       checked={@form[:destination].value == "barra"}
                     />
-                    <div class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-base-300 peer-checked:border-info peer-checked:bg-info/5 hover:border-info/30 transition-all">
-                      <span class="text-3xl">☕</span>
+                    <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-info peer-checked:bg-info/5 hover:border-info/30 transition-all">
+                      <span class="text-xl sm:text-3xl">☕</span>
                       <div class="text-center">
-                        <p class="font-semibold text-sm text-base-content">Barra</p>
-                        <p class="text-xs text-base-content/50 mt-0.5">
+                        <p class="font-semibold text-xs sm:text-sm text-base-content">Barra</p>
+                        <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
                           Bebidas, cafés, cócteles…
                         </p>
                       </div>
@@ -880,7 +877,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
             </div>
 
             <%!-- ── ③ Ingredientes (receta) ────────────────────────────────────── --%>
-            <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+            <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
               <div class="flex items-center gap-1.5">
                 <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
                   3
@@ -925,9 +922,9 @@ defmodule CRCWeb.Admin.PlatillosLive do
               <% selected_product = Enum.find(@available_products, &(to_string(&1.id) == @selected_product_id)) %>
               <% selected_unit = if selected_product, do: unit_abbr(selected_product.unit), else: nil %>
 
-              <div class="flex flex-col sm:flex-row gap-2 sm:items-end">
-                <%!-- Insumo select --%>
-                <div class="w-full sm:flex-1 min-w-0">
+              <div class="space-y-2">
+                <%!-- Insumo select — full width always --%>
+                <div>
                   <label class="label text-xs pb-0.5">Insumo</label>
                   <select
                     class="select select-sm w-full"
@@ -943,9 +940,9 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   </select>
                 </div>
 
-                <%!-- Cantidad con unidad dinámica --%>
+                <%!-- Cantidad + Agregar — same row, qty is flex-1 --%>
                 <div class="flex gap-2 items-end">
-                  <div class="flex-1 sm:w-32 sm:flex-none">
+                  <div class="flex-1 min-w-0">
                     <label class="label text-xs pb-0.5">
                       Cantidad
                       <%= if selected_unit do %>

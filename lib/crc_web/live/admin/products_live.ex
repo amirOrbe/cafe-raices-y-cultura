@@ -598,6 +598,8 @@ defmodule CRCWeb.Admin.ProductsLive do
         categories={@categories}
         variant_form={@variant_form}
         editing_variant_id={@editing_variant_id}
+        purchase_total={@purchase_total}
+        purchase_qty={@purchase_qty}
       />
     <% end %>
     """
@@ -613,6 +615,8 @@ defmodule CRCWeb.Admin.ProductsLive do
   attr :categories, :list, required: true
   attr :variant_form, :any, required: true
   attr :editing_variant_id, :any, required: true
+  attr :purchase_total, :string, required: true
+  attr :purchase_qty, :string, required: true
 
   defp product_modal(assigns) do
     is_edit = match?({:edit, _}, assigns.modal)

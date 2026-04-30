@@ -481,37 +481,37 @@ defmodule CRCWeb.Admin.VentasLive do
   attr :method, :string, default: nil
 
   defp payment_icon(%{method: "efectivo"} = assigns) do
-    ~H"<.icon name=\"hero-banknotes\" class=\"size-4 text-success\" />"
+    ~H'<.icon name="hero-banknotes" class="size-4 text-success" />'
   end
 
   defp payment_icon(%{method: "tarjeta"} = assigns) do
-    ~H"<.icon name=\"hero-credit-card\" class=\"size-4 text-info\" />"
+    ~H'<.icon name="hero-credit-card" class="size-4 text-info" />'
   end
 
   defp payment_icon(%{method: "transferencia"} = assigns) do
-    ~H"<.icon name=\"hero-device-phone-mobile\" class=\"size-4 text-warning\" />"
+    ~H'<.icon name="hero-device-phone-mobile" class="size-4 text-warning" />'
   end
 
   defp payment_icon(assigns) do
-    ~H"<.icon name=\"hero-question-mark-circle\" class=\"size-4 text-base-content/30\" />"
+    ~H'<.icon name="hero-question-mark-circle" class="size-4 text-base-content/30" />'
   end
 
   attr :method, :string, default: nil
 
   defp payment_badge(%{method: "efectivo"} = assigns) do
-    ~H"<span class=\"badge badge-sm badge-success\">Efectivo</span>"
+    ~H'<span class="badge badge-sm badge-success">Efectivo</span>'
   end
 
   defp payment_badge(%{method: "tarjeta"} = assigns) do
-    ~H"<span class=\"badge badge-sm badge-info\">Tarjeta</span>"
+    ~H'<span class="badge badge-sm badge-info">Tarjeta</span>'
   end
 
   defp payment_badge(%{method: "transferencia"} = assigns) do
-    ~H"<span class=\"badge badge-sm badge-warning\">Transferencia</span>"
+    ~H'<span class="badge badge-sm badge-warning">Transferencia</span>'
   end
 
   defp payment_badge(assigns) do
-    ~H"<span class=\"badge badge-sm badge-ghost\">—</span>"
+    ~H'<span class="badge badge-sm badge-ghost">—</span>'
   end
 
   # ---------------------------------------------------------------------------

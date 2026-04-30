@@ -1371,19 +1371,19 @@ defmodule CRCWeb.Waiter.OrderLive do
   attr :status, :string, required: true
 
   defp order_status_badge(%{status: "open"} = assigns) do
-    ~H"<span class=\"badge badge-info\">Abierta</span>"
+    ~H'<span class="badge badge-info">Abierta</span>'
   end
 
   defp order_status_badge(%{status: "sent"} = assigns) do
-    ~H"<span class=\"badge badge-warning\">En cocina / barra</span>"
+    ~H'<span class="badge badge-warning">En cocina / barra</span>'
   end
 
   defp order_status_badge(%{status: "ready"} = assigns) do
-    ~H"<span class=\"badge badge-success\">Lista</span>"
+    ~H'<span class="badge badge-success">Lista</span>'
   end
 
   defp order_status_badge(%{status: "closed"} = assigns) do
-    ~H"<span class=\"badge badge-ghost\">Cerrada</span>"
+    ~H'<span class="badge badge-ghost">Cerrada</span>'
   end
 
   # ---------------------------------------------------------------------------

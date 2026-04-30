@@ -6,7 +6,6 @@ defmodule CRCWeb.Admin.ProductsLive do
   alias CRC.Inventory
   alias CRC.Inventory.Product
   alias CRC.Inventory.ProductVariant
-  alias CRCWeb.Components.SiteComponents
 
   @impl true
   def mount(_params, _session, socket) do

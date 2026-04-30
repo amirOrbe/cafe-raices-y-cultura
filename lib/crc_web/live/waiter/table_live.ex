@@ -282,19 +282,19 @@ defmodule CRCWeb.Waiter.TableLive do
   # ---------------------------------------------------------------------------
 
   defp status_badge(%{status: "open"} = assigns) do
-    ~H"<span class=\"badge badge-sm badge-info\">Abierta</span>"
+    ~H'<span class="badge badge-sm badge-info">Abierta</span>'
   end
 
   defp status_badge(%{status: "sent"} = assigns) do
-    ~H"<span class=\"badge badge-sm badge-warning\">En cocina</span>"
+    ~H'<span class="badge badge-sm badge-warning">En cocina</span>'
   end
 
   defp status_badge(%{status: "ready"} = assigns) do
-    ~H"<span class=\"badge badge-sm badge-success\">Lista</span>"
+    ~H'<span class="badge badge-sm badge-success">Lista</span>'
   end
 
   defp status_badge(assigns) do
-    ~H"<span class=\"badge badge-sm badge-ghost\">{@status}</span>"
+    ~H'<span class="badge badge-sm badge-ghost">{@status}</span>'
   end
 
   # ---------------------------------------------------------------------------

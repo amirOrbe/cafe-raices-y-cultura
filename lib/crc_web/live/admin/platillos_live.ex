@@ -689,7 +689,6 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 Información básica
               </p>
 
-              <%!-- Name --%>
               <.input
                 field={@form[:name]}
                 type="text"
@@ -697,7 +696,6 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 placeholder="Ej. Cappuccino, Toast Francés, El Favorito"
               />
 
-              <%!-- Description --%>
               <.input
                 field={@form[:description]}
                 type="textarea"
@@ -705,20 +703,52 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 placeholder="Breve texto que aparece bajo el nombre en el menú público..."
               />
 
-              <%!-- Category + Featured (2 cols) --%>
+              <%!-- Categoría — ancho completo para no mezclar alturas con checkbox --%>
+              <.input
+                field={@form[:category_id]}
+                type="select"
+                label="Categoría"
+                options={[{"— Selecciona categoría —", ""} | Enum.map(@categories, &{&1.name, &1.id})]}
+              />
+
+              <%!-- Checkboxes como tarjetas iguales — misma altura, misma estructura --%>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <.input
-                  field={@form[:category_id]}
-                  type="select"
-                  label="Categoría"
-                  options={[{"— Selecciona categoría —", ""} | Enum.map(@categories, &{&1.name, &1.id})]}
-                />
-                <div>
-                  <.input field={@form[:featured]} type="checkbox" label="Platillo destacado ⭐" />
-                  <p class="text-xs text-base-content/40 mt-1 ml-7">
-                    Aparece primero con una estrella en el menú.
-                  </p>
-                </div>
+                <label class="flex items-start gap-3 rounded-xl border border-base-300 bg-base-100 p-3 cursor-pointer hover:bg-base-200/60 transition-colors">
+                  <div class="pt-0.5 shrink-0">
+                    <input type="hidden" name="menu_item[featured]" value="false" />
+                    <input
+                      type="checkbox"
+                      name="menu_item[featured]"
+                      value="true"
+                      class="checkbox checkbox-primary checkbox-sm"
+                      checked={@form[:featured].value != false && @form[:featured].value != "false"}
+                    />
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-base-content">Platillo destacado ⭐</p>
+                    <p class="text-xs text-base-content/40 mt-0.5">
+                      Aparece primero con una estrella en el menú.
+                    </p>
+                  </div>
+                </label>
+                <label class="flex items-start gap-3 rounded-xl border border-base-300 bg-base-100 p-3 cursor-pointer hover:bg-base-200/60 transition-colors">
+                  <div class="pt-0.5 shrink-0">
+                    <input type="hidden" name="menu_item[available]" value="false" />
+                    <input
+                      type="checkbox"
+                      name="menu_item[available]"
+                      value="true"
+                      class="checkbox checkbox-primary checkbox-sm"
+                      checked={@form[:available].value != false && @form[:available].value != "false"}
+                    />
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-base-content">Visible en el menú</p>
+                    <p class="text-xs text-base-content/40 mt-0.5">
+                      Los meseros pueden pedirlo en comandas.
+                    </p>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -731,29 +761,19 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 Precio y destino
               </p>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <%!-- Price --%>
-                <div>
-                  <.input
-                    field={@form[:price]}
-                    type="number"
-                    label="Precio de venta ($)"
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0.01"
-                  />
-                  <p class="text-xs text-base-content/40 mt-1">
-                    Lo que el cliente paga. Aparece en el menú y en las comandas.
-                  </p>
-                </div>
-
-                <%!-- Available --%>
-                <div>
-                  <.input field={@form[:available]} type="checkbox" label="Visible en el menú" />
-                  <p class="text-xs text-base-content/40 mt-1 ml-7">
-                    Si está activo, los meseros pueden pedirlo en comandas.
-                  </p>
-                </div>
+              <%!-- Precio — ancho completo --%>
+              <div>
+                <.input
+                  field={@form[:price]}
+                  type="number"
+                  label="Precio de venta ($)"
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0.01"
+                />
+                <p class="text-xs text-base-content/40 mt-1">
+                  Lo que el cliente paga. Aparece en el menú y en las comandas.
+                </p>
               </div>
 
               <%!-- Destination cards (radio styled as visual cards via peer-checked) --%>

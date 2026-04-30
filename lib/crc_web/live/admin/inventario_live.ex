@@ -235,10 +235,10 @@ defmodule CRCWeb.Admin.InventarioLive do
               <table class="table table-fixed w-full">
                 <thead>
                   <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                    <th class="w-[36%]">Insumo</th>
-                    <th class="w-[18%]">Stock actual</th>
+                    <th class="w-[34%]">Insumo</th>
+                    <th class="w-[17%]">Stock actual</th>
                     <th class="w-[14%]">Mínimo</th>
-                    <th class="w-[10%]">Estado</th>
+                    <th class="w-[13%]">Estado</th>
                     <th class="w-[22%] text-right pr-5">Acción</th>
                   </tr>
                 </thead>
@@ -264,7 +264,7 @@ defmodule CRCWeb.Admin.InventarioLive do
                         {format_qty(p.min_stock)} {p.unit}
                       </td>
                       <td>
-                        <span class={"badge badge-sm #{stock_badge_class(p)}"}>
+                        <span class={"badge badge-sm whitespace-nowrap #{stock_badge_class(p)}"}>
                           {stock_label(p)}
                         </span>
                       </td>
@@ -312,13 +312,23 @@ defmodule CRCWeb.Admin.InventarioLive do
   # Edit form component
   # ---------------------------------------------------------------------------
 
+  attr :product, :map, required: true
+  attr :new_qty, :string, required: true
+  attr :notes, :string, required: true
+
   defp edit_form(assigns) do
     ~H"""
-    <form phx-submit="save_stock" phx-change="form_change" class="space-y-3">
-      <div class="flex flex-wrap gap-3 items-end">
-        <div class="flex-1 min-w-[140px]">
+    <form phx-submit="save_stock" phx-change="form_change">
+      <div class="flex flex-col sm:flex-row sm:items-end gap-3">
+        <%!-- Nuevo stock --%>
+        <div class="w-full sm:w-44 shrink-0">
           <label class="label py-0.5">
-            <span class="label-text text-xs font-semibold text-primary">Nuevo stock ({@product.unit})</span>
+            <span class="label-text text-xs font-semibold text-primary">
+              Nuevo stock
+              <%= if @product.unit && @product.unit != "" do %>
+                <span class="font-normal text-base-content/50">({@product.unit})</span>
+              <% end %>
+            </span>
           </label>
           <input
             type="number"
@@ -333,12 +343,14 @@ defmodule CRCWeb.Admin.InventarioLive do
             onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
           />
           <p class="text-xs text-base-content/40 mt-0.5">
-            Actual: <strong>{format_qty(@product.stock_quantity)}</strong> {@product.unit}
+            Actual: <strong>{format_qty(@product.stock_quantity)}</strong>
+            {if @product.unit && @product.unit != "", do: @product.unit}
             <.delta_preview new_qty={@new_qty} current={@product.stock_quantity} unit={@product.unit} />
           </p>
         </div>
 
-        <div class="flex-[2] min-w-[200px]">
+        <%!-- Comentario --%>
+        <div class="flex-1 min-w-0">
           <label class="label py-0.5">
             <span class="label-text text-xs font-semibold">Comentario</span>
             <span class="label-text-alt text-base-content/40 text-xs">Opcional</span>
@@ -353,7 +365,8 @@ defmodule CRCWeb.Admin.InventarioLive do
           />
         </div>
 
-        <div class="flex gap-2 pb-0.5">
+        <%!-- Botones --%>
+        <div class="flex gap-2 shrink-0">
           <button type="submit" class="btn btn-primary btn-sm">
             <.icon name="hero-check" class="size-4" /> Guardar
           </button>

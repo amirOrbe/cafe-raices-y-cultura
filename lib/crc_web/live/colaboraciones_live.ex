@@ -108,7 +108,6 @@ defmodule CRCWeb.ColaboracionesLive do
         current_user={@current_user}
       />
       <main class="flex-1 pt-16">
-
         <%!-- ── Hero ────────────────────────────────────────────────────── --%>
         <div class="bg-primary text-primary-content py-14 sm:py-20">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -130,8 +129,7 @@ defmodule CRCWeb.ColaboracionesLive do
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div class="flex items-center gap-3 mb-6">
                 <span class="inline-flex items-center gap-1.5 bg-success text-success-content font-bold text-xs uppercase tracking-widest px-3 py-1.5 rounded-full animate-pulse">
-                  <span class="inline-block w-2 h-2 rounded-full bg-success-content"></span>
-                  EN VIVO
+                  <span class="inline-block w-2 h-2 rounded-full bg-success-content"></span> EN VIVO
                 </span>
                 <span class="text-sm text-base-content/60">Sucediendo ahora</span>
               </div>
@@ -169,7 +167,6 @@ defmodule CRCWeb.ColaboracionesLive do
         <%!-- ── Calendario mensual ────────────────────────────────────────── --%>
         <section class="py-12 sm:py-16 bg-base-100">
           <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-
             <%!-- Header: title + month navigation --%>
             <div class="flex flex-wrap items-start justify-between gap-4 mb-8">
               <div>
@@ -204,7 +201,6 @@ defmodule CRCWeb.ColaboracionesLive do
 
             <%!-- Calendar grid — flat grid-cols-7, browser wraps rows automatically --%>
             <div class="grid grid-cols-7 gap-px bg-base-300 rounded-2xl overflow-hidden border border-base-300">
-
               <%!-- Week day headers --%>
               <%= for abbr <- ~w(Do Lu Ma Mi Ju Vi Sá) do %>
                 <div class="bg-base-200 text-center py-2 sm:py-3 text-[10px] sm:text-xs font-bold text-base-content/50 uppercase tracking-wide">
@@ -266,7 +262,8 @@ defmodule CRCWeb.ColaboracionesLive do
                               is_today? -> "bg-accent"
                               true -> "bg-primary"
                             end
-                          ]}></div>
+                          ]}>
+                          </div>
                         <% end %>
                         <%= if length(day_events) > 3 do %>
                           <span class="text-[8px] leading-tight text-base-content/40 self-center">
@@ -296,7 +293,6 @@ defmodule CRCWeb.ColaboracionesLive do
                         <% end %>
                       </div>
                     <% end %>
-
                   </div>
                 <% end %>
               <% end %>
@@ -388,7 +384,9 @@ defmodule CRCWeb.ColaboracionesLive do
                             <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-3">
                               Galería
                               <span class="font-normal normal-case">
-                                · {length(event.event_photos)} {if length(event.event_photos) == 1, do: "foto", else: "fotos"}
+                                · {length(event.event_photos)} {if length(event.event_photos) == 1,
+                                  do: "foto",
+                                  else: "fotos"}
                               </span>
                             </p>
                             <div class="carousel carousel-center gap-2 w-full">
@@ -418,7 +416,6 @@ defmodule CRCWeb.ColaboracionesLive do
                 </div>
               <% end %>
             <% end %>
-
           </div>
         </section>
 
@@ -448,7 +445,6 @@ defmodule CRCWeb.ColaboracionesLive do
             </div>
           </div>
         </section>
-
       </main>
       <SiteComponents.site_footer />
     </div>
@@ -530,6 +526,7 @@ defmodule CRCWeb.ColaboracionesLive do
 
     # Pad the last row to a complete week
     remainder = rem(length(all_cells), 7)
+
     if remainder > 0,
       do: all_cells ++ List.duplicate(:empty, 7 - remainder),
       else: all_cells

@@ -9,7 +9,10 @@ defmodule CRC.InventoryTest do
   # ---------------------------------------------------------------------------
 
   defp supplier_attrs(overrides \\ %{}) do
-    Map.merge(%{name: "Distribuidora López", contact_name: "Carlos López", phone: "55 1234 5678"}, overrides)
+    Map.merge(
+      %{name: "Distribuidora López", contact_name: "Carlos López", phone: "55 1234 5678"},
+      overrides
+    )
   end
 
   defp product_attrs(overrides \\ %{}) do
@@ -243,12 +246,23 @@ defmodule CRC.InventoryTest do
 
   describe "list_low_stock_products/0" do
     test "returns only active products at or below min_stock" do
-      {:ok, low} = Inventory.create_product(product_attrs(%{
-        name: "Bajo stock", stock_quantity: "1.0", min_stock: "2.0"
-      }))
-      {:ok, _ok} = Inventory.create_product(product_attrs(%{
-        name: "Stock ok", stock_quantity: "10.0", min_stock: "2.0"
-      }))
+      {:ok, low} =
+        Inventory.create_product(
+          product_attrs(%{
+            name: "Bajo stock",
+            stock_quantity: "1.0",
+            min_stock: "2.0"
+          })
+        )
+
+      {:ok, _ok} =
+        Inventory.create_product(
+          product_attrs(%{
+            name: "Stock ok",
+            stock_quantity: "10.0",
+            min_stock: "2.0"
+          })
+        )
 
       result = Inventory.list_low_stock_products()
       ids = Enum.map(result, & &1.id)
@@ -257,9 +271,14 @@ defmodule CRC.InventoryTest do
     end
 
     test "does not include inactive products even if below min_stock" do
-      {:ok, product} = Inventory.create_product(product_attrs(%{
-        stock_quantity: "1.0", min_stock: "5.0"
-      }))
+      {:ok, product} =
+        Inventory.create_product(
+          product_attrs(%{
+            stock_quantity: "1.0",
+            min_stock: "5.0"
+          })
+        )
+
       Inventory.toggle_product_active(product)
 
       assert Inventory.list_low_stock_products() == []

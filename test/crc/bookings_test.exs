@@ -96,7 +96,9 @@ defmodule CRC.BookingsTest do
     end
 
     test "email inválido es rechazado" do
-      changeset = Reservation.changeset(%Reservation{}, reservation_attrs(%{email: "no-es-email"}))
+      changeset =
+        Reservation.changeset(%Reservation{}, reservation_attrs(%{email: "no-es-email"}))
+
       refute changeset.valid?
       assert changeset.errors[:email]
     end
@@ -168,6 +170,7 @@ defmodule CRC.BookingsTest do
 
       insert_reservation(%{date: target_date, status: "confirmed", name: "Confirmada"})
       insert_reservation(%{date: target_date, status: "pending", name: "Pendiente"})
+
       insert_reservation(%{
         date: Date.add(target_date, 1),
         status: "confirmed",

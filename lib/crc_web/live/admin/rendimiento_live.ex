@@ -134,7 +134,6 @@ defmodule CRCWeb.Admin.RendimientoLive do
     ~H"""
     <div class="min-h-screen bg-base-200 pb-10">
       <div class="max-w-6xl mx-auto px-4 py-8 space-y-8">
-
         <%!-- Header --%>
         <div>
           <h1 class="text-2xl font-bold text-base-content">Rendimiento del personal</h1>
@@ -148,16 +147,39 @@ defmodule CRCWeb.Admin.RendimientoLive do
           <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium text-info list-none select-none">
             <.icon name="hero-information-circle" class="size-4 shrink-0" />
             <span class="flex-1">¿Cómo se mide el rendimiento?</span>
-            <.icon name="hero-chevron-down" class="size-4 shrink-0 transition-transform group-open:rotate-180" />
+            <.icon
+              name="hero-chevron-down"
+              class="size-4 shrink-0 transition-transform group-open:rotate-180"
+            />
           </summary>
           <div class="px-4 pb-4 text-base-content/70 space-y-1.5 text-xs leading-relaxed">
-            <p><strong>Cocina y Barra — Preparación</strong> — tiempo desde que el mesero envía el artículo (estado "enviado") hasta que la estación lo marca como "listo". El umbral de alerta es <strong>15 minutos</strong>; si el promedio lo supera, la tarjeta se muestra en rojo.</p>
-            <p><strong>Meseros — Tiempo de servicio</strong> — tiempo total desde que la comanda se abre hasta que el mesero la cierra (cobra). El umbral de alerta es <strong>60 minutos</strong>. Refleja la agilidad del mesero en atender y cobrar, no el tiempo de cocina.</p>
-            <p><strong>Ítems preparados</strong> — cantidad de artículos que el empleado marcó como "listo" en el período. Para cocina y barra es la medida de volumen de trabajo.</p>
-            <p><strong>Ranking de ingresos</strong> — ordena a los meseros por el total de dinero cobrado en sus comandas cerradas. Un mesero con más mesas atendidas o tickets más altos aparece primero.</p>
-            <p><strong>Ranking de velocidad</strong> — ordena al personal de estación (cocina/barra) por tiempo promedio de preparación de menor a mayor. El más rápido aparece primero.</p>
-            <p><strong>Reconocimientos</strong> — notas positivas que los administradores pueden dejar a cualquier empleado. Se guardan con fecha y aparecen en el historial del empleado. No afectan ningún cálculo, son solo retroalimentación.</p>
-            <p class="text-base-content/40 italic">Solo aparecen datos de empleados con sesión iniciada que hayan atendido comandas en el período seleccionado.</p>
+            <p>
+              <strong>Cocina y Barra — Preparación</strong>
+              — tiempo desde que el mesero envía el artículo (estado "enviado") hasta que la estación lo marca como "listo". El umbral de alerta es <strong>15 minutos</strong>; si el promedio lo supera, la tarjeta se muestra en rojo.
+            </p>
+            <p>
+              <strong>Meseros — Tiempo de servicio</strong>
+              — tiempo total desde que la comanda se abre hasta que el mesero la cierra (cobra). El umbral de alerta es <strong>60 minutos</strong>. Refleja la agilidad del mesero en atender y cobrar, no el tiempo de cocina.
+            </p>
+            <p>
+              <strong>Ítems preparados</strong>
+              — cantidad de artículos que el empleado marcó como "listo" en el período. Para cocina y barra es la medida de volumen de trabajo.
+            </p>
+            <p>
+              <strong>Ranking de ingresos</strong>
+              — ordena a los meseros por el total de dinero cobrado en sus comandas cerradas. Un mesero con más mesas atendidas o tickets más altos aparece primero.
+            </p>
+            <p>
+              <strong>Ranking de velocidad</strong>
+              — ordena al personal de estación (cocina/barra) por tiempo promedio de preparación de menor a mayor. El más rápido aparece primero.
+            </p>
+            <p>
+              <strong>Reconocimientos</strong>
+              — notas positivas que los administradores pueden dejar a cualquier empleado. Se guardan con fecha y aparecen en el historial del empleado. No afectan ningún cálculo, son solo retroalimentación.
+            </p>
+            <p class="text-base-content/40 italic">
+              Solo aparecen datos de empleados con sesión iniciada que hayan atendido comandas en el período seleccionado.
+            </p>
           </div>
         </details>
 
@@ -166,7 +188,13 @@ defmodule CRCWeb.Admin.RendimientoLive do
           <div class="flex gap-2 flex-wrap">
             <%= for {label, value} <- [{"Hoy", "today"}, {"Esta semana", "week"}, {"Este mes", "month"}, {"Total", "all"}] do %>
               <button
-                class={["btn btn-sm", if(is_atom(@period) and Atom.to_string(@period) == value, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                class={[
+                  "btn btn-sm",
+                  if(is_atom(@period) and Atom.to_string(@period) == value,
+                    do: "btn-primary",
+                    else: "btn-ghost border border-base-300"
+                  )
+                ]}
                 phx-click="set_period"
                 phx-value-period={value}
               >
@@ -180,12 +208,16 @@ defmodule CRCWeb.Admin.RendimientoLive do
             <span class="text-xs text-base-content/50">Rango personalizado</span>
             <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
               <input
-                type="date" name="date_from" value={@date_from}
+                type="date"
+                name="date_from"
+                value={@date_from}
                 class="input input-sm input-bordered w-full sm:w-36"
               />
               <span class="text-base-content/40 text-xs text-center sm:text-left">—</span>
               <input
-                type="date" name="date_to" value={@date_to}
+                type="date"
+                name="date_to"
+                value={@date_to}
                 class="input input-sm input-bordered w-full sm:w-36"
               />
             </div>
@@ -197,8 +229,8 @@ defmodule CRCWeb.Admin.RendimientoLive do
           <div class="alert alert-info alert-sm py-2">
             <.icon name="hero-calendar" class="size-4" />
             <span class="text-sm">
-              Rango personalizado activo:
-              {elem(@period, 1) |> Date.to_iso8601()} — {elem(@period, 2) |> Date.to_iso8601()}
+              Rango personalizado activo: {elem(@period, 1) |> Date.to_iso8601()} — {elem(@period, 2)
+              |> Date.to_iso8601()}
             </span>
           </div>
         <% end %>
@@ -224,7 +256,6 @@ defmodule CRCWeb.Admin.RendimientoLive do
               <span class="badge badge-sm badge-warning">🏆</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
               <%!-- Revenue ranking --%>
               <%= if @revenue_ranking != [] do %>
                 <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 space-y-3">
@@ -244,8 +275,12 @@ defmodule CRCWeb.Admin.RendimientoLive do
                           <p class="text-sm font-medium text-base-content">{entry.name}</p>
                           <div class="flex items-center justify-between gap-1 mt-0.5">
                             <div class="flex items-center gap-1.5 min-w-0">
-                              <p class="text-sm font-bold text-success shrink-0">$<%= Decimal.round(entry.revenue, 2) %></p>
-                              <p class="text-xs text-base-content/40 truncate">· {entry.order_count} comandas</p>
+                              <p class="text-sm font-bold text-success shrink-0">
+                                ${Decimal.round(entry.revenue, 2)}
+                              </p>
+                              <p class="text-xs text-base-content/40 truncate">
+                                · {entry.order_count} comandas
+                              </p>
                             </div>
                             <%= if @current_user.role == "admin" do %>
                               <button
@@ -254,7 +289,9 @@ defmodule CRCWeb.Admin.RendimientoLive do
                                 phx-value-user_id={entry.user_id}
                                 phx-value-kind="top_sales"
                                 title="Dar reconocimiento"
-                              >🎖️</button>
+                              >
+                                🎖️
+                              </button>
                             <% end %>
                           </div>
                         </div>
@@ -286,8 +323,12 @@ defmodule CRCWeb.Admin.RendimientoLive do
                           <% end %>
                           <div class="flex items-center justify-between gap-1 mt-0.5">
                             <div class="flex items-center gap-1.5 min-w-0">
-                              <p class="text-sm font-bold text-info shrink-0">{format_duration(entry.avg_secs)}</p>
-                              <p class="text-xs text-base-content/40 truncate">· {entry.count} ítems</p>
+                              <p class="text-sm font-bold text-info shrink-0">
+                                {format_duration(entry.avg_secs)}
+                              </p>
+                              <p class="text-xs text-base-content/40 truncate">
+                                · {entry.count} ítems
+                              </p>
                             </div>
                             <%= if @current_user.role == "admin" do %>
                               <button
@@ -296,7 +337,9 @@ defmodule CRCWeb.Admin.RendimientoLive do
                                 phx-value-user_id={entry.user_id}
                                 phx-value-kind="top_speed"
                                 title="Dar reconocimiento"
-                              >🎖️</button>
+                              >
+                                🎖️
+                              </button>
                             <% end %>
                           </div>
                         </div>
@@ -305,7 +348,6 @@ defmodule CRCWeb.Admin.RendimientoLive do
                   </div>
                 </div>
               <% end %>
-
             </div>
           </div>
         <% end %>
@@ -339,12 +381,19 @@ defmodule CRCWeb.Admin.RendimientoLive do
           <div class="space-y-4">
             <div class="flex flex-wrap items-center gap-2">
               <h2 class="text-base font-semibold text-base-content">Cocina y Barra — Preparación</h2>
-              <span class="badge badge-sm badge-ghost shrink-0">{length(@station_stats)} empleados</span>
+              <span class="badge badge-sm badge-ghost shrink-0">
+                {length(@station_stats)} empleados
+              </span>
             </div>
             <p class="text-xs text-base-content/40 -mt-2">
               Tiempo desde que el pedido llega a la estación hasta que se marca listo.
             </p>
-            <.stat_grid stats={@station_stats} threshold_secs={@prep_threshold_secs} unit="ítems" current_user={@current_user} />
+            <.stat_grid
+              stats={@station_stats}
+              threshold_secs={@prep_threshold_secs}
+              unit="ítems"
+              current_user={@current_user}
+            />
           </div>
         <% end %>
 
@@ -358,7 +407,12 @@ defmodule CRCWeb.Admin.RendimientoLive do
             <p class="text-xs text-base-content/40 -mt-2">
               Tiempo total de la cuenta (apertura → cobro) y tiempo de recogida (platillo listo → servido).
             </p>
-            <.stat_grid stats={@waiter_stats} threshold_secs={@service_threshold_secs} unit="comandas" current_user={@current_user} />
+            <.stat_grid
+              stats={@waiter_stats}
+              threshold_secs={@service_threshold_secs}
+              unit="comandas"
+              current_user={@current_user}
+            />
 
             <%!-- Pickup time sub-grid (only when there is served data) --%>
             <% has_pickup = Enum.any?(@waiter_stats, fn s -> s.pickup_count > 0 end) %>
@@ -370,13 +424,17 @@ defmodule CRCWeb.Admin.RendimientoLive do
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <%= for stat <- @waiter_stats, stat.pickup_count > 0 do %>
                     <% pickup_overdue? = stat.pickup_avg >= @prep_threshold_secs %>
-                    <div class={["bg-base-100 rounded-2xl border shadow-sm p-4 space-y-2",
-                      if(pickup_overdue?, do: "border-error/40", else: "border-base-300")]}>
+                    <div class={[
+                      "bg-base-100 rounded-2xl border shadow-sm p-4 space-y-2",
+                      if(pickup_overdue?, do: "border-error/40", else: "border-base-300")
+                    ]}>
                       <div class="flex items-center gap-2">
                         <div class="size-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                           {String.first(stat.name) |> String.upcase()}
                         </div>
-                        <span class="text-sm font-semibold text-base-content truncate">{stat.name}</span>
+                        <span class="text-sm font-semibold text-base-content truncate">
+                          {stat.name}
+                        </span>
                       </div>
                       <div class="grid grid-cols-3 gap-1 text-center">
                         <div>
@@ -385,7 +443,10 @@ defmodule CRCWeb.Admin.RendimientoLive do
                         </div>
                         <div>
                           <p class="text-xs text-base-content/40">Promedio</p>
-                          <p class={["text-sm font-bold", if(pickup_overdue?, do: "text-error", else: "text-success")]}>
+                          <p class={[
+                            "text-sm font-bold",
+                            if(pickup_overdue?, do: "text-error", else: "text-success")
+                          ]}>
                             {format_duration(stat.pickup_avg)}
                           </p>
                         </div>
@@ -403,7 +464,6 @@ defmodule CRCWeb.Admin.RendimientoLive do
             <% end %>
           </div>
         <% end %>
-
       </div>
     </div>
 
@@ -438,8 +498,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
               Cancelar
             </button>
             <button class="btn btn-primary btn-sm gap-1" phx-click="confirm_recognition">
-              <.icon name="hero-check" class="size-4" />
-              Confirmar
+              <.icon name="hero-check" class="size-4" /> Confirmar
             </button>
           </div>
         </div>
@@ -528,7 +587,10 @@ defmodule CRCWeb.Admin.RendimientoLive do
           <%!-- Bar --%>
           <div class="w-full bg-base-200 rounded-full h-2">
             <div
-              class={["h-2 rounded-full transition-all", if(overdue?, do: "bg-error", else: "bg-success")]}
+              class={[
+                "h-2 rounded-full transition-all",
+                if(overdue?, do: "bg-error", else: "bg-success")
+              ]}
               style={"width: #{min(round(stat.avg / @max_avg * 100), 100)}%"}
             >
             </div>
@@ -561,6 +623,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
   end
 
   defp format_duration(secs) when secs < 60, do: "#{secs}s"
+
   defp format_duration(secs) do
     mins = div(secs, 60)
     rem = rem(secs, 60)

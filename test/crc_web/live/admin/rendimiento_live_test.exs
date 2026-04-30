@@ -28,11 +28,16 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
   defp insert_user(overrides \\ %{}) do
     attrs =
       Map.merge(
-        %{name: "Staff #{System.unique_integer()}",
+        %{
+          name: "Staff #{System.unique_integer()}",
           email: "staff#{System.unique_integer()}@cafe.com",
-          role: "empleado", stations: ["cocina"], password: "pass123456"},
+          role: "empleado",
+          stations: ["cocina"],
+          password: "pass123456"
+        },
         overrides
       )
+
     {:ok, u} = %User{} |> User.changeset(attrs) |> CRC.Repo.insert()
     u
   end
@@ -43,9 +48,13 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
   end
 
   defp insert_menu_item(category_id) do
-    {:ok, mi} = Catalog.create_menu_item(%{
-      name: "Item #{System.unique_integer()}", price: "60.00", category_id: category_id
-    })
+    {:ok, mi} =
+      Catalog.create_menu_item(%{
+        name: "Item #{System.unique_integer()}",
+        price: "60.00",
+        category_id: category_id
+      })
+
     mi
   end
 
@@ -54,21 +63,22 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
     cat = insert_category()
     mi = insert_menu_item(cat.id)
     now = DateTime.utc_now() |> DateTime.truncate(:second)
-    sent_at  = DateTime.add(now, -600, :second)
+    sent_at = DateTime.add(now, -600, :second)
     ready_at = DateTime.add(now, -300, :second)
     inserted_at = DateTime.add(now, -900, :second)
 
-    order = CRC.Repo.insert!(%CRC.Orders.Order{
-      customer_name: "Stat Order #{System.unique_integer()}",
-      status: "closed",
-      payment_method: "tarjeta",
-      total: Decimal.new("60.00"),
-      closed_at: now,
-      user_id: waiter.id,
-      closed_by_id: waiter.id,
-      inserted_at: inserted_at,
-      updated_at: now
-    })
+    order =
+      CRC.Repo.insert!(%CRC.Orders.Order{
+        customer_name: "Stat Order #{System.unique_integer()}",
+        status: "closed",
+        payment_method: "tarjeta",
+        total: Decimal.new("60.00"),
+        closed_at: now,
+        user_id: waiter.id,
+        closed_by_id: waiter.id,
+        inserted_at: inserted_at,
+        updated_at: now
+      })
 
     CRC.Repo.insert!(%CRC.Orders.OrderItem{
       order_id: order.id,
@@ -94,8 +104,11 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
       {:ok, user} =
         %User{}
         |> User.changeset(%{
-          name: "Emp", email: "emp_rend#{System.unique_integer()}@cafe.com",
-          role: "empleado", stations: ["sala"], password: "pass123456"
+          name: "Emp",
+          email: "emp_rend#{System.unique_integer()}@cafe.com",
+          role: "empleado",
+          stations: ["sala"],
+          password: "pass123456"
         })
         |> CRC.Repo.insert()
 
@@ -181,7 +194,11 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
       {:ok, lv, _} = live(conn, "/admin/rendimiento")
 
       # First set a custom range
-      render_change(lv, "set_date_range", %{"date_from" => "2026-01-01", "date_to" => "2026-01-31"})
+      render_change(lv, "set_date_range", %{
+        "date_from" => "2026-01-01",
+        "date_to" => "2026-01-31"
+      })
+
       # Then switch to preset
       render_click(lv, "set_period", %{"period" => "today"})
 
@@ -212,10 +229,11 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
       {conn, _} = insert_admin(conn)
       {:ok, lv, _} = live(conn, "/admin/rendimiento")
 
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => "2026-03-01",
-        "date_to" => "2026-03-31"
-      })
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2026-03-01",
+          "date_to" => "2026-03-31"
+        })
 
       assert html =~ "2026-03-01"
       assert html =~ "2026-03-31"
@@ -242,10 +260,11 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
       {:ok, lv, _} = live(conn, "/admin/rendimiento")
 
       # date_from after date_to → should be ignored
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => "2026-03-31",
-        "date_to" => "2026-03-01"
-      })
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2026-03-31",
+          "date_to" => "2026-03-01"
+        })
 
       assert html =~ "Rendimiento"
     end
@@ -258,8 +277,11 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
   describe "stats display" do
     test "shows station stats when kitchen staff has marked items ready", %{conn: conn} do
       {conn, _} = insert_admin(conn)
-      waiter  = insert_user(%{stations: ["sala"]})
-      kitchen = insert_user(%{name: "Carlos Cocina #{System.unique_integer()}", stations: ["cocina"]})
+      waiter = insert_user(%{stations: ["sala"]})
+
+      kitchen =
+        insert_user(%{name: "Carlos Cocina #{System.unique_integer()}", stations: ["cocina"]})
+
       insert_stat_order(waiter, kitchen)
 
       {:ok, _lv, html} = live(conn, "/admin/rendimiento")
@@ -268,7 +290,7 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
 
     test "shows waiter stats when waiter has closed orders", %{conn: conn} do
       {conn, _} = insert_admin(conn)
-      waiter  = insert_user(%{name: "Ana Mesera #{System.unique_integer()}", stations: ["sala"]})
+      waiter = insert_user(%{name: "Ana Mesera #{System.unique_integer()}", stations: ["sala"]})
       kitchen = insert_user(%{stations: ["cocina"]})
       insert_stat_order(waiter, kitchen)
 
@@ -278,17 +300,22 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
 
     test "employee does not appear when no orders in selected period", %{conn: conn} do
       {conn, _} = insert_admin(conn)
-      waiter  = insert_user(%{name: "Invisible Mesero #{System.unique_integer()}", stations: ["sala"]})
+
+      waiter =
+        insert_user(%{name: "Invisible Mesero #{System.unique_integer()}", stations: ["sala"]})
+
       kitchen = insert_user(%{stations: ["cocina"]})
       insert_stat_order(waiter, kitchen)
 
       {:ok, lv, _} = live(conn, "/admin/rendimiento")
 
       # Far-future range → no data
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => "2035-01-01",
-        "date_to" => "2035-01-02"
-      })
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2035-01-01",
+          "date_to" => "2035-01-02"
+        })
+
       assert html =~ "No hay datos de rendimiento"
     end
   end
@@ -338,7 +365,10 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
 
     test "open_recognition_modal with top_speed shows correct label", %{conn: conn} do
       {conn, admin} = insert_admin(conn)
-      employee = insert_user(%{name: "Emp Speed #{System.unique_integer()}", stations: ["cocina"]})
+
+      employee =
+        insert_user(%{name: "Emp Speed #{System.unique_integer()}", stations: ["cocina"]})
+
       waiter_stat_order(admin, employee)
 
       {:ok, lv, _} = live(conn, "/admin/rendimiento")
@@ -354,7 +384,10 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
 
     test "open_recognition_modal with custom shows correct label", %{conn: conn} do
       {conn, admin} = insert_admin(conn)
-      employee = insert_user(%{name: "Emp Custom #{System.unique_integer()}", stations: ["barra"]})
+
+      employee =
+        insert_user(%{name: "Emp Custom #{System.unique_integer()}", stations: ["barra"]})
+
       waiter_stat_order(admin, employee)
 
       {:ok, lv, _} = live(conn, "/admin/rendimiento")
@@ -402,7 +435,10 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
 
     test "confirm_recognition saves and closes the modal", %{conn: conn} do
       {conn, admin} = insert_admin(conn)
-      employee = insert_user(%{name: "Emp Confirm #{System.unique_integer()}", stations: ["sala"]})
+
+      employee =
+        insert_user(%{name: "Emp Confirm #{System.unique_integer()}", stations: ["sala"]})
+
       waiter_stat_order(admin, employee)
 
       {:ok, lv, _} = live(conn, "/admin/rendimiento")
@@ -419,7 +455,9 @@ defmodule CRCWeb.Admin.RendimientoLiveTest do
 
     test "recognitions_today section shows saved recognitions", %{conn: conn} do
       {conn, admin} = insert_admin(conn)
-      employee = insert_user(%{name: "Emp Today #{System.unique_integer()}", stations: ["cocina"]})
+
+      employee =
+        insert_user(%{name: "Emp Today #{System.unique_integer()}", stations: ["cocina"]})
 
       CRC.Accounts.give_recognition(admin, %{
         user_id: employee.id,

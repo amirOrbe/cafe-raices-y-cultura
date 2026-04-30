@@ -170,12 +170,15 @@ defmodule CRCWeb.Employee.ProfileLive do
 
     <div class="min-h-screen bg-base-200 pt-20 pb-12">
       <div class="max-w-lg mx-auto px-4 space-y-6">
-
         <%!-- Header --%>
         <div class="flex items-center gap-3">
           <div class="size-14 rounded-full bg-primary/10 border border-base-300 overflow-hidden shrink-0 flex items-center justify-center">
             <%= if @current_user.avatar_url do %>
-              <img src={@current_user.avatar_url} alt={@current_user.name} class="size-14 object-cover" />
+              <img
+                src={@current_user.avatar_url}
+                alt={@current_user.name}
+                class="size-14 object-cover"
+              />
             <% else %>
               <span class="text-primary font-bold text-xl">
                 {String.first(@current_user.name) |> String.upcase()}
@@ -204,8 +207,7 @@ defmodule CRCWeb.Employee.ProfileLive do
             <%!-- Avatar section --%>
             <div>
               <p class="text-sm font-medium text-base-content mb-2">
-                Foto de perfil
-                <span class="text-base-content/40 font-normal">(opcional)</span>
+                Foto de perfil <span class="text-base-content/40 font-normal">(opcional)</span>
               </p>
 
               <%!-- Current avatar --%>
@@ -251,7 +253,9 @@ defmodule CRCWeb.Employee.ProfileLive do
                   <.icon name="hero-user-circle" class="size-8 text-primary/40" />
                   <div class="text-center">
                     <p class="text-sm font-medium text-base-content">
-                      {if @remove_avatar, do: "Subir foto nueva (opcional)", else: "Selecciona una foto de perfil"}
+                      {if @remove_avatar,
+                        do: "Subir foto nueva (opcional)",
+                        else: "Selecciona una foto de perfil"}
                     </p>
                     <p class="text-xs text-base-content/40 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
                   </div>
@@ -294,8 +298,7 @@ defmodule CRCWeb.Employee.ProfileLive do
 
             <div class="flex justify-end pt-1">
               <button type="submit" class="btn btn-primary">
-                <.icon name="hero-check" class="size-4" />
-                Guardar cambios
+                <.icon name="hero-check" class="size-4" /> Guardar cambios
               </button>
             </div>
           </.form>
@@ -363,13 +366,11 @@ defmodule CRCWeb.Employee.ProfileLive do
 
             <div class="flex justify-end pt-1">
               <button type="submit" class="btn btn-primary">
-                <.icon name="hero-lock-closed" class="size-4" />
-                Actualizar contraseña
+                <.icon name="hero-lock-closed" class="size-4" /> Actualizar contraseña
               </button>
             </div>
           </form>
         </div>
-
       </div>
     </div>
 

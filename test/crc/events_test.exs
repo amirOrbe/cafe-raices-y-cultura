@@ -224,24 +224,41 @@ defmodule CRC.EventsTest do
     end
 
     test "invalid instagram_handle with spaces" do
-      changeset = Collaborator.changeset(%Collaborator{}, collaborator_attrs(%{instagram_handle: "bad handle"}))
+      changeset =
+        Collaborator.changeset(
+          %Collaborator{},
+          collaborator_attrs(%{instagram_handle: "bad handle"})
+        )
+
       refute changeset.valid?
       assert changeset.errors[:instagram_handle]
     end
 
     test "invalid instagram_handle with special characters" do
-      changeset = Collaborator.changeset(%Collaborator{}, collaborator_attrs(%{instagram_handle: "bad!handle"}))
+      changeset =
+        Collaborator.changeset(
+          %Collaborator{},
+          collaborator_attrs(%{instagram_handle: "bad!handle"})
+        )
+
       refute changeset.valid?
       assert changeset.errors[:instagram_handle]
     end
 
     test "valid instagram_handle with letters, numbers, dots and underscores" do
-      changeset = Collaborator.changeset(%Collaborator{}, collaborator_attrs(%{instagram_handle: "user.name_123"}))
+      changeset =
+        Collaborator.changeset(
+          %Collaborator{},
+          collaborator_attrs(%{instagram_handle: "user.name_123"})
+        )
+
       assert changeset.valid?
     end
 
     test "instagram_handle is optional" do
-      changeset = Collaborator.changeset(%Collaborator{}, collaborator_attrs(%{instagram_handle: nil}))
+      changeset =
+        Collaborator.changeset(%Collaborator{}, collaborator_attrs(%{instagram_handle: nil}))
+
       assert changeset.valid?
     end
   end
@@ -373,19 +390,34 @@ defmodule CRC.EventsTest do
     end
 
     test "invalid when end_time equals start_time" do
-      changeset = Event.changeset(%Event{}, event_attrs(%{start_time: ~T[19:00:00], end_time: ~T[19:00:00]}))
+      changeset =
+        Event.changeset(
+          %Event{},
+          event_attrs(%{start_time: ~T[19:00:00], end_time: ~T[19:00:00]})
+        )
+
       refute changeset.valid?
       assert changeset.errors[:end_time]
     end
 
     test "invalid when end_time is before start_time" do
-      changeset = Event.changeset(%Event{}, event_attrs(%{start_time: ~T[21:00:00], end_time: ~T[19:00:00]}))
+      changeset =
+        Event.changeset(
+          %Event{},
+          event_attrs(%{start_time: ~T[21:00:00], end_time: ~T[19:00:00]})
+        )
+
       refute changeset.valid?
       assert changeset.errors[:end_time]
     end
 
     test "valid when end_time is after start_time" do
-      changeset = Event.changeset(%Event{}, event_attrs(%{start_time: ~T[18:00:00], end_time: ~T[22:00:00]}))
+      changeset =
+        Event.changeset(
+          %Event{},
+          event_attrs(%{start_time: ~T[18:00:00], end_time: ~T[22:00:00]})
+        )
+
       assert changeset.valid?
     end
 
@@ -537,8 +569,25 @@ defmodule CRC.EventsTest do
       in_5 = Date.utc_today() |> Date.add(5)
       in_3 = Date.utc_today() |> Date.add(3)
 
-      {:ok, later} = Events.create_event(event_attrs(%{event_date: in_5, title: "Más tarde", start_time: ~T[20:00:00], end_time: ~T[22:00:00]}))
-      {:ok, sooner} = Events.create_event(event_attrs(%{event_date: in_3, title: "Antes", start_time: ~T[18:00:00], end_time: ~T[20:00:00]}))
+      {:ok, later} =
+        Events.create_event(
+          event_attrs(%{
+            event_date: in_5,
+            title: "Más tarde",
+            start_time: ~T[20:00:00],
+            end_time: ~T[22:00:00]
+          })
+        )
+
+      {:ok, sooner} =
+        Events.create_event(
+          event_attrs(%{
+            event_date: in_3,
+            title: "Antes",
+            start_time: ~T[18:00:00],
+            end_time: ~T[20:00:00]
+          })
+        )
 
       [first | _] = Events.list_upcoming_events()
       assert first.id == sooner.id
@@ -576,8 +625,11 @@ defmodule CRC.EventsTest do
       two_days_ago = cdmx_today() |> Date.add(-2)
       five_days_ago = cdmx_today() |> Date.add(-5)
 
-      {:ok, recent} = Events.create_event(event_attrs(%{event_date: two_days_ago, title: "Reciente"}))
-      {:ok, older} = Events.create_event(event_attrs(%{event_date: five_days_ago, title: "Antiguo"}))
+      {:ok, recent} =
+        Events.create_event(event_attrs(%{event_date: two_days_ago, title: "Reciente"}))
+
+      {:ok, older} =
+        Events.create_event(event_attrs(%{event_date: five_days_ago, title: "Antiguo"}))
 
       [first | _] = Events.list_past_events()
       assert first.id == recent.id
@@ -632,7 +684,8 @@ defmodule CRC.EventsTest do
       event = insert_event(%{}, [{c1.id, "Artista"}])
 
       # Replace c1 with c2
-      {:ok, updated} = Events.update_event(event, %{title: event.title}, [{c2.id, "Nuevo artista"}])
+      {:ok, updated} =
+        Events.update_event(event, %{title: event.title}, [{c2.id, "Nuevo artista"}])
 
       collaborator_ids = Enum.map(updated.event_collaborators, & &1.collaborator_id)
       refute c1.id in collaborator_ids

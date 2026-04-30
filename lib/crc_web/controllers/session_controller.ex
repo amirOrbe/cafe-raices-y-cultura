@@ -15,9 +15,7 @@ defmodule CRCWeb.SessionController do
         |> UserAuth.log_in_user(user)
 
       {:error, :inactive_user} ->
-        render(conn, :new,
-          error: "Tu cuenta está desactivada. Contacta al administrador."
-        )
+        render(conn, :new, error: "Tu cuenta está desactivada. Contacta al administrador.")
 
       {:error, :invalid_credentials} ->
         render(conn, :new, error: "Email o contraseña incorrectos.")

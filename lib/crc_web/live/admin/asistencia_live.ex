@@ -145,7 +145,6 @@ defmodule CRCWeb.Admin.AsistenciaLive do
     ~H"""
     <div class="min-h-screen bg-base-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
         <div class="mb-6 flex items-start justify-between">
           <div>
             <h1 class="text-2xl font-bold text-base-content">Asistencia</h1>
@@ -154,8 +153,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
             </p>
           </div>
           <button phx-click="refresh_today" class="btn btn-ghost btn-sm gap-2">
-            <.icon name="hero-arrow-path" class="size-4" />
-            Actualizar
+            <.icon name="hero-arrow-path" class="size-4" /> Actualizar
           </button>
         </div>
 
@@ -190,7 +188,6 @@ defmodule CRCWeb.Admin.AsistenciaLive do
             selected_month={@selected_month}
           />
         <% end %>
-
       </div>
     </div>
 
@@ -234,13 +231,17 @@ defmodule CRCWeb.Admin.AsistenciaLive do
             <div class="bg-base-200 rounded-lg p-2 text-center">
               <p class="text-xs text-base-content/50">Entrada</p>
               <p class="font-semibold text-base-content">
-                {if record && record.clocked_in_at, do: format_time_utc(record.clocked_in_at), else: "–"}
+                {if record && record.clocked_in_at,
+                  do: format_time_utc(record.clocked_in_at),
+                  else: "–"}
               </p>
             </div>
             <div class="bg-base-200 rounded-lg p-2 text-center">
               <p class="text-xs text-base-content/50">Salida</p>
               <p class="font-semibold text-base-content">
-                {if record && record.clocked_out_at, do: format_time_utc(record.clocked_out_at), else: "–"}
+                {if record && record.clocked_out_at,
+                  do: format_time_utc(record.clocked_out_at),
+                  else: "–"}
               </p>
             </div>
           </div>
@@ -370,7 +371,6 @@ defmodule CRCWeb.Admin.AsistenciaLive do
     ~H"""
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-5">
-
         <div>
           <h3 class="text-lg font-bold text-base-content">
             Registrar {@action_label}
@@ -437,7 +437,6 @@ defmodule CRCWeb.Admin.AsistenciaLive do
             Cancelar
           </button>
         </div>
-
       </div>
     </div>
     """
@@ -471,7 +470,9 @@ defmodule CRCWeb.Admin.AsistenciaLive do
   # ---------------------------------------------------------------------------
 
   defp maybe_load_summary(socket, :metrics) do
-    assign(socket, :summary,
+    assign(
+      socket,
+      :summary,
       HR.attendance_summary(socket.assigns.selected_year, socket.assigns.selected_month)
     )
   end
@@ -501,9 +502,18 @@ defmodule CRCWeb.Admin.AsistenciaLive do
 
   defp months do
     [
-      {"Enero", 1}, {"Febrero", 2}, {"Marzo", 3}, {"Abril", 4},
-      {"Mayo", 5}, {"Junio", 6}, {"Julio", 7}, {"Agosto", 8},
-      {"Septiembre", 9}, {"Octubre", 10}, {"Noviembre", 11}, {"Diciembre", 12}
+      {"Enero", 1},
+      {"Febrero", 2},
+      {"Marzo", 3},
+      {"Abril", 4},
+      {"Mayo", 5},
+      {"Junio", 6},
+      {"Julio", 7},
+      {"Agosto", 8},
+      {"Septiembre", 9},
+      {"Octubre", 10},
+      {"Noviembre", 11},
+      {"Diciembre", 12}
     ]
   end
 end

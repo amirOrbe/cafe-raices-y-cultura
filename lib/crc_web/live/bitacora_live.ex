@@ -126,7 +126,6 @@ defmodule CRCWeb.BitacoraLive do
 
     <div class="min-h-screen bg-base-200 pt-20 pb-12">
       <div class="max-w-2xl mx-auto px-4 space-y-6">
-
         <%!-- Header --%>
         <div>
           <div class="flex items-center gap-2 mb-1">
@@ -152,7 +151,8 @@ defmodule CRCWeb.BitacoraLive do
                   "btn btn-sm text-xs",
                   if(@new_category == value,
                     do: "btn-primary",
-                    else: "btn-ghost border border-base-300")
+                    else: "btn-ghost border border-base-300"
+                  )
                 ]}
                 phx-click="set_category"
                 phx-value-category={value}
@@ -172,8 +172,7 @@ defmodule CRCWeb.BitacoraLive do
               required
             ></textarea>
             <button type="submit" class="btn btn-primary w-full sm:w-auto">
-              <.icon name="hero-paper-airplane" class="size-4" />
-              Publicar nota
+              <.icon name="hero-paper-airplane" class="size-4" /> Publicar nota
             </button>
           </form>
         </div>
@@ -189,7 +188,10 @@ defmodule CRCWeb.BitacoraLive do
 
           <%= if @active_notes == [] do %>
             <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-14 text-center">
-              <.icon name="hero-clipboard-document-check" class="size-10 text-base-content/20 mx-auto mb-3" />
+              <.icon
+                name="hero-clipboard-document-check"
+                class="size-10 text-base-content/20 mx-auto mb-3"
+              />
               <p class="text-sm text-base-content/40 font-medium">Todo en orden</p>
               <p class="text-xs text-base-content/30 mt-1">No hay notas activas para este turno.</p>
             </div>
@@ -219,8 +221,7 @@ defmodule CRCWeb.BitacoraLive do
                         phx-click="resolve_note"
                         phx-value-id={note.id}
                       >
-                        <.icon name="hero-check" class="size-3" />
-                        Resolver
+                        <.icon name="hero-check" class="size-3" /> Resolver
                       </button>
                       <%= if @current_user.role == "admin" do %>
                         <button
@@ -250,8 +251,7 @@ defmodule CRCWeb.BitacoraLive do
               <.icon
                 name={if @show_resolved, do: "hero-chevron-down", else: "hero-chevron-right"}
                 class="size-3.5"
-              />
-              Resueltas (últimos 3 días)
+              /> Resueltas (últimos 3 días)
               <span class="badge badge-ghost badge-sm">{length(@resolved_notes)}</span>
             </button>
 
@@ -269,8 +269,9 @@ defmodule CRCWeb.BitacoraLive do
                     </div>
                     <div class="flex items-center justify-between flex-wrap gap-2 mt-2">
                       <p class="text-xs text-base-content/40">
-                        {note.author && note.author.name}
-                        · Resuelto por {note.resolved_by && note.resolved_by.name || "—"}
+                        {note.author && note.author.name} · Resuelto por {(note.resolved_by &&
+                                                                             note.resolved_by.name) ||
+                          "—"}
                         {if note.resolved_at, do: " · #{format_dt(note.resolved_at)}"}
                       </p>
                       <%= if @current_user.role == "admin" do %>
@@ -290,7 +291,6 @@ defmodule CRCWeb.BitacoraLive do
             <% end %>
           </div>
         <% end %>
-
       </div>
     </div>
 
@@ -302,22 +302,23 @@ defmodule CRCWeb.BitacoraLive do
   # Private helpers
   # ---------------------------------------------------------------------------
 
-  defp note_card_class("stock"),       do: "border-error/30 bg-error/5"
+  defp note_card_class("stock"), do: "border-error/30 bg-error/5"
   defp note_card_class("preparacion"), do: "border-info/30 bg-info/5"
-  defp note_card_class("equipo"),      do: "border-warning/30 bg-warning/5"
-  defp note_card_class(_),             do: "border-base-300 bg-base-100"
+  defp note_card_class("equipo"), do: "border-warning/30 bg-warning/5"
+  defp note_card_class(_), do: "border-base-300 bg-base-100"
 
-  defp note_badge_class("stock"),       do: "badge-error"
+  defp note_badge_class("stock"), do: "badge-error"
   defp note_badge_class("preparacion"), do: "badge-info"
-  defp note_badge_class("equipo"),      do: "badge-warning"
-  defp note_badge_class(_),             do: "badge-ghost"
+  defp note_badge_class("equipo"), do: "badge-warning"
+  defp note_badge_class(_), do: "badge-ghost"
 
-  defp category_placeholder("stock"),       do: "Ej: Se acabó la crema de cacahuate — pedir hoy"
+  defp category_placeholder("stock"), do: "Ej: Se acabó la crema de cacahuate — pedir hoy"
   defp category_placeholder("preparacion"), do: "Ej: El pan de ayer está en el congelador"
-  defp category_placeholder("equipo"),      do: "Ej: La licuadora 2 hace ruido raro"
-  defp category_placeholder(_),            do: "Ej: Llega el proveedor de leche a las 10am mañana"
+  defp category_placeholder("equipo"), do: "Ej: La licuadora 2 hace ruido raro"
+  defp category_placeholder(_), do: "Ej: Llega el proveedor de leche a las 10am mañana"
 
   defp format_dt(%DateTime{} = dt),
     do: Calendar.strftime(dt, "%d/%m %H:%M")
+
   defp format_dt(_), do: "—"
 end

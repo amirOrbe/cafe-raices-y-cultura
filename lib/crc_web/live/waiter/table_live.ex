@@ -101,10 +101,13 @@ defmodule CRCWeb.Waiter.TableLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <SiteComponents.site_navbar nav_open={@nav_open} current_page={:waiter} current_user={@current_user} />
+    <SiteComponents.site_navbar
+      nav_open={@nav_open}
+      current_page={:waiter}
+      current_user={@current_user}
+    />
     <div class="min-h-screen bg-base-200 pt-20 pb-10 px-4">
       <div class="max-w-5xl mx-auto space-y-6">
-
         <%!-- Header --%>
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -115,12 +118,10 @@ defmodule CRCWeb.Waiter.TableLive do
           </div>
           <div class="flex items-center gap-2">
             <a href="/mesa/historial" class="btn btn-ghost btn-sm gap-1">
-              <.icon name="hero-clock" class="size-4" />
-              Historial
+              <.icon name="hero-clock" class="size-4" /> Historial
             </a>
             <button class="btn btn-primary btn-sm gap-1" phx-click="open_new_modal">
-              <.icon name="hero-plus" class="size-4" />
-              Nueva cuenta
+              <.icon name="hero-plus" class="size-4" /> Nueva cuenta
             </button>
           </div>
         </div>
@@ -128,7 +129,10 @@ defmodule CRCWeb.Waiter.TableLive do
         <%!-- Empty state --%>
         <%= if @orders == [] do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-20 text-center">
-            <.icon name="hero-clipboard-document-list" class="size-12 text-base-content/20 mx-auto mb-3" />
+            <.icon
+              name="hero-clipboard-document-list"
+              class="size-12 text-base-content/20 mx-auto mb-3"
+            />
             <p class="text-base-content/50 text-sm">No hay comandas abiertas.</p>
             <button class="btn btn-primary btn-sm mt-4" phx-click="open_new_modal">
               Abrir primera cuenta
@@ -142,7 +146,6 @@ defmodule CRCWeb.Waiter.TableLive do
             <.cuenta_card order={order} now={@now} />
           <% end %>
         </div>
-
       </div>
     </div>
 
@@ -222,7 +225,9 @@ defmodule CRCWeb.Waiter.TableLive do
               <%= if length(@order.order_items) == 0 do %>
                 Sin artículos
               <% else %>
-                {length(@order.order_items)} {if length(@order.order_items) == 1, do: "artículo", else: "artículos"}
+                {length(@order.order_items)} {if length(@order.order_items) == 1,
+                  do: "artículo",
+                  else: "artículos"}
               <% end %>
             </span>
             <%= if @order.user do %>
@@ -277,19 +282,19 @@ defmodule CRCWeb.Waiter.TableLive do
   # ---------------------------------------------------------------------------
 
   defp status_badge(%{status: "open"} = assigns) do
-    ~H"<span class='badge badge-sm badge-info'>Abierta</span>"
+    ~H"<span class=\"badge badge-sm badge-info\">Abierta</span>"
   end
 
   defp status_badge(%{status: "sent"} = assigns) do
-    ~H"<span class='badge badge-sm badge-warning'>En cocina</span>"
+    ~H"<span class=\"badge badge-sm badge-warning\">En cocina</span>"
   end
 
   defp status_badge(%{status: "ready"} = assigns) do
-    ~H"<span class='badge badge-sm badge-success'>Lista</span>"
+    ~H"<span class=\"badge badge-sm badge-success\">Lista</span>"
   end
 
   defp status_badge(assigns) do
-    ~H"<span class='badge badge-sm badge-ghost'>{@status}</span>"
+    ~H"<span class=\"badge badge-sm badge-ghost\">{@status}</span>"
   end
 
   # ---------------------------------------------------------------------------

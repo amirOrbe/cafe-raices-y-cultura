@@ -25,7 +25,16 @@ defmodule CRC.Catalog.MenuItem do
 
   def changeset(menu_item, attrs) do
     menu_item
-    |> cast(attrs, [:name, :description, :price, :destination, :available, :featured, :category_id, :image_url])
+    |> cast(attrs, [
+      :name,
+      :description,
+      :price,
+      :destination,
+      :available,
+      :featured,
+      :category_id,
+      :image_url
+    ])
     |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name, :price, :destination, :category_id])
     |> validate_inclusion(:destination, @destinations, message: "debe ser cocina o barra")

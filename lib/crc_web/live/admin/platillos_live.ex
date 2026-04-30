@@ -159,7 +159,11 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
         socket =
           if upload_failed do
-            put_flash(socket, :error, "La foto no pudo subirse a Cloudinary. El platillo se guardó sin imagen.")
+            put_flash(
+              socket,
+              :error,
+              "La foto no pudo subirse a Cloudinary. El platillo se guardó sin imagen."
+            )
           else
             socket
           end
@@ -281,13 +285,13 @@ defmodule CRCWeb.Admin.PlatillosLive do
         <div>
           <h1 class="text-2xl font-bold text-base-content">Platillos</h1>
           <p class="text-sm text-base-content/50 mt-0.5">
-            {length(visible)} platillos
-            {if @status_filter == :available, do: "disponibles", else: "no disponibles"}
+            {length(visible)} platillos {if @status_filter == :available,
+              do: "disponibles",
+              else: "no disponibles"}
           </p>
         </div>
         <button class="btn btn-primary gap-2" phx-click="new_item">
-          <.icon name="hero-plus" class="size-4" />
-          Nuevo platillo
+          <.icon name="hero-plus" class="size-4" /> Nuevo platillo
         </button>
       </div>
 
@@ -296,10 +300,15 @@ defmodule CRCWeb.Admin.PlatillosLive do
         <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium text-base-content/60 list-none select-none">
           <.icon name="hero-information-circle" class="size-4 shrink-0 text-info" />
           <span class="flex-1 text-xs">¿Qué significa el % de margen?</span>
-          <.icon name="hero-chevron-down" class="size-4 shrink-0 transition-transform group-open:rotate-180" />
+          <.icon
+            name="hero-chevron-down"
+            class="size-4 shrink-0 transition-transform group-open:rotate-180"
+          />
         </summary>
         <div class="px-4 pb-4 text-xs text-base-content/60 space-y-1.5 leading-relaxed">
-          <p>El margen es <strong>(precio de venta − costo de ingredientes) / precio de venta × 100</strong>. Solo se calcula si el platillo tiene todos sus ingredientes con costo registrado.</p>
+          <p>
+            El margen es <strong>(precio de venta − costo de ingredientes) / precio de venta × 100</strong>. Solo se calcula si el platillo tiene todos sus ingredientes con costo registrado.
+          </p>
           <div class="flex flex-wrap gap-3 mt-2">
             <span class="badge badge-success">≥ 60% — saludable</span>
             <span class="badge badge-warning">35–59% — revisar precio o receta</span>
@@ -311,21 +320,25 @@ defmodule CRCWeb.Admin.PlatillosLive do
       <%!-- Status filter tabs --%>
       <div class="flex gap-2">
         <button
-          class={["btn btn-sm gap-1.5", if(@status_filter == :available, do: "btn-primary", else: "btn-ghost")]}
+          class={[
+            "btn btn-sm gap-1.5",
+            if(@status_filter == :available, do: "btn-primary", else: "btn-ghost")
+          ]}
           phx-click="set_status_filter"
           phx-value-status="available"
         >
-          <.icon name="hero-check-circle" class="size-3.5" />
-          Disponibles
+          <.icon name="hero-check-circle" class="size-3.5" /> Disponibles
           <span class="badge badge-xs">{available_count}</span>
         </button>
         <button
-          class={["btn btn-sm gap-1.5", if(@status_filter == :unavailable, do: "btn-error", else: "btn-ghost")]}
+          class={[
+            "btn btn-sm gap-1.5",
+            if(@status_filter == :unavailable, do: "btn-error", else: "btn-ghost")
+          ]}
           phx-click="set_status_filter"
           phx-value-status="unavailable"
         >
-          <.icon name="hero-eye-slash" class="size-3.5" />
-          Ocultos
+          <.icon name="hero-eye-slash" class="size-3.5" /> Ocultos
           <span class="badge badge-xs">{unavailable_count}</span>
         </button>
       </div>
@@ -345,8 +358,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
             {cond do
               @status_filter == :unavailable && @filter_category == "all" ->
                 "No hay platillos ocultos."
+
               @filter_category != "all" ->
                 "No hay platillos en esta categoría."
+
               true ->
                 "No hay platillos registrados. Crea el primero."
             end}
@@ -381,15 +396,23 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 <span class="badge badge-xs badge-ghost">
                   {if item.category, do: item.category.name, else: "Sin categoría"}
                 </span>
-                <span class="text-xs font-semibold text-base-content">${format_price(item.price)}</span>
+                <span class="text-xs font-semibold text-base-content">
+                  ${format_price(item.price)}
+                </span>
                 <% cost = Catalog.item_cost(item) %>
                 <%= if cost do %>
                   <% margin = item_margin(item.price, cost) %>
-                  <span class={"badge badge-xs #{margin_badge_class(margin)}"} title="Margen sobre precio de venta">
+                  <span
+                    class={"badge badge-xs #{margin_badge_class(margin)}"}
+                    title="Margen sobre precio de venta"
+                  >
                     {margin}% margen
                   </span>
                 <% else %>
-                  <span class="badge badge-xs badge-ghost" title="Agrega ingredientes con costo para ver el margen">
+                  <span
+                    class="badge badge-xs badge-ghost"
+                    title="Agrega ingredientes con costo para ver el margen"
+                  >
                     Sin costo
                   </span>
                 <% end %>
@@ -411,12 +434,18 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 <.icon name="hero-pencil" class="size-4" />
               </button>
               <button
-                class={["btn btn-ghost btn-xs btn-circle", if(item.available, do: "text-warning", else: "text-success")]}
+                class={[
+                  "btn btn-ghost btn-xs btn-circle",
+                  if(item.available, do: "text-warning", else: "text-success")
+                ]}
                 phx-click="toggle_available"
                 phx-value-id={item.id}
                 title={if item.available, do: "Ocultar del menú", else: "Publicar en menú"}
               >
-                <.icon name={if item.available, do: "hero-eye-slash", else: "hero-eye"} class="size-4" />
+                <.icon
+                  name={if item.available, do: "hero-eye-slash", else: "hero-eye"}
+                  class="size-4"
+                />
               </button>
               <button
                 class="btn btn-ghost btn-xs btn-circle text-error"
@@ -480,7 +509,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   <td>
                     <p class="text-sm font-medium text-base-content">${format_price(item.price)}</p>
                     <%= if cost do %>
-                      <p class="text-xs text-base-content/45 mt-0.5">costo $<%= format_price(cost) %></p>
+                      <p class="text-xs text-base-content/45 mt-0.5">costo ${format_price(cost)}</p>
                     <% end %>
                   </td>
                   <td>
@@ -496,8 +525,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   <td>
                     <%= if item.featured do %>
                       <span class="badge badge-sm badge-warning gap-1">
-                        <.icon name="hero-star-solid" class="size-3" />
-                        Destacado
+                        <.icon name="hero-star-solid" class="size-3" /> Destacado
                       </span>
                     <% end %>
                   </td>
@@ -519,7 +547,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
                         <.icon name="hero-pencil" class="size-4" />
                       </button>
                       <button
-                        class={["btn btn-ghost btn-xs btn-circle", if(item.available, do: "text-warning", else: "text-success")]}
+                        class={[
+                          "btn btn-ghost btn-xs btn-circle",
+                          if(item.available, do: "text-warning", else: "text-success")
+                        ]}
                         phx-click="toggle_available"
                         phx-value-id={item.id}
                         title={if item.available, do: "Ocultar del menú", else: "Publicar en menú"}
@@ -620,12 +651,33 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
         <div class="px-6 py-5">
           <SiteComponents.help_banner title="¿Cómo funciona este formulario?">
-            <p><strong>Precio de venta</strong> — lo que el cliente paga. Aparece en el menú y en la comanda.</p>
-            <p><strong>Destino</strong> — a dónde va la comanda: <em>Cocina</em> para platillos con preparación caliente/fría, <em>Barra</em> para bebidas.</p>
-            <p><strong>Ingredientes (receta)</strong> — lista los insumos y la cantidad por porción. El sistema descuenta automáticamente ese stock cada vez que se envía el platillo a cocina/barra. También calcula el <strong>costo de producción</strong> y el margen de ganancia que ves en la lista.</p>
-            <p>Si un platillo no tiene ingredientes registrados, el stock no se descuenta automáticamente.</p>
+            <p>
+              <strong>Precio de venta</strong>
+              — lo que el cliente paga. Aparece en el menú y en la comanda.
+            </p>
+            <p>
+              <strong>Destino</strong>
+              — a dónde va la comanda: <em>Cocina</em>
+              para platillos con preparación caliente/fría, <em>Barra</em>
+              para bebidas.
+            </p>
+            <p>
+              <strong>Ingredientes (receta)</strong>
+              — lista los insumos y la cantidad por porción. El sistema descuenta automáticamente ese stock cada vez que se envía el platillo a cocina/barra. También calcula el
+              <strong>costo de producción</strong>
+              y el margen de ganancia que ves en la lista.
+            </p>
+            <p>
+              Si un platillo no tiene ingredientes registrados, el stock no se descuenta automáticamente.
+            </p>
           </SiteComponents.help_banner>
-          <.form id="item-form" for={@form} phx-submit="save_item" phx-change="validate_upload" class="space-y-3">
+          <.form
+            id="item-form"
+            for={@form}
+            phx-submit="save_item"
+            phx-change="validate_upload"
+            class="space-y-3"
+          >
             <%!-- Name --%>
             <.input
               field={@form[:name]}
@@ -695,8 +747,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                       class="btn btn-xs btn-error btn-outline gap-1 mt-1"
                       phx-click="remove_image"
                     >
-                      <.icon name="hero-trash" class="size-3" />
-                      Eliminar foto
+                      <.icon name="hero-trash" class="size-3" /> Eliminar foto
                     </button>
                   </div>
                 </div>
@@ -712,7 +763,9 @@ defmodule CRCWeb.Admin.PlatillosLive do
                     <.icon name="hero-photo" class="size-5 text-primary" />
                   </div>
                   <div class="text-center">
-                    <p class="text-sm font-medium text-base-content">Selecciona una foto del platillo</p>
+                    <p class="text-sm font-medium text-base-content">
+                      Selecciona una foto del platillo
+                    </p>
                     <p class="text-xs text-base-content/40 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
                   </div>
                   <.live_file_input upload={@uploads.photo} class="sr-only" />
@@ -819,16 +872,17 @@ defmodule CRCWeb.Admin.PlatillosLive do
                     class="btn btn-sm btn-outline btn-primary shrink-0"
                     phx-click="add_ingredient"
                   >
-                    <.icon name="hero-plus" class="size-3.5" />
-                    Agregar
+                    <.icon name="hero-plus" class="size-3.5" /> Agregar
                   </button>
                 </div>
               </div>
 
               <%= if @available_products == [] do %>
                 <p class="text-xs text-base-content/50 mt-2">
-                  No hay insumos disponibles. Crea insumos en
-                  <a href="/admin/insumos" class="link link-primary">Inventario → Insumos</a>.
+                  No hay insumos disponibles. Crea insumos en <a
+                    href="/admin/insumos"
+                    class="link link-primary"
+                  >Inventario → Insumos</a>.
                 </p>
               <% end %>
             </div>
@@ -860,7 +914,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
   defp cat_tab(assigns) do
     ~H"""
     <button
-      class={["btn btn-sm whitespace-nowrap", if(@value == @current, do: "btn-primary", else: "btn-ghost")]}
+      class={[
+        "btn btn-sm whitespace-nowrap",
+        if(@value == @current, do: "btn-primary", else: "btn-ghost")
+      ]}
       phx-click="set_category_filter"
       phx-value-category={@value}
     >
@@ -917,6 +974,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
   # Margin as an integer percentage: (price - cost) / price * 100
   defp item_margin(price, cost) do
     price_d = Decimal.new(to_string(price))
+
     if Decimal.compare(price_d, Decimal.new(0)) == :gt do
       price_d
       |> Decimal.sub(cost)

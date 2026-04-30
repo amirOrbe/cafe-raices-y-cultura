@@ -223,7 +223,6 @@ defmodule CRCWeb.Admin.PackagesLiveTest do
     end
   end
 
-
   # ---------------------------------------------------------------------------
   # Delete package
   # ---------------------------------------------------------------------------
@@ -269,6 +268,68 @@ defmodule CRCWeb.Admin.PackagesLiveTest do
 
       html = render(lv)
       assert html =~ "2"
+    end
+  end
+
+  describe "validate_package" do
+    test "validates package form without saving", %{conn: conn} do
+      {conn, _} = insert_admin(conn)
+      {:ok, lv, _html} = live(conn, "/admin/paquetes")
+
+      lv |> element("button", "Nuevo paquete") |> render_click()
+
+      html =
+        lv
+        |> form("#package-form", package: %{name: "Paquete Válido", price: "250.00"})
+        |> render_change()
+
+      assert html =~ "Paquete Válido" or html =~ "250"
+    end
+  end
+
+  describe "toggle_menu_item deselect" do
+    test "deselects an already-selected item", %{conn: conn} do
+      {conn, _} = insert_admin(conn)
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+
+      {:ok, lv, _html} = live(conn, "/admin/paquetes")
+      lv |> element("button", "Nuevo paquete") |> render_click()
+
+      # Select the item
+      lv
+      |> element("[phx-click='toggle_menu_item'][phx-value-id='#{item.id}']")
+      |> render_click()
+
+      # Deselect the item
+      html =
+        lv
+        |> element("[phx-click='toggle_menu_item'][phx-value-id='#{item.id}']")
+        |> render_click()
+
+      # Should not crash
+      assert html =~ "Nuevo paquete"
+    end
+  end
+
+  describe "use_suggestion" do
+    test "use_suggestion populates the form with two items", %{conn: conn} do
+      {conn, _} = insert_admin(conn)
+      cat = insert_category()
+      item_a = insert_menu_item(cat.id, %{name: "Platillo Sugerido A"})
+      item_b = insert_menu_item(cat.id, %{name: "Platillo Sugerido B"})
+
+      {:ok, lv, _html} = live(conn, "/admin/paquetes")
+
+      html =
+        render_click(lv, "use_suggestion", %{
+          "a" => to_string(item_a.id),
+          "b" => to_string(item_b.id),
+          "price" => "199.00"
+        })
+
+      # Should open the new modal with items selected
+      assert html =~ "Nuevo paquete" or html =~ "199"
     end
   end
 end

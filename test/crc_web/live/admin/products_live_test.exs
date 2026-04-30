@@ -251,6 +251,7 @@ defmodule CRCWeb.Admin.ProductsLiveTest do
   describe "low stock display" do
     test "shows low stock warning for products below min_stock", %{conn: conn} do
       {conn, _admin} = admin_conn(conn)
+
       insert_product(%{
         name: "Insumo Bajo Stock",
         stock_quantity: "1.0",
@@ -264,12 +265,14 @@ defmodule CRCWeb.Admin.ProductsLiveTest do
 
     test "shows nil min_stock products correctly", %{conn: conn} do
       {conn, _admin} = admin_conn(conn)
-      {:ok, product} = Inventory.create_product(%{
-        name: "Insumo Sin Min",
-        unit: "litros",
-        net_cost: "25.00",
-        stock_quantity: "10.0"
-      })
+
+      {:ok, product} =
+        Inventory.create_product(%{
+          name: "Insumo Sin Min",
+          unit: "litros",
+          net_cost: "25.00",
+          stock_quantity: "10.0"
+        })
 
       {:ok, _lv, html} = live(conn, ~p"/admin/insumos")
       assert html =~ "Insumo Sin Min"
@@ -282,11 +285,182 @@ defmodule CRCWeb.Admin.ProductsLiveTest do
       units = ~w(piezas gramos mililitros onzas paquetes)
 
       for unit <- units do
-        insert_product(%{name: "Producto #{unit}", unit: unit, stock_quantity: "10.0", min_stock: "2.0"})
+        insert_product(%{
+          name: "Producto #{unit}",
+          unit: unit,
+          stock_quantity: "10.0",
+          min_stock: "2.0"
+        })
       end
 
       {:ok, _lv, html} = live(conn, ~p"/admin/insumos")
       assert html =~ "Insumos"
+    end
+  end
+
+  describe "create product then edit modal" do
+    test "after creating a product the edit modal opens so tipos can be added", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+      render_click(lv, "new_product", %{})
+
+      html =
+        lv
+        |> form("#product-form",
+          product: %{
+            name: "Insumo Con Tipos",
+            unit: "litros",
+            net_cost: "10.00",
+            stock_quantity: "5.0"
+          }
+        )
+        |> render_submit()
+
+      # After creation the modal stays open in edit mode
+      assert html =~ "Insumo Con Tipos"
+      assert html =~ "tipos" or html =~ "Tipo" or html =~ "Agregar tipo"
+    end
+  end
+
+  describe "variant management" do
+    test "opens new variant form inside edit modal", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      product = insert_product(%{name: "Insumo Variante"})
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+
+      render_click(lv, "edit_product", %{"id" => to_string(product.id)})
+      html = render_click(lv, "new_variant_form", %{})
+      assert html =~ "Nombre" or html =~ "tipo" or html =~ "variant"
+    end
+
+    test "cancels variant form without saving", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      product = insert_product(%{name: "Insumo Cancelar Variante"})
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+
+      render_click(lv, "edit_product", %{"id" => to_string(product.id)})
+      render_click(lv, "new_variant_form", %{})
+      html = render_click(lv, "cancel_variant_form", %{})
+      # Form should be gone
+      refute html =~ "variant-form"
+    end
+
+    test "creates a variant successfully", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      product = insert_product(%{name: "Insumo Crear Variante"})
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+
+      render_click(lv, "edit_product", %{"id" => to_string(product.id)})
+      render_click(lv, "new_variant_form", %{})
+
+      html =
+        lv
+        |> form("[phx-submit='save_variant']",
+          variant: %{name: "Tamaño Grande", extra_charge: "5.00"}
+        )
+        |> render_submit()
+
+      assert html =~ "Tamaño Grande" or html =~ "agregado"
+    end
+
+    test "shows error on invalid variant", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      product = insert_product(%{name: "Insumo Variante Inválida"})
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+
+      render_click(lv, "edit_product", %{"id" => to_string(product.id)})
+      render_click(lv, "new_variant_form", %{})
+
+      html =
+        lv
+        |> form("[phx-submit='save_variant']", variant: %{name: ""})
+        |> render_submit()
+
+      # Should show validation error
+      assert html =~ "error" or html =~ "inválido" or html =~ "requerido" or
+               html =~ "variant-form"
+    end
+
+    test "opens edit form for existing variant", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      product = insert_product(%{name: "Insumo Editar Variante"})
+
+      {:ok, variant} =
+        Inventory.create_variant(product.id, %{
+          "name" => "Variante Original",
+          "extra_charge" => "0.00"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+      render_click(lv, "edit_product", %{"id" => to_string(product.id)})
+      html = render_click(lv, "edit_variant_form", %{"id" => to_string(variant.id)})
+
+      assert html =~ "Variante Original"
+    end
+
+    test "updates an existing variant", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      product = insert_product(%{name: "Insumo Actualizar Variante"})
+
+      {:ok, variant} =
+        Inventory.create_variant(product.id, %{"name" => "Nombre Antes", "extra_charge" => "0.00"})
+
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+      render_click(lv, "edit_product", %{"id" => to_string(product.id)})
+      render_click(lv, "edit_variant_form", %{"id" => to_string(variant.id)})
+
+      html =
+        lv
+        |> form("[phx-submit='save_variant']",
+          variant: %{name: "Nombre Después", extra_charge: "3.00"}
+        )
+        |> render_submit()
+
+      assert html =~ "Nombre Después" or html =~ "actualizado"
+    end
+
+    test "deletes a variant", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      product = insert_product(%{name: "Insumo Borrar Variante"})
+
+      {:ok, variant} =
+        Inventory.create_variant(product.id, %{
+          "name" => "Variante Borrar",
+          "extra_charge" => "0.00"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+      render_click(lv, "edit_product", %{"id" => to_string(product.id)})
+      html = render_click(lv, "delete_variant", %{"id" => to_string(variant.id)})
+
+      refute html =~ "Variante Borrar"
+    end
+
+    test "toggles variant active status", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      product = insert_product(%{name: "Insumo Toggle Variante"})
+
+      {:ok, variant} =
+        Inventory.create_variant(product.id, %{
+          "name" => "Variante Toggle",
+          "extra_charge" => "0.00"
+        })
+
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+      render_click(lv, "edit_product", %{"id" => to_string(product.id)})
+      html = render_click(lv, "toggle_variant_active", %{"id" => to_string(variant.id)})
+
+      # Should not crash and still show the product modal
+      assert html =~ "Insumo Toggle Variante"
+    end
+
+    test "set_status_filter shows inactive products", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      insert_product(%{name: "Insumo Inactivo Toggle", active: false})
+      {:ok, lv, _html} = live(conn, ~p"/admin/insumos")
+
+      html = render_click(lv, "set_status_filter", %{"status" => "inactive"})
+      assert html =~ "Insumo Inactivo Toggle"
     end
   end
 end

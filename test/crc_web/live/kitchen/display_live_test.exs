@@ -14,8 +14,13 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
   defp insert_user(overrides \\ %{}) do
     attrs =
       Map.merge(
-        %{name: "Cocinero", email: "cocina#{System.unique_integer()}@cafe.com",
-          role: "empleado", stations: ["cocina"], password: "pass123456"},
+        %{
+          name: "Cocinero",
+          email: "cocina#{System.unique_integer()}@cafe.com",
+          role: "empleado",
+          stations: ["cocina"],
+          password: "pass123456"
+        },
         overrides
       )
 
@@ -34,7 +39,14 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
   end
 
   defp insert_menu_item(category_id, name \\ "Platillo", destination \\ "cocina") do
-    {:ok, item} = Catalog.create_menu_item(%{name: name, price: "80.00", category_id: category_id, destination: destination})
+    {:ok, item} =
+      Catalog.create_menu_item(%{
+        name: name,
+        price: "80.00",
+        category_id: category_id,
+        destination: destination
+      })
+
     item
   end
 
@@ -45,7 +57,9 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
 
   defp insert_order_item(order_id, menu_item_id, overrides \\ %{}) do
     {:ok, item} =
-      Orders.add_item(Map.merge(%{order_id: order_id, menu_item_id: menu_item_id, quantity: 1}, overrides))
+      Orders.add_item(
+        Map.merge(%{order_id: order_id, menu_item_id: menu_item_id, quantity: 1}, overrides)
+      )
 
     item
   end
@@ -319,7 +333,9 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
   # ---------------------------------------------------------------------------
 
   describe "pending items visible when order is in ready status (Bug 2 mirror)" do
-    test "shows order in pending if it has a sent food item regardless of order status", %{conn: conn} do
+    test "shows order in pending if it has a sent food item regardless of order status", %{
+      conn: conn
+    } do
       {conn, _} = auth_conn(conn)
       food_cat = insert_category("food")
       mi = insert_menu_item(food_cat.id, "Pozole Tardío")
@@ -348,6 +364,7 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
         })
 
       now = DateTime.utc_now() |> DateTime.truncate(:second)
+
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
         order_id: order.id,
         product_id: product.id,
@@ -426,13 +443,13 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
       mi1 = insert_menu_item(cat.id, "Item Sent")
       mi2 = insert_menu_item(cat.id, "Item Already Ready")
       order = insert_order(%{customer_name: "Mesa Mixta", status: "sent"})
-      item_sent  = insert_order_item(order.id, mi1.id, %{status: "sent"})
+      item_sent = insert_order_item(order.id, mi1.id, %{status: "sent"})
       item_ready = insert_order_item(order.id, mi2.id, %{status: "ready"})
 
       {:ok, lv, _} = live(conn, "/cocina")
       render_click(lv, "mark_order_ready", %{"id" => to_string(order.id)})
 
-      reloaded_sent  = CRC.Repo.get!(CRC.Orders.OrderItem, item_sent.id)
+      reloaded_sent = CRC.Repo.get!(CRC.Orders.OrderItem, item_sent.id)
       reloaded_ready = CRC.Repo.get!(CRC.Orders.OrderItem, item_ready.id)
       assert reloaded_sent.status == "ready"
       assert reloaded_ready.status == "ready"
@@ -441,16 +458,16 @@ defmodule CRCWeb.Kitchen.DisplayLiveTest do
     test "mark_order_ready does not affect barra items (barra's responsibility)", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       cat = insert_category()
-      food_mi  = insert_menu_item(cat.id, "Tacos Cocina Solo", "cocina")
+      food_mi = insert_menu_item(cat.id, "Tacos Cocina Solo", "cocina")
       drink_mi = insert_menu_item(cat.id, "Café Barra Solo", "barra")
       order = insert_order(%{customer_name: "Mesa Mixta Barra", status: "sent"})
-      food_item  = insert_order_item(order.id, food_mi.id,  %{status: "sent"})
+      food_item = insert_order_item(order.id, food_mi.id, %{status: "sent"})
       drink_item = insert_order_item(order.id, drink_mi.id, %{status: "sent"})
 
       {:ok, lv, _} = live(conn, "/cocina")
       render_click(lv, "mark_order_ready", %{"id" => to_string(order.id)})
 
-      reloaded_food  = CRC.Repo.get!(CRC.Orders.OrderItem, food_item.id)
+      reloaded_food = CRC.Repo.get!(CRC.Orders.OrderItem, food_item.id)
       reloaded_drink = CRC.Repo.get!(CRC.Orders.OrderItem, drink_item.id)
       assert reloaded_food.status == "ready"
       assert reloaded_drink.status == "sent"

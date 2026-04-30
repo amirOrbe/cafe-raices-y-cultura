@@ -21,7 +21,9 @@ defmodule CRC.Media.Photo do
 
   defp validate_url(changeset, field) do
     case get_field(changeset, field) do
-      nil -> changeset
+      nil ->
+        changeset
+
       url ->
         if String.starts_with?(url, ["http://", "https://", "/"]) do
           changeset

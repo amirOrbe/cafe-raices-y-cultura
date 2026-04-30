@@ -49,9 +49,7 @@ defmodule CRC.Accounts.User do
     |> normalize_stations()
     |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name, :email, :role], message: "no puede estar en blanco")
-    |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/,
-      message: "tiene formato inválido"
-    )
+    |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/, message: "tiene formato inválido")
     |> validate_inclusion(:role, @roles, message: "no es una opción válida")
     |> validate_password()
     |> validate_stations()
@@ -83,7 +81,11 @@ defmodule CRC.Accounts.User do
     |> cast(attrs, [:name, :avatar_url])
     |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name], message: "no puede estar en blanco")
-    |> validate_length(:name, min: 2, max: 100, message: "debe tener al menos %{count} caracteres")
+    |> validate_length(:name,
+      min: 2,
+      max: 100,
+      message: "debe tener al menos %{count} caracteres"
+    )
   end
 
   @doc """
@@ -116,7 +118,9 @@ defmodule CRC.Accounts.User do
   # Filters out blank strings that HTML forms submit for unchecked checkboxes.
   defp normalize_stations(changeset) do
     case get_change(changeset, :stations) do
-      nil -> changeset
+      nil ->
+        changeset
+
       stations ->
         clean = stations |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == "")) |> Enum.uniq()
         put_change(changeset, :stations, clean)
@@ -154,7 +158,11 @@ defmodule CRC.Accounts.User do
         if invalid == [] do
           changeset
         else
-          add_error(changeset, :stations, "contiene opciones inválidas: #{Enum.join(invalid, ", ")}")
+          add_error(
+            changeset,
+            :stations,
+            "contiene opciones inválidas: #{Enum.join(invalid, ", ")}"
+          )
         end
 
       role in ~w(admin cliente) and stations != [] ->

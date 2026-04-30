@@ -18,9 +18,7 @@ defmodule CRCWeb.EmailConfirmLive do
   @impl true
   def mount(%{"token" => token}, _session, socket) do
     result =
-      case Phoenix.Token.verify(CRCWeb.Endpoint, "email_confirm", token,
-             max_age: @token_max_age
-           ) do
+      case Phoenix.Token.verify(CRCWeb.Endpoint, "email_confirm", token, max_age: @token_max_age) do
         {:ok, user_id} -> confirm_user(user_id)
         {:error, :expired} -> {:error, :expired}
         {:error, _} -> {:error, :invalid}
@@ -46,7 +44,6 @@ defmodule CRCWeb.EmailConfirmLive do
     ~H"""
     <div class="min-h-screen bg-base-200 flex items-center justify-center px-4">
       <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-10 max-w-md w-full text-center">
-
         <%= case @result do %>
           <% {:ok, user} -> %>
             <div class="w-16 h-16 rounded-full bg-success/15 flex items-center justify-center mx-auto mb-6">
@@ -62,7 +59,6 @@ defmodule CRCWeb.EmailConfirmLive do
             <a href="/iniciar-sesion" class="btn btn-primary btn-sm">
               Iniciar sesión
             </a>
-
           <% {:error, :already_confirmed} -> %>
             <div class="w-16 h-16 rounded-full bg-info/15 flex items-center justify-center mx-auto mb-6">
               <.icon name="hero-information-circle" class="size-10 text-info" />
@@ -74,7 +70,6 @@ defmodule CRCWeb.EmailConfirmLive do
               Este correo ya había sido confirmado anteriormente. No necesitas hacer nada más.
             </p>
             <a href="/" class="btn btn-ghost btn-sm">Ir al inicio</a>
-
           <% {:error, :expired} -> %>
             <div class="w-16 h-16 rounded-full bg-warning/15 flex items-center justify-center mx-auto mb-6">
               <.icon name="hero-clock" class="size-10 text-warning" />
@@ -86,7 +81,6 @@ defmodule CRCWeb.EmailConfirmLive do
               El enlace de confirmación venció (tiene validez de 7 días).
               Pide a un administrador que reenvíe el correo de bienvenida.
             </p>
-
           <% {:error, _} -> %>
             <div class="w-16 h-16 rounded-full bg-error/15 flex items-center justify-center mx-auto mb-6">
               <.icon name="hero-x-circle" class="size-10 text-error" />
@@ -99,7 +93,6 @@ defmodule CRCWeb.EmailConfirmLive do
               Pide a un administrador que reenvíe el correo de bienvenida.
             </p>
         <% end %>
-
       </div>
     </div>
     """

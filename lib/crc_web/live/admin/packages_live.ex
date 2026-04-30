@@ -37,9 +37,10 @@ defmodule CRCWeb.Admin.PackagesLive do
     package = Catalog.get_package!(String.to_integer(id))
     changeset = Catalog.change_package(package)
 
-    selected = Enum.map(package.package_items, fn pi ->
-      %{menu_item_id: pi.menu_item_id, quantity: pi.quantity}
-    end)
+    selected =
+      Enum.map(package.package_items, fn pi ->
+        %{menu_item_id: pi.menu_item_id, quantity: pi.quantity}
+      end)
 
     {:noreply,
      socket
@@ -183,8 +184,7 @@ defmodule CRCWeb.Admin.PackagesLive do
           <p class="text-sm text-base-content/50 mt-0.5">{length(@packages)} paquetes registrados</p>
         </div>
         <button class="btn btn-primary gap-2" phx-click="new_package">
-          <.icon name="hero-plus" class="size-4" />
-          Nuevo paquete
+          <.icon name="hero-plus" class="size-4" /> Nuevo paquete
         </button>
       </div>
 
@@ -195,7 +195,9 @@ defmodule CRCWeb.Admin.PackagesLive do
             <div class="flex flex-wrap items-center gap-2 mb-4">
               <.icon name="hero-light-bulb" class="size-5 text-accent shrink-0" />
               <h2 class="font-semibold text-base-content">Sugerencias de paquetes</h2>
-              <span class="badge badge-accent badge-sm whitespace-nowrap">basado en costos reales</span>
+              <span class="badge badge-accent badge-sm whitespace-nowrap">
+                basado en costos reales
+              </span>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <%= for s <- @suggestions do %>
@@ -256,7 +258,9 @@ defmodule CRCWeb.Admin.PackagesLive do
                   <div class="min-w-0">
                     <h3 class="font-semibold text-base-content truncate">{pkg.name}</h3>
                     <%= if pkg.description do %>
-                      <p class="text-xs text-base-content/50 mt-0.5 line-clamp-2">{pkg.description}</p>
+                      <p class="text-xs text-base-content/50 mt-0.5 line-clamp-2">
+                        {pkg.description}
+                      </p>
                     <% end %>
                   </div>
                   <div class="flex flex-col items-end gap-1 shrink-0">
@@ -330,10 +334,18 @@ defmodule CRCWeb.Admin.PackagesLive do
           </div>
 
           <div class="p-5 space-y-5">
-            <.form id="package-form" for={@form} phx-change="validate_package" phx-submit="save_package" class="space-y-4">
+            <.form
+              id="package-form"
+              for={@form}
+              phx-change="validate_package"
+              phx-submit="save_package"
+              class="space-y-4"
+            >
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">
-                  <label class="label pb-1"><span class="label-text font-medium">Nombre del paquete</span></label>
+                  <label class="label pb-1">
+                    <span class="label-text font-medium">Nombre del paquete</span>
+                  </label>
                   <input
                     type="text"
                     name="package[name]"
@@ -348,7 +360,11 @@ defmodule CRCWeb.Admin.PackagesLive do
                 </div>
 
                 <div class="sm:col-span-2">
-                  <label class="label pb-1"><span class="label-text font-medium">Descripción <span class="text-base-content/40">(opcional)</span></span></label>
+                  <label class="label pb-1">
+                    <span class="label-text font-medium">
+                      Descripción <span class="text-base-content/40">(opcional)</span>
+                    </span>
+                  </label>
                   <textarea
                     name="package[description]"
                     class="textarea textarea-bordered w-full resize-none"
@@ -358,7 +374,9 @@ defmodule CRCWeb.Admin.PackagesLive do
                 </div>
 
                 <div>
-                  <label class="label pb-1"><span class="label-text font-medium">Precio del paquete ($)</span></label>
+                  <label class="label pb-1">
+                    <span class="label-text font-medium">Precio del paquete ($)</span>
+                  </label>
                   <input
                     type="number"
                     step="0.01"
@@ -393,7 +411,9 @@ defmodule CRCWeb.Admin.PackagesLive do
               <div>
                 <label class="label pb-2">
                   <span class="label-text font-medium">Platillos incluidos</span>
-                  <span class="label-text-alt text-base-content/50">{length(@selected_items)} seleccionados</span>
+                  <span class="label-text-alt text-base-content/50">
+                    {length(@selected_items)} seleccionados
+                  </span>
                 </label>
                 <div class="border border-base-200 rounded-xl overflow-hidden">
                   <div class="max-h-64 overflow-y-auto divide-y divide-base-200">
@@ -422,7 +442,9 @@ defmodule CRCWeb.Admin.PackagesLive do
                               phx-click="update_item_qty"
                               phx-value-id={item.id}
                               phx-value-qty={max(1, selected.quantity - 1)}
-                            >−</button>
+                            >
+                              −
+                            </button>
                             <span class="text-sm font-mono w-5 text-center">{selected.quantity}</span>
                             <button
                               type="button"
@@ -430,7 +452,9 @@ defmodule CRCWeb.Admin.PackagesLive do
                               phx-click="update_item_qty"
                               phx-value-id={item.id}
                               phx-value-qty={selected.quantity + 1}
-                            >+</button>
+                            >
+                              +
+                            </button>
                           </div>
                         <% end %>
                       </div>
@@ -452,5 +476,4 @@ defmodule CRCWeb.Admin.PackagesLive do
     <% end %>
     """
   end
-
 end

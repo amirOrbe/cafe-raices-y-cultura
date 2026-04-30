@@ -13,8 +13,13 @@ defmodule CRCWeb.Waiter.TableLiveTest do
   defp insert_user(overrides \\ %{}) do
     attrs =
       Map.merge(
-        %{name: "Waiter", email: "waiter#{System.unique_integer()}@cafe.com",
-          role: "empleado", stations: ["sala"], password: "pass123456"},
+        %{
+          name: "Waiter",
+          email: "waiter#{System.unique_integer()}@cafe.com",
+          role: "empleado",
+          stations: ["sala"],
+          password: "pass123456"
+        },
         overrides
       )
 
@@ -134,6 +139,7 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       {:ok, lv, _html} = live(conn, "/mesa")
 
       lv |> render_click("open_new_modal")
+
       assert {:error, {:live_redirect, %{to: path}}} =
                lv |> render_submit("create_cuenta", %{"customer_name" => "Luis"})
 
@@ -199,14 +205,23 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       alias CRC.Catalog
 
       {:ok, cat} = Catalog.create_category(%{name: "Cat Overdue #{System.unique_integer()}"})
-      {:ok, mi} = Catalog.create_menu_item(%{name: "Platillo Lento", price: "80.00", category_id: cat.id})
+
+      {:ok, mi} =
+        Catalog.create_menu_item(%{name: "Platillo Lento", price: "80.00", category_id: cat.id})
+
       order = insert_order(%{customer_name: "Overdue Test", status: "sent"})
 
-      old_sent_at = DateTime.utc_now() |> DateTime.add(-20 * 60, :second) |> DateTime.truncate(:second)
+      old_sent_at =
+        DateTime.utc_now() |> DateTime.add(-20 * 60, :second) |> DateTime.truncate(:second)
+
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi.id,
-        quantity: 1, status: "sent", sent_at: old_sent_at,
-        inserted_at: old_sent_at, updated_at: old_sent_at
+        order_id: order.id,
+        menu_item_id: mi.id,
+        quantity: 1,
+        status: "sent",
+        sent_at: old_sent_at,
+        inserted_at: old_sent_at,
+        updated_at: old_sent_at
       })
 
       {:ok, _lv, html} = live(conn, "/mesa")
@@ -218,14 +233,23 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       alias CRC.Catalog
 
       {:ok, cat} = Catalog.create_category(%{name: "Cat Fresh #{System.unique_integer()}"})
-      {:ok, mi} = Catalog.create_menu_item(%{name: "Platillo Rapido", price: "80.00", category_id: cat.id})
+
+      {:ok, mi} =
+        Catalog.create_menu_item(%{name: "Platillo Rapido", price: "80.00", category_id: cat.id})
+
       order = insert_order(%{customer_name: "Fresh Test", status: "sent"})
 
-      recent_sent_at = DateTime.utc_now() |> DateTime.add(-5 * 60, :second) |> DateTime.truncate(:second)
+      recent_sent_at =
+        DateTime.utc_now() |> DateTime.add(-5 * 60, :second) |> DateTime.truncate(:second)
+
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi.id,
-        quantity: 1, status: "sent", sent_at: recent_sent_at,
-        inserted_at: recent_sent_at, updated_at: recent_sent_at
+        order_id: order.id,
+        menu_item_id: mi.id,
+        quantity: 1,
+        status: "sent",
+        sent_at: recent_sent_at,
+        inserted_at: recent_sent_at,
+        updated_at: recent_sent_at
       })
 
       {:ok, _lv, html} = live(conn, "/mesa")
@@ -239,21 +263,45 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       alias CRC.Catalog
 
       {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
-      {:ok, mi_drink} = Catalog.create_menu_item(%{name: "Refresco", price: "30.00", category_id: cat.id, destination: "barra"})
-      {:ok, mi_food}  = Catalog.create_menu_item(%{name: "Taco", price: "60.00", category_id: cat.id, destination: "cocina"})
+
+      {:ok, mi_drink} =
+        Catalog.create_menu_item(%{
+          name: "Refresco",
+          price: "30.00",
+          category_id: cat.id,
+          destination: "barra"
+        })
+
+      {:ok, mi_food} =
+        Catalog.create_menu_item(%{
+          name: "Taco",
+          price: "60.00",
+          category_id: cat.id,
+          destination: "cocina"
+        })
 
       order = insert_order(%{customer_name: "Drinks Ready", status: "sent"})
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi_drink.id,
-        quantity: 1, status: "ready", sent_at: now, ready_at: now,
-        inserted_at: now, updated_at: now
+        order_id: order.id,
+        menu_item_id: mi_drink.id,
+        quantity: 1,
+        status: "ready",
+        sent_at: now,
+        ready_at: now,
+        inserted_at: now,
+        updated_at: now
       })
+
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi_food.id,
-        quantity: 1, status: "sent", sent_at: now,
-        inserted_at: now, updated_at: now
+        order_id: order.id,
+        menu_item_id: mi_food.id,
+        quantity: 1,
+        status: "sent",
+        sent_at: now,
+        inserted_at: now,
+        updated_at: now
       })
 
       {:ok, _lv, html} = live(conn, "/mesa")
@@ -265,21 +313,46 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       alias CRC.Catalog
 
       {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
-      {:ok, mi_drink} = Catalog.create_menu_item(%{name: "Agua", price: "20.00", category_id: cat.id, destination: "barra"})
-      {:ok, mi_food}  = Catalog.create_menu_item(%{name: "Sopa", price: "50.00", category_id: cat.id, destination: "cocina"})
+
+      {:ok, mi_drink} =
+        Catalog.create_menu_item(%{
+          name: "Agua",
+          price: "20.00",
+          category_id: cat.id,
+          destination: "barra"
+        })
+
+      {:ok, mi_food} =
+        Catalog.create_menu_item(%{
+          name: "Sopa",
+          price: "50.00",
+          category_id: cat.id,
+          destination: "cocina"
+        })
 
       order = insert_order(%{customer_name: "All Ready", status: "ready"})
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi_drink.id,
-        quantity: 1, status: "ready", sent_at: now, ready_at: now,
-        inserted_at: now, updated_at: now
+        order_id: order.id,
+        menu_item_id: mi_drink.id,
+        quantity: 1,
+        status: "ready",
+        sent_at: now,
+        ready_at: now,
+        inserted_at: now,
+        updated_at: now
       })
+
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi_food.id,
-        quantity: 1, status: "ready", sent_at: now, ready_at: now,
-        inserted_at: now, updated_at: now
+        order_id: order.id,
+        menu_item_id: mi_food.id,
+        quantity: 1,
+        status: "ready",
+        sent_at: now,
+        ready_at: now,
+        inserted_at: now,
+        updated_at: now
       })
 
       {:ok, _lv, html} = live(conn, "/mesa")
@@ -301,7 +374,10 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       alias CRC.Catalog
 
       {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
-      {:ok, mi} = Catalog.create_menu_item(%{name: "Solo Uno", price: "45.00", category_id: cat.id})
+
+      {:ok, mi} =
+        Catalog.create_menu_item(%{name: "Solo Uno", price: "45.00", category_id: cat.id})
+
       order = insert_order(%{customer_name: "Un Item"})
       Orders.add_item(%{order_id: order.id, menu_item_id: mi.id, quantity: 1})
 
@@ -314,8 +390,13 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       alias CRC.Catalog
 
       {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
-      {:ok, mi1} = Catalog.create_menu_item(%{name: "Bebida A", price: "30.00", category_id: cat.id})
-      {:ok, mi2} = Catalog.create_menu_item(%{name: "Bebida B", price: "35.00", category_id: cat.id})
+
+      {:ok, mi1} =
+        Catalog.create_menu_item(%{name: "Bebida A", price: "30.00", category_id: cat.id})
+
+      {:ok, mi2} =
+        Catalog.create_menu_item(%{name: "Bebida B", price: "35.00", category_id: cat.id})
+
       order = insert_order(%{customer_name: "Dos Items"})
       Orders.add_item(%{order_id: order.id, menu_item_id: mi1.id, quantity: 1})
       Orders.add_item(%{order_id: order.id, menu_item_id: mi2.id, quantity: 1})

@@ -168,9 +168,10 @@ defmodule CRCWeb.Admin.EventsLive do
 
         if new_date == current_date do
           # Date unchanged — just update time positions, no DB call
-          %{socket.assigns.timeline |
-            new_start: parse_time_opt(start_str),
-            new_end: parse_time_opt(end_str)
+          %{
+            socket.assigns.timeline
+            | new_start: parse_time_opt(start_str),
+              new_end: parse_time_opt(end_str)
           }
         else
           compute_timeline(date_str, start_str, end_str, editing_event_id)
@@ -326,7 +327,10 @@ defmodule CRCWeb.Admin.EventsLive do
   # Automatically fires when each file finishes transferring to the server (auto_upload: true).
   def handle_progress(:event_photo, entry, socket) do
     require Logger
-    Logger.info("[EventPhoto] handle_progress: #{entry.client_name}, done=#{entry.done?}, progress=#{entry.progress}")
+
+    Logger.info(
+      "[EventPhoto] handle_progress: #{entry.client_name}, done=#{entry.done?}, progress=#{entry.progress}"
+    )
 
     if entry.done? do
       event_id =
@@ -376,8 +380,7 @@ defmodule CRCWeb.Admin.EventsLive do
           </p>
         </div>
         <button class="btn btn-primary gap-2" phx-click="new_event">
-          <.icon name="hero-plus" class="size-4" />
-          Nuevo evento
+          <.icon name="hero-plus" class="size-4" /> Nuevo evento
         </button>
       </div>
 
@@ -402,7 +405,9 @@ defmodule CRCWeb.Admin.EventsLive do
             <%!-- Info --%>
             <div class="flex-1 min-w-0">
               <div class="flex items-start justify-between gap-2">
-                <p class="font-semibold text-sm text-base-content line-clamp-2 leading-snug">{event.title}</p>
+                <p class="font-semibold text-sm text-base-content line-clamp-2 leading-snug">
+                  {event.title}
+                </p>
                 <.event_status_badge event={event} />
               </div>
               <div class="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -432,7 +437,10 @@ defmodule CRCWeb.Admin.EventsLive do
                 <.icon name="hero-pencil" class="size-4" />
               </button>
               <button
-                class={["btn btn-ghost btn-xs btn-circle", if(event.active, do: "text-error", else: "text-success")]}
+                class={[
+                  "btn btn-ghost btn-xs btn-circle",
+                  if(event.active, do: "text-error", else: "text-success")
+                ]}
                 phx-click="toggle_active"
                 phx-value-id={event.id}
                 title={if event.active, do: "Desactivar", else: "Activar"}
@@ -502,7 +510,10 @@ defmodule CRCWeb.Admin.EventsLive do
                         <.icon name="hero-pencil" class="size-4" />
                       </button>
                       <button
-                        class={["btn btn-ghost btn-xs btn-circle", if(event.active, do: "text-error", else: "text-success")]}
+                        class={[
+                          "btn btn-ghost btn-xs btn-circle",
+                          if(event.active, do: "text-error", else: "text-success")
+                        ]}
                         phx-click="toggle_active"
                         phx-value-id={event.id}
                         title={if event.active, do: "Desactivar", else: "Activar"}
@@ -814,9 +825,14 @@ defmodule CRCWeb.Admin.EventsLive do
                   <div class="space-y-2">
                     <%= for entry <- @uploads.event_photo.entries do %>
                       <div class="flex items-center gap-3 p-2.5 bg-base-200 rounded-xl">
-                        <.live_img_preview entry={entry} class="w-10 h-10 object-cover rounded-lg shrink-0" />
+                        <.live_img_preview
+                          entry={entry}
+                          class="w-10 h-10 object-cover rounded-lg shrink-0"
+                        />
                         <div class="flex-1 min-w-0">
-                          <p class="text-xs font-medium text-base-content truncate">{entry.client_name}</p>
+                          <p class="text-xs font-medium text-base-content truncate">
+                            {entry.client_name}
+                          </p>
                           <div class="w-full bg-base-300 rounded-full h-1.5 mt-1.5">
                             <div
                               class="bg-primary h-1.5 rounded-full transition-all duration-300"
@@ -949,7 +965,6 @@ defmodule CRCWeb.Admin.EventsLive do
 
       <%!-- Timeline bar --%>
       <div class="relative h-9 bg-base-200 rounded-lg overflow-hidden border border-base-300">
-
         <%!-- Existing event blocks --%>
         <%= for block <- @event_blocks do %>
           <div
@@ -976,7 +991,6 @@ defmodule CRCWeb.Admin.EventsLive do
             </span>
           </div>
         <% end %>
-
       </div>
 
       <%!-- Hour tick labels --%>
@@ -1044,7 +1058,7 @@ defmodule CRCWeb.Admin.EventsLive do
 
     cond do
       event.event_date == today and
-          Time.compare(event.start_time, cdmx_time) != :gt and
+        Time.compare(event.start_time, cdmx_time) != :gt and
           Time.compare(event.end_time, cdmx_time) == :gt ->
         :live
 
@@ -1092,7 +1106,9 @@ defmodule CRCWeb.Admin.EventsLive do
 
   defp parse_time_opt(str) do
     case Time.from_iso8601(str) do
-      {:ok, t} -> t
+      {:ok, t} ->
+        t
+
       _ ->
         case Time.from_iso8601(str <> ":00") do
           {:ok, t} -> t
@@ -1107,6 +1123,7 @@ defmodule CRCWeb.Admin.EventsLive do
   # Returns the percentage offset of `t` within [opening, closing], clamped to [0, 100].
   defp time_to_pct(t, opening, closing) do
     total = time_secs(closing) - time_secs(opening)
+
     if total <= 0 do
       0.0
     else

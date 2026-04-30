@@ -46,7 +46,12 @@ defmodule CRCWeb.SessionControllerTest do
     end
 
     test "redirige al inicio si ya hay sesión activa (no-admin)", %{conn: conn} do
-      empleado = crear_usuario(%{role: "empleado", stations: ["sala"], email: "emp_redirect#{System.unique_integer()}@test.com"})
+      empleado =
+        crear_usuario(%{
+          role: "empleado",
+          stations: ["sala"],
+          email: "emp_redirect#{System.unique_integer()}@test.com"
+        })
 
       conn =
         conn

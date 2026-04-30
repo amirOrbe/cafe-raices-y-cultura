@@ -5,6 +5,7 @@ defmodule CRCWeb.HomeLiveTest do
 
   alias CRC.Accounts
   alias CRC.Accounts.User
+  alias CRC.Settings
 
   # ---------------------------------------------------------------------------
   # Helpers
@@ -107,7 +108,10 @@ defmodule CRCWeb.HomeLiveTest do
     test "shows packages section when active packages exist", %{conn: conn} do
       cat_attrs = %{name: "Cafés Pkg #{System.unique_integer()}"}
       {:ok, cat} = CRC.Catalog.create_category(cat_attrs)
-      {:ok, item} = CRC.Catalog.create_menu_item(%{name: "Café", price: "40.00", category_id: cat.id})
+
+      {:ok, item} =
+        CRC.Catalog.create_menu_item(%{name: "Café", price: "40.00", category_id: cat.id})
+
       {:ok, pkg} = CRC.Catalog.create_package(%{name: "Combo Especial Test", price: "60.00"})
       {:ok, _} = CRC.Catalog.set_package_items(pkg, [%{menu_item_id: item.id, quantity: 1}])
 
@@ -117,7 +121,9 @@ defmodule CRCWeb.HomeLiveTest do
     end
 
     test "inactive packages are not shown on homepage", %{conn: conn} do
-      {:ok, _} = CRC.Catalog.create_package(%{name: "Combo Inactivo", price: "60.00", active: false})
+      {:ok, _} =
+        CRC.Catalog.create_package(%{name: "Combo Inactivo", price: "60.00", active: false})
+
       {:ok, _lv, html} = live(conn, ~p"/")
       refute html =~ "Combo Inactivo"
     end
@@ -147,6 +153,78 @@ defmodule CRCWeb.HomeLiveTest do
 
       {:ok, _lv, html} = live(conn, ~p"/")
       assert html =~ "Panel"
+    end
+  end
+
+  describe "cafe_hours display" do
+    test "shows opening and closing times when cafe hours are configured", %{conn: conn} do
+      {:ok, _} =
+        Settings.set_cafe_hours([
+          %{
+            day_of_week: 1,
+            opening_time: ~T[08:00:00],
+            closing_time: ~T[22:00:00],
+            is_closed: false
+          }
+        ])
+
+      {:ok, _lv, html} = live(conn, ~p"/")
+      assert html =~ "08:00" or html =~ "22:00" or html =~ "Horario"
+    end
+  end
+
+  describe "packages section — extended" do
+    test "shows package description when set", %{conn: conn} do
+      {:ok, pkg} =
+        CRC.Catalog.create_package(%{
+          name: "Combo Con Descripción",
+          price: "55.00",
+          description: "Un combo perfecto para compartir"
+        })
+
+      {:ok, cat} = CRC.Catalog.create_category(%{name: "Café Combo #{System.unique_integer()}"})
+
+      {:ok, item} =
+        CRC.Catalog.create_menu_item(%{name: "Café Base", price: "35.00", category_id: cat.id})
+
+      {:ok, _} = CRC.Catalog.set_package_items(pkg, [%{menu_item_id: item.id, quantity: 1}])
+
+      {:ok, _lv, html} = live(conn, ~p"/")
+      assert html =~ "Un combo perfecto para compartir"
+    end
+
+    test "shows quantity badge when package item has quantity > 1", %{conn: conn} do
+      {:ok, pkg} = CRC.Catalog.create_package(%{name: "Combo Doble", price: "70.00"})
+      {:ok, cat} = CRC.Catalog.create_category(%{name: "Café Doble #{System.unique_integer()}"})
+
+      {:ok, item} =
+        CRC.Catalog.create_menu_item(%{
+          name: "Espresso Doble",
+          price: "40.00",
+          category_id: cat.id
+        })
+
+      {:ok, _} = CRC.Catalog.set_package_items(pkg, [%{menu_item_id: item.id, quantity: 2}])
+
+      {:ok, _lv, html} = live(conn, ~p"/")
+      assert html =~ "2×"
+    end
+
+    test "shows savings badge when package price is lower than sum of items", %{conn: conn} do
+      {:ok, pkg} = CRC.Catalog.create_package(%{name: "Combo Ahorro Home", price: "50.00"})
+      {:ok, cat} = CRC.Catalog.create_category(%{name: "Café Ahorro #{System.unique_integer()}"})
+
+      {:ok, item} =
+        CRC.Catalog.create_menu_item(%{
+          name: "Café Ahorro Item",
+          price: "70.00",
+          category_id: cat.id
+        })
+
+      {:ok, _} = CRC.Catalog.set_package_items(pkg, [%{menu_item_id: item.id, quantity: 1}])
+
+      {:ok, _lv, html} = live(conn, ~p"/")
+      assert html =~ "Ahorras"
     end
   end
 end

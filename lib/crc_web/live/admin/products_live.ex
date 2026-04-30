@@ -113,6 +113,7 @@ defmodule CRCWeb.Admin.ProductsLive do
       {:ok, product} ->
         products = Inventory.list_products()
         low_stock = Enum.count(products, &low_stock?/1)
+
         base =
           socket
           |> assign(:products, products)
@@ -125,6 +126,7 @@ defmodule CRCWeb.Admin.ProductsLive do
           # After creating, open the edit modal so the user can add tipos right away
           fresh = Inventory.get_product!(product.id)
           changeset = Inventory.change_product(fresh)
+
           {:noreply,
            base
            |> put_flash(:info, "Insumo creado. Ahora puedes agregar los tipos.")
@@ -274,40 +276,48 @@ defmodule CRCWeb.Admin.ProductsLive do
         <div>
           <h1 class="text-2xl font-bold text-base-content">Insumos</h1>
           <p class="text-sm text-base-content/50 mt-0.5">
-            {length(visible)} insumos
-            {if @status_filter == :active, do: "activos", else: "inactivos"}
+            {length(visible)} insumos {if @status_filter == :active, do: "activos", else: "inactivos"}
             <%= if @status_filter == :active && @low_stock_count > 0 do %>
               · <span class="text-warning font-medium">{@low_stock_count} con stock bajo</span>
             <% end %>
           </p>
         </div>
         <button class="btn btn-primary gap-2" phx-click="new_product">
-          <.icon name="hero-plus" class="size-4" />
-          Nuevo insumo
+          <.icon name="hero-plus" class="size-4" /> Nuevo insumo
         </button>
       </div>
 
       <%!-- Status tabs --%>
       <div class="flex gap-2">
         <button
-          class={["btn btn-sm gap-1.5", if(@status_filter == :active, do: "btn-primary", else: "btn-ghost")]}
+          class={[
+            "btn btn-sm gap-1.5",
+            if(@status_filter == :active, do: "btn-primary", else: "btn-ghost")
+          ]}
           phx-click="set_status_filter"
           phx-value-status="active"
         >
-          <.icon name="hero-check-circle" class="size-3.5" />
-          Activos
-          <span class={["badge badge-xs", if(@status_filter == :active, do: "badge-primary-content/30", else: "badge-ghost")]}>
+          <.icon name="hero-check-circle" class="size-3.5" /> Activos
+          <span class={[
+            "badge badge-xs",
+            if(@status_filter == :active, do: "badge-primary-content/30", else: "badge-ghost")
+          ]}>
             {active_count}
           </span>
         </button>
         <button
-          class={["btn btn-sm gap-1.5", if(@status_filter == :inactive, do: "btn-error", else: "btn-ghost")]}
+          class={[
+            "btn btn-sm gap-1.5",
+            if(@status_filter == :inactive, do: "btn-error", else: "btn-ghost")
+          ]}
           phx-click="set_status_filter"
           phx-value-status="inactive"
         >
-          <.icon name="hero-x-circle" class="size-3.5" />
-          Inactivos
-          <span class={["badge badge-xs", if(@status_filter == :inactive, do: "badge-error-content/30", else: "badge-ghost")]}>
+          <.icon name="hero-x-circle" class="size-3.5" /> Inactivos
+          <span class={[
+            "badge badge-xs",
+            if(@status_filter == :inactive, do: "badge-error-content/30", else: "badge-ghost")
+          ]}>
             {inactive_count}
           </span>
         </button>
@@ -337,8 +347,14 @@ defmodule CRCWeb.Admin.ProductsLive do
           <% has_variants = product.variants != [] %>
           <% variant_low_stock = Enum.any?(product.variants, &variant_low_stock?/1) %>
           <% is_low = low_stock?(product) or variant_low_stock %>
-          <div class={["bg-base-100 rounded-2xl border shadow-sm p-3 flex items-center gap-3", if(is_low, do: "border-warning/40 bg-warning/5", else: "border-base-300")]}>
-            <div class={["flex items-center justify-center w-10 h-10 rounded-xl shrink-0", if(is_low, do: "bg-warning/15", else: "bg-primary/10")]}>
+          <div class={[
+            "bg-base-100 rounded-2xl border shadow-sm p-3 flex items-center gap-3",
+            if(is_low, do: "border-warning/40 bg-warning/5", else: "border-base-300")
+          ]}>
+            <div class={[
+              "flex items-center justify-center w-10 h-10 rounded-xl shrink-0",
+              if(is_low, do: "bg-warning/15", else: "bg-primary/10")
+            ]}>
               <%= if is_low do %>
                 <.icon name="hero-exclamation-triangle" class="size-5 text-warning" />
               <% else %>
@@ -358,7 +374,10 @@ defmodule CRCWeb.Admin.ProductsLive do
                 <%= if product.product_category do %>
                   <span class="badge badge-xs badge-ghost">{product.product_category.name}</span>
                 <% end %>
-                <span class={["text-xs font-medium", if(low_stock?(product), do: "text-warning", else: "text-base-content/70")]}>
+                <span class={[
+                  "text-xs font-medium",
+                  if(low_stock?(product), do: "text-warning", else: "text-base-content/70")
+                ]}>
                   Stock: {format_quantity(product.stock_quantity)} {unit_abbr(product.unit)}
                 </span>
                 <span class="text-xs text-base-content/40">
@@ -366,9 +385,13 @@ defmodule CRCWeb.Admin.ProductsLive do
                 </span>
               </div>
               <div class="flex items-center gap-3 mt-1">
-                <span class="text-xs text-base-content/70">${format_price(product.net_cost)} costo</span>
+                <span class="text-xs text-base-content/70">
+                  ${format_price(product.net_cost)} costo
+                </span>
                 <%= if product.sale_price do %>
-                  <span class="text-xs text-base-content/50">${format_price(product.sale_price)} venta</span>
+                  <span class="text-xs text-base-content/50">
+                    ${format_price(product.sale_price)} venta
+                  </span>
                 <% end %>
                 <%= if product.supplier do %>
                   <span class="text-xs text-base-content/40 truncate">{product.supplier.name}</span>
@@ -388,7 +411,10 @@ defmodule CRCWeb.Admin.ProductsLive do
                 <.icon name="hero-pencil" class="size-4" />
               </button>
               <button
-                class={["btn btn-ghost btn-xs btn-circle", if(product.active, do: "text-error", else: "text-success")]}
+                class={[
+                  "btn btn-ghost btn-xs btn-circle",
+                  if(product.active, do: "text-error", else: "text-success")
+                ]}
                 phx-click="toggle_active"
                 phx-value-id={product.id}
                 title={if product.active, do: "Desactivar", else: "Activar"}
@@ -424,17 +450,24 @@ defmodule CRCWeb.Admin.ProductsLive do
               <%= for product <- visible do %>
                 <% has_variants = product.variants != [] %>
                 <% variant_low_stock = Enum.any?(product.variants, &variant_low_stock?/1) %>
-                <tr class={["hover:bg-base-200/50 transition-colors", if(low_stock?(product) or variant_low_stock, do: "bg-warning/5")]}>
+                <tr class={[
+                  "hover:bg-base-200/50 transition-colors",
+                  if(low_stock?(product) or variant_low_stock, do: "bg-warning/5")
+                ]}>
                   <td class="max-w-0">
                     <div class="flex items-center gap-2">
                       <%= if low_stock?(product) or variant_low_stock do %>
                         <.icon name="hero-exclamation-triangle" class="size-4 text-warning shrink-0" />
                       <% end %>
                       <div class="min-w-0">
-                        <span class="font-medium text-sm text-base-content truncate block">{product.name}</span>
+                        <span class="font-medium text-sm text-base-content truncate block">
+                          {product.name}
+                        </span>
                         <%= if has_variants do %>
                           <p class="text-xs text-base-content/40 mt-0.5 truncate">
-                            {length(product.variants)} tipo{if length(product.variants) != 1, do: "s", else: ""}
+                            {length(product.variants)} tipo{if length(product.variants) != 1,
+                              do: "s",
+                              else: ""}
                             <%= if variant_low_stock do %>
                               · <span class="text-warning">stock bajo</span>
                             <% end %>
@@ -449,7 +482,9 @@ defmodule CRCWeb.Admin.ProductsLive do
                     </span>
                   </td>
                   <td class="text-sm font-medium">
-                    <span class={if low_stock?(product), do: "text-warning", else: "text-base-content"}>
+                    <span class={
+                      if low_stock?(product), do: "text-warning", else: "text-base-content"
+                    }>
                       {format_quantity(product.stock_quantity)} {unit_abbr(product.unit)}
                     </span>
                   </td>
@@ -481,7 +516,10 @@ defmodule CRCWeb.Admin.ProductsLive do
                         <.icon name="hero-pencil" class="size-4" />
                       </button>
                       <button
-                        class={["btn btn-ghost btn-xs btn-circle", if(product.active, do: "text-error", else: "text-success")]}
+                        class={[
+                          "btn btn-ghost btn-xs btn-circle",
+                          if(product.active, do: "text-error", else: "text-success")
+                        ]}
                         phx-click="toggle_active"
                         phx-value-id={product.id}
                         title={if product.active, do: "Desactivar", else: "Activar"}
@@ -499,10 +537,17 @@ defmodule CRCWeb.Admin.ProductsLive do
                 <tr>
                   <td colspan="9" class="text-center py-12 text-base-content/40 text-sm">
                     {cond do
-                      @status_filter == :inactive && @filter_category == "all" -> "No hay insumos inactivos."
-                      @status_filter == :inactive -> "No hay insumos inactivos en esta categoría."
-                      @filter_category != "all" -> "No hay insumos en esta categoría."
-                      true -> "No hay insumos registrados. Crea el primero."
+                      @status_filter == :inactive && @filter_category == "all" ->
+                        "No hay insumos inactivos."
+
+                      @status_filter == :inactive ->
+                        "No hay insumos inactivos en esta categoría."
+
+                      @filter_category != "all" ->
+                        "No hay insumos en esta categoría."
+
+                      true ->
+                        "No hay insumos registrados. Crea el primero."
                     end}
                   </td>
                 </tr>
@@ -574,10 +619,24 @@ defmodule CRCWeb.Admin.ProductsLive do
 
         <div class="px-6 py-5 space-y-6">
           <SiteComponents.help_banner title="¿Para qué sirve cada campo?">
-            <p><strong>Costo neto</strong> — precio real que pagas por unidad (litro, kilo, pieza…). Se usa para calcular el costo de producción de tus platillos y el margen de ganancia. <em>No</em> es el precio que le cobras al cliente.</p>
-            <p><strong>Stock actual</strong> — cantidad disponible hoy. Se descuenta automáticamente cada vez que se envía un pedido a cocina/barra. Actualízalo al recibir mercancía o registra un ajuste en "Merma" si hubo pérdida.</p>
-            <p><strong>Stock mínimo</strong> — umbral de alerta. Cuando el stock baja de este valor el sistema te avisa en el dashboard. Recomendación: ponlo en lo que necesitas para operar 2–3 días.</p>
-            <p><strong>Unidad</strong> — debe coincidir con la unidad que usas en las recetas de tus platillos. Si registras leche en litros, la receta debe indicar la cantidad en litros (ej. 0.200).</p>
+            <p>
+              <strong>Costo neto</strong>
+              — precio real que pagas por unidad (litro, kilo, pieza…). Se usa para calcular el costo de producción de tus platillos y el margen de ganancia.
+              <em>No</em>
+              es el precio que le cobras al cliente.
+            </p>
+            <p>
+              <strong>Stock actual</strong>
+              — cantidad disponible hoy. Se descuenta automáticamente cada vez que se envía un pedido a cocina/barra. Actualízalo al recibir mercancía o registra un ajuste en "Merma" si hubo pérdida.
+            </p>
+            <p>
+              <strong>Stock mínimo</strong>
+              — umbral de alerta. Cuando el stock baja de este valor el sistema te avisa en el dashboard. Recomendación: ponlo en lo que necesitas para operar 2–3 días.
+            </p>
+            <p>
+              <strong>Unidad</strong>
+              — debe coincidir con la unidad que usas en las recetas de tus platillos. Si registras leche en litros, la receta debe indicar la cantidad en litros (ej. 0.200).
+            </p>
           </SiteComponents.help_banner>
           <%!-- Product form --%>
           <.form id="product-form" for={@form} phx-submit="save_product" class="space-y-1">
@@ -685,8 +744,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                     class="btn btn-sm btn-outline gap-1.5"
                     phx-click="new_variant_form"
                   >
-                    <.icon name="hero-plus" class="size-3.5" />
-                    Agregar tipo
+                    <.icon name="hero-plus" class="size-3.5" /> Agregar tipo
                   </button>
                 <% end %>
               </div>
@@ -699,7 +757,10 @@ defmodule CRCWeb.Admin.ProductsLive do
                     <% v_low = variant_low_stock?(variant) %>
                     <div class={[
                       "rounded-xl border p-3",
-                      if(is_editing, do: "border-primary/30 bg-primary/5", else: "border-base-200 bg-base-50"),
+                      if(is_editing,
+                        do: "border-primary/30 bg-primary/5",
+                        else: "border-base-200 bg-base-50"
+                      ),
                       if(v_low and not is_editing, do: "border-warning/30 bg-warning/5", else: "")
                     ]}>
                       <%= if is_editing do %>
@@ -715,7 +776,9 @@ defmodule CRCWeb.Admin.ProductsLive do
                         <div class="flex items-start justify-between gap-3">
                           <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
-                              <span class="font-medium text-sm text-base-content">{variant.name}</span>
+                              <span class="font-medium text-sm text-base-content">
+                                {variant.name}
+                              </span>
                               <%= if not variant.active do %>
                                 <span class="badge badge-xs badge-error">Inactivo</span>
                               <% end %>
@@ -732,8 +795,9 @@ defmodule CRCWeb.Admin.ProductsLive do
                               <% end %>
                             </div>
                             <p class="text-xs text-base-content/50 mt-1">
-                              Stock: {format_quantity(variant.stock_quantity)} {unit_abbr(@product.unit)}
-                              · Mín: {format_quantity(variant.min_stock)} {unit_abbr(@product.unit)}
+                              Stock: {format_quantity(variant.stock_quantity)} {unit_abbr(
+                                @product.unit
+                              )} · Mín: {format_quantity(variant.min_stock)} {unit_abbr(@product.unit)}
                             </p>
                           </div>
                           <div class="flex items-center gap-1 shrink-0">
@@ -748,13 +812,18 @@ defmodule CRCWeb.Admin.ProductsLive do
                             </button>
                             <button
                               type="button"
-                              class={["btn btn-ghost btn-xs", if(variant.active, do: "text-error", else: "text-success")]}
+                              class={[
+                                "btn btn-ghost btn-xs",
+                                if(variant.active, do: "text-error", else: "text-success")
+                              ]}
                               phx-click="toggle_variant_active"
                               phx-value-id={variant.id}
                               title={if variant.active, do: "Desactivar", else: "Activar"}
                             >
                               <.icon
-                                name={if variant.active, do: "hero-no-symbol", else: "hero-check-circle"}
+                                name={
+                                  if variant.active, do: "hero-no-symbol", else: "hero-check-circle"
+                                }
                                 class="size-3.5"
                               />
                             </button>
@@ -785,7 +854,9 @@ defmodule CRCWeb.Admin.ProductsLive do
               <%!-- New variant form (shown when adding) --%>
               <%= if not is_nil(@variant_form) and is_nil(@editing_variant_id) do %>
                 <div class="rounded-xl border border-primary/30 bg-primary/5 p-4">
-                  <p class="text-xs font-semibold text-primary mb-3 uppercase tracking-wide">Nuevo tipo</p>
+                  <p class="text-xs font-semibold text-primary mb-3 uppercase tracking-wide">
+                    Nuevo tipo
+                  </p>
                   <.variant_form_fields
                     form={@variant_form}
                     unit={@product.unit}

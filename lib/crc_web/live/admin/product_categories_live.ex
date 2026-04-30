@@ -85,11 +85,12 @@ defmodule CRCWeb.Admin.ProductCategoriesLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Categorías de insumos</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">{length(@categories)} categorías registradas</p>
+          <p class="text-sm text-base-content/50 mt-0.5">
+            {length(@categories)} categorías registradas
+          </p>
         </div>
         <button class="btn btn-primary gap-2" phx-click="new_category">
-          <.icon name="hero-plus" class="size-4" />
-          Nueva categoría
+          <.icon name="hero-plus" class="size-4" /> Nueva categoría
         </button>
       </div>
 
@@ -129,7 +130,8 @@ defmodule CRCWeb.Admin.ProductCategoriesLive do
                   title="Eliminar"
                   data-confirm={
                     if cat.product_count > 0,
-                      do: "Esta categoría tiene #{cat.product_count} insumo(s). Al eliminarla quedarán sin categoría. ¿Continuar?",
+                      do:
+                        "Esta categoría tiene #{cat.product_count} insumo(s). Al eliminarla quedarán sin categoría. ¿Continuar?",
                       else: "¿Eliminar la categoría \"#{cat.name}\"?"
                   }
                 >
@@ -175,7 +177,8 @@ defmodule CRCWeb.Admin.ProductCategoriesLive do
                           title="Eliminar"
                           data-confirm={
                             if cat.product_count > 0,
-                              do: "Esta categoría tiene #{cat.product_count} insumo(s). Al eliminarla quedarán sin categoría. ¿Continuar?",
+                              do:
+                                "Esta categoría tiene #{cat.product_count} insumo(s). Al eliminarla quedarán sin categoría. ¿Continuar?",
                               else: "¿Eliminar la categoría \"#{cat.name}\"?"
                           }
                         >

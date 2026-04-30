@@ -27,7 +27,9 @@ defmodule CRCWeb.Employee.MyScheduleLive do
       schedules = HR.list_work_schedules(user.id)
       today_record = HR.get_or_create_today_record(user)
       week = build_week(schedules)
-      recent = HR.list_attendance_for_user(user.id, today_record.date.year, today_record.date.month)
+
+      recent =
+        HR.list_attendance_for_user(user.id, today_record.date.year, today_record.date.month)
 
       socket =
         socket
@@ -88,9 +90,9 @@ defmodule CRCWeb.Employee.MyScheduleLive do
     error =
       case reason do
         "permission_denied" -> :permission_denied
-        "unavailable"       -> :gps_unavailable
-        "timeout"           -> :gps_unavailable
-        _                   -> :gps_unavailable
+        "unavailable" -> :gps_unavailable
+        "timeout" -> :gps_unavailable
+        _ -> :gps_unavailable
       end
 
     {:noreply,
@@ -134,10 +136,13 @@ defmodule CRCWeb.Employee.MyScheduleLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-base-200 flex flex-col">
-      <SiteComponents.site_navbar nav_open={@nav_open} current_page={:mi_horario} current_user={@current_user} />
+      <SiteComponents.site_navbar
+        nav_open={@nav_open}
+        current_page={:mi_horario}
+        current_user={@current_user}
+      />
 
       <div class="flex-1 max-w-2xl w-full mx-auto px-4 pt-24 pb-10 space-y-6">
-
         <%!-- Greeting --%>
         <div>
           <h1 class="text-2xl font-bold text-base-content">Hola, {@current_user.name} 👋</h1>
@@ -215,7 +220,6 @@ defmodule CRCWeb.Employee.MyScheduleLive do
             </ul>
           </div>
         <% end %>
-
       </div>
     </div>
     """
@@ -226,10 +230,12 @@ defmodule CRCWeb.Employee.MyScheduleLive do
   # ---------------------------------------------------------------------------
 
   defp today_card(%{today_record: record} = assigns) do
-    already_in  = not is_nil(record.clocked_in_at)
+    already_in = not is_nil(record.clocked_in_at)
     already_out = not is_nil(record.clocked_out_at)
-    requesting  = assigns.clock_status == :requesting
-    assigns = assign(assigns, already_in: already_in, already_out: already_out, requesting: requesting)
+    requesting = assigns.clock_status == :requesting
+
+    assigns =
+      assign(assigns, already_in: already_in, already_out: already_out, requesting: requesting)
 
     ~H"""
     <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
@@ -238,17 +244,21 @@ defmodule CRCWeb.Employee.MyScheduleLive do
           <h2 class="font-semibold text-base-content">Hoy</h2>
           <%= if @today_record.scheduled_start do %>
             <p class="text-sm text-base-content/60 mt-0.5">
-              Horario: {format_time(@today_record.scheduled_start)} — {format_time(@today_record.scheduled_end)}
+              Horario: {format_time(@today_record.scheduled_start)} — {format_time(
+                @today_record.scheduled_end
+              )}
             </p>
           <% else %>
             <p class="text-sm text-base-content/40 mt-0.5">Día sin horario asignado</p>
           <% end %>
         </div>
-        <.status_badge status={cond do
-          @already_out -> "out"
-          @already_in  -> @today_record.status
-          true         -> "absent"
-        end} />
+        <.status_badge status={
+          cond do
+            @already_out -> "out"
+            @already_in -> @today_record.status
+            true -> "absent"
+          end
+        } />
       </div>
 
       <%!-- Times --%>
@@ -293,11 +303,9 @@ defmodule CRCWeb.Employee.MyScheduleLive do
                 phx-hook="GeolocationClockIn"
                 class="btn btn-warning btn-sm gap-1 self-stretch sm:self-auto"
               >
-                <.icon name="hero-arrow-path" class="size-4" />
-                Reintentar ubicación
+                <.icon name="hero-arrow-path" class="size-4" /> Reintentar ubicación
               </button>
             </div>
-
           <% :permission_denied -> %>
             <%!-- El navegador bloqueó los permisos — JS ya no puede volver a pedir --%>
             <div class="alert alert-error mb-4 text-sm flex-col items-start gap-1">
@@ -307,32 +315,40 @@ defmodule CRCWeb.Employee.MyScheduleLive do
               </div>
               <p>Tu navegador tiene el permiso desactivado para este sitio. Para habilitarlo:</p>
               <ul class="list-disc list-inside space-y-0.5 text-xs">
-                <li><span class="font-medium">iPhone/iPad:</span> Ajustes → Safari → Ubicación → Permitir</li>
-                <li><span class="font-medium">Android Chrome:</span> toca el candado 🔒 en la barra de dirección → Permisos → Ubicación</li>
-                <li><span class="font-medium">Android otro:</span> Ajustes del navegador → Permisos de sitio → Ubicación</li>
+                <li>
+                  <span class="font-medium">iPhone/iPad:</span>
+                  Ajustes → Safari → Ubicación → Permitir
+                </li>
+                <li>
+                  <span class="font-medium">Android Chrome:</span>
+                  toca el candado 🔒 en la barra de dirección → Permisos → Ubicación
+                </li>
+                <li>
+                  <span class="font-medium">Android otro:</span>
+                  Ajustes del navegador → Permisos de sitio → Ubicación
+                </li>
               </ul>
               <p class="text-xs mt-1">
                 También puedes pedir a tu administrador que registre tu llegada manualmente.
               </p>
             </div>
-
           <% :gps_unavailable -> %>
             <%!-- GPS falló o expiró el tiempo — se puede reintentar --%>
             <div class="alert alert-warning mb-4 text-sm flex-col items-start gap-2">
               <div class="flex items-center gap-2">
                 <.icon name="hero-signal-slash" class="size-4 shrink-0" />
-                <span>No se pudo obtener tu ubicación (señal débil o GPS apagado). Intenta de nuevo.</span>
+                <span>
+                  No se pudo obtener tu ubicación (señal débil o GPS apagado). Intenta de nuevo.
+                </span>
               </div>
               <button
                 id="clock-in-retry-btn"
                 phx-hook="GeolocationClockIn"
                 class="btn btn-warning btn-sm gap-1 self-stretch sm:self-auto"
               >
-                <.icon name="hero-arrow-path" class="size-4" />
-                Reintentar
+                <.icon name="hero-arrow-path" class="size-4" /> Reintentar
               </button>
             </div>
-
           <% :not_clocked_in -> %>
             <div class="alert alert-warning mb-4 text-sm">
               <.icon name="hero-exclamation-triangle" class="size-4 shrink-0" />
@@ -367,8 +383,7 @@ defmodule CRCWeb.Employee.MyScheduleLive do
             phx-click="clock_out"
             class="btn btn-primary flex-1 gap-2"
           >
-            <.icon name="hero-arrow-right-on-rectangle" class="size-5" />
-            Registrar salida
+            <.icon name="hero-arrow-right-on-rectangle" class="size-5" /> Registrar salida
           </button>
         <% end %>
 
@@ -428,7 +443,9 @@ defmodule CRCWeb.Employee.MyScheduleLive do
   defp format_datetime(nil), do: "–"
 
   defp format_date(%Date{} = date) do
-    months = ~w(enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre)
+    months =
+      ~w(enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre)
+
     days = ~w(lunes martes miércoles jueves viernes sábado domingo)
     day_name = Enum.at(days, Date.day_of_week(date) - 1)
     month_name = Enum.at(months, date.month - 1)

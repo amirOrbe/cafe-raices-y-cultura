@@ -124,32 +124,41 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
           </p>
         </div>
         <button class="btn btn-primary gap-2" phx-click="new_collaborator">
-          <.icon name="hero-plus" class="size-4" />
-          Nuevo colaborador
+          <.icon name="hero-plus" class="size-4" /> Nuevo colaborador
         </button>
       </div>
 
       <%!-- Status tabs --%>
       <div class="flex gap-2">
         <button
-          class={["btn btn-sm gap-1.5", if(@status_filter == :active, do: "btn-primary", else: "btn-ghost")]}
+          class={[
+            "btn btn-sm gap-1.5",
+            if(@status_filter == :active, do: "btn-primary", else: "btn-ghost")
+          ]}
           phx-click="set_status_filter"
           phx-value-status="active"
         >
-          <.icon name="hero-check-circle" class="size-3.5" />
-          Activos
-          <span class={["badge badge-xs", if(@status_filter == :active, do: "badge-primary-content/30", else: "badge-ghost")]}>
+          <.icon name="hero-check-circle" class="size-3.5" /> Activos
+          <span class={[
+            "badge badge-xs",
+            if(@status_filter == :active, do: "badge-primary-content/30", else: "badge-ghost")
+          ]}>
             {active_count}
           </span>
         </button>
         <button
-          class={["btn btn-sm gap-1.5", if(@status_filter == :inactive, do: "btn-error", else: "btn-ghost")]}
+          class={[
+            "btn btn-sm gap-1.5",
+            if(@status_filter == :inactive, do: "btn-error", else: "btn-ghost")
+          ]}
           phx-click="set_status_filter"
           phx-value-status="inactive"
         >
-          <.icon name="hero-x-circle" class="size-3.5" />
-          Inactivos
-          <span class={["badge badge-xs", if(@status_filter == :inactive, do: "badge-error-content/30", else: "badge-ghost")]}>
+          <.icon name="hero-x-circle" class="size-3.5" /> Inactivos
+          <span class={[
+            "badge badge-xs",
+            if(@status_filter == :inactive, do: "badge-error-content/30", else: "badge-ghost")
+          ]}>
             {inactive_count}
           </span>
         </button>
@@ -195,7 +204,10 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
                 <.icon name="hero-pencil" class="size-4" />
               </button>
               <button
-                class={["btn btn-ghost btn-xs btn-circle", if(collaborator.active, do: "text-error", else: "text-success")]}
+                class={[
+                  "btn btn-ghost btn-xs btn-circle",
+                  if(collaborator.active, do: "text-error", else: "text-success")
+                ]}
                 phx-click="toggle_active"
                 phx-value-id={collaborator.id}
                 title={if collaborator.active, do: "Desactivar", else: "Activar"}
@@ -226,7 +238,9 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
             <tbody>
               <%= for collaborator <- visible do %>
                 <tr class="hover:bg-base-200/50 transition-colors">
-                  <td class="max-w-0 font-medium text-sm text-base-content truncate">{collaborator.name}</td>
+                  <td class="max-w-0 font-medium text-sm text-base-content truncate">
+                    {collaborator.name}
+                  </td>
                   <td class="text-sm text-base-content/70">
                     {if collaborator.instagram_handle,
                       do: "@#{collaborator.instagram_handle}",
@@ -253,13 +267,18 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
                         <.icon name="hero-pencil" class="size-4" />
                       </button>
                       <button
-                        class={["btn btn-ghost btn-xs btn-circle", if(collaborator.active, do: "text-error", else: "text-success")]}
+                        class={[
+                          "btn btn-ghost btn-xs btn-circle",
+                          if(collaborator.active, do: "text-error", else: "text-success")
+                        ]}
                         phx-click="toggle_active"
                         phx-value-id={collaborator.id}
                         title={if collaborator.active, do: "Desactivar", else: "Activar"}
                       >
                         <.icon
-                          name={if collaborator.active, do: "hero-no-symbol", else: "hero-check-circle"}
+                          name={
+                            if collaborator.active, do: "hero-no-symbol", else: "hero-check-circle"
+                          }
                           class="size-4"
                         />
                       </button>

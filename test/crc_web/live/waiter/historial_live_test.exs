@@ -14,11 +14,16 @@ defmodule CRCWeb.Waiter.HistorialLiveTest do
   defp insert_user(overrides \\ %{}) do
     attrs =
       Map.merge(
-        %{name: "Mesero #{System.unique_integer()}",
+        %{
+          name: "Mesero #{System.unique_integer()}",
           email: "mes#{System.unique_integer()}@cafe.com",
-          role: "empleado", stations: ["sala"], password: "pass123456"},
+          role: "empleado",
+          stations: ["sala"],
+          password: "pass123456"
+        },
         overrides
       )
+
     {:ok, u} = %User{} |> User.changeset(attrs) |> CRC.Repo.insert()
     u
   end
@@ -48,15 +53,20 @@ defmodule CRCWeb.Waiter.HistorialLiveTest do
   end
 
   defp insert_menu_item(category_id) do
-    {:ok, mi} = Catalog.create_menu_item(%{
-      name: "Platillo #{System.unique_integer()}", price: "60.00", category_id: category_id
-    })
+    {:ok, mi} =
+      Catalog.create_menu_item(%{
+        name: "Platillo #{System.unique_integer()}",
+        price: "60.00",
+        category_id: category_id
+      })
+
     mi
   end
 
   # Build a closed order (raw insert to bypass business logic)
   defp insert_closed_order(user_id, customer_name, total \\ "75.00") do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
+
     CRC.Repo.insert!(%CRC.Orders.Order{
       customer_name: customer_name,
       status: "closed",
@@ -71,6 +81,7 @@ defmodule CRCWeb.Waiter.HistorialLiveTest do
 
   defp insert_open_order(user_id) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
+
     CRC.Repo.insert!(%CRC.Orders.Order{
       customer_name: "Abierta #{System.unique_integer()}",
       status: "open",
@@ -281,20 +292,26 @@ defmodule CRCWeb.Waiter.HistorialLiveTest do
     test "accepts valid date range without crashing", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       {:ok, lv, _} = live(conn, "/mesa/historial")
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => "2026-03-01",
-        "date_to" => "2026-03-31"
-      })
+
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2026-03-01",
+          "date_to" => "2026-03-31"
+        })
+
       assert html =~ "Historial"
     end
 
     test "shows range indicator banner", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       {:ok, lv, _} = live(conn, "/mesa/historial")
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => "2026-03-01",
-        "date_to" => "2026-03-31"
-      })
+
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2026-03-01",
+          "date_to" => "2026-03-31"
+        })
+
       assert html =~ "2026-03-01"
       assert html =~ "2026-03-31"
     end
@@ -302,10 +319,13 @@ defmodule CRCWeb.Waiter.HistorialLiveTest do
     test "ignores invalid range (from > to)", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       {:ok, lv, _} = live(conn, "/mesa/historial")
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => "2026-03-31",
-        "date_to" => "2026-03-01"
-      })
+
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2026-03-31",
+          "date_to" => "2026-03-01"
+        })
+
       assert html =~ "Historial"
     end
 
@@ -315,10 +335,13 @@ defmodule CRCWeb.Waiter.HistorialLiveTest do
       insert_closed_order(user.id, "Comanda Hoy Rango")
 
       {:ok, lv, _} = live(conn, "/mesa/historial")
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => Date.to_iso8601(today),
-        "date_to" => Date.to_iso8601(today)
-      })
+
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => Date.to_iso8601(today),
+          "date_to" => Date.to_iso8601(today)
+        })
+
       assert html =~ "Comanda Hoy Rango"
     end
   end
@@ -334,9 +357,14 @@ defmodule CRCWeb.Waiter.HistorialLiveTest do
       mi = insert_menu_item(cat.id)
       order = insert_closed_order(user.id, "Mesa Expandible")
       now = DateTime.utc_now() |> DateTime.truncate(:second)
+
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi.id, quantity: 2,
-        status: "served", inserted_at: now, updated_at: now
+        order_id: order.id,
+        menu_item_id: mi.id,
+        quantity: 2,
+        status: "served",
+        inserted_at: now,
+        updated_at: now
       })
 
       {:ok, lv, _} = live(conn, "/mesa/historial")
@@ -409,6 +437,7 @@ defmodule CRCWeb.Waiter.HistorialLiveTest do
     test "shows 'Efectivo' for cash payment", %{conn: conn} do
       {conn, user} = auth_conn(conn)
       now = DateTime.utc_now() |> DateTime.truncate(:second)
+
       CRC.Repo.insert!(%CRC.Orders.Order{
         customer_name: "Mesa Efectivo Hist",
         status: "closed",

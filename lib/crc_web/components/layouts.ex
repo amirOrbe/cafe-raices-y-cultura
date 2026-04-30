@@ -126,22 +126,19 @@ defmodule CRCWeb.Layouts do
             href="/admin"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-home" class="size-5 shrink-0" />
-            Dashboard
+            <.icon name="hero-home" class="size-5 shrink-0" /> Dashboard
           </a>
           <a
             href="/bitacora"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-clipboard-document-check" class="size-5 shrink-0" />
-            Bitácora de Turno
+            <.icon name="hero-clipboard-document-check" class="size-5 shrink-0" /> Bitácora de Turno
           </a>
           <a
             href="/admin/usuarios"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-users" class="size-5 shrink-0" />
-            Usuarios
+            <.icon name="hero-users" class="size-5 shrink-0" /> Usuarios
           </a>
 
           <%!-- Menu section --%>
@@ -154,22 +151,19 @@ defmodule CRCWeb.Layouts do
             href="/admin/platillos"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-clipboard-document-list" class="size-5 shrink-0" />
-            Platillos
+            <.icon name="hero-clipboard-document-list" class="size-5 shrink-0" /> Platillos
           </a>
           <a
             href="/admin/platillos/categorias"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-squares-2x2" class="size-5 shrink-0" />
-            Categorías de platillos
+            <.icon name="hero-squares-2x2" class="size-5 shrink-0" /> Categorías de platillos
           </a>
           <a
             href="/admin/paquetes"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-gift" class="size-5 shrink-0" />
-            Paquetes
+            <.icon name="hero-gift" class="size-5 shrink-0" /> Paquetes
           </a>
 
           <%!-- Inventory section --%>
@@ -179,32 +173,34 @@ defmodule CRCWeb.Layouts do
             </p>
           </div>
           <a
+            href="/admin/inventario"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-clipboard-document-list" class="size-5 shrink-0" /> Inventario (stock)
+          </a>
+          <a
             href="/admin/proveedores"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-truck" class="size-5 shrink-0" />
-            Proveedores
+            <.icon name="hero-truck" class="size-5 shrink-0" /> Proveedores
           </a>
           <a
             href="/admin/insumos"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-archive-box" class="size-5 shrink-0" />
-            Insumos
+            <.icon name="hero-archive-box" class="size-5 shrink-0" /> Insumos
           </a>
           <a
             href="/admin/insumos/categorias"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-tag" class="size-5 shrink-0" />
-            Categorías de insumos
+            <.icon name="hero-tag" class="size-5 shrink-0" /> Categorías de insumos
           </a>
           <a
             href="/admin/produccion"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-beaker" class="size-5 shrink-0" />
-            Producción Interna
+            <.icon name="hero-beaker" class="size-5 shrink-0" /> Producción Interna
           </a>
 
           <%!-- Colaboraciones section --%>
@@ -217,22 +213,19 @@ defmodule CRCWeb.Layouts do
             href="/admin/eventos"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-calendar" class="size-5 shrink-0" />
-            Eventos
+            <.icon name="hero-calendar" class="size-5 shrink-0" /> Eventos
           </a>
           <a
             href="/admin/colaboradores"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-user-group" class="size-5 shrink-0" />
-            Colaboradores
+            <.icon name="hero-user-group" class="size-5 shrink-0" /> Colaboradores
           </a>
           <a
             href="/admin/eventos/tipos"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-tag" class="size-5 shrink-0" />
-            Tipos de evento
+            <.icon name="hero-tag" class="size-5 shrink-0" /> Tipos de evento
           </a>
           <%!-- Reportes section --%>
           <div class="pt-3 pb-1">
@@ -244,22 +237,19 @@ defmodule CRCWeb.Layouts do
             href="/admin/ventas"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-chart-bar" class="size-5 shrink-0" />
-            Ventas
+            <.icon name="hero-chart-bar" class="size-5 shrink-0" /> Ventas
           </a>
           <a
             href="/admin/rendimiento"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-clock" class="size-5 shrink-0" />
-            Rendimiento
+            <.icon name="hero-clock" class="size-5 shrink-0" /> Rendimiento
           </a>
           <a
             href="/admin/finanzas"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-scale" class="size-5 shrink-0" />
-            Finanzas
+            <.icon name="hero-scale" class="size-5 shrink-0" /> Finanzas
           </a>
 
           <%!-- Personal --%>
@@ -272,22 +262,19 @@ defmodule CRCWeb.Layouts do
             href="/admin/horarios"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-calendar-days" class="size-5 shrink-0" />
-            Horarios
+            <.icon name="hero-calendar-days" class="size-5 shrink-0" /> Horarios
           </a>
           <a
             href="/admin/asistencia"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-finger-print" class="size-5 shrink-0" />
-            Asistencia
+            <.icon name="hero-finger-print" class="size-5 shrink-0" /> Asistencia
           </a>
           <a
             href="/admin/configuracion"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >
-            <.icon name="hero-cog-6-tooth" class="size-5 shrink-0" />
-            Configuración
+            <.icon name="hero-cog-6-tooth" class="size-5 shrink-0" /> Configuración
           </a>
         </nav>
 
@@ -297,8 +284,7 @@ defmodule CRCWeb.Layouts do
             href="/"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm text-primary-content/80"
           >
-            <.icon name="hero-arrow-left" class="size-4 shrink-0" />
-            Ver sitio
+            <.icon name="hero-arrow-left" class="size-4 shrink-0" /> Ver sitio
           </a>
           <form action="/cerrar-sesion" method="post">
             <input type="hidden" name="_method" value="delete" />
@@ -307,8 +293,7 @@ defmodule CRCWeb.Layouts do
               type="submit"
               class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm text-primary-content/80"
             >
-              <.icon name="hero-arrow-right-on-rectangle" class="size-4 shrink-0" />
-              Cerrar sesión
+              <.icon name="hero-arrow-right-on-rectangle" class="size-4 shrink-0" /> Cerrar sesión
             </button>
           </form>
         </div>

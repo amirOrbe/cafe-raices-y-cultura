@@ -138,10 +138,11 @@ defmodule CRC.HR do
     distance = haversine_distance(lat, lng, @cafe_lat, @cafe_lng)
 
     require Logger
+
     Logger.info(
       "[clock_in] user=#{user.id} lat=#{lat} lng=#{lng} " <>
-      "cafe_lat=#{@cafe_lat} cafe_lng=#{@cafe_lng} " <>
-      "distance_m=#{Float.round(distance, 1)} max_m=#{@max_distance_m}"
+        "cafe_lat=#{@cafe_lat} cafe_lng=#{@cafe_lng} " <>
+        "distance_m=#{Float.round(distance, 1)} max_m=#{@max_distance_m}"
     )
 
     if distance <= @max_distance_m do
@@ -185,8 +186,12 @@ defmodule CRC.HR do
     today = Date.utc_today()
 
     case get_attendance_record(user.id, today) do
-      %{clocked_in_at: nil} -> {:error, :not_clocked_in}
-      nil -> {:error, :not_clocked_in}
+      %{clocked_in_at: nil} ->
+        {:error, :not_clocked_in}
+
+      nil ->
+        {:error, :not_clocked_in}
+
       record ->
         record
         |> AttendanceRecord.changeset(%{clocked_out_at: DateTime.utc_now()})
@@ -201,7 +206,9 @@ defmodule CRC.HR do
     today = Date.utc_today()
 
     case get_attendance_record(employee.id, today) do
-      nil -> {:error, :not_clocked_in}
+      nil ->
+        {:error, :not_clocked_in}
+
       record ->
         record
         |> AttendanceRecord.changeset(%{
@@ -281,7 +288,7 @@ defmodule CRC.HR do
 
       late_minutes =
         records
-        |> Enum.filter(&(&1.status == "late" and &1.clocked_in_at && &1.scheduled_start))
+        |> Enum.filter(&((&1.status == "late" and &1.clocked_in_at) && &1.scheduled_start))
         |> Enum.map(fn r ->
           sched_dt = DateTime.new!(r.date, r.scheduled_start, "Etc/UTC")
           DateTime.diff(r.clocked_in_at, sched_dt, :minute)
@@ -292,7 +299,7 @@ defmodule CRC.HR do
 
       early_minutes =
         records
-        |> Enum.filter(&(&1.status == "early" and &1.clocked_in_at && &1.scheduled_start))
+        |> Enum.filter(&((&1.status == "early" and &1.clocked_in_at) && &1.scheduled_start))
         |> Enum.map(fn r ->
           sched_dt = DateTime.new!(r.date, r.scheduled_start, "Etc/UTC")
           # Positive value = minutes early
@@ -300,7 +307,9 @@ defmodule CRC.HR do
         end)
 
       avg_early_minutes =
-        if early_minutes == [], do: 0, else: round(Enum.sum(early_minutes) / length(early_minutes))
+        if early_minutes == [],
+          do: 0,
+          else: round(Enum.sum(early_minutes) / length(early_minutes))
 
       overtime_days =
         Enum.count(records, fn r ->

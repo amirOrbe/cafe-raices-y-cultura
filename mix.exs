@@ -27,7 +27,9 @@ defmodule CRC.MixProject do
           # OTP application supervisor — framework boilerplate
           CRC.Application,
           # Phoenix telemetry events setup — framework boilerplate
-          CRCWeb.Telemetry
+          CRCWeb.Telemetry,
+          # External API wrapper — requires live Cloudinary credentials to test
+          CRC.Cloudinary
         ]
       ],
       compilers: [:phoenix_live_view] ++ Mix.compilers(),

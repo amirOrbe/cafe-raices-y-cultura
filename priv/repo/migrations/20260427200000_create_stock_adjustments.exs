@@ -3,10 +3,12 @@ defmodule CRC.Repo.Migrations.CreateStockAdjustments do
 
   def change do
     create table(:stock_adjustments) do
-      add :product_id,     references(:products, on_delete: :restrict), null: false
-      add :quantity,       :decimal, null: false   # negative = loss, positive = addition
-      add :reason,         :string,  null: false   # caducidad|derrame|robo|ajuste_manual|otro
-      add :notes,          :string
+      add :product_id, references(:products, on_delete: :restrict), null: false
+      # negative = loss, positive = addition
+      add :quantity, :decimal, null: false
+      # caducidad|derrame|robo|ajuste_manual|otro
+      add :reason, :string, null: false
+      add :notes, :string
       add :adjusted_by_id, references(:users, on_delete: :nilify_all)
 
       timestamps(type: :utc_datetime)

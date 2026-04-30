@@ -86,7 +86,6 @@ defmodule CRCWeb.Waiter.HistorialLive do
     ~H"""
     <div class="min-h-screen bg-base-200 pb-16">
       <div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
-
         <%!-- Header --%>
         <div class="flex items-center justify-between gap-4">
           <div>
@@ -110,7 +109,13 @@ defmodule CRCWeb.Waiter.HistorialLive do
           <div class="flex gap-2 flex-wrap">
             <%= for {label, value} <- [{"Hoy", "today"}, {"Semana", "week"}, {"Mes", "month"}, {"Todo", "all"}] do %>
               <button
-                class={["btn btn-sm", if(is_atom(@period) and Atom.to_string(@period) == value, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                class={[
+                  "btn btn-sm",
+                  if(is_atom(@period) and Atom.to_string(@period) == value,
+                    do: "btn-primary",
+                    else: "btn-ghost border border-base-300"
+                  )
+                ]}
                 phx-click="set_period"
                 phx-value-period={value}
               >
@@ -124,12 +129,16 @@ defmodule CRCWeb.Waiter.HistorialLive do
             <span class="text-xs text-base-content/50">Rango personalizado</span>
             <div class="flex gap-2 items-center">
               <input
-                type="date" name="date_from" value={@date_from}
+                type="date"
+                name="date_from"
+                value={@date_from}
                 class="input input-sm input-bordered w-36"
               />
               <span class="text-base-content/40 text-xs">—</span>
               <input
-                type="date" name="date_to" value={@date_to}
+                type="date"
+                name="date_to"
+                value={@date_to}
                 class="input input-sm input-bordered w-36"
               />
             </div>
@@ -156,7 +165,8 @@ defmodule CRCWeb.Waiter.HistorialLive do
           <div class="alert alert-info py-2">
             <.icon name="hero-calendar" class="size-4" />
             <span class="text-sm">
-              Rango activo: {elem(@period, 1) |> Date.to_iso8601()} — {elem(@period, 2) |> Date.to_iso8601()}
+              Rango activo: {elem(@period, 1) |> Date.to_iso8601()} — {elem(@period, 2)
+              |> Date.to_iso8601()}
             </span>
           </div>
         <% end %>
@@ -199,10 +209,16 @@ defmodule CRCWeb.Waiter.HistorialLive do
 
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2 flex-wrap">
-                    <span class="font-semibold text-base-content truncate">{order.customer_name}</span>
-                    <span class="badge badge-xs badge-ghost">{order_item_count(order)} artículos</span>
+                    <span class="font-semibold text-base-content truncate">
+                      {order.customer_name}
+                    </span>
+                    <span class="badge badge-xs badge-ghost">
+                      {order_item_count(order)} artículos
+                    </span>
                     <%= if @is_admin and order.user do %>
-                      <span class="badge badge-xs badge-ghost text-base-content/50">{order.user.name}</span>
+                      <span class="badge badge-xs badge-ghost text-base-content/50">
+                        {order.user.name}
+                      </span>
                     <% end %>
                   </div>
                   <p class="text-xs text-base-content/40 mt-0.5">
@@ -235,11 +251,13 @@ defmodule CRCWeb.Waiter.HistorialLive do
                         <%= if item.for_menu_item_id do %>
                           <span class="text-base-content/30 text-xs pl-4">↳</span>
                           <span class="text-base-content/60 truncate">
-                            {item_name(item)} <span class="text-xs text-base-content/40">× {item.quantity}</span>
+                            {item_name(item)}
+                            <span class="text-xs text-base-content/40">× {item.quantity}</span>
                           </span>
                         <% else %>
                           <span class="text-base-content truncate">
-                            {item_name(item)} <span class="text-xs text-base-content/40">× {item.quantity}</span>
+                            {item_name(item)}
+                            <span class="text-xs text-base-content/40">× {item.quantity}</span>
                           </span>
                         <% end %>
                         <%= if item.status == "cancelled" or item.status == "cancelled_waste" do %>
@@ -248,7 +266,9 @@ defmodule CRCWeb.Waiter.HistorialLive do
                       </div>
                       <%= if item.menu_item && item.status not in ["cancelled", "cancelled_waste"] do %>
                         <span class="text-base-content/70 shrink-0 ml-4">
-                          ${format_total(Decimal.mult(item.menu_item.price, Decimal.new(item.quantity)))}
+                          ${format_total(
+                            Decimal.mult(item.menu_item.price, Decimal.new(item.quantity))
+                          )}
                         </span>
                       <% end %>
                     </div>
@@ -263,7 +283,6 @@ defmodule CRCWeb.Waiter.HistorialLive do
             </div>
           <% end %>
         </div>
-
       </div>
     </div>
     """
@@ -299,7 +318,10 @@ defmodule CRCWeb.Waiter.HistorialLive do
 
   defp order_item_count(order) do
     order.order_items
-    |> Enum.count(&(&1.status not in ["cancelled", "cancelled_waste"] and is_nil(&1.for_menu_item_id) and not is_nil(&1.menu_item_id)))
+    |> Enum.count(
+      &(&1.status not in ["cancelled", "cancelled_waste"] and is_nil(&1.for_menu_item_id) and
+          not is_nil(&1.menu_item_id))
+    )
   end
 
   defp visible_items(items) do
@@ -318,6 +340,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
   defp format_total(v), do: "#{v}"
 
   defp format_day(nil), do: "—"
+
   defp format_day(dt) do
     dt
     |> DateTime.add(-6 * 3600, :second)
@@ -327,6 +350,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
   end
 
   defp format_month(nil), do: ""
+
   defp format_month(dt) do
     months = ~w(ene feb mar abr may jun jul ago sep oct nov dic)
     month_idx = (dt |> DateTime.add(-6 * 3600, :second)).month - 1
@@ -334,6 +358,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
   end
 
   defp format_time(nil), do: ""
+
   defp format_time(dt) do
     local = DateTime.add(dt, -6 * 3600, :second)
     h = local.hour |> Integer.to_string() |> String.pad_leading(2, "0")

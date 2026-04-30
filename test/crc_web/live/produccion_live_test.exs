@@ -31,7 +31,13 @@ defmodule CRCWeb.ProduccionLiveTest do
   end
 
   defp staff_conn(conn) do
-    user = insert_user(%{role: "empleado", stations: ["sala"], email: "staff#{System.unique_integer()}@cafe.com"})
+    user =
+      insert_user(%{
+        role: "empleado",
+        stations: ["sala"],
+        email: "staff#{System.unique_integer()}@cafe.com"
+      })
+
     conn = init_test_session(conn, %{"user_id" => user.id})
     {conn, user}
   end
@@ -198,11 +204,13 @@ defmodule CRCWeb.ProduccionLiveTest do
       {conn, _} = staff_conn(conn)
       output = insert_product(%{name: "Oleo Citrico", stock_quantity: "0.0"})
       ing = insert_product(%{name: "Naranja", stock_quantity: "200.0"})
-      recipe = insert_recipe(
-        output,
-        %{"name" => "Oleo De Naranja"},
-        [%{product_id: ing.id, quantity: "50"}]
-      )
+
+      recipe =
+        insert_recipe(
+          output,
+          %{"name" => "Oleo De Naranja"},
+          [%{product_id: ing.id, quantity: "50"}]
+        )
 
       {:ok, lv, _} = live(conn, ~p"/produccion")
 
@@ -245,11 +253,13 @@ defmodule CRCWeb.ProduccionLiveTest do
       {conn, user} = staff_conn(conn)
       output = insert_product(%{name: "Almíbar", stock_quantity: "0.0"})
       ing = insert_product(%{name: "Azúcar", stock_quantity: "1000.0"})
-      recipe = insert_recipe(
-        output,
-        %{"name" => "Almíbar Simple"},
-        [%{product_id: ing.id, quantity: "100"}]
-      )
+
+      recipe =
+        insert_recipe(
+          output,
+          %{"name" => "Almíbar Simple"},
+          [%{product_id: ing.id, quantity: "100"}]
+        )
 
       {:ok, lv, _} = live(conn, ~p"/produccion")
       render_click(lv, "select_recipe", %{"id" => to_string(recipe.id)})
@@ -267,11 +277,13 @@ defmodule CRCWeb.ProduccionLiveTest do
       {conn, _} = staff_conn(conn)
       output = insert_product(%{name: "Crema Vainilla", stock_quantity: "0.0"})
       ing = insert_product(%{name: "Nata", stock_quantity: "500.0"})
-      recipe = insert_recipe(
-        output,
-        %{"name" => "Crema Sabor Vainilla"},
-        [%{product_id: ing.id, quantity: "50"}]
-      )
+
+      recipe =
+        insert_recipe(
+          output,
+          %{"name" => "Crema Sabor Vainilla"},
+          [%{product_id: ing.id, quantity: "50"}]
+        )
 
       {:ok, lv, _} = live(conn, ~p"/produccion")
       render_click(lv, "select_recipe", %{"id" => to_string(recipe.id)})
@@ -290,11 +302,13 @@ defmodule CRCWeb.ProduccionLiveTest do
       {conn, _} = staff_conn(conn)
       output = insert_product(%{name: "Jarabe Canela Prueba", stock_quantity: "0.0"})
       ing = insert_product(%{name: "Canela En Polvo", stock_quantity: "500.0"})
-      recipe = insert_recipe(
-        output,
-        %{"name" => "Jarabe Canela"},
-        [%{product_id: ing.id, quantity: "30"}]
-      )
+
+      recipe =
+        insert_recipe(
+          output,
+          %{"name" => "Jarabe Canela"},
+          [%{product_id: ing.id, quantity: "30"}]
+        )
 
       {:ok, lv, _} = live(conn, ~p"/produccion")
       render_click(lv, "select_recipe", %{"id" => to_string(recipe.id)})
@@ -313,11 +327,13 @@ defmodule CRCWeb.ProduccionLiveTest do
       {conn, _} = staff_conn(conn)
       output = insert_product(%{name: "Jarabe De Vainilla", stock_quantity: "0.0"})
       ing = insert_product(%{name: "Vainilla", stock_quantity: "200.0"})
-      recipe = insert_recipe(
-        output,
-        %{"name" => "Jarabe Vainilla", "yield_quantity" => "500"},
-        [%{product_id: ing.id, quantity: "10"}]
-      )
+
+      recipe =
+        insert_recipe(
+          output,
+          %{"name" => "Jarabe Vainilla", "yield_quantity" => "500"},
+          [%{product_id: ing.id, quantity: "10"}]
+        )
 
       {:ok, lv, _} = live(conn, ~p"/produccion")
       render_click(lv, "select_recipe", %{"id" => to_string(recipe.id)})
@@ -334,11 +350,13 @@ defmodule CRCWeb.ProduccionLiveTest do
       {conn, _} = staff_conn(conn)
       output = insert_product(%{name: "Miel Jengibre", stock_quantity: "0.0"})
       ing = insert_product(%{name: "Jengibre", stock_quantity: "300.0"})
-      recipe = insert_recipe(
-        output,
-        %{"name" => "Miel De Jengibre"},
-        [%{product_id: ing.id, quantity: "20"}]
-      )
+
+      recipe =
+        insert_recipe(
+          output,
+          %{"name" => "Miel De Jengibre"},
+          [%{product_id: ing.id, quantity: "20"}]
+        )
 
       {:ok, lv, _} = live(conn, ~p"/produccion")
       render_click(lv, "select_recipe", %{"id" => to_string(recipe.id)})
@@ -363,7 +381,9 @@ defmodule CRCWeb.ProduccionLiveTest do
       {conn, _} = staff_conn(conn)
       output = insert_product(%{name: "Producto Cero"})
       ing = insert_product()
-      recipe = insert_recipe(output, %{"name" => "Receta Cero"}, [%{product_id: ing.id, quantity: "1"}])
+
+      recipe =
+        insert_recipe(output, %{"name" => "Receta Cero"}, [%{product_id: ing.id, quantity: "1"}])
 
       {:ok, lv, _} = live(conn, ~p"/produccion")
       render_click(lv, "select_recipe", %{"id" => to_string(recipe.id)})
@@ -384,7 +404,11 @@ defmodule CRCWeb.ProduccionLiveTest do
       {conn, _} = staff_conn(conn)
       output = insert_product()
       ing = insert_product()
-      recipe = insert_recipe(output, %{"name" => "Receta Negativa"}, [%{product_id: ing.id, quantity: "1"}])
+
+      recipe =
+        insert_recipe(output, %{"name" => "Receta Negativa"}, [
+          %{product_id: ing.id, quantity: "1"}
+        ])
 
       {:ok, lv, _} = live(conn, ~p"/produccion")
       render_click(lv, "select_recipe", %{"id" => to_string(recipe.id)})
@@ -409,11 +433,13 @@ defmodule CRCWeb.ProduccionLiveTest do
       {conn, _} = staff_conn(conn)
       output = insert_product(%{name: "Salsa Chipotle", stock_quantity: "0.0"})
       ing = insert_product(%{name: "Chipotle", stock_quantity: "400.0"})
-      recipe = insert_recipe(
-        output,
-        %{"name" => "Salsa De Chipotle", "yield_quantity" => "200"},
-        [%{product_id: ing.id, quantity: "50"}]
-      )
+
+      recipe =
+        insert_recipe(
+          output,
+          %{"name" => "Salsa De Chipotle", "yield_quantity" => "200"},
+          [%{product_id: ing.id, quantity: "50"}]
+        )
 
       {:ok, lv, _} = live(conn, ~p"/produccion")
       render_click(lv, "select_recipe", %{"id" => to_string(recipe.id)})
@@ -437,7 +463,11 @@ defmodule CRCWeb.ProduccionLiveTest do
       {conn, _} = staff_conn(conn)
       output = insert_product(%{name: "Concentrado Cafe", stock_quantity: "0.0"})
       ing = insert_product()
-      recipe = insert_recipe(output, %{"name" => "Concentrado De Café"}, [%{product_id: ing.id, quantity: "5"}])
+
+      recipe =
+        insert_recipe(output, %{"name" => "Concentrado De Café"}, [
+          %{product_id: ing.id, quantity: "5"}
+        ])
 
       {:ok, lv, _} = live(conn, ~p"/produccion")
       render_click(lv, "select_recipe", %{"id" => to_string(recipe.id)})
@@ -455,11 +485,13 @@ defmodule CRCWeb.ProduccionLiveTest do
       {conn, user} = staff_conn(conn)
       output = insert_product(%{name: "Mermelada Fresa", stock_quantity: "0.0"})
       ing = insert_product(%{name: "Fresas", stock_quantity: "300.0"})
-      recipe = insert_recipe(
-        output,
-        %{"name" => "Mermelada De Fresa"},
-        [%{product_id: ing.id, quantity: "100"}]
-      )
+
+      recipe =
+        insert_recipe(
+          output,
+          %{"name" => "Mermelada De Fresa"},
+          [%{product_id: ing.id, quantity: "100"}]
+        )
 
       {:ok, lv, _} = live(conn, ~p"/produccion")
       render_click(lv, "select_recipe", %{"id" => to_string(recipe.id)})
@@ -485,11 +517,14 @@ defmodule CRCWeb.ProduccionLiveTest do
       {conn, user} = staff_conn(conn)
       output = insert_product(%{name: "Té Verde Frío", stock_quantity: "0.0"})
       ing = insert_product(%{name: "Té Verde", stock_quantity: "200.0"})
-      recipe = insert_recipe(
-        output,
-        %{"name" => "Té Verde Frío"},
-        [%{product_id: ing.id, quantity: "10"}]
-      )
+
+      recipe =
+        insert_recipe(
+          output,
+          %{"name" => "Té Verde Frío"},
+          [%{product_id: ing.id, quantity: "10"}]
+        )
+
       Production.log_production(recipe.id, "1", user.id, "Lote previo")
 
       # WHEN: fresh mount
@@ -508,8 +543,13 @@ defmodule CRCWeb.ProduccionLiveTest do
       out2 = insert_product(%{name: "Producto B", stock_quantity: "0.0"})
       ing1 = insert_product(%{name: "Ing A", stock_quantity: "500.0"})
       ing2 = insert_product(%{name: "Ing B", stock_quantity: "500.0"})
-      r1 = insert_recipe(out1, %{"name" => "Receta Log A"}, [%{product_id: ing1.id, quantity: "5"}])
-      r2 = insert_recipe(out2, %{"name" => "Receta Log B"}, [%{product_id: ing2.id, quantity: "5"}])
+
+      r1 =
+        insert_recipe(out1, %{"name" => "Receta Log A"}, [%{product_id: ing1.id, quantity: "5"}])
+
+      r2 =
+        insert_recipe(out2, %{"name" => "Receta Log B"}, [%{product_id: ing2.id, quantity: "5"}])
+
       Production.log_production(r1.id, "1", user.id, "")
       Production.log_production(r2.id, "1", user.id, "")
 

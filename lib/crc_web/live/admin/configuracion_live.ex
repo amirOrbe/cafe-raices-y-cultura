@@ -97,7 +97,6 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
     ~H"""
     <div class="min-h-screen bg-base-200">
       <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
         <%!-- Page header --%>
         <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -108,8 +107,7 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
           </div>
           <%= if !@editing do %>
             <button phx-click="start_edit" class="btn btn-primary btn-sm gap-2 shrink-0">
-              <.icon name="hero-pencil-square" class="size-4" />
-              Editar horario
+              <.icon name="hero-pencil-square" class="size-4" /> Editar horario
             </button>
           <% end %>
         </div>
@@ -123,14 +121,15 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
         <% end %>
 
         <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
-
           <%!-- View mode --%>
           <%= if !@editing do %>
             <%= if @rows == [] do %>
               <div class="p-12 text-center text-base-content/40">
                 <.icon name="hero-clock" class="size-12 mx-auto mb-3 opacity-30" />
                 <p>Sin horario configurado.</p>
-                <p class="text-sm mt-1">Presiona "Editar horario" para definir los días y horas de apertura.</p>
+                <p class="text-sm mt-1">
+                  Presiona "Editar horario" para definir los días y horas de apertura.
+                </p>
               </div>
             <% else %>
               <div class="divide-y divide-base-200">
@@ -159,7 +158,7 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
               </div>
             <% end %>
 
-          <%!-- Edit mode --%>
+            <%!-- Edit mode --%>
           <% else %>
             <div class="p-6 space-y-4">
               <p class="text-sm text-base-content/60">
@@ -170,7 +169,6 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
                 <% data = @form_data[day] %>
                 <div class={"flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border transition-colors
                   #{if data[:active], do: "border-primary/30 bg-primary/5", else: "border-base-200"}"}>
-
                   <%!-- Day toggle --%>
                   <label class="flex items-center gap-2 cursor-pointer shrink-0">
                     <input
@@ -211,15 +209,13 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
                       />
                     </div>
                   </div>
-
                 </div>
               <% end %>
 
               <%!-- Actions --%>
               <div class="flex flex-wrap gap-3 pt-2">
                 <button phx-click="save_hours" class="btn btn-primary btn-sm gap-2">
-                  <.icon name="hero-check" class="size-4" />
-                  Guardar horario
+                  <.icon name="hero-check" class="size-4" /> Guardar horario
                 </button>
                 <button phx-click="cancel_edit" class="btn btn-ghost btn-sm">
                   Cancelar
@@ -227,7 +223,6 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
               </div>
             </div>
           <% end %>
-
         </div>
 
         <%!-- Info card --%>
@@ -244,7 +239,6 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
             </p>
           </div>
         </div>
-
       </div>
     </div>
     """

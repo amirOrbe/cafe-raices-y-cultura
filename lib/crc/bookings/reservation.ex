@@ -36,7 +36,9 @@ defmodule CRC.Bookings.Reservation do
 
   defp validate_future_date(changeset) do
     case get_field(changeset, :date) do
-      nil -> changeset
+      nil ->
+        changeset
+
       date ->
         if Date.compare(date, Date.utc_today()) == :lt do
           add_error(changeset, :date, "debe ser una fecha futura")

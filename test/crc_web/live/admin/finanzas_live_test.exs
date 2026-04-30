@@ -33,8 +33,12 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
   defp insert_menu_item(category_id, overrides \\ %{}) do
     {:ok, mi} =
       Catalog.create_menu_item(
-        Map.merge(%{name: "Item #{System.unique_integer()}", price: "50.00", category_id: category_id}, overrides)
+        Map.merge(
+          %{name: "Item #{System.unique_integer()}", price: "50.00", category_id: category_id},
+          overrides
+        )
       )
+
     mi
   end
 
@@ -76,8 +80,11 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
       {:ok, emp} =
         %User{}
         |> User.changeset(%{
-          name: "Emp Fin", email: "emp_fin#{System.unique_integer()}@cafe.com",
-          role: "empleado", stations: ["sala"], password: "pass123456"
+          name: "Emp Fin",
+          email: "emp_fin#{System.unique_integer()}@cafe.com",
+          role: "empleado",
+          stations: ["sala"],
+          password: "pass123456"
         })
         |> CRC.Repo.insert()
 
@@ -190,7 +197,11 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
       {conn, _} = insert_admin(conn)
       {:ok, lv, _} = live(conn, "/admin/finanzas")
 
-      render_change(lv, "set_date_range", %{"date_from" => "2026-01-01", "date_to" => "2026-01-31"})
+      render_change(lv, "set_date_range", %{
+        "date_from" => "2026-01-01",
+        "date_to" => "2026-01-31"
+      })
+
       render_click(lv, "set_period", %{"period" => "today"})
       html = render(lv)
       refute html =~ "Rango:"
@@ -205,20 +216,26 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
     test "accepts valid date range without crashing", %{conn: conn} do
       {conn, _} = insert_admin(conn)
       {:ok, lv, _} = live(conn, "/admin/finanzas")
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => "2026-03-01",
-        "date_to" => "2026-03-31"
-      })
+
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2026-03-01",
+          "date_to" => "2026-03-31"
+        })
+
       assert html =~ "Finanzas"
     end
 
     test "shows range indicator when custom range is active", %{conn: conn} do
       {conn, _} = insert_admin(conn)
       {:ok, lv, _} = live(conn, "/admin/finanzas")
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => "2026-03-01",
-        "date_to" => "2026-03-31"
-      })
+
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2026-03-01",
+          "date_to" => "2026-03-31"
+        })
+
       assert html =~ "2026-03-01"
       assert html =~ "2026-03-31"
     end
@@ -226,10 +243,13 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
     test "ignores invalid range (from > to)", %{conn: conn} do
       {conn, _} = insert_admin(conn)
       {:ok, lv, _} = live(conn, "/admin/finanzas")
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => "2026-03-31",
-        "date_to" => "2026-03-01"
-      })
+
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2026-03-31",
+          "date_to" => "2026-03-01"
+        })
+
       assert html =~ "Finanzas"
     end
 
@@ -238,10 +258,12 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
       # Create an order in a far past range that should NOT appear in a future range
       {:ok, lv, _} = live(conn, "/admin/finanzas")
 
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => "2035-01-01",
-        "date_to" => "2035-01-02"
-      })
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2035-01-01",
+          "date_to" => "2035-01-02"
+        })
+
       # With no orders in that future range, should show zeros
       assert html =~ "$0"
     end
@@ -256,10 +278,12 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
       {conn, _} = insert_admin(conn)
       {:ok, lv, _} = live(conn, "/admin/finanzas")
 
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => "2035-02-01",
-        "date_to" => "2035-02-01"
-      })
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2035-02-01",
+          "date_to" => "2035-02-01"
+        })
+
       assert html =~ "Sin desperdicios registrados"
     end
 
@@ -271,21 +295,34 @@ defmodule CRCWeb.Admin.FinanzasLiveTest do
       link_ingredient(mi.id, product.id, "5")
 
       d = ~U[2027-11-01 10:00:00Z]
-      order = CRC.Repo.insert!(%CRC.Orders.Order{
-        customer_name: "Waste Display",
-        status: "sent", payment_method: nil, total: nil,
-        inserted_at: d, updated_at: d
-      })
+
+      order =
+        CRC.Repo.insert!(%CRC.Orders.Order{
+          customer_name: "Waste Display",
+          status: "sent",
+          payment_method: nil,
+          total: nil,
+          inserted_at: d,
+          updated_at: d
+        })
+
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi.id, quantity: 1,
-        status: "cancelled_waste", inserted_at: d, updated_at: d
+        order_id: order.id,
+        menu_item_id: mi.id,
+        quantity: 1,
+        status: "cancelled_waste",
+        inserted_at: d,
+        updated_at: d
       })
 
       {:ok, lv, _} = live(conn, "/admin/finanzas")
-      html = render_change(lv, "set_date_range", %{
-        "date_from" => "2027-11-01",
-        "date_to" => "2027-11-01"
-      })
+
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2027-11-01",
+          "date_to" => "2027-11-01"
+        })
+
       assert html =~ "Platillo Desperdiciado Fin"
     end
   end

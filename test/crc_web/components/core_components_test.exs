@@ -227,7 +227,11 @@ defmodule CRCWeb.CoreComponentsTest do
 
   describe "translate_error/1" do
     test "translates an error with count (ngettext branch)" do
-      result = CRCWeb.CoreComponents.translate_error({"must be at least %{count} characters", [count: 5]})
+      result =
+        CRCWeb.CoreComponents.translate_error(
+          {"must be at least %{count} characters", [count: 5]}
+        )
+
       assert is_binary(result)
     end
 

@@ -30,7 +30,7 @@ defmodule CRC.Settings do
   @doc """
   Returns a map of %{day_of_week => CafeHours.t()} for all persisted rows.
   """
-  @spec cafe_hours_by_day() :: %{1..7 => CafeHours.t()}
+  @spec cafe_hours_by_day() :: %{(1..7) => CafeHours.t()}
   def cafe_hours_by_day do
     list_cafe_hours() |> Map.new(&{&1.day_of_week, &1})
   end
@@ -116,7 +116,8 @@ defmodule CRC.Settings do
   """
   @spec hours_for_date(Date.t()) :: {Time.t(), Time.t()} | nil
   def hours_for_date(%Date{} = date) do
-    day = Date.day_of_week(date)  # 1 = Mon … 7 = Sun
+    # 1 = Mon … 7 = Sun
+    day = Date.day_of_week(date)
     row = Repo.get_by(CafeHours, day_of_week: day)
 
     cond do
@@ -176,7 +177,9 @@ defmodule CRC.Settings do
   def build_form_data(rows) do
     Enum.reduce(@days, default_form_data(), fn day, acc ->
       case Enum.find(rows, &(&1.day_of_week == day)) do
-        nil -> acc
+        nil ->
+          acc
+
         row ->
           Map.put(acc, day, %{
             active: !row.is_closed,

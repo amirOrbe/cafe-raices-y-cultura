@@ -201,32 +201,41 @@ defmodule CRCWeb.Admin.UsersLive do
           </p>
         </div>
         <button id="btn-new-user" class="btn btn-primary gap-2" phx-click="new_user">
-          <.icon name="hero-plus" class="size-4" />
-          Nuevo usuario
+          <.icon name="hero-plus" class="size-4" /> Nuevo usuario
         </button>
       </div>
 
       <%!-- Status tabs --%>
       <div class="flex gap-2">
         <button
-          class={["btn btn-sm gap-1.5", if(@status_filter == :active, do: "btn-primary", else: "btn-ghost")]}
+          class={[
+            "btn btn-sm gap-1.5",
+            if(@status_filter == :active, do: "btn-primary", else: "btn-ghost")
+          ]}
           phx-click="set_status_filter"
           phx-value-status="active"
         >
-          <.icon name="hero-check-circle" class="size-3.5" />
-          Activos
-          <span class={["badge badge-xs", if(@status_filter == :active, do: "badge-primary-content/30", else: "badge-ghost")]}>
+          <.icon name="hero-check-circle" class="size-3.5" /> Activos
+          <span class={[
+            "badge badge-xs",
+            if(@status_filter == :active, do: "badge-primary-content/30", else: "badge-ghost")
+          ]}>
             {active_count}
           </span>
         </button>
         <button
-          class={["btn btn-sm gap-1.5", if(@status_filter == :inactive, do: "btn-error", else: "btn-ghost")]}
+          class={[
+            "btn btn-sm gap-1.5",
+            if(@status_filter == :inactive, do: "btn-error", else: "btn-ghost")
+          ]}
           phx-click="set_status_filter"
           phx-value-status="inactive"
         >
-          <.icon name="hero-x-circle" class="size-3.5" />
-          Inactivos
-          <span class={["badge badge-xs", if(@status_filter == :inactive, do: "badge-error-content/30", else: "badge-ghost")]}>
+          <.icon name="hero-x-circle" class="size-3.5" /> Inactivos
+          <span class={[
+            "badge badge-xs",
+            if(@status_filter == :inactive, do: "badge-error-content/30", else: "badge-ghost")
+          ]}>
             {inactive_count}
           </span>
         </button>
@@ -280,7 +289,10 @@ defmodule CRCWeb.Admin.UsersLive do
               </button>
               <button
                 id={"btn-toggle-mobile-#{user.id}"}
-                class={["btn btn-ghost btn-xs btn-circle", if(user.is_active, do: "text-error", else: "text-success")]}
+                class={[
+                  "btn btn-ghost btn-xs btn-circle",
+                  if(user.is_active, do: "text-error", else: "text-success")
+                ]}
                 phx-click="toggle_active"
                 phx-value-id={user.id}
                 title={if user.is_active, do: "Desactivar", else: "Activar"}
@@ -357,7 +369,10 @@ defmodule CRCWeb.Admin.UsersLive do
                       </button>
                       <button
                         id={"btn-toggle-#{user.id}"}
-                        class={["btn btn-ghost btn-xs btn-circle", if(user.is_active, do: "text-error", else: "text-success")]}
+                        class={[
+                          "btn btn-ghost btn-xs btn-circle",
+                          if(user.is_active, do: "text-error", else: "text-success")
+                        ]}
                         phx-click="toggle_active"
                         phx-value-id={user.id}
                         title={if user.is_active, do: "Desactivar", else: "Activar"}
@@ -446,8 +461,13 @@ defmodule CRCWeb.Admin.UsersLive do
 
         <%!-- Form --%>
         <div class="px-6 py-5">
-          <.form id="user-form" for={@form} phx-submit="save_user" phx-change="validate_upload" class="space-y-1">
-
+          <.form
+            id="user-form"
+            for={@form}
+            phx-submit="save_user"
+            phx-change="validate_upload"
+            class="space-y-1"
+          >
             <%!-- ── Avatar ──────────────────────────────────────────────────────── --%>
             <div class="pb-2">
               <p class="text-sm font-medium text-base-content mb-2">
@@ -456,10 +476,17 @@ defmodule CRCWeb.Admin.UsersLive do
 
               <%= if @current_avatar && !@remove_avatar do %>
                 <div class="flex items-center gap-3 p-3 bg-base-200 rounded-xl mb-2">
-                  <img src={@current_avatar} class="size-14 rounded-full object-cover border border-base-300 shrink-0" />
+                  <img
+                    src={@current_avatar}
+                    class="size-14 rounded-full object-cover border border-base-300 shrink-0"
+                  />
                   <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium text-base-content">Foto actual</p>
-                    <button type="button" class="btn btn-xs btn-error btn-outline gap-1 mt-1" phx-click="remove_avatar">
+                    <button
+                      type="button"
+                      class="btn btn-xs btn-error btn-outline gap-1 mt-1"
+                      phx-click="remove_avatar"
+                    >
                       <.icon name="hero-trash" class="size-3" /> Eliminar foto
                     </button>
                   </div>
@@ -488,10 +515,18 @@ defmodule CRCWeb.Admin.UsersLive do
                   <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium truncate">{entry.client_name}</p>
                     <div class="w-full bg-base-300 rounded-full h-1.5 mt-1.5">
-                      <div class="bg-primary h-1.5 rounded-full transition-all duration-300" style={"width: #{entry.progress}%"} />
+                      <div
+                        class="bg-primary h-1.5 rounded-full transition-all duration-300"
+                        style={"width: #{entry.progress}%"}
+                      />
                     </div>
                   </div>
-                  <button type="button" class="btn btn-ghost btn-xs btn-circle text-error shrink-0" phx-click="cancel_upload" phx-value-ref={entry.ref}>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
+                    phx-click="cancel_upload"
+                    phx-value-ref={entry.ref}
+                  >
                     <.icon name="hero-x-mark" class="size-3.5" />
                   </button>
                 </div>
@@ -499,9 +534,24 @@ defmodule CRCWeb.Admin.UsersLive do
             </div>
             <%!-- ── End Avatar ───────────────────────────────────────────────────── --%>
 
-            <.input field={@form[:name]} type="text" label="Nombre completo" placeholder="Ej. Ana García López" />
-            <.input field={@form[:email]} type="email" label="Correo electrónico" placeholder="correo@ejemplo.com" />
-            <.input field={@form[:phone]} type="text" label="Teléfono (opcional)" placeholder="55 1234 5678" />
+            <.input
+              field={@form[:name]}
+              type="text"
+              label="Nombre completo"
+              placeholder="Ej. Ana García López"
+            />
+            <.input
+              field={@form[:email]}
+              type="email"
+              label="Correo electrónico"
+              placeholder="correo@ejemplo.com"
+            />
+            <.input
+              field={@form[:phone]}
+              type="text"
+              label="Teléfono (opcional)"
+              placeholder="55 1234 5678"
+            />
             <.input
               field={@form[:role]}
               type="select"
@@ -543,8 +593,14 @@ defmodule CRCWeb.Admin.UsersLive do
             <.input
               field={@form[:password]}
               type="password"
-              label={if @modal == :new, do: "Contraseña", else: "Contraseña (dejar en blanco para no cambiar)"}
-              placeholder={if @modal == :new, do: "Mínimo 8 caracteres", else: "Nueva contraseña (opcional)"}
+              label={
+                if @modal == :new,
+                  do: "Contraseña",
+                  else: "Contraseña (dejar en blanco para no cambiar)"
+              }
+              placeholder={
+                if @modal == :new, do: "Mínimo 8 caracteres", else: "Nueva contraseña (opcional)"
+              }
             />
 
             <div class="flex justify-end gap-3 pt-4">

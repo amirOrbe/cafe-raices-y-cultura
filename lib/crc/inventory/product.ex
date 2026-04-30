@@ -45,9 +45,21 @@ defmodule CRC.Inventory.Product do
       message: "no puede estar en blanco"
     )
     |> validate_inclusion(:unit, @units, message: "no es una opción válida")
-    |> validate_number(:net_cost, greater_than_or_equal_to: 0, message: "debe ser mayor o igual a 0")
-    |> validate_number(:sale_price, greater_than_or_equal_to: 0, message: "debe ser mayor o igual a 0")
-    |> validate_number(:stock_quantity, greater_than_or_equal_to: 0, message: "debe ser mayor o igual a 0")
-    |> validate_number(:min_stock, greater_than_or_equal_to: 0, message: "debe ser mayor o igual a 0")
+    |> validate_number(:net_cost,
+      greater_than_or_equal_to: 0,
+      message: "debe ser mayor o igual a 0"
+    )
+    |> validate_number(:sale_price,
+      greater_than_or_equal_to: 0,
+      message: "debe ser mayor o igual a 0"
+    )
+    |> validate_number(:stock_quantity,
+      greater_than_or_equal_to: 0,
+      message: "debe ser mayor o igual a 0"
+    )
+    |> validate_number(:min_stock,
+      greater_than_or_equal_to: 0,
+      message: "debe ser mayor o igual a 0"
+    )
   end
 end

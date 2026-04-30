@@ -48,7 +48,9 @@ defmodule CRC.MediaTest do
     end
 
     test "válido con url https" do
-      changeset = Photo.changeset(%Photo{}, photo_attrs(%{url: "https://cdn.example.com/img.jpg"}))
+      changeset =
+        Photo.changeset(%Photo{}, photo_attrs(%{url: "https://cdn.example.com/img.jpg"}))
+
       assert changeset.valid?
     end
 

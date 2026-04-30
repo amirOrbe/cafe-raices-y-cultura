@@ -82,7 +82,6 @@ defmodule CRCWeb.Admin.VentasLive do
   def render(assigns) do
     ~H"""
     <div class="space-y-8">
-
       <%!-- Header + filters --%>
       <div class="flex flex-col gap-4">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -91,8 +90,7 @@ defmodule CRCWeb.Admin.VentasLive do
             <p class="text-base-content/60 mt-1 text-sm">Resumen de comandas cerradas</p>
           </div>
           <.link navigate={~p"/admin/ventas/manual"} class="btn btn-outline btn-sm gap-2 shrink-0">
-            <.icon name="hero-pencil-square" class="size-4" />
-            Venta manual
+            <.icon name="hero-pencil-square" class="size-4" /> Venta manual
           </.link>
 
           <%!-- Period tabs --%>
@@ -103,7 +101,8 @@ defmodule CRCWeb.Admin.VentasLive do
                   "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
                   if(@period == value,
                     do: "bg-base-100 text-base-content shadow-sm",
-                    else: "text-base-content/60 hover:text-base-content")
+                    else: "text-base-content/60 hover:text-base-content"
+                  )
                 ]}
                 phx-click="set_period"
                 phx-value-period={value}
@@ -117,8 +116,7 @@ defmodule CRCWeb.Admin.VentasLive do
         <%!-- Custom date range --%>
         <div class="flex flex-col gap-2">
           <div class="flex items-center gap-1.5 text-xs text-base-content/50 font-medium uppercase tracking-wide">
-            <.icon name="hero-calendar" class="size-4" />
-            Rango personalizado
+            <.icon name="hero-calendar" class="size-4" /> Rango personalizado
           </div>
           <form phx-change="set_date_range" class="flex flex-wrap items-end gap-3">
             <div class="flex flex-col gap-1">
@@ -128,8 +126,10 @@ defmodule CRCWeb.Admin.VentasLive do
                 name="date_from"
                 value={@date_from}
                 max={Date.utc_today() |> Date.to_iso8601()}
-                class={["input input-bordered input-sm w-40",
-                  if(@date_from != "", do: "input-primary border-primary", else: "")]}
+                class={[
+                  "input input-bordered input-sm w-40",
+                  if(@date_from != "", do: "input-primary border-primary", else: "")
+                ]}
               />
             </div>
             <div class="flex flex-col gap-1">
@@ -139,8 +139,10 @@ defmodule CRCWeb.Admin.VentasLive do
                 name="date_to"
                 value={@date_to}
                 max={Date.utc_today() |> Date.to_iso8601()}
-                class={["input input-bordered input-sm w-40",
-                  if(@date_to != "", do: "input-primary border-primary", else: "")]}
+                class={[
+                  "input input-bordered input-sm w-40",
+                  if(@date_to != "", do: "input-primary border-primary", else: "")
+                ]}
               />
             </div>
             <%= if @date_from != "" or @date_to != "" do %>
@@ -150,8 +152,7 @@ defmodule CRCWeb.Admin.VentasLive do
                 phx-value-period="today"
                 title="Limpiar rango"
               >
-                <.icon name="hero-x-mark" class="size-3.5" />
-                Limpiar
+                <.icon name="hero-x-mark" class="size-3.5" /> Limpiar
               </button>
             <% end %>
           </form>
@@ -168,15 +169,37 @@ defmodule CRCWeb.Admin.VentasLive do
         <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium text-info list-none select-none">
           <.icon name="hero-information-circle" class="size-4 shrink-0" />
           <span class="flex-1">¿Cómo se calculan estas métricas?</span>
-          <.icon name="hero-chevron-down" class="size-4 shrink-0 transition-transform group-open:rotate-180" />
+          <.icon
+            name="hero-chevron-down"
+            class="size-4 shrink-0 transition-transform group-open:rotate-180"
+          />
         </summary>
         <div class="px-4 pb-4 text-base-content/70 space-y-1.5 text-xs leading-relaxed">
-          <p><strong>Total ingresos</strong> — suma del campo <em>total</em> de todas las comandas cerradas (cobradas) en el período. Solo incluye comandas en estado "cerrada"; las abiertas o en preparación no cuentan.</p>
-          <p><strong>Comandas cerradas</strong> — número de cuentas que ya fueron cobradas. Una comanda puede tener varios artículos y distintos métodos de pago mezclados, pero siempre se cierra de una vez.</p>
-          <p><strong>Ticket promedio</strong> — Total ingresos / Comandas cerradas. Indica cuánto gasta en promedio cada mesa por visita. Subir este número es una palanca directa de crecimiento: más artículos por mesa, combos, o bebidas adicionales.</p>
-          <p><strong>Por método de pago</strong> — desglose de los ingresos según si se pagó en efectivo, tarjeta o transferencia. Útil para anticipar cuánto efectivo real habrá en caja al final del día.</p>
-          <p><strong>Top platillos más vendidos</strong> — conteo de unidades vendidas por platillo en el período, incluyendo artículos de paquetes. Sirve para saber qué preparar más y qué quitar del menú.</p>
-          <p><strong>Tiempos de preparación</strong> — medidos desde que el mesero envía el pedido hasta que la estación lo marca como listo. La barra roja indica que el promedio superó 15 minutos.</p>
+          <p>
+            <strong>Total ingresos</strong>
+            — suma del campo <em>total</em>
+            de todas las comandas cerradas (cobradas) en el período. Solo incluye comandas en estado "cerrada"; las abiertas o en preparación no cuentan.
+          </p>
+          <p>
+            <strong>Comandas cerradas</strong>
+            — número de cuentas que ya fueron cobradas. Una comanda puede tener varios artículos y distintos métodos de pago mezclados, pero siempre se cierra de una vez.
+          </p>
+          <p>
+            <strong>Ticket promedio</strong>
+            — Total ingresos / Comandas cerradas. Indica cuánto gasta en promedio cada mesa por visita. Subir este número es una palanca directa de crecimiento: más artículos por mesa, combos, o bebidas adicionales.
+          </p>
+          <p>
+            <strong>Por método de pago</strong>
+            — desglose de los ingresos según si se pagó en efectivo, tarjeta o transferencia. Útil para anticipar cuánto efectivo real habrá en caja al final del día.
+          </p>
+          <p>
+            <strong>Top platillos más vendidos</strong>
+            — conteo de unidades vendidas por platillo en el período, incluyendo artículos de paquetes. Sirve para saber qué preparar más y qué quitar del menú.
+          </p>
+          <p>
+            <strong>Tiempos de preparación</strong>
+            — medidos desde que el mesero envía el pedido hasta que la estación lo marca como listo. La barra roja indica que el promedio superó 15 minutos.
+          </p>
         </div>
       </details>
 
@@ -207,7 +230,6 @@ defmodule CRCWeb.Admin.VentasLive do
 
       <%!-- Payment breakdown + top items --%>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
         <%!-- Payment method breakdown --%>
         <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-6 space-y-4">
           <h2 class="font-semibold text-base-content">Por método de pago</h2>
@@ -279,7 +301,6 @@ defmodule CRCWeb.Admin.VentasLive do
             </div>
           <% end %>
         </div>
-
       </div>
 
       <%!-- Timing stats diagram --%>
@@ -287,7 +308,9 @@ defmodule CRCWeb.Admin.VentasLive do
         <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-6 space-y-5">
           <div class="flex items-center gap-2">
             <.icon name="hero-clock" class="size-5 text-primary" />
-            <h2 class="font-semibold text-base-content">Tiempos de preparación (promedio del período)</h2>
+            <h2 class="font-semibold text-base-content">
+              Tiempos de preparación (promedio del período)
+            </h2>
           </div>
 
           <%= for {kind, stats} <- Enum.sort(@timing_stats) do %>
@@ -348,13 +371,13 @@ defmodule CRCWeb.Admin.VentasLive do
                       <% end %>
                     </td>
                     <td class="text-sm font-bold text-primary text-right">
-                      ${ format_price(order.total || Decimal.new(0)) }
+                      ${format_price(order.total || Decimal.new(0))}
                     </td>
                     <td>
                       <.payment_badge method={order.payment_method} />
                     </td>
                     <td class="text-xs text-base-content/50">
-                      { format_datetime(order.closed_at || order.inserted_at) }
+                      {format_datetime(order.closed_at || order.inserted_at)}
                     </td>
                   </tr>
                 <% end %>
@@ -366,10 +389,10 @@ defmodule CRCWeb.Admin.VentasLive do
                     {length(@orders)} comandas
                   </td>
                   <td class="text-sm font-bold text-primary text-right px-4">
-                    ${ format_price(@summary.total_revenue) }
+                    ${format_price(@summary.total_revenue)}
                   </td>
                   <td colspan="2" class="text-xs text-base-content/40 px-4">
-                    Ticket prom. ${ format_price(@summary.avg_ticket) }
+                    Ticket prom. ${format_price(@summary.avg_ticket)}
                   </td>
                 </tr>
               </tfoot>
@@ -377,7 +400,6 @@ defmodule CRCWeb.Admin.VentasLive do
           </div>
         <% end %>
       </div>
-
     </div>
     """
   end
@@ -387,7 +409,8 @@ defmodule CRCWeb.Admin.VentasLive do
   # ---------------------------------------------------------------------------
 
   attr :label, :string, required: true
-  attr :stat, :any, required: true  # nil | %{avg:, min:, max:}
+  # nil | %{avg:, min:, max:}
+  attr :stat, :any, required: true
 
   defp timing_row(%{stat: nil} = assigns) do
     ~H"""
@@ -410,13 +433,18 @@ defmodule CRCWeb.Admin.VentasLive do
       <span class="w-36 text-base-content/60 shrink-0 text-xs">{@label}</span>
       <div class="flex-1 h-2 bg-base-200 rounded-full overflow-hidden">
         <div
-          class={["h-full rounded-full transition-all duration-500",
-            if(@overdue, do: "bg-error", else: "bg-primary")]}
+          class={[
+            "h-full rounded-full transition-all duration-500",
+            if(@overdue, do: "bg-error", else: "bg-primary")
+          ]}
           style={"width: #{@bar_pct}%"}
         />
       </div>
       <div class="text-right shrink-0 w-28">
-        <span class={["font-semibold text-xs", if(@overdue, do: "text-error", else: "text-base-content")]}>
+        <span class={[
+          "font-semibold text-xs",
+          if(@overdue, do: "text-error", else: "text-base-content")
+        ]}>
           {format_duration(@stat.avg)}
           <%= if @overdue do %>
             <.icon name="hero-exclamation-triangle" class="size-3 inline" />
@@ -453,37 +481,37 @@ defmodule CRCWeb.Admin.VentasLive do
   attr :method, :string, default: nil
 
   defp payment_icon(%{method: "efectivo"} = assigns) do
-    ~H"<.icon name='hero-banknotes' class='size-4 text-success' />"
+    ~H"<.icon name=\"hero-banknotes\" class=\"size-4 text-success\" />"
   end
 
   defp payment_icon(%{method: "tarjeta"} = assigns) do
-    ~H"<.icon name='hero-credit-card' class='size-4 text-info' />"
+    ~H"<.icon name=\"hero-credit-card\" class=\"size-4 text-info\" />"
   end
 
   defp payment_icon(%{method: "transferencia"} = assigns) do
-    ~H"<.icon name='hero-device-phone-mobile' class='size-4 text-warning' />"
+    ~H"<.icon name=\"hero-device-phone-mobile\" class=\"size-4 text-warning\" />"
   end
 
   defp payment_icon(assigns) do
-    ~H"<.icon name='hero-question-mark-circle' class='size-4 text-base-content/30' />"
+    ~H"<.icon name=\"hero-question-mark-circle\" class=\"size-4 text-base-content/30\" />"
   end
 
   attr :method, :string, default: nil
 
   defp payment_badge(%{method: "efectivo"} = assigns) do
-    ~H"<span class='badge badge-sm badge-success'>Efectivo</span>"
+    ~H"<span class=\"badge badge-sm badge-success\">Efectivo</span>"
   end
 
   defp payment_badge(%{method: "tarjeta"} = assigns) do
-    ~H"<span class='badge badge-sm badge-info'>Tarjeta</span>"
+    ~H"<span class=\"badge badge-sm badge-info\">Tarjeta</span>"
   end
 
   defp payment_badge(%{method: "transferencia"} = assigns) do
-    ~H"<span class='badge badge-sm badge-warning'>Transferencia</span>"
+    ~H"<span class=\"badge badge-sm badge-warning\">Transferencia</span>"
   end
 
   defp payment_badge(assigns) do
-    ~H"<span class='badge badge-sm badge-ghost'>—</span>"
+    ~H"<span class=\"badge badge-sm badge-ghost\">—</span>"
   end
 
   # ---------------------------------------------------------------------------

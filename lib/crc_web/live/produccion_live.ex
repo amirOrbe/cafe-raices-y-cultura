@@ -100,7 +100,6 @@ defmodule CRCWeb.ProduccionLive do
 
     <div class="min-h-screen bg-base-200 pt-20 pb-12">
       <div class="max-w-2xl mx-auto px-4 space-y-6">
-
         <%!-- Header --%>
         <div class="flex items-center justify-between flex-wrap gap-2">
           <div>
@@ -135,8 +134,10 @@ defmodule CRCWeb.ProduccionLive do
                       {recipe.name}
                     </p>
                     <p class="text-xs text-base-content/50 mt-1">
-                      Produce {format_qty(recipe.yield_quantity)} {recipe.yield_unit}
-                      de <span class="font-medium">{recipe.output_product && recipe.output_product.name}</span>
+                      Produce {format_qty(recipe.yield_quantity)} {recipe.yield_unit} de
+                      <span class="font-medium">
+                        {recipe.output_product && recipe.output_product.name}
+                      </span>
                     </p>
                     <div class="flex flex-wrap gap-1 mt-2">
                       <%= for ri <- recipe.recipe_ingredients do %>
@@ -151,13 +152,15 @@ defmodule CRCWeb.ProduccionLive do
             <% end %>
           </div>
 
-        <%!-- Step 2: Confirm batch (shown when recipe selected) --%>
+          <%!-- Step 2: Confirm batch (shown when recipe selected) --%>
         <% else %>
           <div class="bg-base-100 rounded-2xl border border-primary/30 shadow-sm p-5 space-y-5">
             <%!-- Recipe header --%>
             <div class="flex items-start justify-between gap-3">
               <div>
-                <p class="text-xs text-base-content/50 uppercase tracking-wider mb-0.5">Receta seleccionada</p>
+                <p class="text-xs text-base-content/50 uppercase tracking-wider mb-0.5">
+                  Receta seleccionada
+                </p>
                 <p class="text-lg font-bold text-base-content">{@selected_recipe.name}</p>
               </div>
               <button
@@ -238,8 +241,7 @@ defmodule CRCWeb.ProduccionLive do
               class="btn btn-primary w-full"
               phx-click="log_production"
             >
-              <.icon name="hero-check" class="size-5" />
-              Registrar lote
+              <.icon name="hero-check" class="size-5" /> Registrar lote
             </button>
           </div>
         <% end %>
@@ -266,20 +268,20 @@ defmodule CRCWeb.ProduccionLive do
                       {log.recipe && log.recipe.name}
                     </p>
                     <p class="text-xs text-base-content/50 mt-0.5">
-                      {log.produced_by && log.produced_by.name}
-                      · {format_dt(log.produced_at)}
+                      {log.produced_by && log.produced_by.name} · {format_dt(log.produced_at)}
                       {if log.notes && log.notes != "", do: " · #{log.notes}"}
                     </p>
                   </div>
                   <span class="badge badge-success badge-sm shrink-0">
-                    {format_qty(log.batches)} {if Decimal.compare(log.batches, Decimal.new(1)) == :eq, do: "lote", else: "lotes"}
+                    {format_qty(log.batches)} {if Decimal.compare(log.batches, Decimal.new(1)) == :eq,
+                      do: "lote",
+                      else: "lotes"}
                   </span>
                 </div>
               <% end %>
             </div>
           <% end %>
         </div>
-
       </div>
     </div>
 
@@ -302,12 +304,20 @@ defmodule CRCWeb.ProduccionLive do
   end
 
   defp format_qty(nil), do: "0"
+
   defp format_qty(%Decimal{} = d) do
     abs = Decimal.abs(d)
+
     if Decimal.integer?(abs),
       do: abs |> Decimal.to_integer() |> to_string(),
-      else: abs |> Decimal.round(3) |> Decimal.to_string() |> String.trim_trailing("0") |> String.trim_trailing(".")
+      else:
+        abs
+        |> Decimal.round(3)
+        |> Decimal.to_string()
+        |> String.trim_trailing("0")
+        |> String.trim_trailing(".")
   end
+
   defp format_qty(v), do: to_string(v)
 
   defp format_dt(%DateTime{} = dt), do: Calendar.strftime(dt, "%H:%M")

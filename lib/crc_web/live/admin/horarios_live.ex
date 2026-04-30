@@ -118,7 +118,6 @@ defmodule CRCWeb.Admin.HorariosLive do
     ~H"""
     <div class="min-h-screen bg-base-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
         <div class="mb-8">
           <h1 class="text-2xl font-bold text-base-content">Horarios de trabajo</h1>
           <p class="text-base-content/60 text-sm mt-1">
@@ -135,7 +134,6 @@ defmodule CRCWeb.Admin.HorariosLive do
         <% end %>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
           <%!-- Sidebar: employee list --%>
           <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
             <div class="px-4 py-3 border-b border-base-200">
@@ -182,8 +180,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                       phx-click="start_edit"
                       class="btn btn-primary btn-sm gap-2"
                     >
-                      <.icon name="hero-pencil-square" class="size-4" />
-                      Editar horario
+                      <.icon name="hero-pencil-square" class="size-4" /> Editar horario
                     </button>
                   <% end %>
                 </div>
@@ -195,7 +192,9 @@ defmodule CRCWeb.Admin.HorariosLive do
                       <div class="text-center py-12 text-base-content/40">
                         <.icon name="hero-calendar" class="size-12 mx-auto mb-3 opacity-30" />
                         <p>Sin horario asignado.</p>
-                        <p class="text-sm mt-1">Presiona "Editar horario" para asignar días y horas.</p>
+                        <p class="text-sm mt-1">
+                          Presiona "Editar horario" para asignar días y horas.
+                        </p>
                       </div>
                     <% else %>
                       <div class="space-y-3">
@@ -221,7 +220,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                     <% end %>
                   </div>
 
-                <%!-- Schedule edit form --%>
+                  <%!-- Schedule edit form --%>
                 <% else %>
                   <div class="p-6 space-y-4">
                     <p class="text-sm text-base-content/60">
@@ -232,7 +231,6 @@ defmodule CRCWeb.Admin.HorariosLive do
                       <% data = @form_data[day] %>
                       <div class={"flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border transition-colors
                         #{if data[:active], do: "border-primary/30 bg-primary/5", else: "border-base-200"}"}>
-
                         <%!-- Day toggle --%>
                         <label class="flex items-center gap-2 cursor-pointer shrink-0">
                           <input
@@ -273,15 +271,13 @@ defmodule CRCWeb.Admin.HorariosLive do
                             />
                           </div>
                         </div>
-
                       </div>
                     <% end %>
 
                     <%!-- Actions --%>
                     <div class="flex flex-wrap gap-3 pt-2">
                       <button phx-click="save_schedule" class="btn btn-primary btn-sm gap-2">
-                        <.icon name="hero-check" class="size-4" />
-                        Guardar horario
+                        <.icon name="hero-check" class="size-4" /> Guardar horario
                       </button>
                       <button phx-click="cancel_edit" class="btn btn-ghost btn-sm">
                         Cancelar
@@ -289,7 +285,6 @@ defmodule CRCWeb.Admin.HorariosLive do
                     </div>
                   </div>
                 <% end %>
-
               </div>
             <% else %>
               <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-12 text-center text-base-content/40">
@@ -298,7 +293,6 @@ defmodule CRCWeb.Admin.HorariosLive do
               </div>
             <% end %>
           </div>
-
         </div>
       </div>
     </div>

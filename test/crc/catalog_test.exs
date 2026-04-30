@@ -107,7 +107,6 @@ defmodule CRC.CatalogTest do
       product =
         CRC.Repo.insert!(%CRC.Inventory.Product{
           name: "Arrachera Prueba #{System.unique_integer()}",
-          
           unit: "g",
           net_cost: Decimal.new("5.00"),
           stock_quantity: Decimal.new("500"),
@@ -305,7 +304,12 @@ defmodule CRC.CatalogTest do
       cat = insert_category()
       insert_menu_item(cat.id, %{name: "Destacado", available: true, featured: true})
       insert_menu_item(cat.id, %{name: "No destacado", available: true, featured: false})
-      insert_menu_item(cat.id, %{name: "No disponible destacado", available: false, featured: true})
+
+      insert_menu_item(cat.id, %{
+        name: "No disponible destacado",
+        available: false,
+        featured: true
+      })
 
       items = Catalog.list_featured_items()
       names = Enum.map(items, & &1.name)
@@ -351,12 +355,16 @@ defmodule CRC.CatalogTest do
   describe "create_menu_item/1" do
     test "crea item con datos válidos" do
       cat = insert_category()
-      assert {:ok, %MenuItem{name: "Espresso"}} = Catalog.create_menu_item(menu_item_attrs(cat.id))
+
+      assert {:ok, %MenuItem{name: "Espresso"}} =
+               Catalog.create_menu_item(menu_item_attrs(cat.id))
     end
 
     test "falla sin nombre" do
       cat = insert_category()
-      assert {:error, %Ecto.Changeset{}} = Catalog.create_menu_item(%{price: "40", category_id: cat.id})
+
+      assert {:error, %Ecto.Changeset{}} =
+               Catalog.create_menu_item(%{price: "40", category_id: cat.id})
     end
   end
 
@@ -411,7 +419,6 @@ defmodule CRC.CatalogTest do
   defp insert_product(name, stock) do
     CRC.Repo.insert!(%CRC.Inventory.Product{
       name: "#{name}_#{System.unique_integer()}",
-      
       unit: "g",
       net_cost: Decimal.new("1.00"),
       stock_quantity: Decimal.new(stock),
@@ -451,8 +458,9 @@ defmodule CRC.CatalogTest do
 
     test "returns 0 when any ingredient is fully depleted" do
       cat = insert_category()
-      pan   = insert_product("pan", "200")
-      queso = insert_product("queso", "0")   # depleted
+      pan = insert_product("pan", "200")
+      # depleted
+      queso = insert_product("queso", "0")
       item = item_with_ingredients(cat.id, [{pan.id, "50"}, {queso.id, "30"}])
       assert Catalog.available_portions(item) == 0
     end
@@ -463,13 +471,16 @@ defmodule CRC.CatalogTest do
       # lechuga:  200g stock / 50g each  = 4 portions  ← bottleneck
       # pollo:    1000g stock / 120g each = 8 portions
       tortilla = insert_product("tortilla", "500")
-      lechuga  = insert_product("lechuga",  "200")
-      pollo    = insert_product("pollo",    "1000")
-      item = item_with_ingredients(cat.id, [
-        {tortilla.id, "100"},
-        {lechuga.id, "50"},
-        {pollo.id, "120"}
-      ])
+      lechuga = insert_product("lechuga", "200")
+      pollo = insert_product("pollo", "1000")
+
+      item =
+        item_with_ingredients(cat.id, [
+          {tortilla.id, "100"},
+          {lechuga.id, "50"},
+          {pollo.id, "120"}
+        ])
+
       assert Catalog.available_portions(item) == 4
     end
 
@@ -483,14 +494,16 @@ defmodule CRC.CatalogTest do
 
     test "returns 0 for inactive product ingredient" do
       cat = insert_category()
-      prod = CRC.Repo.insert!(%CRC.Inventory.Product{
-        name: "Prod inactivo #{System.unique_integer()}",
-        
-        unit: "g",
-        net_cost: Decimal.new("1.00"),
-        stock_quantity: Decimal.new("999"),
-        active: false
-      })
+
+      prod =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Prod inactivo #{System.unique_integer()}",
+          unit: "g",
+          net_cost: Decimal.new("1.00"),
+          stock_quantity: Decimal.new("999"),
+          active: false
+        })
+
       item = item_with_ingredients(cat.id, [{prod.id, "10"}])
       assert Catalog.available_portions(item) == 0
     end
@@ -533,7 +546,8 @@ defmodule CRC.CatalogTest do
       cat = insert_category()
       prod = insert_product("stock_cat_test", "200")
       item = insert_menu_item(cat.id)
-      link_ingredient(item.id, prod.id, "50")  # 200/50 = 4 portions
+      # 200/50 = 4 portions
+      link_ingredient(item.id, prod.id, "50")
       results = Catalog.list_menu_items_for_category_with_stock(cat.id)
       assert length(results) == 1
       [{_item, portions}] = results
@@ -604,8 +618,13 @@ defmodule CRC.CatalogTest do
       prod1 = insert_product("repl1", "100")
       prod2 = insert_product("repl2", "200")
 
-      Catalog.set_menu_item_ingredients(item.id, [%{product_id: prod1.id, quantity: Decimal.new("10")}])
-      Catalog.set_menu_item_ingredients(item.id, [%{product_id: prod2.id, quantity: Decimal.new("20")}])
+      Catalog.set_menu_item_ingredients(item.id, [
+        %{product_id: prod1.id, quantity: Decimal.new("10")}
+      ])
+
+      Catalog.set_menu_item_ingredients(item.id, [
+        %{product_id: prod2.id, quantity: Decimal.new("20")}
+      ])
 
       loaded = Catalog.get_menu_item_with_ingredients!(item.id)
       assert length(loaded.menu_item_ingredients) == 1
@@ -617,7 +636,10 @@ defmodule CRC.CatalogTest do
       item = insert_menu_item(cat.id)
       prod = insert_product("clr", "50")
 
-      Catalog.set_menu_item_ingredients(item.id, [%{product_id: prod.id, quantity: Decimal.new("5")}])
+      Catalog.set_menu_item_ingredients(item.id, [
+        %{product_id: prod.id, quantity: Decimal.new("5")}
+      ])
+
       Catalog.set_menu_item_ingredients(item.id, [])
 
       loaded = Catalog.get_menu_item_with_ingredients!(item.id)
@@ -886,5 +908,4 @@ defmodule CRC.CatalogTest do
       assert result == []
     end
   end
-
 end

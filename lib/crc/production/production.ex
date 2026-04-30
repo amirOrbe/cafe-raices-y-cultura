@@ -123,9 +123,7 @@ defmodule CRC.Production do
         |> Repo.insert!()
       end)
 
-      Repo.preload(updated, [:output_product, recipe_ingredients: :product],
-        force: true
-      )
+      Repo.preload(updated, [:output_product, recipe_ingredients: :product], force: true)
     end)
   end
 

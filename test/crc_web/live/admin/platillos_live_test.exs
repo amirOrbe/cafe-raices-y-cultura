@@ -39,6 +39,7 @@ defmodule CRCWeb.Admin.PlatillosLiveTest do
           overrides
         )
       )
+
     item
   end
 
@@ -50,6 +51,7 @@ defmodule CRCWeb.Admin.PlatillosLiveTest do
         net_cost: "2.00",
         stock_quantity: "500"
       })
+
     p
   end
 
@@ -306,7 +308,10 @@ defmodule CRCWeb.Admin.PlatillosLiveTest do
       cat = insert_category()
       prod = insert_product()
       item = insert_menu_item(cat.id, %{name: "Con Ingrediente"})
-      Catalog.set_menu_item_ingredients(item.id, [%{product_id: prod.id, quantity: Decimal.new("100")}])
+
+      Catalog.set_menu_item_ingredients(item.id, [
+        %{product_id: prod.id, quantity: Decimal.new("100")}
+      ])
 
       {conn, _} = admin_session(conn)
       {:ok, lv, _html} = live(conn, ~p"/admin/platillos")
@@ -371,7 +376,10 @@ defmodule CRCWeb.Admin.PlatillosLiveTest do
       {:ok, lv, _html} = live(conn, ~p"/admin/platillos")
 
       render_click(lv, "new_item", %{})
-      html = render_click(lv, "select_ingredient", %{"ingredient_product_id" => to_string(prod.id)})
+
+      html =
+        render_click(lv, "select_ingredient", %{"ingredient_product_id" => to_string(prod.id)})
+
       assert html =~ prod.name
     end
 
@@ -419,6 +427,22 @@ defmodule CRCWeb.Admin.PlatillosLiveTest do
       html = render_click(lv, "remove_ingredient", %{"product_id" => to_string(prod.id)})
       # After removal, the product should not appear in the draft list (no remove button for it)
       refute html =~ "phx-value-product_id=\"#{prod.id}\""
+    end
+  end
+
+  describe "upload events" do
+    test "validate_upload does not crash", %{conn: conn} do
+      {conn, _} = admin_session(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin/platillos")
+      render_click(lv, "new_item", %{})
+      assert render_click(lv, "validate_upload", %{}) =~ "Nuevo platillo"
+    end
+
+    test "remove_image clears image in modal", %{conn: conn} do
+      {conn, _} = admin_session(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin/platillos")
+      render_click(lv, "new_item", %{})
+      assert render_click(lv, "remove_image", %{}) =~ "Nuevo platillo"
     end
   end
 end

@@ -70,11 +70,26 @@ defmodule CRCWeb.Admin.DashboardLive do
       <%!-- Stats cards --%>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         <.stat_card label="Total usuarios" value={@stats.total} icon="hero-users" variant={:primary} />
-        <.stat_card label="Admins" value={@stats.admins} icon="hero-shield-check" variant={:secondary} />
-        <.stat_card label="Empleados" value={@stats.employees} icon="hero-briefcase" variant={:accent} />
+        <.stat_card
+          label="Admins"
+          value={@stats.admins}
+          icon="hero-shield-check"
+          variant={:secondary}
+        />
+        <.stat_card
+          label="Empleados"
+          value={@stats.employees}
+          icon="hero-briefcase"
+          variant={:accent}
+        />
         <.stat_card label="Activos" value={@stats.active} icon="hero-check-circle" variant={:success} />
         <.stat_card label="Inactivos" value={@stats.inactive} icon="hero-x-circle" variant={:error} />
-        <.stat_card label="Stock bajo" value={@stats.low_stock} icon="hero-exclamation-triangle" variant={:warning} />
+        <.stat_card
+          label="Stock bajo"
+          value={@stats.low_stock}
+          icon="hero-exclamation-triangle"
+          variant={:warning}
+        />
       </div>
 
       <%!-- Recent users --%>

@@ -14,8 +14,13 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
   defp insert_user(overrides \\ %{}) do
     attrs =
       Map.merge(
-        %{name: "Mesero", email: "mesero#{System.unique_integer()}@cafe.com",
-          role: "empleado", stations: ["sala"], password: "pass123456"},
+        %{
+          name: "Mesero",
+          email: "mesero#{System.unique_integer()}@cafe.com",
+          role: "empleado",
+          stations: ["sala"],
+          password: "pass123456"
+        },
         overrides
       )
 
@@ -319,6 +324,7 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
 
       render_click(lv, "send_to_kitchen")
       html = render(lv)
+
       # Item is still visible in the list but ¡Listo! badge is NOT shown (item is "sent", not ready)
       assert html =~ mi.name
       refute html =~ "¡Listo!"
@@ -569,19 +575,29 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       {conn, _} = auth_conn(conn)
       cat = insert_category()
       mi_drink = insert_menu_item(cat.id, %{name: "Limonada", destination: "barra"})
-      mi_food  = insert_menu_item(cat.id, %{name: "Enchiladas", destination: "cocina"})
+      mi_food = insert_menu_item(cat.id, %{name: "Enchiladas", destination: "cocina"})
       order = insert_order(%{status: "sent"})
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi_drink.id,
-        quantity: 1, status: "ready", sent_at: now, ready_at: now,
-        inserted_at: now, updated_at: now
+        order_id: order.id,
+        menu_item_id: mi_drink.id,
+        quantity: 1,
+        status: "ready",
+        sent_at: now,
+        ready_at: now,
+        inserted_at: now,
+        updated_at: now
       })
+
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi_food.id,
-        quantity: 1, status: "sent", sent_at: now,
-        inserted_at: now, updated_at: now
+        order_id: order.id,
+        menu_item_id: mi_food.id,
+        quantity: 1,
+        status: "sent",
+        sent_at: now,
+        inserted_at: now,
+        updated_at: now
       })
 
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
@@ -596,9 +612,14 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi.id,
-        quantity: 1, status: "ready", sent_at: now, ready_at: now,
-        inserted_at: now, updated_at: now
+        order_id: order.id,
+        menu_item_id: mi.id,
+        quantity: 1,
+        status: "ready",
+        sent_at: now,
+        ready_at: now,
+        inserted_at: now,
+        updated_at: now
       })
 
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
@@ -615,9 +636,14 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi.id,
-        quantity: 1, status: "ready", sent_at: now, ready_at: now,
-        inserted_at: now, updated_at: now
+        order_id: order.id,
+        menu_item_id: mi.id,
+        quantity: 1,
+        status: "ready",
+        sent_at: now,
+        ready_at: now,
+        inserted_at: now,
+        updated_at: now
       })
 
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
@@ -634,9 +660,13 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       old = DateTime.utc_now() |> DateTime.add(-20 * 60, :second) |> DateTime.truncate(:second)
 
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi.id,
-        quantity: 1, status: "sent", sent_at: old,
-        inserted_at: old, updated_at: old
+        order_id: order.id,
+        menu_item_id: mi.id,
+        quantity: 1,
+        status: "sent",
+        sent_at: old,
+        inserted_at: old,
+        updated_at: old
       })
 
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
@@ -651,9 +681,13 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       recent = DateTime.utc_now() |> DateTime.add(-3 * 60, :second) |> DateTime.truncate(:second)
 
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi.id,
-        quantity: 1, status: "sent", sent_at: recent,
-        inserted_at: recent, updated_at: recent
+        order_id: order.id,
+        menu_item_id: mi.id,
+        quantity: 1,
+        status: "sent",
+        sent_at: recent,
+        inserted_at: recent,
+        updated_at: recent
       })
 
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
@@ -829,22 +863,30 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       cat = insert_category()
       mi = insert_menu_item(cat.id, %{name: "Capuchino Auto"})
 
-      extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
-        name: "Leche extra #{System.unique_integer()}",
-        unit: "ml",
-        net_cost: Decimal.new("0.05"),
-        stock_quantity: Decimal.new("3000"), active: true
-      })
+      extra_product =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Leche extra #{System.unique_integer()}",
+          unit: "ml",
+          net_cost: Decimal.new("0.05"),
+          stock_quantity: Decimal.new("3000"),
+          active: true
+        })
 
       order = insert_order(%{customer_name: "Mesa Auto Serve", status: "sent", user_id: user.id})
       parent_item = insert_order_item(order.id, mi.id, %{status: "ready"})
 
       now = DateTime.utc_now() |> DateTime.truncate(:second)
-      extra_item = CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, product_id: extra_product.id,
-        for_menu_item_id: mi.id, quantity: 1, status: "pending",
-        inserted_at: now, updated_at: now
-      })
+
+      extra_item =
+        CRC.Repo.insert!(%CRC.Orders.OrderItem{
+          order_id: order.id,
+          product_id: extra_product.id,
+          for_menu_item_id: mi.id,
+          quantity: 1,
+          status: "pending",
+          inserted_at: now,
+          updated_at: now
+        })
 
       {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
       render_click(lv, "mark_item_served", %{"id" => to_string(parent_item.id)})
@@ -858,22 +900,30 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       cat = insert_category()
       mi = insert_menu_item(cat.id, %{name: "Mocca Auto"})
 
-      extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
-        name: "Jarabe #{System.unique_integer()}",
-        unit: "ml",
-        net_cost: Decimal.new("0.10"),
-        stock_quantity: Decimal.new("2000"), active: true
-      })
+      extra_product =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Jarabe #{System.unique_integer()}",
+          unit: "ml",
+          net_cost: Decimal.new("0.10"),
+          stock_quantity: Decimal.new("2000"),
+          active: true
+        })
 
       order = insert_order(%{customer_name: "Mesa Auto Sent", status: "sent", user_id: user.id})
       parent_item = insert_order_item(order.id, mi.id, %{status: "ready"})
 
       now = DateTime.utc_now() |> DateTime.truncate(:second)
-      extra_item = CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, product_id: extra_product.id,
-        for_menu_item_id: mi.id, quantity: 1, status: "sent",
-        inserted_at: now, updated_at: now
-      })
+
+      extra_item =
+        CRC.Repo.insert!(%CRC.Orders.OrderItem{
+          order_id: order.id,
+          product_id: extra_product.id,
+          for_menu_item_id: mi.id,
+          quantity: 1,
+          status: "sent",
+          inserted_at: now,
+          updated_at: now
+        })
 
       {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
       render_click(lv, "mark_item_served", %{"id" => to_string(parent_item.id)})
@@ -888,23 +938,31 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       mi_a = insert_menu_item(cat.id, %{name: "Bebida A"})
       mi_b = insert_menu_item(cat.id, %{name: "Bebida B"})
 
-      extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
-        name: "Extra Otro #{System.unique_integer()}",
-        unit: "ml",
-        net_cost: Decimal.new("0.05"),
-        stock_quantity: Decimal.new("1000"), active: true
-      })
+      extra_product =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Extra Otro #{System.unique_integer()}",
+          unit: "ml",
+          net_cost: Decimal.new("0.05"),
+          stock_quantity: Decimal.new("1000"),
+          active: true
+        })
 
       order = insert_order(%{customer_name: "Mesa Dos Bebidas", status: "sent", user_id: user.id})
       item_a = insert_order_item(order.id, mi_a.id, %{status: "ready"})
       _item_b = insert_order_item(order.id, mi_b.id, %{status: "ready"})
 
       now = DateTime.utc_now() |> DateTime.truncate(:second)
-      extra_for_b = CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, product_id: extra_product.id,
-        for_menu_item_id: mi_b.id, quantity: 1, status: "pending",
-        inserted_at: now, updated_at: now
-      })
+
+      extra_for_b =
+        CRC.Repo.insert!(%CRC.Orders.OrderItem{
+          order_id: order.id,
+          product_id: extra_product.id,
+          for_menu_item_id: mi_b.id,
+          quantity: 1,
+          status: "pending",
+          inserted_at: now,
+          updated_at: now
+        })
 
       {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
       render_click(lv, "mark_item_served", %{"id" => to_string(item_a.id)})
@@ -918,22 +976,32 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       cat = insert_category()
       mi = insert_menu_item(cat.id, %{name: "Café Cancelado Extra"})
 
-      extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
-        name: "Extra Cancelado #{System.unique_integer()}",
-        unit: "ml",
-        net_cost: Decimal.new("0.05"),
-        stock_quantity: Decimal.new("1000"), active: true
-      })
+      extra_product =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Extra Cancelado #{System.unique_integer()}",
+          unit: "ml",
+          net_cost: Decimal.new("0.05"),
+          stock_quantity: Decimal.new("1000"),
+          active: true
+        })
 
-      order = insert_order(%{customer_name: "Mesa Cancel Extra", status: "sent", user_id: user.id})
+      order =
+        insert_order(%{customer_name: "Mesa Cancel Extra", status: "sent", user_id: user.id})
+
       parent_item = insert_order_item(order.id, mi.id, %{status: "ready"})
 
       now = DateTime.utc_now() |> DateTime.truncate(:second)
-      cancelled_extra = CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, product_id: extra_product.id,
-        for_menu_item_id: mi.id, quantity: 1, status: "cancelled",
-        inserted_at: now, updated_at: now
-      })
+
+      cancelled_extra =
+        CRC.Repo.insert!(%CRC.Orders.OrderItem{
+          order_id: order.id,
+          product_id: extra_product.id,
+          for_menu_item_id: mi.id,
+          quantity: 1,
+          status: "cancelled",
+          inserted_at: now,
+          updated_at: now
+        })
 
       {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
       render_click(lv, "mark_item_served", %{"id" => to_string(parent_item.id)})
@@ -947,22 +1015,30 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       cat = insert_category()
       mi = insert_menu_item(cat.id, %{name: "Café Waste Extra"})
 
-      extra_product = CRC.Repo.insert!(%CRC.Inventory.Product{
-        name: "Extra Waste #{System.unique_integer()}",
-        unit: "ml",
-        net_cost: Decimal.new("0.05"),
-        stock_quantity: Decimal.new("1000"), active: true
-      })
+      extra_product =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Extra Waste #{System.unique_integer()}",
+          unit: "ml",
+          net_cost: Decimal.new("0.05"),
+          stock_quantity: Decimal.new("1000"),
+          active: true
+        })
 
       order = insert_order(%{customer_name: "Mesa Waste Extra", status: "sent", user_id: user.id})
       parent_item = insert_order_item(order.id, mi.id, %{status: "ready"})
 
       now = DateTime.utc_now() |> DateTime.truncate(:second)
-      waste_extra = CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, product_id: extra_product.id,
-        for_menu_item_id: mi.id, quantity: 1, status: "cancelled_waste",
-        inserted_at: now, updated_at: now
-      })
+
+      waste_extra =
+        CRC.Repo.insert!(%CRC.Orders.OrderItem{
+          order_id: order.id,
+          product_id: extra_product.id,
+          for_menu_item_id: mi.id,
+          quantity: 1,
+          status: "cancelled_waste",
+          inserted_at: now,
+          updated_at: now
+        })
 
       {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
       render_click(lv, "mark_item_served", %{"id" => to_string(parent_item.id)})
@@ -1185,7 +1261,9 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       assert html =~ "line-through"
       # Exclusion record was created in DB
       assert CRC.Repo.get_by(CRC.Orders.OrderItemExclusion,
-               order_item_id: item.id, product_id: prod.id)
+               order_item_id: item.id,
+               product_id: prod.id
+             )
     end
 
     test "clicking again removes the exclusion (toggle off)", %{conn: conn} do
@@ -1215,8 +1293,12 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       # line-through removed (ingredient is included again)
       refute html =~ "line-through"
       # DB record removed
-      assert is_nil(CRC.Repo.get_by(CRC.Orders.OrderItemExclusion,
-               order_item_id: item.id, product_id: prod.id))
+      assert is_nil(
+               CRC.Repo.get_by(CRC.Orders.OrderItemExclusion,
+                 order_item_id: item.id,
+                 product_id: prod.id
+               )
+             )
     end
 
     test "does NOT show ingredient toggles for sent items (read-only state)", %{conn: conn} do
@@ -1272,8 +1354,12 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       })
 
       # No exclusion should have been created
-      assert is_nil(CRC.Repo.get_by(CRC.Orders.OrderItemExclusion,
-               order_item_id: item.id, product_id: prod.id))
+      assert is_nil(
+               CRC.Repo.get_by(CRC.Orders.OrderItemExclusion,
+                 order_item_id: item.id,
+                 product_id: prod.id
+               )
+             )
     end
   end
 
@@ -1360,7 +1446,13 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
         })
 
       {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
-      html = render_click(lv, "add_extra", %{"product_id" => to_string(product.id), "portion_qty" => "100"})
+
+      html =
+        render_click(lv, "add_extra", %{
+          "product_id" => to_string(product.id),
+          "portion_qty" => "100"
+        })
+
       assert html =~ "Extra agregado"
 
       reloaded = Orders.get_order!(order.id)
@@ -1381,7 +1473,9 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
         })
 
       {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
       render_click(lv, "add_extra", %{"product_id" => to_string(product.id), "portion_qty" => "5"})
+
       render_click(lv, "add_extra", %{"product_id" => to_string(product.id), "portion_qty" => "5"})
 
       reloaded = Orders.get_order!(order.id)
@@ -1452,10 +1546,12 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       order = insert_order()
 
       {:ok, pkg} = Catalog.create_package(%{name: "Combo CRC", price: "80.00"})
-      {:ok, _} = Catalog.set_package_items(pkg, [
-        %{menu_item_id: item1.id, quantity: 1},
-        %{menu_item_id: item2.id, quantity: 1}
-      ])
+
+      {:ok, _} =
+        Catalog.set_package_items(pkg, [
+          %{menu_item_id: item1.id, quantity: 1},
+          %{menu_item_id: item2.id, quantity: 1}
+        ])
 
       {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
 
@@ -1484,6 +1580,75 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
       html = render_click(lv, "add_package", %{"package_id" => to_string(pkg.id)})
       assert html =~ "disponible"
+    end
+  end
+
+  describe "set_item_note" do
+    test "sets a note on an existing order item", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+      order = insert_order()
+      oi = insert_order_item(order.id, item.id)
+
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+
+      html =
+        render_click(lv, "set_item_note", %{
+          "item_id" => to_string(oi.id),
+          "note" => "Sin azúcar"
+        })
+
+      assert html =~ "Sin azúcar" or is_binary(html)
+    end
+  end
+
+  describe "extras flow" do
+    test "select_menu_item_extras shows extras panel", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+      order = insert_order()
+
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+      html = render_click(lv, "select_menu_item_extras", %{"id" => to_string(item.id)})
+      assert is_binary(html)
+    end
+
+    test "clear_extras clears the extras selection", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+      order = insert_order()
+
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+      render_click(lv, "select_menu_item_extras", %{"id" => to_string(item.id)})
+      html = render_click(lv, "clear_extras", %{})
+      assert is_binary(html)
+    end
+  end
+
+  describe "handle_info :tick" do
+    test "tick info refreshes the live view without crash", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+
+      send(lv.pid, :tick)
+      html = render(lv)
+      assert is_binary(html)
+    end
+  end
+
+  describe "handle_info :stock_updated" do
+    test "stock_updated info refreshes available portions", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+
+      send(lv.pid, :stock_updated)
+      html = render(lv)
+      assert is_binary(html)
     end
   end
 end

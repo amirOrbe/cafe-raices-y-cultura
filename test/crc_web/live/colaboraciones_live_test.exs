@@ -71,7 +71,10 @@ defmodule CRCWeb.ColaboracionesLiveTest do
 
     test "shows current month name in calendar navigation", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/colaboraciones")
-      months = ~w(Enero Febrero Marzo Abril Mayo Junio Julio Agosto Septiembre Octubre Noviembre Diciembre)
+
+      months =
+        ~w(Enero Febrero Marzo Abril Mayo Junio Julio Agosto Septiembre Octubre Noviembre Diciembre)
+
       assert Enum.any?(months, &String.contains?(html, &1))
     end
 
@@ -104,10 +107,11 @@ defmodule CRCWeb.ColaboracionesLiveTest do
 
   describe "day detail panel" do
     test "clicking a day with an event reveals full event details", %{conn: conn} do
-      event = insert_event(%{
-        title: "Concierto De Jazz",
-        description: "Una noche de jazz en vivo."
-      })
+      event =
+        insert_event(%{
+          title: "Concierto De Jazz",
+          description: "Una noche de jazz en vivo."
+        })
 
       {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
       render_click(lv, "select_day", %{"date" => Date.to_iso8601(event.event_date)})
@@ -118,10 +122,11 @@ defmodule CRCWeb.ColaboracionesLiveTest do
     end
 
     test "clicking the same day again closes the detail panel", %{conn: conn} do
-      event = insert_event(%{
-        title: "Evento Toggle",
-        description: "Descripción única togglable."
-      })
+      event =
+        insert_event(%{
+          title: "Evento Toggle",
+          description: "Descripción única togglable."
+        })
 
       {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
       date_str = Date.to_iso8601(event.event_date)
@@ -134,10 +139,11 @@ defmodule CRCWeb.ColaboracionesLiveTest do
     end
 
     test "shows event tags in detail panel", %{conn: conn} do
-      event = insert_event(%{
-        title: "Evento Con Tags",
-        tags: ["Música", "Noche"]
-      })
+      event =
+        insert_event(%{
+          title: "Evento Con Tags",
+          tags: ["Música", "Noche"]
+        })
 
       {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
       render_click(lv, "select_day", %{"date" => Date.to_iso8601(event.event_date)})
@@ -163,13 +169,18 @@ defmodule CRCWeb.ColaboracionesLiveTest do
       render_click(lv, "select_day", %{"date" => Date.to_iso8601(event.event_date)})
       html = render(lv)
 
-      months = ~w(enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre)
+      months =
+        ~w(enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre)
+
       assert Enum.any?(months, &String.contains?(html, &1))
     end
 
     test "shows past badge for past-month events after navigating", %{conn: conn} do
       today = cdmx_today()
-      {prev_year, prev_month} = if today.month == 1, do: {today.year - 1, 12}, else: {today.year, today.month - 1}
+
+      {prev_year, prev_month} =
+        if today.month == 1, do: {today.year - 1, 12}, else: {today.year, today.month - 1}
+
       past_date = Date.new!(prev_year, prev_month, 10)
 
       insert_event(%{title: "Evento Pasado Mes", event_date: past_date, active: true})
@@ -274,10 +285,11 @@ defmodule CRCWeb.ColaboracionesLiveTest do
     end
 
     test "changing month clears the selected day panel", %{conn: conn} do
-      event = insert_event(%{
-        title: "Evento Para Limpiar",
-        description: "Descripción que desaparece al navegar."
-      })
+      event =
+        insert_event(%{
+          title: "Evento Para Limpiar",
+          description: "Descripción que desaparece al navegar."
+        })
 
       {:ok, lv, _html} = live(conn, ~p"/colaboraciones")
       render_click(lv, "select_day", %{"date" => Date.to_iso8601(event.event_date)})

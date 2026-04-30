@@ -8,7 +8,6 @@ defmodule CRCWeb.Admin.ProduccionLive do
 
   use CRCWeb, :live_view
 
-
   alias CRC.Inventory
   alias CRC.Production
   alias CRC.Production.Recipe
@@ -145,11 +144,12 @@ defmodule CRCWeb.Admin.ProduccionLive do
 
     # Auto-resolve (or create) the output product from the recipe name + unit
     recipe_name = params["name"] || ""
-    yield_unit  = params["yield_unit"] || ""
+    yield_unit = params["yield_unit"] || ""
 
     case Inventory.find_or_create_production_output(recipe_name, yield_unit) do
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "No se pudo crear el insumo de salida. Inténtalo de nuevo.")}
+        {:noreply,
+         put_flash(socket, :error, "No se pudo crear el insumo de salida. Inténtalo de nuevo.")}
 
       {:ok, product} ->
         params_with_product = Map.put(params, "output_product_id", product.id)
@@ -210,20 +210,20 @@ defmodule CRCWeb.Admin.ProduccionLive do
     ~H"""
     <div class="min-h-screen bg-base-200 pb-12">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-
         <%!-- Header --%>
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div class="flex items-center gap-3">
             <.icon name="hero-beaker" class="size-7 text-primary" />
             <div>
               <h1 class="text-2xl font-bold text-base-content">Producción Interna</h1>
-              <p class="text-sm text-base-content/50">Gestiona recetas de producción y revisa el historial.</p>
+              <p class="text-sm text-base-content/50">
+                Gestiona recetas de producción y revisa el historial.
+              </p>
             </div>
           </div>
           <%= if @tab == :recipes do %>
             <button class="btn btn-primary btn-sm gap-2" phx-click="new_recipe">
-              <.icon name="hero-plus" class="size-4" />
-              Nueva receta
+              <.icon name="hero-plus" class="size-4" /> Nueva receta
             </button>
           <% end %>
         </div>
@@ -235,16 +235,14 @@ defmodule CRCWeb.Admin.ProduccionLive do
             phx-click="set_tab"
             phx-value-tab="recipes"
           >
-            Recetas
-            <span class="ml-2 badge badge-ghost badge-sm">{length(@recipes)}</span>
+            Recetas <span class="ml-2 badge badge-ghost badge-sm">{length(@recipes)}</span>
           </button>
           <button
             class={"tab #{if @tab == :history, do: "tab-active"}"}
             phx-click="set_tab"
             phx-value-tab="history"
           >
-            Historial
-            <span class="ml-2 badge badge-ghost badge-sm">{length(@recent_logs)}</span>
+            Historial <span class="ml-2 badge badge-ghost badge-sm">{length(@recent_logs)}</span>
           </button>
         </div>
 
@@ -369,12 +367,14 @@ defmodule CRCWeb.Admin.ProduccionLive do
                   <div class="flex items-center justify-between gap-2">
                     <p class="font-semibold text-sm">{log.recipe && log.recipe.name}</p>
                     <span class="badge badge-success badge-sm shrink-0">
-                      {format_qty(log.batches)} {if Decimal.compare(log.batches, Decimal.new(1)) == :eq, do: "lote", else: "lotes"}
+                      {format_qty(log.batches)} {if Decimal.compare(log.batches, Decimal.new(1)) ==
+                                                      :eq,
+                                                    do: "lote",
+                                                    else: "lotes"}
                     </span>
                   </div>
                   <p class="text-xs text-base-content/50 mt-1">
-                    {log.produced_by && log.produced_by.name}
-                    · {format_dt(log.produced_at)}
+                    {log.produced_by && log.produced_by.name} · {format_dt(log.produced_at)}
                   </p>
                   <%= if log.notes && log.notes != "" do %>
                     <p class="text-xs text-base-content/40 mt-1 italic">{log.notes}</p>
@@ -405,7 +405,9 @@ defmodule CRCWeb.Admin.ProduccionLive do
                           {format_qty(log.batches)}
                         </span>
                       </td>
-                      <td class="text-sm text-base-content/60">{log.produced_by && log.produced_by.name}</td>
+                      <td class="text-sm text-base-content/60">
+                        {log.produced_by && log.produced_by.name}
+                      </td>
                       <td class="text-sm text-base-content/40 truncate">{log.notes}</td>
                     </tr>
                   <% end %>
@@ -414,7 +416,6 @@ defmodule CRCWeb.Admin.ProduccionLive do
             </div>
           <% end %>
         <% end %>
-
       </div>
     </div>
 
@@ -425,7 +426,6 @@ defmodule CRCWeb.Admin.ProduccionLive do
 
         <div class="relative bg-base-100 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <div class="p-6 space-y-5">
-
             <%!-- Modal header --%>
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-bold text-base-content">
@@ -438,13 +438,11 @@ defmodule CRCWeb.Admin.ProduccionLive do
 
             <%!-- Recipe form --%>
             <.form for={@recipe_form} phx-submit="save_recipe" class="space-y-5">
-
               <%!-- phx-update="ignore" prevents LiveView from overwriting these
                    inputs when ingredient_rows state changes (which would clear
                    whatever the user has typed). The form submit still reads the
                    current DOM values correctly. --%>
               <div id="recipe-static-fields" phx-update="ignore" class="space-y-5">
-
                 <%!-- Name (= output product) --%>
                 <div class="form-control">
                   <label class="label">
@@ -513,7 +511,6 @@ defmodule CRCWeb.Admin.ProduccionLive do
                     placeholder="Instrucciones, observaciones…"
                   >{@recipe_form[:notes].value}</textarea>
                 </div>
-
               </div>
 
               <%!-- Ingredients --%>
@@ -525,8 +522,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                     class="btn btn-ghost btn-xs gap-1"
                     phx-click="add_ingredient_row"
                   >
-                    <.icon name="hero-plus" class="size-3.5" />
-                    Agregar
+                    <.icon name="hero-plus" class="size-3.5" /> Agregar
                   </button>
                 </div>
 
@@ -542,7 +538,10 @@ defmodule CRCWeb.Admin.ProduccionLive do
                       >
                         <option value="">Insumo…</option>
                         <%= for product <- @products do %>
-                          <option value={product.id} selected={to_string(row.product_id) == to_string(product.id)}>
+                          <option
+                            value={product.id}
+                            selected={to_string(row.product_id) == to_string(product.id)}
+                          >
                             {product.name}
                           </option>
                         <% end %>
@@ -576,17 +575,14 @@ defmodule CRCWeb.Admin.ProduccionLive do
                   Cancelar
                 </button>
                 <button type="submit" class="btn btn-primary">
-                  <.icon name="hero-check" class="size-4" />
-                  Guardar receta
+                  <.icon name="hero-check" class="size-4" /> Guardar receta
                 </button>
               </div>
             </.form>
-
           </div>
         </div>
       </div>
     <% end %>
-
     """
   end
 
@@ -596,10 +592,15 @@ defmodule CRCWeb.Admin.ProduccionLive do
 
   defp units do
     [
-      "mililitros", "litros",
-      "gramos", "kilogramos",
-      "piezas", "porciones",
-      "cucharadas", "cucharaditas", "tazas"
+      "mililitros",
+      "litros",
+      "gramos",
+      "kilogramos",
+      "piezas",
+      "porciones",
+      "cucharadas",
+      "cucharaditas",
+      "tazas"
     ]
   end
 
@@ -619,7 +620,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
   defp build_ingredient_list(rows) do
     rows
     |> Enum.reject(fn row ->
-      (row.product_id == "" or is_nil(row.product_id)) or
+      row.product_id == "" or is_nil(row.product_id) or
         (row.quantity == "" or is_nil(row.quantity))
     end)
     |> Enum.map(fn row ->
@@ -634,15 +635,24 @@ defmodule CRCWeb.Admin.ProduccionLive do
   defp parse_id(v), do: v
 
   defp format_qty(nil), do: "0"
+
   defp format_qty(%Decimal{} = d) do
     abs = Decimal.abs(d)
+
     if Decimal.integer?(abs),
       do: abs |> Decimal.to_integer() |> to_string(),
-      else: abs |> Decimal.round(3) |> Decimal.to_string() |> String.trim_trailing("0") |> String.trim_trailing(".")
+      else:
+        abs
+        |> Decimal.round(3)
+        |> Decimal.to_string()
+        |> String.trim_trailing("0")
+        |> String.trim_trailing(".")
   end
+
   defp format_qty(v), do: to_string(v)
 
   defp format_dt(%DateTime{} = dt),
     do: Calendar.strftime(dt, "%d %b %H:%M")
+
   defp format_dt(_), do: "—"
 end

@@ -30,7 +30,14 @@ defmodule CRCWeb.Admin.VentasLiveTest do
   end
 
   defp insert_menu_item(category_id, overrides \\ %{}) do
-    {:ok, mi} = Catalog.create_menu_item(Map.merge(%{name: "Item #{System.unique_integer()}", price: "50.00", category_id: category_id}, overrides))
+    {:ok, mi} =
+      Catalog.create_menu_item(
+        Map.merge(
+          %{name: "Item #{System.unique_integer()}", price: "50.00", category_id: category_id},
+          overrides
+        )
+      )
+
     mi
   end
 
@@ -53,8 +60,11 @@ defmodule CRCWeb.Admin.VentasLiveTest do
       {:ok, user} =
         %User{}
         |> User.changeset(%{
-          name: "Emp", email: "emp_v#{System.unique_integer()}@cafe.com",
-          role: "empleado", stations: ["sala"], password: "pass123456"
+          name: "Emp",
+          email: "emp_v#{System.unique_integer()}@cafe.com",
+          role: "empleado",
+          stations: ["sala"],
+          password: "pass123456"
         })
         |> CRC.Repo.insert()
 
@@ -134,7 +144,12 @@ defmodule CRCWeb.Admin.VentasLiveTest do
       {conn, _} = insert_admin(conn)
       {:ok, lv, _} = live(conn, "/admin/ventas")
 
-      html = render_change(lv, "set_date_range", %{"date_from" => "2026-12-31", "date_to" => "2026-01-01"})
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2026-12-31",
+          "date_to" => "2026-01-01"
+        })
+
       refute html =~ "Rango personalizado activo"
     end
   end
@@ -148,8 +163,8 @@ defmodule CRCWeb.Admin.VentasLiveTest do
       {conn, _} = insert_admin(conn)
       close_order_with_items()
       {:ok, _lv, html} = live(conn, "/admin/ventas")
-      # No items with sent_at/ready_at → no diagram
-      refute html =~ "Tiempos de preparación"
+      # No items with sent_at/ready_at → no diagram (the heading inside the conditional block)
+      refute html =~ "Tiempos de preparación (promedio del período)"
     end
 
     test "shows timing diagram when closed orders have timestamps", %{conn: conn} do
@@ -160,19 +175,26 @@ defmodule CRCWeb.Admin.VentasLiveTest do
       {:ok, order} = Orders.create_order(%{customer_name: "Timing Test"})
 
       now = DateTime.utc_now() |> DateTime.truncate(:second)
-      sent_at  = DateTime.add(now, -600, :second)
+      sent_at = DateTime.add(now, -600, :second)
       ready_at = DateTime.add(now, -300, :second)
 
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi.id,
-        quantity: 1, status: "ready", sent_at: sent_at, ready_at: ready_at,
-        inserted_at: DateTime.add(now, -900, :second), updated_at: now
+        order_id: order.id,
+        menu_item_id: mi.id,
+        quantity: 1,
+        status: "ready",
+        sent_at: sent_at,
+        ready_at: ready_at,
+        inserted_at: DateTime.add(now, -900, :second),
+        updated_at: now
       })
 
       order
       |> CRC.Orders.Order.close_changeset(%{
-        status: "closed", payment_method: "tarjeta",
-        total: Decimal.new(50), closed_at: now
+        status: "closed",
+        payment_method: "tarjeta",
+        total: Decimal.new(50),
+        closed_at: now
       })
       |> CRC.Repo.update!()
 
@@ -191,19 +213,26 @@ defmodule CRCWeb.Admin.VentasLiveTest do
 
       now = DateTime.utc_now() |> DateTime.truncate(:second)
       # prep time = 20 min
-      sent_at  = DateTime.add(now, -1200, :second)
+      sent_at = DateTime.add(now, -1200, :second)
       ready_at = now
 
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id, menu_item_id: mi.id,
-        quantity: 1, status: "ready", sent_at: sent_at, ready_at: ready_at,
-        inserted_at: DateTime.add(now, -1500, :second), updated_at: now
+        order_id: order.id,
+        menu_item_id: mi.id,
+        quantity: 1,
+        status: "ready",
+        sent_at: sent_at,
+        ready_at: ready_at,
+        inserted_at: DateTime.add(now, -1500, :second),
+        updated_at: now
       })
 
       order
       |> CRC.Orders.Order.close_changeset(%{
-        status: "closed", payment_method: "tarjeta",
-        total: Decimal.new(50), closed_at: now
+        status: "closed",
+        payment_method: "tarjeta",
+        total: Decimal.new(50),
+        closed_at: now
       })
       |> CRC.Repo.update!()
 

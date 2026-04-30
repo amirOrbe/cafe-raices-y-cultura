@@ -41,7 +41,8 @@ defmodule CRC.Accounts do
   Requires the caller to be an administrator; otherwise returns
   `{:error, :unauthorized}`.
   """
-  @spec create_user(User.t(), map()) :: {:ok, User.t()} | {:error, :unauthorized} | {:error, Ecto.Changeset.t()}
+  @spec create_user(User.t(), map()) ::
+          {:ok, User.t()} | {:error, :unauthorized} | {:error, Ecto.Changeset.t()}
   def create_user(%User{role: "admin"}, attrs) do
     result =
       %User{}

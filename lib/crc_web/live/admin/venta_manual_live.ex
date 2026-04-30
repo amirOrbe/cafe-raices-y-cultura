@@ -18,7 +18,7 @@ defmodule CRCWeb.Admin.VentaManualLive do
   def mount(_params, _session, socket) do
     # Format current UTC time for the datetime-local input.
     # tzdata is not installed, so we work in UTC throughout.
-    now_utc    = DateTime.utc_now()
+    now_utc = DateTime.utc_now()
     default_dt = Calendar.strftime(now_utc, "%Y-%m-%dT%H:%M")
 
     socket =
@@ -72,7 +72,7 @@ defmodule CRCWeb.Admin.VentaManualLive do
   end
 
   def handle_event("remove_line", %{"idx" => idx_str}, socket) do
-    idx   = String.to_integer(idx_str)
+    idx = String.to_integer(idx_str)
     lines = List.delete_at(socket.assigns.lines, idx)
     {:noreply, assign(socket, :lines, lines)}
   end
@@ -87,15 +87,15 @@ defmodule CRCWeb.Admin.VentaManualLive do
     if errors != [] do
       {:noreply, assign(socket, :errors, errors)}
     else
-      total    = compute_total(socket.assigns.lines)
+      total = compute_total(socket.assigns.lines)
       closed_at = parse_datetime(socket.assigns.datetime_input)
 
       attrs = %{
-        customer_name:  socket.assigns.customer_name,
+        customer_name: socket.assigns.customer_name,
         payment_method: socket.assigns.payment_method,
-        total:          total,
-        closed_at:      closed_at,
-        notes:          socket.assigns.notes
+        total: total,
+        closed_at: closed_at,
+        notes: socket.assigns.notes
       }
 
       items =
@@ -114,7 +114,8 @@ defmodule CRCWeb.Admin.VentaManualLive do
            |> put_flash(:info, "Venta registrada correctamente.")}
 
         {:error, _} ->
-          {:noreply, put_error(socket, "No se pudo guardar. Verifica los datos e intenta de nuevo.")}
+          {:noreply,
+           put_error(socket, "No se pudo guardar. Verifica los datos e intenta de nuevo.")}
       end
     end
   end
@@ -128,7 +129,6 @@ defmodule CRCWeb.Admin.VentaManualLive do
     ~H"""
     <div class="min-h-screen bg-base-200 pb-10">
       <div class="max-w-2xl mx-auto px-4 py-8 space-y-6">
-
         <%!-- Header --%>
         <div>
           <div class="flex items-center gap-2 mb-1">
@@ -166,10 +166,11 @@ defmodule CRCWeb.Admin.VentaManualLive do
 
         <%!-- Form card --%>
         <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-6 space-y-5">
-
           <%!-- Customer name --%>
           <div class="form-control">
-            <label class="label"><span class="label-text font-medium">Nombre del cliente</span></label>
+            <label class="label">
+              <span class="label-text font-medium">Nombre del cliente</span>
+            </label>
             <input
               type="text"
               class="input input-bordered w-full"
@@ -206,7 +207,9 @@ defmodule CRCWeb.Admin.VentaManualLive do
                 <option value="">— Selecciona un platillo —</option>
                 <%= for item <- @menu_items do %>
                   <option value={item.id}>
-                    {if item.category, do: "#{item.category.name} · "}{item.name} — ${format_price(item.price)}
+                    {if item.category, do: "#{item.category.name} · "}{item.name} — ${format_price(
+                      item.price
+                    )}
                   </option>
                 <% end %>
               </select>
@@ -220,8 +223,7 @@ defmodule CRCWeb.Admin.VentaManualLive do
                 placeholder="Cant."
               />
               <button type="submit" class="btn btn-primary btn-sm">
-                <.icon name="hero-plus" class="size-4" />
-                Agregar
+                <.icon name="hero-plus" class="size-4" /> Agregar
               </button>
             </form>
 
@@ -232,7 +234,9 @@ defmodule CRCWeb.Admin.VentaManualLive do
                   <div class="flex items-center gap-3 px-4 py-2.5">
                     <span class="text-sm font-bold text-primary shrink-0">{line.qty}×</span>
                     <span class="flex-1 text-sm text-base-content truncate">{line.item.name}</span>
-                    <span class="text-sm text-base-content/60 shrink-0">${format_price(Decimal.mult(line.item.price, Decimal.new(line.qty)))}</span>
+                    <span class="text-sm text-base-content/60 shrink-0">
+                      ${format_price(Decimal.mult(line.item.price, Decimal.new(line.qty)))}
+                    </span>
                     <button
                       class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
                       phx-click="remove_line"
@@ -245,7 +249,9 @@ defmodule CRCWeb.Admin.VentaManualLive do
                 <%!-- Total row --%>
                 <div class="flex items-center justify-between px-4 py-2.5 bg-base-300/40 rounded-b-xl">
                   <span class="text-sm font-semibold text-base-content">Total</span>
-                  <span class="text-lg font-bold text-primary">${format_price(compute_total(@lines))}</span>
+                  <span class="text-lg font-bold text-primary">
+                    ${format_price(compute_total(@lines))}
+                  </span>
                 </div>
               </div>
             <% end %>
@@ -262,8 +268,10 @@ defmodule CRCWeb.Admin.VentaManualLive do
               ] do %>
                 <button
                   type="button"
-                  class={["btn btn-sm flex-col h-auto py-2 gap-1",
-                    if(@payment_method == value, do: "btn-primary", else: "btn-outline btn-ghost")]}
+                  class={[
+                    "btn btn-sm flex-col h-auto py-2 gap-1",
+                    if(@payment_method == value, do: "btn-primary", else: "btn-outline btn-ghost")
+                  ]}
                   phx-click="set_method"
                   phx-value-method={value}
                 >
@@ -296,12 +304,9 @@ defmodule CRCWeb.Admin.VentaManualLive do
             phx-click="submit"
             disabled={@lines == []}
           >
-            <.icon name="hero-check" class="size-5" />
-            Registrar venta
+            <.icon name="hero-check" class="size-5" /> Registrar venta
           </button>
-
         </div>
-
       </div>
     </div>
 
@@ -341,11 +346,11 @@ defmodule CRCWeb.Admin.VentaManualLive do
     []
     |> then(fn e ->
       if String.trim(assigns.customer_name) == "",
-        do: ["El nombre del cliente es requerido." | e], else: e
+        do: ["El nombre del cliente es requerido." | e],
+        else: e
     end)
     |> then(fn e ->
-      if assigns.lines == [],
-        do: ["Agrega al menos un artículo." | e], else: e
+      if assigns.lines == [], do: ["Agrega al menos un artículo." | e], else: e
     end)
   end
 

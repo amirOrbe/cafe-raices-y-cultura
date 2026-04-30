@@ -273,7 +273,8 @@ defmodule CRC.Inventory do
   def get_product_category!(id), do: Repo.get!(ProductCategory, id)
 
   @doc "Creates a product category."
-  @spec create_product_category(map()) :: {:ok, ProductCategory.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_product_category(map()) ::
+          {:ok, ProductCategory.t()} | {:error, Ecto.Changeset.t()}
   def create_product_category(attrs) do
     %ProductCategory{}
     |> ProductCategory.changeset(attrs)
@@ -281,7 +282,8 @@ defmodule CRC.Inventory do
   end
 
   @doc "Updates a product category."
-  @spec update_product_category(ProductCategory.t(), map()) :: {:ok, ProductCategory.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_product_category(ProductCategory.t(), map()) ::
+          {:ok, ProductCategory.t()} | {:error, Ecto.Changeset.t()}
   def update_product_category(%ProductCategory{} = category, attrs) do
     category
     |> ProductCategory.changeset(attrs)
@@ -289,7 +291,8 @@ defmodule CRC.Inventory do
   end
 
   @doc "Deletes a product category."
-  @spec delete_product_category(ProductCategory.t()) :: {:ok, ProductCategory.t()} | {:error, Ecto.Changeset.t()}
+  @spec delete_product_category(ProductCategory.t()) ::
+          {:ok, ProductCategory.t()} | {:error, Ecto.Changeset.t()}
   def delete_product_category(%ProductCategory{} = category) do
     Repo.delete(category)
   end
@@ -334,14 +337,19 @@ defmodule CRC.Inventory do
   `user_id` is the id of the user registering the adjustment (may be nil).
   """
   def create_stock_adjustment(attrs, user_id \\ nil) do
-    attrs_with_user = Map.put(attrs, :adjusted_by_id, user_id)
+    # Normalise to string-keyed map before adding adjusted_by_id to avoid
+    # mixed atom/string key errors in Ecto.Changeset.cast/4.
+    attrs_with_user =
+      attrs
+      |> Enum.into(%{}, fn {k, v} -> {to_string(k), v} end)
+      |> Map.put("adjusted_by_id", user_id)
 
     Repo.transaction(fn ->
       changeset = StockAdjustment.changeset(%StockAdjustment{}, attrs_with_user)
 
       adj =
         case Repo.insert(changeset) do
-          {:ok, a}    -> a
+          {:ok, a} -> a
           {:error, cs} -> Repo.rollback(cs)
         end
 
@@ -360,20 +368,20 @@ defmodule CRC.Inventory do
   end
 
   @doc "Human-readable labels for adjustment reasons."
-  def adjustment_reason_label("caducidad"),    do: "Caducidad"
-  def adjustment_reason_label("derrame"),      do: "Derrame / rotura"
-  def adjustment_reason_label("robo"),         do: "Robo / extravío"
-  def adjustment_reason_label("ajuste_manual"),do: "Ajuste de inventario"
-  def adjustment_reason_label("otro"),         do: "Otro"
-  def adjustment_reason_label(r),              do: r
+  def adjustment_reason_label("caducidad"), do: "Caducidad"
+  def adjustment_reason_label("derrame"), do: "Derrame / rotura"
+  def adjustment_reason_label("robo"), do: "Robo / extravío"
+  def adjustment_reason_label("ajuste_manual"), do: "Ajuste de inventario"
+  def adjustment_reason_label("otro"), do: "Otro"
+  def adjustment_reason_label(r), do: r
 
   def adjustment_reasons do
     [
-      {"Caducidad",             "caducidad"},
-      {"Derrame / rotura",      "derrame"},
-      {"Robo / extravío",       "robo"},
-      {"Ajuste de inventario",  "ajuste_manual"},
-      {"Otro",                  "otro"}
+      {"Caducidad", "caducidad"},
+      {"Derrame / rotura", "derrame"},
+      {"Robo / extravío", "robo"},
+      {"Ajuste de inventario", "ajuste_manual"},
+      {"Otro", "otro"}
     ]
   end
 

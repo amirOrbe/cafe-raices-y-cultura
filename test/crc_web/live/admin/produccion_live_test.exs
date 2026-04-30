@@ -37,7 +37,13 @@ defmodule CRCWeb.Admin.ProduccionLiveTest do
   end
 
   defp empleado_conn(conn) do
-    empleado = insert_user(%{role: "empleado", stations: ["sala"], email: "emp#{System.unique_integer()}@cafe.com"})
+    empleado =
+      insert_user(%{
+        role: "empleado",
+        stations: ["sala"],
+        email: "emp#{System.unique_integer()}@cafe.com"
+      })
+
     conn = init_test_session(conn, %{"user_id" => empleado.id})
     {conn, empleado}
   end
@@ -462,8 +468,12 @@ defmodule CRCWeb.Admin.ProduccionLiveTest do
       {conn, admin} = admin_conn(conn)
       output = insert_product(%{name: "Producto Log", stock_quantity: "0.0"})
       ing = insert_product(%{stock_quantity: "500.0"})
-      recipe = insert_recipe(output, %{"name" => "Receta Historial"},
-        [%{product_id: ing.id, quantity: "1"}])
+
+      recipe =
+        insert_recipe(output, %{"name" => "Receta Historial"}, [
+          %{product_id: ing.id, quantity: "1"}
+        ])
+
       Production.log_production(recipe.id, "2", admin.id, "Lote de test")
 
       {:ok, lv, _} = live(conn, ~p"/admin/produccion")

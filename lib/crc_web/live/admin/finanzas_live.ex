@@ -69,7 +69,6 @@ defmodule CRCWeb.Admin.FinanzasLive do
     ~H"""
     <div class="min-h-screen bg-base-200 pb-10">
       <div class="max-w-5xl mx-auto px-4 py-8 space-y-8">
-
         <%!-- Header --%>
         <div>
           <h1 class="text-2xl font-bold text-base-content">Finanzas</h1>
@@ -83,15 +82,37 @@ defmodule CRCWeb.Admin.FinanzasLive do
           <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium text-info list-none select-none">
             <.icon name="hero-information-circle" class="size-4 shrink-0" />
             <span class="flex-1">¿Cómo se calculan estas métricas?</span>
-            <.icon name="hero-chevron-down" class="size-4 shrink-0 transition-transform group-open:rotate-180" />
+            <.icon
+              name="hero-chevron-down"
+              class="size-4 shrink-0 transition-transform group-open:rotate-180"
+            />
           </summary>
           <div class="px-4 pb-4 text-base-content/70 space-y-1.5 text-xs leading-relaxed">
-            <p><strong>Ingresos</strong> — suma del total de todas las órdenes cerradas (cobradas) en el período.</p>
-            <p><strong>Costo de ventas (COGS)</strong> — suma del costo de ingredientes de cada platillo vendido, calculado con el costo neto de los insumos × cantidad de la receta. Solo incluye platillos que tienen receta registrada; los que no tienen receta no suman al costo.</p>
-            <p><strong>Utilidad bruta</strong> — Ingresos − Costo de ventas. Lo que queda antes de descontar la merma.</p>
-            <p><strong>Margen bruto</strong> — Utilidad bruta / Ingresos × 100. En cafeterías un margen saludable está entre 55% y 75%.</p>
-            <p><strong>Merma</strong> — costo de los platillos cancelados <em>después</em> de haber sido preparados (cancelados como desperdicio). El food ya se hizo pero no se cobró.</p>
-            <p><strong>Utilidad neta estimada</strong> — Utilidad bruta − Merma. No incluye gastos fijos (renta, nómina, servicios).</p>
+            <p>
+              <strong>Ingresos</strong>
+              — suma del total de todas las órdenes cerradas (cobradas) en el período.
+            </p>
+            <p>
+              <strong>Costo de ventas (COGS)</strong>
+              — suma del costo de ingredientes de cada platillo vendido, calculado con el costo neto de los insumos × cantidad de la receta. Solo incluye platillos que tienen receta registrada; los que no tienen receta no suman al costo.
+            </p>
+            <p>
+              <strong>Utilidad bruta</strong>
+              — Ingresos − Costo de ventas. Lo que queda antes de descontar la merma.
+            </p>
+            <p>
+              <strong>Margen bruto</strong>
+              — Utilidad bruta / Ingresos × 100. En cafeterías un margen saludable está entre 55% y 75%.
+            </p>
+            <p>
+              <strong>Merma</strong>
+              — costo de los platillos cancelados <em>después</em>
+              de haber sido preparados (cancelados como desperdicio). El food ya se hizo pero no se cobró.
+            </p>
+            <p>
+              <strong>Utilidad neta estimada</strong>
+              — Utilidad bruta − Merma. No incluye gastos fijos (renta, nómina, servicios).
+            </p>
           </div>
         </details>
 
@@ -100,7 +121,13 @@ defmodule CRCWeb.Admin.FinanzasLive do
           <div class="flex gap-2 flex-wrap">
             <%= for {label, value} <- [{"Hoy", "today"}, {"Esta semana", "week"}, {"Este mes", "month"}, {"Total", "all"}] do %>
               <button
-                class={["btn btn-sm", if(is_atom(@period) and Atom.to_string(@period) == value, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                class={[
+                  "btn btn-sm",
+                  if(is_atom(@period) and Atom.to_string(@period) == value,
+                    do: "btn-primary",
+                    else: "btn-ghost border border-base-300"
+                  )
+                ]}
                 phx-click="set_period"
                 phx-value-period={value}
               >
@@ -112,9 +139,19 @@ defmodule CRCWeb.Admin.FinanzasLive do
           <form phx-change="set_date_range" class="flex flex-col gap-1 w-full sm:w-auto">
             <span class="text-xs text-base-content/50">Rango personalizado</span>
             <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
-              <input type="date" name="date_from" value={@date_from} class="input input-sm input-bordered w-full sm:w-36" />
+              <input
+                type="date"
+                name="date_from"
+                value={@date_from}
+                class="input input-sm input-bordered w-full sm:w-36"
+              />
               <span class="text-base-content/40 text-xs text-center sm:text-left">—</span>
-              <input type="date" name="date_to" value={@date_to} class="input input-sm input-bordered w-full sm:w-36" />
+              <input
+                type="date"
+                name="date_to"
+                value={@date_to}
+                class="input input-sm input-bordered w-full sm:w-36"
+              />
             </div>
           </form>
         </div>
@@ -130,7 +167,6 @@ defmodule CRCWeb.Admin.FinanzasLive do
 
         <%!-- Main P&L cards --%>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-
           <%!-- Revenue --%>
           <.fin_card
             label="Ingresos"
@@ -157,15 +193,17 @@ defmodule CRCWeb.Admin.FinanzasLive do
             sublabel={"Margen #{fmt_pct(@summary.margin_pct)}%"}
             value={"$#{fmt(@summary.gross_profit)}"}
             icon="hero-arrow-trending-up"
-            color={if Decimal.compare(@summary.gross_profit, 0) == :lt, do: "text-error", else: "text-success"}
+            color={
+              if Decimal.compare(@summary.gross_profit, 0) == :lt,
+                do: "text-error",
+                else: "text-success"
+            }
             bg="bg-base-100"
           />
-
         </div>
 
         <%!-- Waste & Net profit --%>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
           <%!-- Waste cost --%>
           <div class="bg-base-100 rounded-2xl border border-error/30 shadow-sm p-5 space-y-2">
             <div class="flex items-center gap-2">
@@ -173,37 +211,65 @@ defmodule CRCWeb.Admin.FinanzasLive do
                 <.icon name="hero-trash" class="size-5 text-error" />
               </div>
               <div>
-                <p class="text-xs text-base-content/50 uppercase tracking-wide font-medium">Desperdicio</p>
+                <p class="text-xs text-base-content/50 uppercase tracking-wide font-medium">
+                  Desperdicio
+                </p>
                 <p class="text-xs text-base-content/40">Costo de ítems cancelados</p>
               </div>
             </div>
             <p class="text-3xl font-bold text-error">${fmt(@summary.waste_cost)}</p>
             <%= if @waste_items != [] do %>
               <p class="text-xs text-base-content/40 pt-1">
-                {length(@waste_items)} {if length(@waste_items) == 1, do: "platillo desperdiciado", else: "platillos desperdiciados"}
+                {length(@waste_items)} {if length(@waste_items) == 1,
+                  do: "platillo desperdiciado",
+                  else: "platillos desperdiciados"}
               </p>
             <% end %>
           </div>
 
           <%!-- Net profit --%>
-          <div class={["bg-base-100 rounded-2xl border shadow-sm p-5 space-y-2",
-            if(Decimal.compare(@summary.net_profit, 0) == :lt, do: "border-error/40", else: "border-success/30")]}>
+          <div class={[
+            "bg-base-100 rounded-2xl border shadow-sm p-5 space-y-2",
+            if(Decimal.compare(@summary.net_profit, 0) == :lt,
+              do: "border-error/40",
+              else: "border-success/30"
+            )
+          ]}>
             <div class="flex items-center gap-2">
-              <div class={["size-9 rounded-xl flex items-center justify-center",
-                if(Decimal.compare(@summary.net_profit, 0) == :lt, do: "bg-error/10", else: "bg-success/10")]}>
-                <.icon name="hero-scale" class={if(Decimal.compare(@summary.net_profit, 0) == :lt, do: "size-5 text-error", else: "size-5 text-success")} />
+              <div class={[
+                "size-9 rounded-xl flex items-center justify-center",
+                if(Decimal.compare(@summary.net_profit, 0) == :lt,
+                  do: "bg-error/10",
+                  else: "bg-success/10"
+                )
+              ]}>
+                <.icon
+                  name="hero-scale"
+                  class={
+                    if(Decimal.compare(@summary.net_profit, 0) == :lt,
+                      do: "size-5 text-error",
+                      else: "size-5 text-success"
+                    )
+                  }
+                />
               </div>
               <div>
-                <p class="text-xs text-base-content/50 uppercase tracking-wide font-medium">Ganancia neta</p>
+                <p class="text-xs text-base-content/50 uppercase tracking-wide font-medium">
+                  Ganancia neta
+                </p>
                 <p class="text-xs text-base-content/40">Ganancia bruta − desperdicio</p>
               </div>
             </div>
-            <p class={["text-3xl font-bold",
-              if(Decimal.compare(@summary.net_profit, 0) == :lt, do: "text-error", else: "text-success")]}>
+            <p class={[
+              "text-3xl font-bold",
+              if(Decimal.compare(@summary.net_profit, 0) == :lt,
+                do: "text-error",
+                else: "text-success"
+              )
+            ]}>
               ${fmt(@summary.net_profit)}
             </p>
           </div>
-
         </div>
 
         <%!-- Note about COGS coverage --%>
@@ -219,40 +285,44 @@ defmodule CRCWeb.Admin.FinanzasLive do
         <%= if @waste_items != [] do %>
           <div class="space-y-4">
             <h2 class="text-base font-semibold text-base-content flex items-center gap-2">
-              <.icon name="hero-trash" class="size-4 text-error" />
-              Ítems desperdiciados
+              <.icon name="hero-trash" class="size-4 text-error" /> Ítems desperdiciados
             </h2>
 
             <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
               <div class="overflow-x-auto">
-              <table class="table table-sm w-full">
-                <thead>
-                  <tr class="border-b border-base-300 text-xs text-base-content/50 uppercase tracking-wide">
-                    <th class="py-3 px-4 text-left font-medium">Platillo</th>
-                    <th class="py-3 px-4 text-center font-medium">Cantidad</th>
-                    <th class="py-3 px-4 text-right font-medium">Costo perdido</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <%= for {item, i} <- Enum.with_index(@waste_items) do %>
-                    <tr class={["border-b border-base-200 last:border-0", if(rem(i, 2) == 0, do: "", else: "bg-base-50")]}>
-                      <td class="py-3 px-4 text-sm font-medium text-base-content">{item.name}</td>
-                      <td class="py-3 px-4 text-sm text-center text-base-content/70">{item.qty}</td>
-                      <td class="py-3 px-4 text-sm text-right font-semibold text-error">
-                        ${fmt(item.cost)}
+                <table class="table table-sm w-full">
+                  <thead>
+                    <tr class="border-b border-base-300 text-xs text-base-content/50 uppercase tracking-wide">
+                      <th class="py-3 px-4 text-left font-medium">Platillo</th>
+                      <th class="py-3 px-4 text-center font-medium">Cantidad</th>
+                      <th class="py-3 px-4 text-right font-medium">Costo perdido</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <%= for {item, i} <- Enum.with_index(@waste_items) do %>
+                      <tr class={[
+                        "border-b border-base-200 last:border-0",
+                        if(rem(i, 2) == 0, do: "", else: "bg-base-50")
+                      ]}>
+                        <td class="py-3 px-4 text-sm font-medium text-base-content">{item.name}</td>
+                        <td class="py-3 px-4 text-sm text-center text-base-content/70">{item.qty}</td>
+                        <td class="py-3 px-4 text-sm text-right font-semibold text-error">
+                          ${fmt(item.cost)}
+                        </td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                  <tfoot>
+                    <tr class="border-t border-base-300">
+                      <td class="py-3 px-4 text-sm font-bold text-base-content" colspan="2">
+                        Total desperdicio
+                      </td>
+                      <td class="py-3 px-4 text-sm font-bold text-right text-error">
+                        ${fmt(@summary.waste_cost)}
                       </td>
                     </tr>
-                  <% end %>
-                </tbody>
-                <tfoot>
-                  <tr class="border-t border-base-300">
-                    <td class="py-3 px-4 text-sm font-bold text-base-content" colspan="2">Total desperdicio</td>
-                    <td class="py-3 px-4 text-sm font-bold text-right text-error">
-                      ${fmt(@summary.waste_cost)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+                  </tfoot>
+                </table>
               </div>
             </div>
           </div>
@@ -262,7 +332,6 @@ defmodule CRCWeb.Admin.FinanzasLive do
             <p class="text-sm text-base-content/50">Sin desperdicios registrados en este período.</p>
           </div>
         <% end %>
-
       </div>
     </div>
     """

@@ -25,7 +25,17 @@ defmodule CRC.Orders do
     Order
     |> where([o], o.status in ["open", "sent", "ready"])
     |> order_by([o], o.inserted_at)
-    |> preload([:user, order_items: [:product, :variant, :for_menu_item, exclusions: [:product], menu_item: :category, package: []]])
+    |> preload([
+      :user,
+      order_items: [
+        :product,
+        :variant,
+        :for_menu_item,
+        exclusions: [:product],
+        menu_item: :category,
+        package: []
+      ]
+    ])
     |> Repo.all()
   end
 
@@ -34,7 +44,17 @@ defmodule CRC.Orders do
     Order
     |> where([o], o.status in ["open", "sent", "ready"])
     |> order_by([o], o.inserted_at)
-    |> preload([:user, order_items: [:product, :variant, :for_menu_item, exclusions: [:product], menu_item: :category, package: []]])
+    |> preload([
+      :user,
+      order_items: [
+        :product,
+        :variant,
+        :for_menu_item,
+        exclusions: [:product],
+        menu_item: :category,
+        package: []
+      ]
+    ])
     |> Repo.all()
   end
 
@@ -148,21 +168,26 @@ defmodule CRC.Orders do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     Repo.transaction(fn ->
+      # Normalise attrs to string-keyed map before merging to avoid
+      # mixed atom/string key errors in Ecto.Changeset.cast/4.
+      str_attrs =
+        attrs
+        |> Enum.into(%{}, fn {k, v} -> {to_string(k), v} end)
+        |> Map.merge(%{"closed_by_id" => closed_by_id, "manual_entry" => true})
+
       order =
         %Order{}
-        |> Order.manual_changeset(
-          Map.merge(attrs, %{closed_by_id: closed_by_id, manual_entry: true})
-        )
+        |> Order.manual_changeset(str_attrs)
         |> Repo.insert!()
 
       Enum.each(items, fn %{menu_item_id: menu_item_id, quantity: qty} ->
         %OrderItem{}
         |> OrderItem.changeset(%{
-          order_id:     order.id,
+          order_id: order.id,
           menu_item_id: menu_item_id,
-          quantity:     qty,
-          status:       "served",
-          served_at:    now
+          quantity: qty,
+          status: "served",
+          served_at: now
         })
         |> Repo.insert!()
       end)
@@ -201,7 +226,17 @@ defmodule CRC.Orders do
     |> filter_by_period(period)
     |> maybe_filter_user(user_id)
     |> order_by([o], desc: o.closed_at)
-    |> preload([:user, :closed_by, order_items: [:product, :for_menu_item, exclusions: [:product], menu_item: :category, package: []]])
+    |> preload([
+      :user,
+      :closed_by,
+      order_items: [
+        :product,
+        :for_menu_item,
+        exclusions: [:product],
+        menu_item: :category,
+        package: []
+      ]
+    ])
     |> Repo.all()
   end
 
@@ -295,10 +330,12 @@ defmodule CRC.Orders do
     # (excluded ingredients were never deducted from stock, so they are not a real cost).
     cogs =
       from(oi in OrderItem,
-        join: mii in MenuItemIngredient, on: mii.menu_item_id == oi.menu_item_id,
-        join: p in Product, on: p.id == mii.product_id,
+        join: mii in MenuItemIngredient,
+        on: mii.menu_item_id == oi.menu_item_id,
+        join: p in Product,
+        on: p.id == mii.product_id,
         left_join: excl in OrderItemExclusion,
-          on: excl.order_item_id == oi.id and excl.product_id == mii.product_id,
+        on: excl.order_item_id == oi.id and excl.product_id == mii.product_id,
         where: oi.order_id in subquery(closed_ids_query),
         where: oi.status not in ["cancelled", "cancelled_waste"],
         where: not is_nil(oi.menu_item_id),
@@ -316,10 +353,12 @@ defmodule CRC.Orders do
 
     waste_cost =
       from(oi in OrderItem,
-        join: mii in MenuItemIngredient, on: mii.menu_item_id == oi.menu_item_id,
-        join: p in Product, on: p.id == mii.product_id,
+        join: mii in MenuItemIngredient,
+        on: mii.menu_item_id == oi.menu_item_id,
+        join: p in Product,
+        on: p.id == mii.product_id,
         left_join: excl in OrderItemExclusion,
-          on: excl.order_item_id == oi.id and excl.product_id == mii.product_id,
+        on: excl.order_item_id == oi.id and excl.product_id == mii.product_id,
         where: oi.order_id in subquery(all_order_ids_in_period),
         where: oi.status == "cancelled_waste",
         where: not is_nil(oi.menu_item_id),
@@ -363,8 +402,10 @@ defmodule CRC.Orders do
 
     from(oi in OrderItem,
       join: mi in assoc(oi, :menu_item),
-      join: mii in MenuItemIngredient, on: mii.menu_item_id == oi.menu_item_id,
-      join: p in Product, on: p.id == mii.product_id,
+      join: mii in MenuItemIngredient,
+      on: mii.menu_item_id == oi.menu_item_id,
+      join: p in Product,
+      on: p.id == mii.product_id,
       where: oi.order_id in subquery(all_order_ids_in_period),
       where: oi.status == "cancelled_waste",
       where: not is_nil(oi.menu_item_id),
@@ -439,18 +480,20 @@ defmodule CRC.Orders do
   def add_package(%{order_id: order_id} = attrs) do
     package_id = attrs[:package_id] || attrs["package_id"]
 
-    with %Package{} = package <- CRC.Repo.get(Package, package_id) |> CRC.Repo.preload(package_items: :menu_item),
+    with %Package{} = package <-
+           CRC.Repo.get(Package, package_id) |> CRC.Repo.preload(package_items: :menu_item),
          true <- package.active,
          false <- Enum.empty?(package.package_items) do
-
       # Calculate proportional unit prices
-      items_with_price = Enum.map(package.package_items, fn pi ->
-        {pi, pi.menu_item.price}
-      end)
+      items_with_price =
+        Enum.map(package.package_items, fn pi ->
+          {pi, pi.menu_item.price}
+        end)
 
-      total_individual = Enum.reduce(items_with_price, Decimal.new(0), fn {_pi, p}, acc ->
-        Decimal.add(acc, Decimal.mult(p, Decimal.new(1)))
-      end)
+      total_individual =
+        Enum.reduce(items_with_price, Decimal.new(0), fn {_pi, p}, acc ->
+          Decimal.add(acc, Decimal.mult(p, Decimal.new(1)))
+        end)
 
       result =
         CRC.Repo.transaction(fn ->
@@ -682,7 +725,11 @@ defmodule CRC.Orders do
 
         result =
           item
-          |> OrderItem.changeset(%{status: "ready", ready_at: now, marked_ready_by_id: marked_by_id})
+          |> OrderItem.changeset(%{
+            status: "ready",
+            ready_at: now,
+            marked_ready_by_id: marked_by_id
+          })
           |> Repo.update()
 
         case result do
@@ -774,7 +821,11 @@ defmodule CRC.Orders do
     end)
   end
 
-  defp restore_stock_for_item(%OrderItem{product_id: product_id, quantity: qty, portion_quantity: portion})
+  defp restore_stock_for_item(%OrderItem{
+         product_id: product_id,
+         quantity: qty,
+         portion_quantity: portion
+       })
        when not is_nil(product_id) do
     restore = Decimal.mult(portion || Decimal.new(1), Decimal.new(qty))
 
@@ -783,7 +834,11 @@ defmodule CRC.Orders do
   end
 
   # Variant selection item: restore from product_variants.stock_quantity using recipe quantity.
-  defp restore_stock_for_item(%OrderItem{variant_id: variant_id, for_menu_item_id: for_menu_item_id, quantity: qty})
+  defp restore_stock_for_item(%OrderItem{
+         variant_id: variant_id,
+         for_menu_item_id: for_menu_item_id,
+         quantity: qty
+       })
        when not is_nil(variant_id) and not is_nil(for_menu_item_id) do
     variant = Repo.get!(ProductVariant, variant_id)
 
@@ -989,7 +1044,8 @@ defmodule CRC.Orders do
 
   defp build_revenue_ranking(closed_order_ids) do
     from(o in Order,
-      join: u in User, on: o.user_id == u.id,
+      join: u in User,
+      on: o.user_id == u.id,
       where: o.id in ^closed_order_ids and not is_nil(o.user_id),
       group_by: [u.id, u.name],
       select: %{
@@ -1009,13 +1065,19 @@ defmodule CRC.Orders do
     # Station staff (cocina/barra): lower prep time = better
     station_rows =
       from(oi in OrderItem,
-        join: u in User, on: oi.marked_ready_by_id == u.id,
+        join: u in User,
+        on: oi.marked_ready_by_id == u.id,
         where:
           oi.order_id in ^closed_order_ids and
             not is_nil(oi.sent_at) and
             not is_nil(oi.ready_at),
-        select: %{user_id: u.id, name: u.name, stations: u.stations,
-                  sent_at: oi.sent_at, ready_at: oi.ready_at}
+        select: %{
+          user_id: u.id,
+          name: u.name,
+          stations: u.stations,
+          sent_at: oi.sent_at,
+          ready_at: oi.ready_at
+        }
       )
       |> Repo.all()
 
@@ -1025,19 +1087,32 @@ defmodule CRC.Orders do
       |> Enum.map(fn {{uid, name, stations}, rows} ->
         times = Enum.map(rows, fn r -> DateTime.diff(r.ready_at, r.sent_at, :second) end)
         avg = round(Enum.sum(times) / length(times))
-        %{user_id: uid, name: name, station: stations_label(stations), avg_secs: avg, count: length(times)}
+
+        %{
+          user_id: uid,
+          name: name,
+          station: stations_label(stations),
+          avg_secs: avg,
+          count: length(times)
+        }
       end)
 
     # Waiters pickup time: lower = better
     pickup_rows =
       from(oi in OrderItem,
-        join: u in User, on: oi.served_by_id == u.id,
+        join: u in User,
+        on: oi.served_by_id == u.id,
         where:
           oi.order_id in ^closed_order_ids and
             not is_nil(oi.ready_at) and
             not is_nil(oi.served_at),
-        select: %{user_id: u.id, name: u.name, stations: u.stations,
-                  ready_at: oi.ready_at, served_at: oi.served_at}
+        select: %{
+          user_id: u.id,
+          name: u.name,
+          stations: u.stations,
+          ready_at: oi.ready_at,
+          served_at: oi.served_at
+        }
       )
       |> Repo.all()
 
@@ -1054,7 +1129,14 @@ defmodule CRC.Orders do
           nil
         else
           avg = round(Enum.sum(times) / length(times))
-          %{user_id: uid, name: name, station: stations_label(stations), avg_secs: avg, count: length(times)}
+
+          %{
+            user_id: uid,
+            name: name,
+            station: stations_label(stations),
+            avg_secs: avg,
+            count: length(times)
+          }
         end
       end)
       |> Enum.reject(&is_nil/1)
@@ -1070,7 +1152,8 @@ defmodule CRC.Orders do
 
   defp build_station_stats(closed_order_ids) do
     from(oi in OrderItem,
-      join: u in User, on: oi.marked_ready_by_id == u.id,
+      join: u in User,
+      on: oi.marked_ready_by_id == u.id,
       join: mi in assoc(oi, :menu_item),
       join: cat in assoc(mi, :category),
       where:
@@ -1098,20 +1181,28 @@ defmodule CRC.Orders do
   defp build_waiter_stats(closed_order_ids) do
     service_rows =
       from(o in Order,
-        join: u in User, on: o.user_id == u.id,
+        join: u in User,
+        on: o.user_id == u.id,
         where: o.id in ^closed_order_ids and not is_nil(o.closed_at),
-        select: %{user_id: u.id, name: u.name, stations: u.stations,
-                  inserted_at: o.inserted_at, closed_at: o.closed_at}
+        select: %{
+          user_id: u.id,
+          name: u.name,
+          stations: u.stations,
+          inserted_at: o.inserted_at,
+          closed_at: o.closed_at
+        }
       )
       |> Repo.all()
 
     # Pickup time: seconds from item ready_at to waiter's served_at
     pickup_by_user =
       from(oi in OrderItem,
-        join: u in User, on: oi.served_by_id == u.id,
-        where: oi.order_id in ^closed_order_ids and
-               not is_nil(oi.ready_at) and
-               not is_nil(oi.served_at),
+        join: u in User,
+        on: oi.served_by_id == u.id,
+        where:
+          oi.order_id in ^closed_order_ids and
+            not is_nil(oi.ready_at) and
+            not is_nil(oi.served_at),
         select: %{user_id: u.id, ready_at: oi.ready_at, served_at: oi.served_at}
       )
       |> Repo.all()
@@ -1122,8 +1213,13 @@ defmodule CRC.Orders do
           |> Enum.map(fn r -> DateTime.diff(r.served_at, r.ready_at, :second) end)
           |> Enum.filter(&(&1 >= 0))
 
-        {uid, %{count: length(times), avg: (if times == [], do: 0, else: round(Enum.sum(times) / length(times))),
-                min: Enum.min(times, fn -> 0 end), max: Enum.max(times, fn -> 0 end)}}
+        {uid,
+         %{
+           count: length(times),
+           avg: if(times == [], do: 0, else: round(Enum.sum(times) / length(times))),
+           min: Enum.min(times, fn -> 0 end),
+           max: Enum.max(times, fn -> 0 end)
+         }}
       end)
 
     service_rows
@@ -1137,6 +1233,7 @@ defmodule CRC.Orders do
       pickup = Map.get(pickup_by_user, uid, %{count: 0, avg: 0, min: 0, max: 0})
 
       base = build_stat_entry(uid, name, stations_label(stations), length(rows), times)
+
       Map.merge(base, %{
         pickup_count: pickup.count,
         pickup_avg: pickup.avg,

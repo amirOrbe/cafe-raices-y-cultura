@@ -223,8 +223,12 @@ defmodule CRC.ProductionTest do
 
       {:ok, recipe} =
         Production.create_recipe(
-          %{"name" => "oleo de naranja", "yield_quantity" => "500",
-            "yield_unit" => "ml", "output_product_id" => output.id},
+          %{
+            "name" => "oleo de naranja",
+            "yield_quantity" => "500",
+            "yield_unit" => "ml",
+            "output_product_id" => output.id
+          },
           []
         )
 
@@ -242,9 +246,16 @@ defmodule CRC.ProductionTest do
       recipe = insert_recipe(output)
 
       assert {:ok, updated} =
-               Production.update_recipe(recipe, %{"name" => "Nuevo Nombre",
-                 "yield_quantity" => "200", "yield_unit" => "gramos",
-                 "output_product_id" => output.id}, [])
+               Production.update_recipe(
+                 recipe,
+                 %{
+                   "name" => "Nuevo Nombre",
+                   "yield_quantity" => "200",
+                   "yield_unit" => "gramos",
+                   "output_product_id" => output.id
+                 },
+                 []
+               )
 
       assert updated.name == "Nuevo Nombre"
       assert Decimal.to_string(updated.yield_quantity) == "200"
@@ -258,8 +269,9 @@ defmodule CRC.ProductionTest do
       recipe = insert_recipe(output, [%{product_id: old_ing.id, quantity: "5"}])
 
       {:ok, _} =
-        Production.update_recipe(recipe, recipe_attrs(output),
-          [%{product_id: new_ing.id, quantity: "3"}])
+        Production.update_recipe(recipe, recipe_attrs(output), [
+          %{product_id: new_ing.id, quantity: "3"}
+        ])
 
       updated = Production.get_recipe!(recipe.id)
       product_ids = Enum.map(updated.recipe_ingredients, & &1.product_id)
@@ -456,8 +468,11 @@ defmodule CRC.ProductionTest do
       {:ok, _} = Production.log_production(recipe.id, "1", user.id)
 
       # THEN
-      assert Decimal.compare(Inventory.get_product!(ing1.id).stock_quantity, Decimal.new("96.0")) == :eq
-      assert Decimal.compare(Inventory.get_product!(ing2.id).stock_quantity, Decimal.new("192.0")) == :eq
+      assert Decimal.compare(Inventory.get_product!(ing1.id).stock_quantity, Decimal.new("96.0")) ==
+               :eq
+
+      assert Decimal.compare(Inventory.get_product!(ing2.id).stock_quantity, Decimal.new("192.0")) ==
+               :eq
     end
 
     test "GIVEN zero batches WHEN logging production THEN returns :invalid_batches error" do

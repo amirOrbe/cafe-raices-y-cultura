@@ -23,11 +23,11 @@ defmodule CRC.Inventory.StockAdjustment do
   @valid_reasons ~w(caducidad derrame robo ajuste_manual otro)
 
   schema "stock_adjustments" do
-    field :quantity,  :decimal
-    field :reason,    :string
-    field :notes,     :string
+    field :quantity, :decimal
+    field :reason, :string
+    field :notes, :string
 
-    belongs_to :product,     Product
+    belongs_to :product, Product
     belongs_to :adjusted_by, User, foreign_key: :adjusted_by_id
 
     timestamps(type: :utc_datetime)

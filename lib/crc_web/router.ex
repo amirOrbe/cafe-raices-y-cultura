@@ -120,6 +120,7 @@ defmodule CRCWeb.Router do
       live "/insumos", ProductsLive
       live "/insumos/categorias", ProductCategoriesLive
       live "/insumos/merma", MermaLive
+      live "/inventario", InventarioLive
       live "/eventos", EventsLive
       live "/colaboradores", CollaboratorsLive
       live "/eventos/tipos", EventTypesLive

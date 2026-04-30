@@ -273,12 +273,14 @@ defmodule CRC.AccountsTest do
   describe "authenticate_user/2" do
     test "credenciales correctas retornan el usuario" do
       _user = insertar_usuario(%{email: "login@cafe.com"})
+
       assert {:ok, %User{email: "login@cafe.com"}} =
                Accounts.authenticate_user("login@cafe.com", "contraseña123")
     end
 
     test "contraseña incorrecta retorna error" do
       insertar_usuario(%{email: "login@cafe.com"})
+
       assert {:error, :invalid_credentials} =
                Accounts.authenticate_user("login@cafe.com", "mal_password")
     end
@@ -305,18 +307,26 @@ defmodule CRC.AccountsTest do
   describe "update_user/3" do
     test "admin puede actualizar nombre y estaciones" do
       admin = insertar_usuario()
-      empleado = insertar_usuario(%{role: "empleado", stations: ["sala"], email: "emp_upd@cafe.com"})
+
+      empleado =
+        insertar_usuario(%{role: "empleado", stations: ["sala"], email: "emp_upd@cafe.com"})
 
       assert {:ok, updated} =
-               Accounts.update_user(admin, empleado, %{name: "Nuevo Nombre", stations: ["barra", "sala"]})
+               Accounts.update_user(admin, empleado, %{
+                 name: "Nuevo Nombre",
+                 stations: ["barra", "sala"]
+               })
 
       assert updated.name == "Nuevo Nombre"
       assert "barra" in updated.stations
     end
 
     test "empleado no puede actualizar usuarios" do
-      empleado = insertar_usuario(%{role: "empleado", stations: ["cocina"], email: "emp_upd2@cafe.com"})
-      otro = insertar_usuario(%{role: "empleado", stations: ["barra"], email: "otro_upd@cafe.com"})
+      empleado =
+        insertar_usuario(%{role: "empleado", stations: ["cocina"], email: "emp_upd2@cafe.com"})
+
+      otro =
+        insertar_usuario(%{role: "empleado", stations: ["barra"], email: "otro_upd@cafe.com"})
 
       assert {:error, :unauthorized} =
                Accounts.update_user(empleado, otro, %{name: "Hackeado"})
@@ -324,7 +334,9 @@ defmodule CRC.AccountsTest do
 
     test "retorna error con datos inválidos" do
       admin = insertar_usuario()
-      empleado = insertar_usuario(%{role: "empleado", stations: ["sala"], email: "emp_upd3@cafe.com"})
+
+      empleado =
+        insertar_usuario(%{role: "empleado", stations: ["sala"], email: "emp_upd3@cafe.com"})
 
       assert {:error, %Ecto.Changeset{}} =
                Accounts.update_user(admin, empleado, %{email: "no-es-email"})
@@ -338,7 +350,9 @@ defmodule CRC.AccountsTest do
   describe "give_recognition/2" do
     test "admin puede dar un reconocimiento a un empleado" do
       admin = insertar_usuario()
-      empleado = insertar_usuario(%{role: "empleado", stations: ["sala"], email: "rec_emp@cafe.com"})
+
+      empleado =
+        insertar_usuario(%{role: "empleado", stations: ["sala"], email: "rec_emp@cafe.com"})
 
       attrs = %{user_id: empleado.id, kind: "top_sales", period_date: Date.utc_today()}
       assert {:ok, rec} = Accounts.give_recognition(admin, attrs)
@@ -349,16 +363,27 @@ defmodule CRC.AccountsTest do
 
     test "admin puede incluir nota en el reconocimiento" do
       admin = insertar_usuario()
-      empleado = insertar_usuario(%{role: "empleado", stations: ["barra"], email: "rec_nota@cafe.com"})
 
-      attrs = %{user_id: empleado.id, kind: "custom", note: "Excelente actitud", period_date: Date.utc_today()}
+      empleado =
+        insertar_usuario(%{role: "empleado", stations: ["barra"], email: "rec_nota@cafe.com"})
+
+      attrs = %{
+        user_id: empleado.id,
+        kind: "custom",
+        note: "Excelente actitud",
+        period_date: Date.utc_today()
+      }
+
       assert {:ok, rec} = Accounts.give_recognition(admin, attrs)
       assert rec.note == "Excelente actitud"
     end
 
     test "empleado no puede dar reconocimientos" do
-      empleado = insertar_usuario(%{role: "empleado", stations: ["sala"], email: "rec_unauth@cafe.com"})
-      otro = insertar_usuario(%{role: "empleado", stations: ["cocina"], email: "rec_otro@cafe.com"})
+      empleado =
+        insertar_usuario(%{role: "empleado", stations: ["sala"], email: "rec_unauth@cafe.com"})
+
+      otro =
+        insertar_usuario(%{role: "empleado", stations: ["cocina"], email: "rec_otro@cafe.com"})
 
       attrs = %{user_id: otro.id, kind: "top_speed", period_date: Date.utc_today()}
       assert {:error, :unauthorized} = Accounts.give_recognition(empleado, attrs)
@@ -366,7 +391,9 @@ defmodule CRC.AccountsTest do
 
     test "retorna error con kind inválido" do
       admin = insertar_usuario()
-      empleado = insertar_usuario(%{role: "empleado", stations: ["sala"], email: "rec_inv@cafe.com"})
+
+      empleado =
+        insertar_usuario(%{role: "empleado", stations: ["sala"], email: "rec_inv@cafe.com"})
 
       attrs = %{user_id: empleado.id, kind: "invalido", period_date: Date.utc_today()}
       assert {:error, %Ecto.Changeset{}} = Accounts.give_recognition(admin, attrs)
@@ -383,7 +410,12 @@ defmodule CRC.AccountsTest do
       empleado = insertar_usuario(%{role: "empleado", stations: ["sala"], email: "lrp@cafe.com"})
 
       today = Date.utc_today()
-      Accounts.give_recognition(admin, %{user_id: empleado.id, kind: "top_speed", period_date: today})
+
+      Accounts.give_recognition(admin, %{
+        user_id: empleado.id,
+        kind: "top_speed",
+        period_date: today
+      })
 
       results = Accounts.list_recognitions_for_period(today)
       assert Enum.any?(results, &(&1.user_id == empleado.id))
@@ -391,10 +423,17 @@ defmodule CRC.AccountsTest do
 
     test "no retorna reconocimientos de otra fecha" do
       admin = insertar_usuario()
-      empleado = insertar_usuario(%{role: "empleado", stations: ["barra"], email: "lrp2@cafe.com"})
+
+      empleado =
+        insertar_usuario(%{role: "empleado", stations: ["barra"], email: "lrp2@cafe.com"})
 
       yesterday = Date.add(Date.utc_today(), -1)
-      Accounts.give_recognition(admin, %{user_id: empleado.id, kind: "custom", period_date: yesterday})
+
+      Accounts.give_recognition(admin, %{
+        user_id: empleado.id,
+        kind: "custom",
+        period_date: yesterday
+      })
 
       results = Accounts.list_recognitions_for_period(Date.utc_today())
       refute Enum.any?(results, &(&1.user_id == empleado.id))
@@ -404,7 +443,12 @@ defmodule CRC.AccountsTest do
       admin = insertar_usuario()
       empleado = insertar_usuario(%{role: "empleado", stations: ["sala"], email: "lrp3@cafe.com"})
 
-      Accounts.give_recognition(admin, %{user_id: empleado.id, kind: "top_sales", period_date: Date.utc_today()})
+      Accounts.give_recognition(admin, %{
+        user_id: empleado.id,
+        kind: "top_sales",
+        period_date: Date.utc_today()
+      })
+
       [rec | _] = Accounts.list_recognitions_for_period(Date.utc_today())
 
       assert rec.user.id == empleado.id
@@ -421,7 +465,11 @@ defmodule CRC.AccountsTest do
       admin = insertar_usuario()
       empleado = insertar_usuario(%{role: "empleado", stations: ["sala"], email: "lru@cafe.com"})
 
-      Accounts.give_recognition(admin, %{user_id: empleado.id, kind: "top_sales", period_date: Date.utc_today()})
+      Accounts.give_recognition(admin, %{
+        user_id: empleado.id,
+        kind: "top_sales",
+        period_date: Date.utc_today()
+      })
 
       results = Accounts.list_recognitions_for_user(empleado.id)
       assert length(results) >= 1
@@ -429,10 +477,17 @@ defmodule CRC.AccountsTest do
 
     test "no retorna reconocimientos de hace más de 30 días" do
       admin = insertar_usuario()
-      empleado = insertar_usuario(%{role: "empleado", stations: ["barra"], email: "lru2@cafe.com"})
+
+      empleado =
+        insertar_usuario(%{role: "empleado", stations: ["barra"], email: "lru2@cafe.com"})
 
       old_date = Date.add(Date.utc_today(), -31)
-      Accounts.give_recognition(admin, %{user_id: empleado.id, kind: "custom", period_date: old_date})
+
+      Accounts.give_recognition(admin, %{
+        user_id: empleado.id,
+        kind: "custom",
+        period_date: old_date
+      })
 
       assert Accounts.list_recognitions_for_user(empleado.id) == []
     end
@@ -442,7 +497,11 @@ defmodule CRC.AccountsTest do
       emp1 = insertar_usuario(%{role: "empleado", stations: ["sala"], email: "lru3a@cafe.com"})
       emp2 = insertar_usuario(%{role: "empleado", stations: ["cocina"], email: "lru3b@cafe.com"})
 
-      Accounts.give_recognition(admin, %{user_id: emp1.id, kind: "top_speed", period_date: Date.utc_today()})
+      Accounts.give_recognition(admin, %{
+        user_id: emp1.id,
+        kind: "top_speed",
+        period_date: Date.utc_today()
+      })
 
       assert Accounts.list_recognitions_for_user(emp2.id) == []
     end

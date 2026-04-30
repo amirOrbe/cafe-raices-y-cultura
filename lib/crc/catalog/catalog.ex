@@ -144,9 +144,7 @@ defmodule CRC.Catalog do
   """
   def set_menu_item_ingredients(menu_item_id, ingredients) when is_list(ingredients) do
     Repo.transaction(fn ->
-      Repo.delete_all(
-        from mii in MenuItemIngredient, where: mii.menu_item_id == ^menu_item_id
-      )
+      Repo.delete_all(from mii in MenuItemIngredient, where: mii.menu_item_id == ^menu_item_id)
 
       Enum.each(ingredients, fn %{product_id: pid, quantity: qty} ->
         %MenuItemIngredient{}
@@ -207,14 +205,38 @@ defmodule CRC.Catalog do
 
   Results are sorted by product name.
   """
-  def list_extras_for_menu_item(menu_item_id, _category_id) do
-    from(mii in MenuItemIngredient,
-      join: p in Product, on: p.id == mii.product_id,
-      where: mii.menu_item_id == ^menu_item_id and p.active == true,
-      order_by: p.name,
-      select: {p, mii.quantity}
-    )
-    |> Repo.all()
+  def list_extras_for_menu_item(menu_item_id, category_id) do
+    # Own ingredients — use exact recipe quantities
+    own =
+      from(mii in MenuItemIngredient,
+        join: p in Product,
+        on: p.id == mii.product_id,
+        where: mii.menu_item_id == ^menu_item_id and p.active == true,
+        select: {p, mii.quantity}
+      )
+      |> Repo.all()
+
+    own_ids = Enum.map(own, fn {p, _} -> p.id end)
+
+    # Products used in other items of the same category not already in this recipe.
+    # Quantity is the average used across those other items.
+    extras =
+      from(mii in MenuItemIngredient,
+        join: mi in MenuItem,
+        on: mi.id == mii.menu_item_id,
+        join: p in Product,
+        on: p.id == mii.product_id,
+        where: mi.category_id == ^category_id,
+        where: mii.menu_item_id != ^menu_item_id,
+        where: p.id not in ^own_ids,
+        where: p.active == true,
+        group_by: p.id,
+        order_by: p.name,
+        select: {p, avg(mii.quantity)}
+      )
+      |> Repo.all()
+
+    Enum.sort_by(own ++ extras, fn {p, _} -> p.name end)
   end
 
   @doc """
@@ -334,17 +356,19 @@ defmodule CRC.Catalog do
     |> Repo.all()
     |> Enum.map(fn mi ->
       cost = compute_cost(mi)
-      margin = if cost && Decimal.compare(mi.price, Decimal.new(0)) == :gt do
-        mi.price
-        |> Decimal.sub(cost)
-        |> Decimal.div(mi.price)
-        |> Decimal.mult(100)
-        |> Decimal.round(1)
-      end
+
+      margin =
+        if cost && Decimal.compare(mi.price, Decimal.new(0)) == :gt do
+          mi.price
+          |> Decimal.sub(cost)
+          |> Decimal.div(mi.price)
+          |> Decimal.mult(100)
+          |> Decimal.round(1)
+        end
 
       %{menu_item: mi, cost: cost, margin: margin}
     end)
-    |> Enum.filter(& &1.cost != nil)
+    |> Enum.filter(&(&1.cost != nil))
     |> Enum.sort_by(& &1.margin, :desc)
   end
 
@@ -353,8 +377,12 @@ defmodule CRC.Catalog do
     items = menu_items_with_margin()
 
     case items do
-      [] -> []
-      [_] -> []
+      [] ->
+        []
+
+      [_] ->
+        []
+
       _ ->
         pairs = for i <- items, j <- items, i.menu_item.id < j.menu_item.id, do: {i, j}
 
@@ -363,6 +391,7 @@ defmodule CRC.Catalog do
           normal_price = Decimal.add(a.menu_item.price, b.menu_item.price)
           total_cost = Decimal.add(a.cost, b.cost)
           suggested_price = normal_price |> Decimal.mult("0.85") |> Decimal.round(0)
+
           package_margin =
             suggested_price
             |> Decimal.sub(total_cost)
@@ -392,6 +421,7 @@ defmodule CRC.Catalog do
   The menu item must have `menu_item_ingredients: :product` preloaded.
   """
   def item_cost(%MenuItem{menu_item_ingredients: []}), do: nil
+
   def item_cost(%MenuItem{menu_item_ingredients: ingredients}) do
     costs =
       Enum.map(ingredients, fn mii ->
@@ -399,7 +429,7 @@ defmodule CRC.Catalog do
           do: Decimal.mult(mii.product.net_cost, mii.quantity)
       end)
 
-    if Enum.all?(costs, & &1 != nil),
+    if Enum.all?(costs, &(&1 != nil)),
       do: Enum.reduce(costs, Decimal.new(0), &Decimal.add/2)
   end
 

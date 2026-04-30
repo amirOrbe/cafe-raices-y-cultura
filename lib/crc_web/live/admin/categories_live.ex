@@ -102,11 +102,12 @@ defmodule CRCWeb.Admin.CategoriesLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Categorías de platillos</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">{length(@categories)} categorías registradas</p>
+          <p class="text-sm text-base-content/50 mt-0.5">
+            {length(@categories)} categorías registradas
+          </p>
         </div>
         <button class="btn btn-primary gap-2" phx-click="new_category">
-          <.icon name="hero-plus" class="size-4" />
-          Nueva categoría
+          <.icon name="hero-plus" class="size-4" /> Nueva categoría
         </button>
       </div>
 
@@ -149,7 +150,10 @@ defmodule CRCWeb.Admin.CategoriesLive do
                   <.icon name="hero-pencil" class="size-4" />
                 </button>
                 <button
-                  class={["btn btn-ghost btn-xs btn-circle", if(cat.active, do: "text-warning", else: "text-success")]}
+                  class={[
+                    "btn btn-ghost btn-xs btn-circle",
+                    if(cat.active, do: "text-warning", else: "text-success")
+                  ]}
                   phx-click="toggle_active"
                   phx-value-id={cat.id}
                   title={if cat.active, do: "Desactivar", else: "Activar"}
@@ -163,7 +167,8 @@ defmodule CRCWeb.Admin.CategoriesLive do
                   title="Eliminar"
                   data-confirm={
                     if cat.item_count > 0,
-                      do: "Esta categoría tiene #{cat.item_count} platillo(s). Al eliminarla se eliminarán también. ¿Continuar?",
+                      do:
+                        "Esta categoría tiene #{cat.item_count} platillo(s). Al eliminarla se eliminarán también. ¿Continuar?",
                       else: "¿Eliminar la categoría \"#{cat.name}\"?"
                   }
                 >
@@ -211,7 +216,10 @@ defmodule CRCWeb.Admin.CategoriesLive do
                           <.icon name="hero-pencil" class="size-4" />
                         </button>
                         <button
-                          class={["btn btn-ghost btn-xs btn-circle", if(cat.active, do: "text-warning", else: "text-success")]}
+                          class={[
+                            "btn btn-ghost btn-xs btn-circle",
+                            if(cat.active, do: "text-warning", else: "text-success")
+                          ]}
                           phx-click="toggle_active"
                           phx-value-id={cat.id}
                           title={if cat.active, do: "Desactivar", else: "Activar"}
@@ -228,7 +236,8 @@ defmodule CRCWeb.Admin.CategoriesLive do
                           title="Eliminar"
                           data-confirm={
                             if cat.item_count > 0,
-                              do: "Esta categoría tiene #{cat.item_count} platillo(s). Al eliminarla se eliminarán también. ¿Continuar?",
+                              do:
+                                "Esta categoría tiene #{cat.item_count} platillo(s). Al eliminarla se eliminarán también. ¿Continuar?",
                               else: "¿Eliminar la categoría \"#{cat.name}\"?"
                           }
                         >

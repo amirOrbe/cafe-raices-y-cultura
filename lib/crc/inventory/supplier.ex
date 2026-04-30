@@ -33,8 +33,6 @@ defmodule CRC.Inventory.Supplier do
     |> update_change(:contact_name, &CRC.Utils.title_case/1)
     |> validate_required([:name])
     |> validate_length(:name, min: 2, max: 120, message: "debe tener entre 2 y 120 caracteres")
-    |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/,
-      message: "tiene formato inválido"
-    )
+    |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/, message: "tiene formato inválido")
   end
 end

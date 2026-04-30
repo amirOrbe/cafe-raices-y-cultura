@@ -15,7 +15,9 @@ defmodule CRC.Repo.Migrations.NormalizeNamesToTitleCase do
     execute "UPDATE product_variants SET name = initcap(name) WHERE name IS NOT NULL"
     execute "UPDATE product_categories SET name = initcap(name) WHERE name IS NOT NULL"
     execute "UPDATE suppliers        SET name = initcap(name) WHERE name IS NOT NULL"
+
     execute "UPDATE suppliers        SET contact_name = initcap(contact_name) WHERE contact_name IS NOT NULL"
+
     execute "UPDATE categories       SET name = initcap(name) WHERE name IS NOT NULL"
     execute "UPDATE menu_items       SET name = initcap(name) WHERE name IS NOT NULL"
     execute "UPDATE packages         SET name = initcap(name) WHERE name IS NOT NULL"

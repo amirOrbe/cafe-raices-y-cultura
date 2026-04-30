@@ -94,10 +94,10 @@ defmodule CRC.ShiftNotes do
   # Labels / metadata
   # ---------------------------------------------------------------------------
 
-  def category_label("stock"),       do: "🔴 Alerta de stock"
+  def category_label("stock"), do: "🔴 Alerta de stock"
   def category_label("preparacion"), do: "📋 Preparación"
-  def category_label("equipo"),      do: "⚙️ Equipo"
-  def category_label(_),             do: "💬 General"
+  def category_label("equipo"), do: "⚙️ Equipo"
+  def category_label(_), do: "💬 General"
 
   def categories do
     [

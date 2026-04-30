@@ -33,7 +33,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
   @impl true
   def handle_info({:order_updated, _order_id}, socket) do
     new_orders = Orders.list_open_orders()
-    new_ids    = sent_kitchen_ids(new_orders)
+    new_ids = sent_kitchen_ids(new_orders)
     new_items? = not MapSet.subset?(new_ids, socket.assigns.seen_sent_ids)
 
     socket =
@@ -41,7 +41,8 @@ defmodule CRCWeb.Kitchen.DisplayLive do
       |> assign(:orders, new_orders)
       |> assign(:seen_sent_ids, new_ids)
 
-    socket = if new_items?, do: push_event(socket, "play_sound", %{type: "new_order"}), else: socket
+    socket =
+      if new_items?, do: push_event(socket, "play_sound", %{type: "new_order"}), else: socket
 
     {:noreply, socket}
   end
@@ -100,11 +101,14 @@ defmodule CRCWeb.Kitchen.DisplayLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <SiteComponents.site_navbar nav_open={@nav_open} current_page={:cocina} current_user={@current_user} />
+    <SiteComponents.site_navbar
+      nav_open={@nav_open}
+      current_page={:cocina}
+      current_user={@current_user}
+    />
     <div id="sound-notifier" phx-hook="SoundNotifier" class="hidden"></div>
     <div class="min-h-screen bg-base-200 pt-20 pb-10 px-4">
       <div class="max-w-6xl mx-auto space-y-6">
-
         <%!-- Header --%>
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -133,13 +137,14 @@ defmodule CRCWeb.Kitchen.DisplayLive do
             <% food_items = food_items(order) %>
             <%= if food_items != [] do %>
               <div class="bg-base-100 rounded-2xl border border-warning shadow-sm flex flex-col">
-
                 <%!-- Order header --%>
                 <div class="px-4 py-3 bg-warning/10 rounded-t-2xl border-b border-warning/30 flex items-center justify-between">
                   <div>
                     <h2 class="font-bold text-base-content">{order.customer_name}</h2>
                     <p class="text-xs text-base-content/50">
-                      {length(food_items)} {if length(food_items) == 1, do: "platillo", else: "platillos"}
+                      {length(food_items)} {if length(food_items) == 1,
+                        do: "platillo",
+                        else: "platillos"}
                     </p>
                   </div>
                   <span class="badge badge-warning badge-sm">Enviado</span>
@@ -174,7 +179,10 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                           </p>
                         <% end %>
                         <%!-- Variant selections (e.g. leche de avena) --%>
-                        <% item_variants = Enum.filter(order.order_items, fn oi -> not is_nil(oi.variant_id) and oi.for_menu_item_id == item.menu_item_id end) %>
+                        <% item_variants =
+                          Enum.filter(order.order_items, fn oi ->
+                            not is_nil(oi.variant_id) and oi.for_menu_item_id == item.menu_item_id
+                          end) %>
                         <%= if item_variants != [] do %>
                           <div class="flex flex-wrap items-center gap-1 mt-1">
                             <%= for vi <- item_variants do %>
@@ -221,11 +229,9 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                     phx-click="mark_order_ready"
                     phx-value-id={order.id}
                   >
-                    <.icon name="hero-check" class="size-4" />
-                    Todo listo — {order.customer_name}
+                    <.icon name="hero-check" class="size-4" /> Todo listo — {order.customer_name}
                   </button>
                 </div>
-
               </div>
             <% end %>
           <% end %>
@@ -253,7 +259,6 @@ defmodule CRCWeb.Kitchen.DisplayLive do
             </div>
           </div>
         <% end %>
-
       </div>
     </div>
     <.flash_group flash={@flash} />

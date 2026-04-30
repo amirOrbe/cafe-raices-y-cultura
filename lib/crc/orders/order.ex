@@ -46,14 +46,21 @@ defmodule CRC.Orders.Order do
   def manual_changeset(order, attrs) do
     order
     |> cast(attrs, [
-      :customer_name, :notes, :payment_method, :amount_paid,
-      :total, :closed_at, :closed_by_id, :manual_entry
+      :customer_name,
+      :notes,
+      :payment_method,
+      :amount_paid,
+      :total,
+      :closed_at,
+      :closed_by_id,
+      :manual_entry
     ])
     |> validate_required([:customer_name, :payment_method, :total, :closed_at])
     |> put_change(:status, "closed")
     |> put_change(:manual_entry, true)
     |> validate_inclusion(:payment_method, @valid_payment_methods,
-        message: "debe ser efectivo, tarjeta o transferencia")
+      message: "debe ser efectivo, tarjeta o transferencia"
+    )
     |> validate_cash_amount()
   end
 
@@ -67,7 +74,8 @@ defmodule CRC.Orders.Order do
     |> validate_required([:status, :payment_method, :total])
     |> validate_inclusion(:status, @valid_statuses)
     |> validate_inclusion(:payment_method, @valid_payment_methods,
-        message: "debe ser efectivo, tarjeta o transferencia")
+      message: "debe ser efectivo, tarjeta o transferencia"
+    )
     |> validate_cash_amount()
   end
 

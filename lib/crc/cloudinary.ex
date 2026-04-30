@@ -55,7 +55,8 @@ defmodule CRC.Cloudinary do
 
       case Req.post(url,
              body: body,
-             headers: [{"content-type", "multipart/form-data; boundary=#{boundary}"}]) do
+             headers: [{"content-type", "multipart/form-data; boundary=#{boundary}"}]
+           ) do
         {:ok, %{status: 200, body: %{"secure_url" => secure_url}}} ->
           {:ok, secure_url}
 

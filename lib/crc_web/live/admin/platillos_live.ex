@@ -23,6 +23,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
       |> assign(:selected_product_id, "")
       |> assign(:ingredient_quantity_input, "")
       |> assign(:remove_image, false)
+      |> assign(:expanded_ids, MapSet.new())
       |> allow_upload(:photo,
         accept: ~w(.jpg .jpeg .png .webp),
         max_entries: 1,
@@ -44,6 +45,17 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
   def handle_event("set_category_filter", %{"category" => cat}, socket) do
     {:noreply, assign(socket, :filter_category, cat)}
+  end
+
+  def handle_event("toggle_expand", %{"id" => id}, socket) do
+    id = String.to_integer(id)
+
+    expanded =
+      if MapSet.member?(socket.assigns.expanded_ids, id),
+        do: MapSet.delete(socket.assigns.expanded_ids, id),
+        else: MapSet.put(socket.assigns.expanded_ids, id)
+
+    {:noreply, assign(socket, :expanded_ids, expanded)}
   end
 
   # ---------------------------------------------------------------------------
@@ -367,95 +379,125 @@ defmodule CRCWeb.Admin.PlatillosLive do
           </div>
         <% end %>
         <%= for item <- visible do %>
-          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-center gap-3">
-            <%!-- Thumbnail --%>
-            <%= if item.image_url do %>
-              <img
-                src={item.image_url}
-                class="w-14 h-14 rounded-xl object-cover shrink-0 border border-base-300"
-                loading="lazy"
+          <% expanded = MapSet.member?(@expanded_ids, item.id) %>
+          <div class={[
+            "bg-base-100 rounded-2xl border shadow-sm overflow-hidden",
+            if(expanded, do: "border-primary/30", else: "border-base-300")
+          ]}>
+            <div class="p-3 flex items-center gap-3">
+              <%!-- Thumbnail --%>
+              <%= if item.image_url do %>
+                <img
+                  src={item.image_url}
+                  class="w-14 h-14 rounded-xl object-cover shrink-0 border border-base-300"
+                  loading="lazy"
+                />
+              <% else %>
+                <div class="w-14 h-14 rounded-xl bg-base-200 flex items-center justify-center shrink-0 border border-base-300">
+                  <.icon name="hero-photo" class="size-6 text-base-content/25" />
+                </div>
+              <% end %>
+              <%!-- Info --%>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <p class="font-semibold text-sm text-base-content truncate">{item.name}</p>
+                  <%= if item.featured do %>
+                    <.icon name="hero-star-solid" class="size-3 text-warning shrink-0" />
+                  <% end %>
+                </div>
+                <%= if item.description do %>
+                  <p class="text-xs text-base-content/50 truncate mt-0.5">{item.description}</p>
+                <% end %>
+                <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <span class="badge badge-xs badge-ghost">
+                    {if item.category, do: item.category.name, else: "Sin categoría"}
+                  </span>
+                  <span class="text-xs font-semibold text-base-content">
+                    ${format_price(item.price)}
+                  </span>
+                  <% cost = Catalog.item_cost(item) %>
+                  <%= if cost do %>
+                    <% margin = item_margin(item.price, cost) %>
+                    <span
+                      class={"badge badge-xs #{margin_badge_class(margin)}"}
+                      title="Margen sobre precio de venta"
+                    >
+                      {margin}% margen
+                    </span>
+                  <% else %>
+                    <span
+                      class="badge badge-xs badge-ghost"
+                      title="Agrega ingredientes con costo para ver el margen"
+                    >
+                      Sin costo
+                    </span>
+                  <% end %>
+                  <%= if item.available do %>
+                    <span class="badge badge-xs badge-success">Visible</span>
+                  <% else %>
+                    <span class="badge badge-xs badge-ghost">Oculto</span>
+                  <% end %>
+                  <%= if item.menu_item_ingredients == [] do %>
+                    <span class="badge badge-xs badge-warning gap-0.5">
+                      <.icon name="hero-exclamation-triangle" class="size-2.5" />
+                      Sin receta
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+              <%!-- Actions --%>
+              <div class="flex flex-col items-center gap-1 shrink-0">
+                <button
+                  class="btn btn-ghost btn-xs btn-circle"
+                  phx-click="edit_item"
+                  phx-value-id={item.id}
+                  title="Editar"
+                >
+                  <.icon name="hero-pencil" class="size-4" />
+                </button>
+                <button
+                  class={[
+                    "btn btn-ghost btn-xs btn-circle",
+                    if(item.available, do: "text-warning", else: "text-success")
+                  ]}
+                  phx-click="toggle_available"
+                  phx-value-id={item.id}
+                  title={if item.available, do: "Ocultar del menú", else: "Publicar en menú"}
+                >
+                  <.icon
+                    name={if item.available, do: "hero-eye-slash", else: "hero-eye"}
+                    class="size-4"
+                  />
+                </button>
+                <button
+                  class="btn btn-ghost btn-xs btn-circle text-error"
+                  phx-click="delete_item"
+                  phx-value-id={item.id}
+                  title="Eliminar"
+                  data-confirm={"¿Eliminar «#{item.name}»? Esta acción no se puede deshacer."}
+                >
+                  <.icon name="hero-trash" class="size-4" />
+                </button>
+              </div>
+            </div>
+            <%!-- Expand toggle --%>
+            <button
+              class="w-full flex items-center justify-center gap-1 py-1.5 text-xs text-base-content/40 hover:text-primary border-t border-base-200 hover:bg-primary/5 transition-colors"
+              phx-click="toggle_expand"
+              phx-value-id={item.id}
+            >
+              <.icon
+                name={if expanded, do: "hero-chevron-up", else: "hero-chevron-down"}
+                class="size-3"
               />
-            <% else %>
-              <div class="w-14 h-14 rounded-xl bg-base-200 flex items-center justify-center shrink-0 border border-base-300">
-                <.icon name="hero-photo" class="size-6 text-base-content/25" />
+              {if expanded, do: "Ocultar desglose", else: "Ver desglose de costos"}
+            </button>
+            <%!-- Expanded breakdown --%>
+            <%= if expanded do %>
+              <div class="border-t border-base-200 bg-base-200/30">
+                <.cost_breakdown item={item} />
               </div>
             <% end %>
-            <%!-- Info --%>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <p class="font-semibold text-sm text-base-content truncate">{item.name}</p>
-                <%= if item.featured do %>
-                  <.icon name="hero-star-solid" class="size-3 text-warning shrink-0" />
-                <% end %>
-              </div>
-              <%= if item.description do %>
-                <p class="text-xs text-base-content/50 truncate mt-0.5">{item.description}</p>
-              <% end %>
-              <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span class="badge badge-xs badge-ghost">
-                  {if item.category, do: item.category.name, else: "Sin categoría"}
-                </span>
-                <span class="text-xs font-semibold text-base-content">
-                  ${format_price(item.price)}
-                </span>
-                <% cost = Catalog.item_cost(item) %>
-                <%= if cost do %>
-                  <% margin = item_margin(item.price, cost) %>
-                  <span
-                    class={"badge badge-xs #{margin_badge_class(margin)}"}
-                    title="Margen sobre precio de venta"
-                  >
-                    {margin}% margen
-                  </span>
-                <% else %>
-                  <span
-                    class="badge badge-xs badge-ghost"
-                    title="Agrega ingredientes con costo para ver el margen"
-                  >
-                    Sin costo
-                  </span>
-                <% end %>
-                <%= if item.available do %>
-                  <span class="badge badge-xs badge-success">Visible</span>
-                <% else %>
-                  <span class="badge badge-xs badge-ghost">Oculto</span>
-                <% end %>
-              </div>
-            </div>
-            <%!-- Actions --%>
-            <div class="flex flex-col items-center gap-1 shrink-0">
-              <button
-                class="btn btn-ghost btn-xs btn-circle"
-                phx-click="edit_item"
-                phx-value-id={item.id}
-                title="Editar"
-              >
-                <.icon name="hero-pencil" class="size-4" />
-              </button>
-              <button
-                class={[
-                  "btn btn-ghost btn-xs btn-circle",
-                  if(item.available, do: "text-warning", else: "text-success")
-                ]}
-                phx-click="toggle_available"
-                phx-value-id={item.id}
-                title={if item.available, do: "Ocultar del menú", else: "Publicar en menú"}
-              >
-                <.icon
-                  name={if item.available, do: "hero-eye-slash", else: "hero-eye"}
-                  class="size-4"
-                />
-              </button>
-              <button
-                class="btn btn-ghost btn-xs btn-circle text-error"
-                phx-click="delete_item"
-                phx-value-id={item.id}
-                title="Eliminar"
-                data-confirm={"¿Eliminar «#{item.name}»? Esta acción no se puede deshacer."}
-              >
-                <.icon name="hero-trash" class="size-4" />
-              </button>
-            </div>
           </div>
         <% end %>
       </div>
@@ -466,18 +508,19 @@ defmodule CRCWeb.Admin.PlatillosLive do
           <table class="table table-zebra table-fixed w-full">
             <thead>
               <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th class="w-[36%]">Platillo</th>
-                <th class="w-[13%]">Categoría</th>
-                <th class="w-[16%]">Precio / Costo</th>
-                <th class="w-[10%]">Margen</th>
-                <th class="w-[10%]">Destacado</th>
+                <th class="w-[33%]">Platillo</th>
+                <th class="w-[12%]">Categoría</th>
+                <th class="w-[15%]">Precio / Costo</th>
+                <th class="w-[9%]">Margen</th>
+                <th class="w-[9%]">Destacado</th>
                 <th class="w-[8%]">Estado</th>
-                <th class="w-[7%] text-right">Acciones</th>
+                <th class="w-[14%] text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <%= for item <- visible do %>
-                <tr class="hover:bg-base-200/50 transition-colors">
+                <% expanded = MapSet.member?(@expanded_ids, item.id) %>
+                <tr class={["hover:bg-base-200/50 transition-colors", if(expanded, do: "bg-primary/5", else: "")]}>
                   <td class="max-w-0">
                     <div class="flex items-center gap-3">
                       <%= if item.image_url do %>
@@ -496,7 +539,24 @@ defmodule CRCWeb.Admin.PlatillosLive do
                         <%= if item.description do %>
                           <p class="text-xs text-base-content/50 truncate">{item.description}</p>
                         <% end %>
+                        <%= if item.menu_item_ingredients == [] do %>
+                          <span class="badge badge-xs badge-warning gap-0.5 mt-0.5 inline-flex">
+                            <.icon name="hero-exclamation-triangle" class="size-2.5" />
+                            Sin receta
+                          </span>
+                        <% end %>
                       </div>
+                      <button
+                        class="btn btn-ghost btn-xs btn-circle shrink-0 text-base-content/30 hover:text-primary"
+                        phx-click="toggle_expand"
+                        phx-value-id={item.id}
+                        title={if expanded, do: "Cerrar desglose", else: "Ver desglose de costos"}
+                      >
+                        <.icon
+                          name={if expanded, do: "hero-chevron-up", else: "hero-chevron-down"}
+                          class="size-3.5"
+                        />
+                      </button>
                     </div>
                   </td>
                   <td>
@@ -571,10 +631,19 @@ defmodule CRCWeb.Admin.PlatillosLive do
                     </div>
                   </td>
                 </tr>
+                <%= if expanded do %>
+                  <tr>
+                    <td colspan="7" class="p-0 border-b border-base-200">
+                      <div class="bg-base-200/30">
+                        <.cost_breakdown item={item} />
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
               <% end %>
               <%= if visible == [] do %>
                 <tr>
-                  <td colspan="6" class="text-center py-12 text-base-content/40 text-sm">
+                  <td colspan="7" class="text-center py-12 text-base-content/40 text-sm">
                     {cond do
                       @status_filter == :unavailable && @filter_category == "all" ->
                         "No hay platillos ocultos."
@@ -1017,6 +1086,110 @@ defmodule CRCWeb.Admin.PlatillosLive do
   end
 
   # ---------------------------------------------------------------------------
+  # Cost breakdown panel (shared by desktop sub-row and mobile accordion)
+  # ---------------------------------------------------------------------------
+
+  attr :item, :map, required: true
+
+  defp cost_breakdown(assigns) do
+    cost = Catalog.item_cost(assigns.item)
+    assigns = assign(assigns, :cost, cost)
+
+    ~H"""
+    <div class="px-4 py-3 space-y-2.5">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-base-content/30">
+        Desglose de costos
+      </p>
+
+      <%= if @item.menu_item_ingredients == [] do %>
+        <div class="flex items-center gap-2 text-xs text-warning py-1">
+          <.icon name="hero-exclamation-triangle" class="size-3.5 shrink-0" />
+          <span>Sin ingredientes registrados — el costo y margen no pueden calcularse.</span>
+          <button
+            class="link link-warning ml-auto text-[10px] shrink-0"
+            phx-click="edit_item"
+            phx-value-id={@item.id}
+          >
+            Agregar receta →
+          </button>
+        </div>
+      <% else %>
+        <table class="w-full text-xs border-collapse">
+          <thead>
+            <tr class="text-base-content/30 text-[10px] uppercase border-b border-base-200">
+              <th class="text-left py-1 pr-2 font-semibold">Ingrediente</th>
+              <th class="text-right py-1 px-2 font-semibold">Cantidad</th>
+              <th class="text-right py-1 px-2 font-semibold">Costo/u</th>
+              <th class="text-right py-1 pl-2 font-semibold">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%= for mii <- @item.menu_item_ingredients do %>
+              <tr class="border-b border-base-100/50">
+                <td class="py-1 pr-2 text-base-content/70 font-medium">
+                  {mii.product && mii.product.name}
+                </td>
+                <td class="py-1 px-2 text-right font-mono text-base-content/60">
+                  {format_qty(mii.quantity)} {mii.product && unit_abbr(mii.product.unit)}
+                </td>
+                <td class="py-1 px-2 text-right font-mono">
+                  <%= if mii.product && mii.product.net_cost do %>
+                    <span class="text-base-content/60">${format_money(mii.product.net_cost)}</span>
+                  <% else %>
+                    <span class="text-warning text-[10px] font-medium">Sin costo</span>
+                  <% end %>
+                </td>
+                <td class="py-1 pl-2 text-right font-mono font-semibold">
+                  <%= if mii.product && mii.product.net_cost do %>
+                    <span class="text-error">${format_money(ingredient_line_cost(mii))}</span>
+                  <% else %>
+                    <span class="text-base-content/30">—</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+
+        <%!-- Summary bar --%>
+        <% price_d = Decimal.new("#{@item.price}") %>
+        <div class="flex items-center gap-x-4 gap-y-1 flex-wrap pt-1.5 text-xs border-t border-base-200">
+          <span class="text-base-content/50">
+            Costo:
+            <strong class="text-error font-mono">
+              {if @cost, do: "$#{format_money(@cost)}", else: "—"}
+            </strong>
+          </span>
+          <span class="text-base-content/50">
+            Venta:
+            <strong class="font-mono text-base-content">${format_price(@item.price)}</strong>
+          </span>
+          <%= if @cost do %>
+            <% profit = Decimal.sub(price_d, @cost) %>
+            <% margin = item_margin(@item.price, @cost) %>
+            <span class="text-base-content/50">
+              Ganancia:
+              <strong class={"font-mono #{if margin >= 60, do: "text-success", else: if(margin >= 35, do: "text-warning", else: "text-error")}"}>
+                ${format_money(profit)}
+              </strong>
+              <span class={"badge badge-xs #{margin_badge_class(margin)} ml-0.5"}>{margin}%</span>
+            </span>
+          <% end %>
+          <%= if Enum.any?(@item.menu_item_ingredients, fn mii ->
+                !(mii.product && mii.product.net_cost)
+              end) do %>
+            <span class="badge badge-warning badge-xs gap-0.5 ml-auto">
+              <.icon name="hero-exclamation-triangle" class="size-2.5" />
+              Ingredientes sin costo
+            </span>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  # ---------------------------------------------------------------------------
   # Category filter tab
   # ---------------------------------------------------------------------------
 
@@ -1104,4 +1277,24 @@ defmodule CRCWeb.Admin.PlatillosLive do
   defp margin_badge_class(m) when m >= 60, do: "badge-success"
   defp margin_badge_class(m) when m >= 35, do: "badge-warning"
   defp margin_badge_class(_), do: "badge-error"
+
+  # Line cost for one ingredient row: quantity × net_cost per unit
+  defp ingredient_line_cost(mii) do
+    net_cost = (mii.product && mii.product.net_cost) || Decimal.new(0)
+    Decimal.mult(mii.quantity, net_cost)
+  end
+
+  # Monetary display rounded to 2 decimal places, trailing zeros stripped
+  defp format_money(%Decimal{} = d) do
+    if Decimal.integer?(d),
+      do: d |> Decimal.to_integer() |> to_string(),
+      else:
+        d
+        |> Decimal.round(2)
+        |> Decimal.to_string()
+        |> String.trim_trailing("0")
+        |> String.trim_trailing(".")
+  end
+
+  defp format_money(val), do: to_string(val)
 end

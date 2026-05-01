@@ -618,7 +618,7 @@ defmodule CRCWeb.Components.SiteComponents do
           :if={not is_nil(Map.get(@item, :description)) and Map.get(@item, :description) != ""}
           class="max-h-[4.5rem] overflow-y-auto pr-1"
         >
-          <p class="text-sm text-base-content/60 leading-relaxed break-words">
+          <p class="text-sm text-base-content/60 leading-relaxed break-words whitespace-pre-line">
             {Map.get(@item, :description)}
           </p>
         </div>

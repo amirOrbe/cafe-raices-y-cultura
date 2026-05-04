@@ -8,10 +8,13 @@ defmodule CRCWeb.Kitchen.DisplayLive do
   alias CRC.Orders
   alias CRCWeb.Components.SiteComponents
 
+  @tick_interval 60_000
+
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(CRC.PubSub, "orders")
+      schedule_tick()
     end
 
     orders = Orders.list_open_orders()
@@ -21,13 +24,14 @@ defmodule CRCWeb.Kitchen.DisplayLive do
       |> assign(:page_title, "Cocina")
       |> assign(:orders, orders)
       |> assign(:nav_open, false)
+      |> assign(:now, DateTime.utc_now())
       |> assign(:seen_sent_ids, sent_kitchen_ids(orders))
 
     {:ok, socket}
   end
 
   # ---------------------------------------------------------------------------
-  # PubSub
+  # PubSub + tick
   # ---------------------------------------------------------------------------
 
   @impl true
@@ -45,6 +49,11 @@ defmodule CRCWeb.Kitchen.DisplayLive do
       if new_items?, do: push_event(socket, "play_sound", %{type: "new_order"}), else: socket
 
     {:noreply, socket}
+  end
+
+  def handle_info(:tick, socket) do
+    schedule_tick()
+    {:noreply, assign(socket, :now, DateTime.utc_now())}
   end
 
   # ---------------------------------------------------------------------------
@@ -135,6 +144,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <%= for order <- pending_orders(@orders) do %>
             <% food_items = food_items(order) %>
+            <% mins = elapsed_minutes(order, @now, &kitchen_item?/1) %>
             <%= if food_items != [] do %>
               <div class="bg-base-100 rounded-2xl border border-warning shadow-sm flex flex-col">
                 <%!-- Order header --%>
@@ -147,7 +157,21 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                         else: "platillos"}
                     </p>
                   </div>
-                  <span class="badge badge-warning badge-sm">Enviado</span>
+                  <div class="flex items-center gap-2">
+                    <%= if mins do %>
+                      <span class={[
+                        "text-xs font-mono font-semibold tabular-nums",
+                        cond do
+                          mins >= 12 -> "text-error animate-pulse"
+                          mins >= 7 -> "text-warning"
+                          true -> "text-success"
+                        end
+                      ]}>
+                        🕐 {mins}m
+                      </span>
+                    <% end %>
+                    <span class="badge badge-warning badge-sm">Enviado</span>
+                  </div>
                 </div>
 
                 <%!-- Food items list --%>
@@ -305,16 +329,39 @@ defmodule CRCWeb.Kitchen.DisplayLive do
     end
   end
 
-  # An order is pending in cocina if ANY kitchen item still has status "sent",
-  # regardless of the order-level status (which may have advanced to "ready"
-  # if barra marked everything ready first).
+  # An order is pending in cocina if ANY kitchen item still has status "sent".
+  # Sorted by oldest sent_at first (FIFO) so the team always works in arrival order.
   defp pending_orders(orders) do
-    Enum.filter(orders, fn o ->
+    orders
+    |> Enum.filter(fn o ->
       Enum.any?(o.order_items, fn oi -> oi.status == "sent" and kitchen_item?(oi) end)
     end)
+    |> Enum.sort_by(
+      fn o ->
+        o.order_items
+        |> Enum.filter(&(&1.status == "sent" and kitchen_item?(&1) and not is_nil(&1.sent_at)))
+        |> Enum.map(& &1.sent_at)
+        |> Enum.min(DateTime, fn -> DateTime.utc_now() end)
+      end,
+      DateTime
+    )
   end
 
   defp ready_orders(orders), do: Enum.filter(orders, &(&1.status == "ready"))
+
+  # Minutes elapsed since the oldest sent item of the given type in this order.
+  # Returns nil if no sent items with a sent_at timestamp exist.
+  defp elapsed_minutes(order, now, item_filter) do
+    sent_ats =
+      order.order_items
+      |> Enum.filter(&(&1.status == "sent" and not is_nil(&1.sent_at) and item_filter.(&1)))
+      |> Enum.map(& &1.sent_at)
+
+    case sent_ats do
+      [] -> nil
+      ats -> DateTime.diff(now, Enum.min(ats, DateTime), :minute)
+    end
+  end
 
   # Returns the set of IDs of kitchen items currently in "sent" state.
   # Used to detect newly-arrived items and trigger the notification sound.
@@ -324,4 +371,6 @@ defmodule CRCWeb.Kitchen.DisplayLive do
     |> Enum.filter(&(&1.status == "sent" and kitchen_item?(&1)))
     |> MapSet.new(& &1.id)
   end
+
+  defp schedule_tick, do: Process.send_after(self(), :tick, @tick_interval)
 end

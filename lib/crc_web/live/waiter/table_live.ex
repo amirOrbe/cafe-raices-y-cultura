@@ -16,15 +16,18 @@ defmodule CRCWeb.Waiter.TableLive do
       Process.send_after(self(), :tick, @tick_interval)
     end
 
+    orders = Orders.list_active_orders()
+
     socket =
       socket
       |> assign(:page_title, "Comandas")
-      |> assign(:orders, Orders.list_active_orders())
+      |> assign(:orders, orders)
       |> assign(:now, DateTime.utc_now())
       |> assign(:show_new_modal, false)
       |> assign(:new_name, "")
       |> assign(:name_error, nil)
       |> assign(:nav_open, false)
+      |> assign(:seen_ready_ids, all_ready_ids(orders))
 
     {:ok, socket}
   end
@@ -35,10 +38,20 @@ defmodule CRCWeb.Waiter.TableLive do
 
   @impl true
   def handle_info({:order_updated, _order_id}, socket) do
-    {:noreply,
-     socket
-     |> assign(:orders, Orders.list_active_orders())
-     |> assign(:now, DateTime.utc_now())}
+    new_orders = Orders.list_active_orders()
+    new_ids = all_ready_ids(new_orders)
+    new_ready? = not MapSet.subset?(new_ids, socket.assigns.seen_ready_ids)
+
+    socket =
+      socket
+      |> assign(:orders, new_orders)
+      |> assign(:now, DateTime.utc_now())
+      |> assign(:seen_ready_ids, new_ids)
+
+    socket =
+      if new_ready?, do: push_event(socket, "play_sound", %{type: "item_ready"}), else: socket
+
+    {:noreply, socket}
   end
 
   def handle_info(:tick, socket) do
@@ -106,6 +119,7 @@ defmodule CRCWeb.Waiter.TableLive do
       current_page={:waiter}
       current_user={@current_user}
     />
+    <div id="sound-notifier" phx-hook="SoundNotifier" class="hidden"></div>
     <div class="min-h-screen bg-base-200 pt-20 pb-10 px-4">
       <div class="max-w-5xl mx-auto space-y-6">
         <%!-- Header --%>
@@ -349,4 +363,13 @@ defmodule CRCWeb.Waiter.TableLive do
 
   defp item_is_drink?(%{menu_item: %{destination: "barra"}}), do: true
   defp item_is_drink?(_), do: false
+
+  # Set of all ready item IDs across all active orders.
+  # Used to detect when new items transition to "ready" and play a sound alert.
+  defp all_ready_ids(orders) do
+    orders
+    |> Enum.flat_map(& &1.order_items)
+    |> Enum.filter(&(&1.status == "ready"))
+    |> MapSet.new(& &1.id)
+  end
 end

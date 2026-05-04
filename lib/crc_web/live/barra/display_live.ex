@@ -8,10 +8,13 @@ defmodule CRCWeb.Barra.DisplayLive do
   alias CRC.Orders
   alias CRCWeb.Components.SiteComponents
 
+  @tick_interval 60_000
+
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(CRC.PubSub, "orders")
+      schedule_tick()
     end
 
     orders = Orders.list_open_orders()
@@ -21,13 +24,14 @@ defmodule CRCWeb.Barra.DisplayLive do
       |> assign(:page_title, "Barra")
       |> assign(:orders, orders)
       |> assign(:nav_open, false)
+      |> assign(:now, DateTime.utc_now())
       |> assign(:seen_sent_ids, sent_drink_ids(orders))
 
     {:ok, socket}
   end
 
   # ---------------------------------------------------------------------------
-  # PubSub
+  # PubSub + tick
   # ---------------------------------------------------------------------------
 
   @impl true
@@ -45,6 +49,11 @@ defmodule CRCWeb.Barra.DisplayLive do
       if new_items?, do: push_event(socket, "play_sound", %{type: "new_order"}), else: socket
 
     {:noreply, socket}
+  end
+
+  def handle_info(:tick, socket) do
+    schedule_tick()
+    {:noreply, assign(socket, :now, DateTime.utc_now())}
   end
 
   # ---------------------------------------------------------------------------
@@ -152,6 +161,7 @@ defmodule CRCWeb.Barra.DisplayLive do
                   border_class="border-error"
                   header_class="bg-error/10 border-error/30"
                   type="caliente"
+                  mins={elapsed_minutes(order, @now, &drink_item?/1)}
                 />
               <% end %>
             </div>
@@ -175,6 +185,7 @@ defmodule CRCWeb.Barra.DisplayLive do
                   border_class="border-info"
                   header_class="bg-info/10 border-info/30"
                   type="fria"
+                  mins={elapsed_minutes(order, @now, &drink_item?/1)}
                 />
               <% end %>
             </div>
@@ -198,6 +209,7 @@ defmodule CRCWeb.Barra.DisplayLive do
                   border_class="border-info"
                   header_class="bg-info/10 border-info/30"
                   type="all"
+                  mins={elapsed_minutes(order, @now, &drink_item?/1)}
                 />
               <% end %>
             </div>
@@ -242,6 +254,7 @@ defmodule CRCWeb.Barra.DisplayLive do
   attr :border_class, :string, required: true
   attr :header_class, :string, required: true
   attr :type, :string, required: true
+  attr :mins, :any, default: nil
 
   defp drink_order_card(assigns) do
     ~H"""
@@ -254,7 +267,21 @@ defmodule CRCWeb.Barra.DisplayLive do
             {length(@items)} {if length(@items) == 1, do: "bebida", else: "bebidas"}
           </p>
         </div>
-        <span class={"badge badge-sm #{@badge_class}"}>Enviado</span>
+        <div class="flex items-center gap-2">
+          <%= if @mins do %>
+            <span class={[
+              "text-xs font-mono font-semibold tabular-nums",
+              cond do
+                @mins >= 12 -> "text-error animate-pulse"
+                @mins >= 7 -> "text-warning"
+                true -> "text-success"
+              end
+            ]}>
+              🕐 {@mins}m
+            </span>
+          <% end %>
+          <span class={"badge badge-sm #{@badge_class}"}>Enviado</span>
+        </div>
       </div>
 
       <%!-- Drink items list --%>
@@ -355,12 +382,23 @@ defmodule CRCWeb.Barra.DisplayLive do
   end
 
   # Orders that have at least one sent drink item of the given type.
+  # Sorted by oldest sent_at first (FIFO) so the barista works in arrival order.
   defp orders_by_type(orders, type) do
-    Enum.filter(orders, fn o ->
+    orders
+    |> Enum.filter(fn o ->
       Enum.any?(o.order_items, fn oi ->
         oi.status == "sent" and drink_item?(oi) and barra_type(oi) == type
       end)
     end)
+    |> Enum.sort_by(
+      fn o ->
+        o.order_items
+        |> Enum.filter(&(&1.status == "sent" and drink_item?(&1) and not is_nil(&1.sent_at)))
+        |> Enum.map(& &1.sent_at)
+        |> Enum.min(DateTime, fn -> DateTime.utc_now() end)
+      end,
+      DateTime
+    )
   end
 
   # An order is pending in barra if ANY drink item still has status "sent".
@@ -378,6 +416,20 @@ defmodule CRCWeb.Barra.DisplayLive do
     end)
   end
 
+  # Minutes elapsed since the oldest sent drink item in this order.
+  # Returns nil if no sent items with a sent_at timestamp exist.
+  defp elapsed_minutes(order, now, item_filter) do
+    sent_ats =
+      order.order_items
+      |> Enum.filter(&(&1.status == "sent" and not is_nil(&1.sent_at) and item_filter.(&1)))
+      |> Enum.map(& &1.sent_at)
+
+    case sent_ats do
+      [] -> nil
+      ats -> DateTime.diff(now, Enum.min(ats, DateTime), :minute)
+    end
+  end
+
   # Returns the set of IDs of drink items currently in "sent" state.
   defp sent_drink_ids(orders) do
     orders
@@ -385,4 +437,6 @@ defmodule CRCWeb.Barra.DisplayLive do
     |> Enum.filter(&(&1.status == "sent" and drink_item?(&1)))
     |> MapSet.new(& &1.id)
   end
+
+  defp schedule_tick, do: Process.send_after(self(), :tick, @tick_interval)
 end

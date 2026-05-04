@@ -603,6 +603,17 @@ defmodule CRC.Orders do
     end
   end
 
+  @doc "Sets the for_person identifier on a pending order item (e.g. 'gorra roja')."
+  def set_item_for_person(order_item_id, for_person) do
+    case Repo.get(OrderItem, order_item_id) do
+      nil ->
+        {:error, :not_found}
+
+      item ->
+        update_item(item, %{for_person: for_person})
+    end
+  end
+
   @doc "Removes an OrderItem by id. Broadcasts so kitchen/barra refreshes."
   def remove_item(id) do
     case Repo.get(OrderItem, id) do

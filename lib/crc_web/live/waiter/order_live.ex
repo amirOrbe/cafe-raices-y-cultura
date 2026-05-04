@@ -353,6 +353,24 @@ defmodule CRCWeb.Waiter.OrderLive do
     end
   end
 
+  def handle_event("set_item_for_person", %{"item_id" => id, "for_person" => for_person}, socket) do
+    order_item_id = String.to_integer(id)
+    order = socket.assigns.order
+    item = Enum.find(order.order_items, &(&1.id == order_item_id))
+
+    if item && item.status == "pending" do
+      case Orders.set_item_for_person(order_item_id, for_person) do
+        {:ok, _} ->
+          {:noreply, assign(socket, :order, Orders.get_order!(order.id))}
+
+        {:error, _} ->
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("increment_item", %{"id" => id}, socket) do
     item = Enum.find(socket.assigns.order.order_items, &(to_string(&1.id) == id))
 
@@ -633,12 +651,33 @@ defmodule CRCWeb.Waiter.OrderLive do
           <%!-- Left panel: current order items --%>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm">
             <div class="px-4 py-3 border-b border-base-300">
-              <h2 class="font-semibold text-base-content">Comanda</h2>
-              <p class="text-xs text-base-content/50 mt-0.5">
-                {length(@order.order_items)} {if length(@order.order_items) == 1,
-                  do: "artículo",
-                  else: "artículos"}
-              </p>
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="font-semibold text-base-content">Comanda</h2>
+                <%!-- Status summary strip --%>
+                <% pending_count = Enum.count(@order.order_items, &(&1.status == "pending")) %>
+                <% sent_count = Enum.count(@order.order_items, &(&1.status == "sent")) %>
+                <% ready_count = Enum.count(@order.order_items, &(&1.status == "ready")) %>
+                <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                  <%= if pending_count > 0 do %>
+                    <span class="badge badge-xs badge-warning gap-0.5">
+                      <span class="size-1.5 rounded-full bg-warning-content/70 inline-block"></span>
+                      {pending_count} pend.
+                    </span>
+                  <% end %>
+                  <%= if sent_count > 0 do %>
+                    <span class="badge badge-xs badge-info gap-0.5">
+                      <span class="size-1.5 rounded-full bg-info-content/70 inline-block"></span>
+                      {sent_count} cocina
+                    </span>
+                  <% end %>
+                  <%= if ready_count > 0 do %>
+                    <span class="badge badge-xs badge-success gap-0.5 animate-pulse">
+                      <span class="size-1.5 rounded-full bg-success-content/70 inline-block"></span>
+                      {ready_count} ✓
+                    </span>
+                  <% end %>
+                </div>
+              </div>
             </div>
 
             <%!-- Cancel dialog — shown when mesero taps trash on a sent/ready item --%>
@@ -677,6 +716,13 @@ defmodule CRCWeb.Waiter.OrderLive do
               </div>
             <% end %>
 
+            <%!-- Pre-compute distinct person identifiers already used in this order --%>
+            <% used_persons =
+              @order.order_items
+              |> Enum.map(& &1.for_person)
+              |> Enum.reject(&(is_nil(&1) or &1 == ""))
+              |> Enum.uniq() %>
+
             <div class="divide-y divide-base-200">
               <%= if @order.order_items == [] do %>
                 <div class="py-12 text-center text-base-content/40 text-sm">
@@ -687,14 +733,17 @@ defmodule CRCWeb.Waiter.OrderLive do
                   <% cancelled? = item.status in ["cancelled", "cancelled_waste"] %>
                   <% served? = item.status == "served" %>
                   <% overdue? = item_overdue?(item, @now) %>
+                  <%!-- Color-coded left border by status for at-a-glance scanning --%>
                   <div class={[
-                    "flex items-center gap-3 px-4 py-3",
+                    "flex items-center gap-3 px-4 py-3 border-l-[3px]",
                     cond do
-                      cancelled? -> "opacity-40"
-                      served? -> "opacity-40 bg-base-200/40"
-                      overdue? -> "bg-error/5"
-                      item.status == "ready" -> "bg-success/5"
-                      true -> ""
+                      cancelled? -> "opacity-40 border-l-base-300"
+                      served? -> "opacity-40 bg-base-200/40 border-l-base-300"
+                      overdue? -> "bg-error/5 border-l-error"
+                      item.status == "ready" -> "bg-success/5 border-l-success"
+                      item.status == "sent" -> "bg-info/5 border-l-info"
+                      item.status == "pending" -> "border-l-warning"
+                      true -> "border-l-transparent"
                     end
                   ]}>
                     <div class="flex-1 min-w-0">
@@ -709,6 +758,12 @@ defmodule CRCWeb.Waiter.OrderLive do
                             {item.menu_item.name}
                           <% end %>
                         </p>
+                        <%!-- "Para quién" badge — shown when set, for all statuses --%>
+                        <%= if item.for_person && item.for_person != "" do %>
+                          <span class="badge badge-xs badge-ghost gap-0.5 shrink-0">
+                            👤 {item.for_person}
+                          </span>
+                        <% end %>
                         <%= if item.package_id do %>
                           <span class="badge badge-xs badge-primary gap-0.5 mt-0.5">
                             <.icon name="hero-gift" class="size-2.5" /> Paquete
@@ -753,6 +808,60 @@ defmodule CRCWeb.Waiter.OrderLive do
                           <% end %>
                         <% end %>
                       </p>
+
+                      <%!-- "Para quién" input — editable only while pending --%>
+                      <%= if item.status == "pending" do %>
+                        <div class="mt-1.5 pt-1.5 border-t border-base-200 space-y-1">
+                          <%!-- Quick-pick chips from already-entered persons in this order --%>
+                          <%= if used_persons != [] do %>
+                            <div class="flex gap-1 flex-wrap">
+                              <%= for person <- used_persons do %>
+                                <button
+                                  type="button"
+                                  class={[
+                                    "badge badge-xs cursor-pointer transition-all select-none",
+                                    if(item.for_person == person,
+                                      do: "badge-primary",
+                                      else: "badge-ghost hover:badge-primary"
+                                    )
+                                  ]}
+                                  phx-click="set_item_for_person"
+                                  phx-value-item_id={item.id}
+                                  phx-value-for_person={person}
+                                >
+                                  👤 {person}
+                                </button>
+                              <% end %>
+                              <%= if item.for_person && item.for_person != "" do %>
+                                <button
+                                  type="button"
+                                  class="badge badge-xs badge-ghost cursor-pointer hover:badge-error select-none"
+                                  phx-click="set_item_for_person"
+                                  phx-value-item_id={item.id}
+                                  phx-value-for_person=""
+                                >
+                                  ✕
+                                </button>
+                              <% end %>
+                            </div>
+                          <% end %>
+                          <form phx-change="set_item_for_person">
+                            <input type="hidden" name="item_id" value={item.id} />
+                            <div class="flex items-center gap-1.5">
+                              <span class="text-sm shrink-0 leading-none select-none">👤</span>
+                              <input
+                                type="text"
+                                name="for_person"
+                                maxlength="50"
+                                class="input input-xs flex-1 border-base-300 text-xs placeholder-base-content/30"
+                                placeholder="¿Para quién? ej: señora, gorra roja…"
+                                value={item.for_person || ""}
+                                phx-debounce="600"
+                              />
+                            </div>
+                          </form>
+                        </div>
+                      <% end %>
 
                       <%!-- Ingredient modifier toggles + variant selectors (pending menu items) --%>
                       <%= if item.status == "pending" and not is_nil(item.menu_item_id) and item.menu_item.menu_item_ingredients != [] do %>
@@ -943,17 +1052,23 @@ defmodule CRCWeb.Waiter.OrderLive do
                 </div>
               <% end %>
 
-              <%!-- Send button --%>
+              <%!-- Send button — shows count of pending items --%>
+              <% pending = pending_items(@order) %>
               <button
                 class="btn btn-primary w-full"
                 phx-click="send_to_kitchen"
-                disabled={pending_items(@order) == [] or @order.status == "closed"}
+                disabled={pending == [] or @order.status == "closed"}
               >
                 <.icon name="hero-paper-airplane" class="size-4" />
                 <%= if @order.status == "open" do %>
                   Enviar a cocina y barra
                 <% else %>
                   Enviar adicionales
+                <% end %>
+                <%= if pending != [] do %>
+                  <span class="badge badge-sm badge-primary-content/30 ml-1">
+                    {length(pending)}
+                  </span>
                 <% end %>
               </button>
 

@@ -176,6 +176,13 @@ defmodule CRCWeb.Barra.DisplayLive do
                             <% end %>
                           </div>
                         <% end %>
+                        <%!-- Who at the table ordered this item --%>
+                        <%= if item.for_person && item.for_person != "" do %>
+                          <div class="flex items-center gap-1 mt-1">
+                            <span class="text-xs shrink-0 select-none">👤</span>
+                            <p class="text-xs font-semibold text-base-content/70">{item.for_person}</p>
+                          </div>
+                        <% end %>
                         <%= if item.notes && item.notes != "" do %>
                           <div class="flex items-center gap-1 mt-1 bg-warning/15 rounded px-1.5 py-0.5">
                             <span class="text-xs shrink-0 select-none">📝</span>

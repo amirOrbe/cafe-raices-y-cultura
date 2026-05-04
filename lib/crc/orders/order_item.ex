@@ -9,6 +9,8 @@ defmodule CRC.Orders.OrderItem do
   schema "order_items" do
     field :quantity, :integer, default: 1
     field :notes, :string
+    # Short identifier for who at the table ordered this item (e.g. "gorra roja", "señora")
+    field :for_person, :string
     field :status, :string, default: "pending"
     # For ingredient extras: the recipe portion size (e.g. 120.000 grams per unit ordered).
     # Nil for regular menu-item orders — stock is deducted via the menu item's recipe.
@@ -57,6 +59,7 @@ defmodule CRC.Orders.OrderItem do
     |> cast(attrs, [
       :quantity,
       :notes,
+      :for_person,
       :status,
       :order_id,
       :menu_item_id,

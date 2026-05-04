@@ -1,5 +1,5 @@
 defmodule CRCWeb.Barra.DisplayLive do
-  @moduledoc "Barra display screen. Shows sent orders filtered to drink items only."
+  @moduledoc "Barra display screen. Shows sent orders filtered to drink items only, split by temperature."
 
   use CRCWeb, :live_view
 
@@ -70,17 +70,28 @@ defmodule CRCWeb.Barra.DisplayLive do
     end
   end
 
-  def handle_event("mark_all_drinks_ready", %{"id" => id}, socket) do
+  # Marks all sent drink items of a specific barra_type (or all if type == "all") as ready.
+  def handle_event("mark_drinks_ready", %{"id" => id, "type" => type}, socket) do
     order = Enum.find(socket.assigns.orders, &(to_string(&1.id) == id))
 
     if order do
       order.order_items
-      |> Enum.filter(fn oi -> oi.status == "sent" and drink_item?(oi) end)
+      |> Enum.filter(fn oi ->
+        oi.status == "sent" and drink_item?(oi) and
+          (type == "all" or barra_type(oi) == type)
+      end)
       |> Enum.each(fn oi -> Orders.mark_item_ready(oi.id, socket.assigns.current_user.id) end)
+
+      label =
+        case type do
+          "caliente" -> "#{order.customer_name} — calientes listos."
+          "fria" -> "#{order.customer_name} — frías listas."
+          _ -> "#{order.customer_name} lista en barra."
+        end
 
       {:noreply,
        socket
-       |> put_flash(:info, "#{order.customer_name} lista en barra.")
+       |> put_flash(:info, label)
        |> assign(:orders, Orders.list_open_orders())}
     else
       {:noreply, socket}
@@ -124,102 +135,74 @@ defmodule CRCWeb.Barra.DisplayLive do
           </div>
         <% end %>
 
-        <%!-- Orders grid (drink items only) --%>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <%= for order <- pending_orders(@orders) do %>
-            <% drink_items = drink_items(order) %>
-            <%= if drink_items != [] do %>
-              <div class="bg-base-100 rounded-2xl border border-info shadow-sm flex flex-col">
-                <%!-- Order header --%>
-                <div class="px-4 py-3 bg-info/10 rounded-t-2xl border-b border-info/30 flex items-center justify-between">
-                  <div>
-                    <h2 class="font-bold text-base-content">{order.customer_name}</h2>
-                    <p class="text-xs text-base-content/50">
-                      {length(drink_items)} {if length(drink_items) == 1,
-                        do: "bebida",
-                        else: "bebidas"}
-                    </p>
-                  </div>
-                  <span class="badge badge-info badge-sm">Enviado</span>
-                </div>
+        <%!-- ── Calientes section ──────────────────────────────────────────────── --%>
+        <% caliente_orders = orders_by_type(@orders, "caliente") %>
+        <%= if caliente_orders != [] do %>
+          <div class="space-y-3">
+            <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 uppercase tracking-wider">
+              <span>☕</span> Calientes
+              <span class="badge badge-sm badge-error">{length(caliente_orders)}</span>
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <%= for order <- caliente_orders do %>
+                <.drink_order_card
+                  order={order}
+                  items={typed_drink_items(order, "caliente")}
+                  badge_class="badge-error"
+                  border_class="border-error"
+                  header_class="bg-error/10 border-error/30"
+                  type="caliente"
+                />
+              <% end %>
+            </div>
+          </div>
+        <% end %>
 
-                <%!-- Drink items list --%>
-                <div class="flex-1 divide-y divide-base-200">
-                  <%= for item <- drink_items do %>
-                    <div class="flex items-center gap-3 px-4 py-3">
-                      <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-base-content">
-                          <span class="font-bold text-primary">{item.quantity}×</span>
-                          {item.menu_item && item.menu_item.name}
-                          <%= if item.package_id do %>
-                            <span class="badge badge-xs badge-primary ml-1">Paquete</span>
-                          <% end %>
-                        </p>
-                        <%!-- Variant selections (e.g. leche de avena) --%>
-                        <% item_variants =
-                          Enum.filter(order.order_items, fn oi ->
-                            not is_nil(oi.variant_id) and oi.for_menu_item_id == item.menu_item_id
-                          end) %>
-                        <%= if item_variants != [] do %>
-                          <div class="flex flex-wrap items-center gap-1 mt-1">
-                            <%= for vi <- item_variants do %>
-                              <span class="badge badge-xs badge-primary">{vi.variant.name}</span>
-                            <% end %>
-                          </div>
-                        <% end %>
-                        <%!-- Ingredient exclusions requested by customer --%>
-                        <%= if item.exclusions != [] do %>
-                          <div class="flex flex-wrap items-center gap-1 mt-1">
-                            <span class="text-xs font-bold text-error shrink-0">⚠ Sin:</span>
-                            <%= for excl <- item.exclusions do %>
-                              <span class="badge badge-xs badge-error">{excl.product.name}</span>
-                            <% end %>
-                          </div>
-                        <% end %>
-                        <%!-- Who at the table ordered this item --%>
-                        <%= if item.for_person && item.for_person != "" do %>
-                          <div class="flex items-center gap-1 mt-1">
-                            <span class="text-xs shrink-0 select-none">👤</span>
-                            <p class="text-xs font-semibold text-base-content/70">{item.for_person}</p>
-                          </div>
-                        <% end %>
-                        <%= if item.notes && item.notes != "" do %>
-                          <div class="flex items-center gap-1 mt-1 bg-warning/15 rounded px-1.5 py-0.5">
-                            <span class="text-xs shrink-0 select-none">📝</span>
-                            <p class="text-xs font-semibold text-warning">{item.notes}</p>
-                          </div>
-                        <% end %>
-                      </div>
+        <%!-- ── Frías section ──────────────────────────────────────────────────── --%>
+        <% fria_orders = orders_by_type(@orders, "fria") %>
+        <%= if fria_orders != [] do %>
+          <div class="space-y-3">
+            <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 uppercase tracking-wider">
+              <span>❄️</span> Frías
+              <span class="badge badge-sm badge-info">{length(fria_orders)}</span>
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <%= for order <- fria_orders do %>
+                <.drink_order_card
+                  order={order}
+                  items={typed_drink_items(order, "fria")}
+                  badge_class="badge-info"
+                  border_class="border-info"
+                  header_class="bg-info/10 border-info/30"
+                  type="fria"
+                />
+              <% end %>
+            </div>
+          </div>
+        <% end %>
 
-                      <%= if item.status == "ready" do %>
-                        <span class="badge badge-xs badge-success">Listo</span>
-                      <% else %>
-                        <button
-                          class="btn btn-xs btn-outline btn-success"
-                          phx-click="mark_item_ready"
-                          phx-value-id={item.id}
-                        >
-                          Listo
-                        </button>
-                      <% end %>
-                    </div>
-                  <% end %>
-                </div>
-
-                <%!-- Mark all drinks ready --%>
-                <div class="px-4 py-3 border-t border-base-300">
-                  <button
-                    class="btn btn-success w-full btn-sm"
-                    phx-click="mark_all_drinks_ready"
-                    phx-value-id={order.id}
-                  >
-                    <.icon name="hero-check" class="size-4" /> Todo listo — {order.customer_name}
-                  </button>
-                </div>
-              </div>
-            <% end %>
-          <% end %>
-        </div>
+        <%!-- ── Sin clasificar (items without barra_type set) ─────────────────── --%>
+        <% other_orders = orders_by_type(@orders, nil) %>
+        <%= if other_orders != [] do %>
+          <div class="space-y-3">
+            <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/60 uppercase tracking-wider">
+              <span>🍹</span> Bebidas
+              <span class="badge badge-sm badge-ghost">{length(other_orders)}</span>
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <%= for order <- other_orders do %>
+                <.drink_order_card
+                  order={order}
+                  items={typed_drink_items(order, nil)}
+                  badge_class="badge-info"
+                  border_class="border-info"
+                  header_class="bg-info/10 border-info/30"
+                  type="all"
+                />
+              <% end %>
+            </div>
+          </div>
+        <% end %>
 
         <%!-- Ready orders --%>
         <% ready = ready_drink_orders(@orders) %>
@@ -250,32 +233,144 @@ defmodule CRCWeb.Barra.DisplayLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Private helpers
+  # Private components
   # ---------------------------------------------------------------------------
 
-  # Only show drink items actively waiting to be prepared (not yet marked ready).
-  # Excludes "ready" items so that second-batch sends don't resurface
-  # already-served drinks in the bar queue.
-  defp drink_items(order) do
-    Enum.filter(order.order_items, fn oi ->
-      oi.status == "sent" and drink_item?(oi)
-    end)
+  attr :order, :map, required: true
+  attr :items, :list, required: true
+  attr :badge_class, :string, required: true
+  attr :border_class, :string, required: true
+  attr :header_class, :string, required: true
+  attr :type, :string, required: true
+
+  defp drink_order_card(assigns) do
+    ~H"""
+    <div class={"bg-base-100 rounded-2xl border shadow-sm flex flex-col #{@border_class}"}>
+      <%!-- Order header --%>
+      <div class={"px-4 py-3 rounded-t-2xl border-b flex items-center justify-between #{@header_class}"}>
+        <div>
+          <h2 class="font-bold text-base-content">{@order.customer_name}</h2>
+          <p class="text-xs text-base-content/50">
+            {length(@items)} {if length(@items) == 1, do: "bebida", else: "bebidas"}
+          </p>
+        </div>
+        <span class={"badge badge-sm #{@badge_class}"}>Enviado</span>
+      </div>
+
+      <%!-- Drink items list --%>
+      <div class="flex-1 divide-y divide-base-200">
+        <%= for item <- @items do %>
+          <div class="flex items-center gap-3 px-4 py-3">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-base-content">
+                <span class="font-bold text-primary">{item.quantity}×</span>
+                {item.menu_item && item.menu_item.name}
+                <%= if item.package_id do %>
+                  <span class="badge badge-xs badge-primary ml-1">Paquete</span>
+                <% end %>
+              </p>
+              <%!-- Variant selections --%>
+              <% item_variants =
+                Enum.filter(@order.order_items, fn oi ->
+                  not is_nil(oi.variant_id) and oi.for_menu_item_id == item.menu_item_id
+                end) %>
+              <%= if item_variants != [] do %>
+                <div class="flex flex-wrap items-center gap-1 mt-1">
+                  <%= for vi <- item_variants do %>
+                    <span class="badge badge-xs badge-primary">{vi.variant.name}</span>
+                  <% end %>
+                </div>
+              <% end %>
+              <%!-- Ingredient exclusions --%>
+              <%= if item.exclusions != [] do %>
+                <div class="flex flex-wrap items-center gap-1 mt-1">
+                  <span class="text-xs font-bold text-error shrink-0">⚠ Sin:</span>
+                  <%= for excl <- item.exclusions do %>
+                    <span class="badge badge-xs badge-error">{excl.product.name}</span>
+                  <% end %>
+                </div>
+              <% end %>
+              <%!-- Who at the table ordered this --%>
+              <%= if item.for_person && item.for_person != "" do %>
+                <div class="flex items-center gap-1 mt-1">
+                  <span class="text-xs shrink-0 select-none">👤</span>
+                  <p class="text-xs font-semibold text-base-content/70">{item.for_person}</p>
+                </div>
+              <% end %>
+              <%= if item.notes && item.notes != "" do %>
+                <div class="flex items-center gap-1 mt-1 bg-warning/15 rounded px-1.5 py-0.5">
+                  <span class="text-xs shrink-0 select-none">📝</span>
+                  <p class="text-xs font-semibold text-warning">{item.notes}</p>
+                </div>
+              <% end %>
+            </div>
+
+            <%= if item.status == "ready" do %>
+              <span class="badge badge-xs badge-success">Listo</span>
+            <% else %>
+              <button
+                class="btn btn-xs btn-outline btn-success"
+                phx-click="mark_item_ready"
+                phx-value-id={item.id}
+              >
+                Listo
+              </button>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- Mark all ready for this type --%>
+      <div class="px-4 py-3 border-t border-base-300">
+        <button
+          class="btn btn-success w-full btn-sm"
+          phx-click="mark_drinks_ready"
+          phx-value-id={@order.id}
+          phx-value-type={@type}
+        >
+          <.icon name="hero-check" class="size-4" /> Todo listo — {@order.customer_name}
+        </button>
+      </div>
+    </div>
+    """
   end
+
+  # ---------------------------------------------------------------------------
+  # Private helpers
+  # ---------------------------------------------------------------------------
 
   defp drink_item?(oi) do
     not is_nil(oi.menu_item) and oi.menu_item.destination == "barra"
   end
 
-  # An order is pending in barra if ANY drink item still has status "sent",
-  # regardless of the order-level status (which may have advanced to "ready"
-  # if cocina marked everything ready first while a drink was still pending).
+  # Returns the barra_type of an item ("fria" | "caliente" | nil).
+  defp barra_type(oi), do: oi.menu_item && oi.menu_item.barra_type
+
+  # Sent drink items of a specific type for an order.
+  # type == nil means items with no barra_type set.
+  defp typed_drink_items(order, type) do
+    Enum.filter(order.order_items, fn oi ->
+      oi.status == "sent" and drink_item?(oi) and barra_type(oi) == type
+    end)
+  end
+
+  # Orders that have at least one sent drink item of the given type.
+  defp orders_by_type(orders, type) do
+    Enum.filter(orders, fn o ->
+      Enum.any?(o.order_items, fn oi ->
+        oi.status == "sent" and drink_item?(oi) and barra_type(oi) == type
+      end)
+    end)
+  end
+
+  # An order is pending in barra if ANY drink item still has status "sent".
   defp pending_orders(orders) do
     Enum.filter(orders, fn o ->
       Enum.any?(o.order_items, fn oi -> oi.status == "sent" and drink_item?(oi) end)
     end)
   end
 
-  # Orders where all drink items are ready (none "sent") — waiting to be served.
+  # Orders where all drink items are ready — waiting to be served.
   defp ready_drink_orders(orders) do
     Enum.filter(orders, fn o ->
       drinks = Enum.filter(o.order_items, &drink_item?/1)
@@ -284,7 +379,6 @@ defmodule CRCWeb.Barra.DisplayLive do
   end
 
   # Returns the set of IDs of drink items currently in "sent" state.
-  # Used to detect newly-arrived items and trigger the notification sound.
   defp sent_drink_ids(orders) do
     orders
     |> Enum.flat_map(& &1.order_items)

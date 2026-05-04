@@ -111,6 +111,23 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
   # Triggered by phx-change on the form — needed so auto_upload fires immediately
   # when the user selects a file. No server-side work needed here.
+  def handle_event("validate_upload", %{"menu_item" => params}, socket) do
+    # Re-validate the changeset on every form change so that conditional fields
+    # (e.g. barra_type selector) appear/disappear live as the user edits.
+    item =
+      case socket.assigns.modal do
+        {:edit, item} -> item
+        _ -> %MenuItem{}
+      end
+
+    changeset =
+      item
+      |> Catalog.change_menu_item(params)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, :form, to_form(changeset))}
+  end
+
   def handle_event("validate_upload", _params, socket) do
     {:noreply, socket}
   end
@@ -889,6 +906,54 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   </label>
                 </div>
               </div>
+
+              <%!-- Barra type selector — only shown when destination is barra --%>
+              <%= if @form[:destination].value == "barra" do %>
+                <div>
+                  <label class="label pb-1.5">
+                    <span class="label-text font-medium">Temperatura</span>
+                    <span class="label-text-alt text-base-content/40">¿Fría o caliente?</span>
+                  </label>
+                  <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                    <label class="cursor-pointer">
+                      <input
+                        type="radio"
+                        name="menu_item[barra_type]"
+                        value="fria"
+                        class="sr-only peer"
+                        checked={@form[:barra_type].value == "fria"}
+                      />
+                      <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-info peer-checked:bg-info/5 hover:border-info/30 transition-all">
+                        <span class="text-xl sm:text-3xl">❄️</span>
+                        <div class="text-center">
+                          <p class="font-semibold text-xs sm:text-sm text-base-content">Fría</p>
+                          <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
+                            Frapés, smoothies, aguas…
+                          </p>
+                        </div>
+                      </div>
+                    </label>
+                    <label class="cursor-pointer">
+                      <input
+                        type="radio"
+                        name="menu_item[barra_type]"
+                        value="caliente"
+                        class="sr-only peer"
+                        checked={@form[:barra_type].value == "caliente"}
+                      />
+                      <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-error peer-checked:bg-error/5 hover:border-error/30 transition-all">
+                        <span class="text-xl sm:text-3xl">☕</span>
+                        <div class="text-center">
+                          <p class="font-semibold text-xs sm:text-sm text-base-content">Caliente</p>
+                          <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
+                            Cafés, tés, chocolates…
+                          </p>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              <% end %>
             </div>
 
             <%!-- ── Foto del platillo ───────────────────────────────────────────── --%>

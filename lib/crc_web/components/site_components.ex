@@ -21,6 +21,8 @@ defmodule CRCWeb.Components.SiteComponents do
 
   def site_navbar(assigns) do
     ~H"""
+    <%!-- contents wrapper lets us have nav + mobile overlay as sibling elements --%>
+    <div class="contents">
     <nav class="fixed top-0 left-0 right-0 z-50 bg-base-100/95 backdrop-blur-sm border-b border-base-300 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16 gap-4">
@@ -324,134 +326,109 @@ defmodule CRCWeb.Components.SiteComponents do
         </div>
       </div>
 
-      <%!-- Mobile dropdown --%>
-      <div :if={@nav_open} class="md:hidden border-t border-base-300 bg-base-100 px-4 py-3 space-y-1">
-        <%!-- Public links --%>
-        <a
-          href={if @current_page == :home, do: "#nosotros", else: "/#nosotros"}
-          phx-click="close_nav"
-          class="flex items-center gap-3 py-2.5 px-2 text-base font-medium text-base-content/80 hover:text-primary rounded-lg hover:bg-base-200 transition-colors"
-        >
-          Nosotros
-        </a>
-        <a
-          href={~p"/menu"}
-          phx-click="close_nav"
-          class="flex items-center gap-3 py-2.5 px-2 text-base font-medium text-base-content/80 hover:text-primary rounded-lg hover:bg-base-200 transition-colors"
-        >
-          Menú
-        </a>
-        <a
-          href={~p"/colaboraciones"}
-          phx-click="close_nav"
-          class="flex items-center gap-3 py-2.5 px-2 text-base font-medium text-base-content/80 hover:text-primary rounded-lg hover:bg-base-200 transition-colors"
-        >
-          Colaboraciones
-        </a>
+    </nav>
 
-        <%= if @current_user do %>
-          <%!-- User identity --%>
-          <div class="flex items-center gap-3 py-3 px-2 mt-2 border-t border-base-300">
-            <div class="size-9 rounded-full bg-primary flex items-center justify-center text-primary-content text-sm font-bold shrink-0 overflow-hidden">
-              <%= if @current_user.avatar_url do %>
-                <img
-                  src={@current_user.avatar_url}
-                  alt={@current_user.name}
-                  class="size-9 object-cover"
-                />
-              <% else %>
-                {String.first(@current_user.name) |> String.upcase()}
-              <% end %>
-            </div>
-            <div class="min-w-0">
-              <p class="text-sm font-semibold text-base-content truncate">{@current_user.name}</p>
-              <p class="text-xs text-base-content/50">
-                {if @current_user.role == "admin", do: "Administrador", else: "Empleado"}
-                {if @current_user.stations != [],
-                  do: " · #{Enum.join(@current_user.stations, " · ")}",
-                  else: ""}
-              </p>
-            </div>
-          </div>
+    <%!-- Mobile nav overlay — rendered OUTSIDE <nav> so it is a true fixed fullscreen panel.
+         backdrop (z-40) blocks page interactions; panel (z-50) scrolls independently. --%>
+    <%= if @nav_open do %>
+      <%!-- Backdrop: invisible, captures taps outside the panel to close the menu --%>
+      <div
+        class="fixed inset-0 z-40 md:hidden"
+        phx-click="close_nav"
+        aria-hidden="true"
+      >
+      </div>
 
-          <%!-- Staff links --%>
-          <div class="space-y-1 pb-1">
-            <%!-- Common staff links --%>
-            <a
-              href="/mi-perfil"
-              phx-click="close_nav"
-              class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
-            >
-              <.icon name="hero-user-circle" class="size-5 text-primary" /> Mi Perfil
-            </a>
-            <a
-              href="/bitacora"
-              phx-click="close_nav"
-              class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
-            >
-              <.icon name="hero-clipboard-document-check" class="size-5 text-primary" />
-              Bitácora de Turno
-            </a>
-            <a
-              href="/produccion"
-              phx-click="close_nav"
-              class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
-            >
-              <.icon name="hero-beaker" class="size-5 text-primary" /> Producción
-            </a>
-            <%= if @current_user.role == "admin" do %>
+      <%!-- Scrollable panel: starts right below the navbar (top-16 = 64px) --%>
+      <div class="fixed inset-x-0 top-16 bottom-0 z-50 md:hidden bg-base-100 border-t border-base-300 overflow-y-auto overscroll-contain shadow-lg">
+        <div class="px-4 py-3 space-y-1 pb-10">
+          <%!-- Public links --%>
+          <a
+            href={if @current_page == :home, do: "#nosotros", else: "/#nosotros"}
+            phx-click="close_nav"
+            class="flex items-center gap-3 py-2.5 px-2 text-base font-medium text-base-content/80 hover:text-primary rounded-lg hover:bg-base-200 transition-colors"
+          >
+            Nosotros
+          </a>
+          <a
+            href={~p"/menu"}
+            phx-click="close_nav"
+            class="flex items-center gap-3 py-2.5 px-2 text-base font-medium text-base-content/80 hover:text-primary rounded-lg hover:bg-base-200 transition-colors"
+          >
+            Menú
+          </a>
+          <a
+            href={~p"/colaboraciones"}
+            phx-click="close_nav"
+            class="flex items-center gap-3 py-2.5 px-2 text-base font-medium text-base-content/80 hover:text-primary rounded-lg hover:bg-base-200 transition-colors"
+          >
+            Colaboraciones
+          </a>
+
+          <%= if @current_user do %>
+            <%!-- User identity --%>
+            <div class="flex items-center gap-3 py-3 px-2 mt-2 border-t border-base-300">
+              <div class="size-9 rounded-full bg-primary flex items-center justify-center text-primary-content text-sm font-bold shrink-0 overflow-hidden">
+                <%= if @current_user.avatar_url do %>
+                  <img
+                    src={@current_user.avatar_url}
+                    alt={@current_user.name}
+                    class="size-9 object-cover"
+                  />
+                <% else %>
+                  {String.first(@current_user.name) |> String.upcase()}
+                <% end %>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-base-content truncate">{@current_user.name}</p>
+                <p class="text-xs text-base-content/50">
+                  {if @current_user.role == "admin", do: "Administrador", else: "Empleado"}
+                  {if @current_user.stations != [],
+                    do: " · #{Enum.join(@current_user.stations, " · ")}",
+                    else: ""}
+                </p>
+              </div>
+            </div>
+
+            <%!-- Staff links --%>
+            <div class="space-y-1 pb-1">
               <a
-                href="/admin"
+                href="/mi-perfil"
                 phx-click="close_nav"
                 class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
               >
-                <.icon name="hero-squares-2x2" class="size-5 text-primary" /> Panel de administración
+                <.icon name="hero-user-circle" class="size-5 text-primary" /> Mi Perfil
               </a>
               <a
-                href="/mi-horario"
+                href="/bitacora"
                 phx-click="close_nav"
                 class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
               >
-                <.icon name="hero-calendar-days" class="size-5 text-primary" /> Mi horario
+                <.icon name="hero-clipboard-document-check" class="size-5 text-primary" />
+                Bitácora de Turno
               </a>
               <a
-                href="/mesa"
+                href="/produccion"
                 phx-click="close_nav"
                 class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
               >
-                <.icon name="hero-clipboard-document-list" class="size-5 text-primary" /> Comandas
+                <.icon name="hero-beaker" class="size-5 text-primary" /> Producción
               </a>
-              <a
-                href="/mesa/historial"
-                phx-click="close_nav"
-                class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
-              >
-                <.icon name="hero-clock" class="size-5 text-primary" /> Historial de comandas
-              </a>
-              <a
-                href="/cocina"
-                phx-click="close_nav"
-                class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
-              >
-                <.icon name="hero-fire" class="size-5 text-primary" /> Cocina
-              </a>
-              <a
-                href="/barra"
-                phx-click="close_nav"
-                class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
-              >
-                <.icon name="hero-beaker" class="size-5 text-primary" /> Barra
-              </a>
-            <% end %>
-            <%= if @current_user.role == "empleado" do %>
-              <a
-                href="/mi-horario"
-                phx-click="close_nav"
-                class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
-              >
-                <.icon name="hero-calendar-days" class="size-5 text-primary" /> Mi horario
-              </a>
-              <%= if "sala" in @current_user.stations do %>
+              <%= if @current_user.role == "admin" do %>
+                <a
+                  href="/admin"
+                  phx-click="close_nav"
+                  class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
+                >
+                  <.icon name="hero-squares-2x2" class="size-5 text-primary" /> Panel de administración
+                </a>
+                <a
+                  href="/mi-horario"
+                  phx-click="close_nav"
+                  class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
+                >
+                  <.icon name="hero-calendar-days" class="size-5 text-primary" /> Mi horario
+                </a>
                 <a
                   href="/mesa"
                   phx-click="close_nav"
@@ -464,10 +441,8 @@ defmodule CRCWeb.Components.SiteComponents do
                   phx-click="close_nav"
                   class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
                 >
-                  <.icon name="hero-clock" class="size-5 text-primary" /> Historial
+                  <.icon name="hero-clock" class="size-5 text-primary" /> Historial de comandas
                 </a>
-              <% end %>
-              <%= if "cocina" in @current_user.stations do %>
                 <a
                   href="/cocina"
                   phx-click="close_nav"
@@ -475,8 +450,6 @@ defmodule CRCWeb.Components.SiteComponents do
                 >
                   <.icon name="hero-fire" class="size-5 text-primary" /> Cocina
                 </a>
-              <% end %>
-              <%= if "barra" in @current_user.stations do %>
                 <a
                   href="/barra"
                   phx-click="close_nav"
@@ -485,35 +458,83 @@ defmodule CRCWeb.Components.SiteComponents do
                   <.icon name="hero-beaker" class="size-5 text-primary" /> Barra
                 </a>
               <% end %>
-            <% end %>
-          </div>
+              <%= if @current_user.role == "empleado" do %>
+                <a
+                  href="/mi-horario"
+                  phx-click="close_nav"
+                  class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
+                >
+                  <.icon name="hero-calendar-days" class="size-5 text-primary" /> Mi horario
+                </a>
+                <%= if "sala" in @current_user.stations do %>
+                  <a
+                    href="/mesa"
+                    phx-click="close_nav"
+                    class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
+                  >
+                    <.icon name="hero-clipboard-document-list" class="size-5 text-primary" /> Comandas
+                  </a>
+                  <a
+                    href="/mesa/historial"
+                    phx-click="close_nav"
+                    class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
+                  >
+                    <.icon name="hero-clock" class="size-5 text-primary" /> Historial
+                  </a>
+                <% end %>
+                <%= if "cocina" in @current_user.stations do %>
+                  <a
+                    href="/cocina"
+                    phx-click="close_nav"
+                    class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
+                  >
+                    <.icon name="hero-fire" class="size-5 text-primary" /> Cocina
+                  </a>
+                <% end %>
+                <%= if "barra" in @current_user.stations do %>
+                  <a
+                    href="/barra"
+                    phx-click="close_nav"
+                    class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
+                  >
+                    <.icon name="hero-beaker" class="size-5 text-primary" /> Barra
+                  </a>
+                <% end %>
+              <% end %>
+            </div>
 
-          <%!-- Logout --%>
-          <div class="border-t border-base-300 pt-2">
-            <form action="/cerrar-sesion" method="post">
-              <input type="hidden" name="_method" value="delete" />
-              <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
-              <button
-                type="submit"
-                class="flex items-center gap-3 w-full py-2.5 px-2 text-sm font-medium text-error rounded-lg hover:bg-error/10 transition-colors"
+            <%!-- Logout --%>
+            <div class="border-t border-base-300 pt-2">
+              <form action="/cerrar-sesion" method="post">
+                <input type="hidden" name="_method" value="delete" />
+                <input
+                  type="hidden"
+                  name="_csrf_token"
+                  value={Phoenix.Controller.get_csrf_token()}
+                />
+                <button
+                  type="submit"
+                  class="flex items-center gap-3 w-full py-2.5 px-2 text-sm font-medium text-error rounded-lg hover:bg-error/10 transition-colors"
+                >
+                  <.icon name="hero-arrow-right-on-rectangle" class="size-5" /> Cerrar sesión
+                </button>
+              </form>
+            </div>
+          <% else %>
+            <div class="border-t border-base-300 pt-2">
+              <a
+                href="/iniciar-sesion"
+                phx-click="close_nav"
+                class="flex items-center justify-center py-2.5 px-2 text-sm text-base-content/60 hover:text-base-content rounded-lg hover:bg-base-200 transition-colors"
               >
-                <.icon name="hero-arrow-right-on-rectangle" class="size-5" /> Cerrar sesión
-              </button>
-            </form>
-          </div>
-        <% else %>
-          <div class="border-t border-base-300 pt-2">
-            <a
-              href="/iniciar-sesion"
-              phx-click="close_nav"
-              class="flex items-center justify-center py-2.5 px-2 text-sm text-base-content/60 hover:text-base-content rounded-lg hover:bg-base-200 transition-colors"
-            >
-              Iniciar sesión
-            </a>
-          </div>
-        <% end %>
+                Iniciar sesión
+              </a>
+            </div>
+          <% end %>
+        </div>
       </div>
-    </nav>
+    <% end %>
+    </div>
     """
   end
 

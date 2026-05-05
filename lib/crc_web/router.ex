@@ -49,6 +49,8 @@ defmodule CRCWeb.Router do
       live "/menu", MenuLive
       live "/colaboraciones", ColaboracionesLive
       live "/confirmar-email", EmailConfirmLive
+      # Customer-facing bill page — no login required
+      live "/cuenta/:token", CuentaLive
     end
   end
 

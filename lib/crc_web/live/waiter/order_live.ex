@@ -55,6 +55,7 @@ defmodule CRCWeb.Waiter.OrderLive do
       |> assign(:now, DateTime.utc_now())
       |> assign(:low_stock_threshold, @low_stock_threshold)
       |> assign(:seen_ready_ids, ready_item_ids(order))
+      |> assign(:bill_modal, false)
 
     {:ok, socket}
   rescue
@@ -131,6 +132,30 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   def handle_event("close_nav", _params, socket) do
     {:noreply, assign(socket, :nav_open, false)}
+  end
+
+  # Generates a bill token (if not yet set) and opens the bill modal.
+  def handle_event("generate_bill", _params, socket) do
+    order = socket.assigns.order
+
+    if order.bill_token do
+      {:noreply, assign(socket, :bill_modal, true)}
+    else
+      case Orders.generate_bill_token(order) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> assign(:order, Orders.get_order!(order.id))
+           |> assign(:bill_modal, true)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "No se pudo generar la cuenta.")}
+      end
+    end
+  end
+
+  def handle_event("close_bill_modal", _params, socket) do
+    {:noreply, assign(socket, :bill_modal, false)}
   end
 
   def handle_event("select_menu_tab", %{"tab" => tab}, socket) do
@@ -1115,6 +1140,16 @@ defmodule CRCWeb.Waiter.OrderLive do
                 <% end %>
               </button>
 
+              <%!-- Bill / QR modal trigger --%>
+              <%= if @order.order_items != [] do %>
+                <button
+                  class="btn btn-outline btn-accent w-full"
+                  phx-click="generate_bill"
+                >
+                  <.icon name="hero-qr-code" class="size-4" /> Ver cuenta / QR
+                </button>
+              <% end %>
+
               <%!-- Close / payment flow --%>
               <%= if @order.status not in ["closed"] and @order.order_items != [] do %>
                 <%= if !@payment_step do %>
@@ -1519,6 +1554,80 @@ defmodule CRCWeb.Waiter.OrderLive do
         </div>
       </div>
     </div>
+
+    <%!-- ── Bill / QR modal ──────────────────────────────────────────────────── --%>
+    <%= if @bill_modal do %>
+      <%!-- Backdrop --%>
+      <div
+        class="fixed inset-0 z-40 bg-black/60"
+        phx-click="close_bill_modal"
+      >
+      </div>
+      <%!-- Modal card (above backdrop, click doesn't bubble) --%>
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div class="bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden pointer-events-auto">
+          <%!-- Header --%>
+          <div class="bg-primary text-primary-content px-5 py-4 flex items-center justify-between">
+            <div>
+              <h2 class="font-bold text-lg">Cuenta</h2>
+              <p class="text-sm opacity-80">{@order.customer_name}</p>
+            </div>
+            <button phx-click="close_bill_modal" class="btn btn-sm btn-ghost text-primary-content">
+              <.icon name="hero-x-mark" class="size-5" />
+            </button>
+          </div>
+
+          <div class="px-5 py-4 space-y-4 overflow-y-auto max-h-[70vh]">
+            <%!-- Item list --%>
+            <% bill_lines = bill_modal_items(@order) %>
+            <%= if bill_lines != [] do %>
+              <div class="divide-y divide-base-200 text-sm">
+                <%= for line <- bill_lines do %>
+                  <div class="flex items-baseline justify-between py-2 gap-2">
+                    <div class="flex-1 min-w-0">
+                      <span class="font-medium">{line.name}</span>
+                      <span class="text-base-content/50 ml-1">{line.quantity}×</span>
+                      <%= if line.for_person && line.for_person != "" do %>
+                        <span class="text-base-content/40 text-xs block">👤 {line.for_person}</span>
+                      <% end %>
+                    </div>
+                    <span class="font-semibold shrink-0">${format_price(line.subtotal)}</span>
+                  </div>
+                <% end %>
+              </div>
+
+              <%!-- Total --%>
+              <div class="flex items-center justify-between border-t border-base-300 pt-3">
+                <span class="font-semibold">Total</span>
+                <span class="text-2xl font-bold text-primary">
+                  ${format_price(Orders.calculate_order_total(@order))}
+                </span>
+              </div>
+            <% end %>
+
+            <%!-- QR code --%>
+            <%= if @order.bill_token do %>
+              <% cuenta_url = CRCWeb.Endpoint.url() <> ~p"/cuenta/#{@order.bill_token}" %>
+              <div class="flex flex-col items-center gap-3 pt-2">
+                <p class="text-xs text-base-content/50 text-center">
+                  El cliente puede escanear este QR para ver su cuenta en tiempo real
+                </p>
+                <div class="bg-white p-3 rounded-xl border border-base-300 shadow-sm">
+                  <img
+                    src={"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=#{URI.encode_www_form(cuenta_url)}"}
+                    alt="QR cuenta"
+                    class="w-48 h-48 block"
+                  />
+                </div>
+                <p class="text-xs text-base-content/40 font-mono text-center break-all">
+                  {cuenta_url}
+                </p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
     """
   end
 
@@ -1547,6 +1656,26 @@ defmodule CRCWeb.Waiter.OrderLive do
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------
+
+  # Customer-visible bill lines: non-cancelled menu items with prices.
+  # Excludes ingredient extras (product_id set) which have no customer-facing price.
+  defp bill_modal_items(%{order_items: items}) do
+    items
+    |> Enum.filter(fn oi ->
+      oi.status not in ["cancelled", "cancelled_waste"] and
+        not is_nil(oi.menu_item_id) and not is_nil(oi.menu_item)
+    end)
+    |> Enum.map(fn oi ->
+      unit_price = oi.unit_price || oi.menu_item.price
+      %{
+        name: oi.menu_item.name,
+        for_person: oi.for_person,
+        quantity: oi.quantity,
+        unit_price: unit_price,
+        subtotal: Decimal.mult(unit_price, Decimal.new(oi.quantity))
+      }
+    end)
+  end
 
   defp format_price(%Decimal{} = price) do
     price |> Decimal.round(0) |> Decimal.to_string()

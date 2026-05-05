@@ -18,6 +18,8 @@ defmodule CRC.Orders.Order do
     # True for orders entered retroactively (e.g., paper tickets during power outage).
     # These count toward financial totals but are excluded from rendimiento metrics.
     field :manual_entry, :boolean, default: false
+    # Unique token used to generate a public customer-facing bill URL (/cuenta/:token).
+    field :bill_token, :string
 
     # Waiter who opened this order (user_id FK)
     belongs_to :user, User
@@ -34,7 +36,7 @@ defmodule CRC.Orders.Order do
   @doc false
   def changeset(order, attrs) do
     order
-    |> cast(attrs, [:customer_name, :status, :notes, :user_id])
+    |> cast(attrs, [:customer_name, :status, :notes, :user_id, :bill_token])
     |> validate_required([:customer_name, :status])
     |> validate_inclusion(:status, @valid_statuses)
   end

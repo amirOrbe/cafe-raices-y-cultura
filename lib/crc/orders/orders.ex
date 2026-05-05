@@ -75,6 +75,39 @@ defmodule CRC.Orders do
     ])
   end
 
+  @doc """
+  Generates (or returns an existing) unique bill token for an order.
+  The token is used to build the public /cuenta/:token URL for customers.
+  """
+  def generate_bill_token(%Order{bill_token: token} = order) when not is_nil(token) do
+    {:ok, order}
+  end
+
+  def generate_bill_token(%Order{} = order) do
+    token = :crypto.strong_rand_bytes(12) |> Base.url_encode64(padding: false)
+
+    order
+    |> Order.changeset(%{bill_token: token})
+    |> Repo.update()
+  end
+
+  @doc "Fetches an order by its public bill token. Raises Ecto.NoResultsError if not found."
+  def get_order_by_token!(token) do
+    Order
+    |> Repo.get_by!(bill_token: token)
+    |> Repo.preload([
+      :user,
+      order_items: [
+        :product,
+        :variant,
+        :for_menu_item,
+        :package,
+        exclusions: [:product],
+        menu_item: [:category]
+      ]
+    ])
+  end
+
   @doc "Creates an order (a new customer tab)."
   def create_order(attrs \\ %{}) do
     %Order{}

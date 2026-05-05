@@ -391,14 +391,14 @@ defmodule CRCWeb.Barra.DisplayLive do
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <%= for order <- ready do %>
-                <div class="bg-base-100 rounded-2xl border border-success/50 shadow-sm px-4 py-4 flex items-center justify-between">
-                  <div>
-                    <p class="font-bold text-base-content">{order.customer_name}</p>
+                <div class="bg-base-100 rounded-2xl border border-success/50 shadow-sm px-4 py-4 flex items-center gap-3">
+                  <div class="flex-1 min-w-0">
+                    <p class="font-bold text-base-content truncate">{order.customer_name}</p>
                     <p class="text-xs text-base-content/50">
                       {Enum.count(order.order_items, &drink_item?/1)} bebidas
                     </p>
                   </div>
-                  <span class="badge badge-success">Lista</span>
+                  <span class="badge badge-success shrink-0">Lista</span>
                 </div>
               <% end %>
             </div>

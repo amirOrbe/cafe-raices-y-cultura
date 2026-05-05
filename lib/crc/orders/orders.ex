@@ -753,6 +753,9 @@ defmodule CRC.Orders do
         Phoenix.PubSub.broadcast(CRC.PubSub, "admin:products", {:product_changed, :stock})
         {:ok, updated}
 
+      {:error, {:insufficient_stock, name}} ->
+        {:error, {:insufficient_stock, name}}
+
       {:error, _} = error ->
         error
     end
@@ -1338,6 +1341,10 @@ defmodule CRC.Orders do
         Map.update(acc, oi.product_id, total, &Decimal.add(&1, total))
       end)
 
+    # Lock all affected products and verify stock BEFORE decrementing.
+    # Runs inside the send_to_kitchen transaction so the lock is held until commit.
+    lock_and_check_products!(all_deductions)
+
     # Apply one atomic decrement per product
     Enum.each(all_deductions, fn {product_id, deduction} ->
       from(p in Product, where: p.id == ^product_id)
@@ -1393,10 +1400,67 @@ defmodule CRC.Orders do
         end
       end)
 
+    # Lock all affected variants and verify stock BEFORE decrementing.
+    lock_and_check_variants!(deductions)
+
     # One atomic decrement per variant
     Enum.each(deductions, fn {variant_id, deduction} ->
       from(v in ProductVariant, where: v.id == ^variant_id)
       |> Repo.update_all(inc: [stock_quantity: Decimal.negate(deduction)])
+    end)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Stock locking helpers (run inside send_to_kitchen transaction)
+  # ---------------------------------------------------------------------------
+
+  # Locks product rows with SELECT FOR UPDATE and rolls back the transaction
+  # if any product lacks sufficient stock for the planned deduction.
+  # This prevents concurrent sends from driving stock negative.
+  defp lock_and_check_products!(deductions) when map_size(deductions) == 0, do: :ok
+
+  defp lock_and_check_products!(deductions) do
+    product_ids = Map.keys(deductions)
+
+    locked =
+      from(p in Product, where: p.id in ^product_ids, lock: "FOR UPDATE")
+      |> Repo.all()
+      |> Map.new(fn p -> {p.id, p} end)
+
+    Enum.each(deductions, fn {product_id, needed} ->
+      case Map.get(locked, product_id) do
+        nil ->
+          :ok
+
+        product ->
+          if Decimal.compare(product.stock_quantity, needed) == :lt do
+            Repo.rollback({:insufficient_stock, product.name})
+          end
+      end
+    end)
+  end
+
+  # Same as above but for product_variants rows.
+  defp lock_and_check_variants!(deductions) when map_size(deductions) == 0, do: :ok
+
+  defp lock_and_check_variants!(deductions) do
+    variant_ids = Map.keys(deductions)
+
+    locked =
+      from(v in ProductVariant, where: v.id in ^variant_ids, lock: "FOR UPDATE")
+      |> Repo.all()
+      |> Map.new(fn v -> {v.id, v} end)
+
+    Enum.each(deductions, fn {variant_id, needed} ->
+      case Map.get(locked, variant_id) do
+        nil ->
+          :ok
+
+        variant ->
+          if Decimal.compare(variant.stock_quantity, needed) == :lt do
+            Repo.rollback({:insufficient_stock, "tipo de ingrediente"})
+          end
+      end
     end)
   end
 

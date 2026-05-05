@@ -563,6 +563,11 @@ defmodule CRCWeb.Waiter.OrderLive do
          |> assign(:order, Orders.get_order!(updated_order.id))
          |> assign(:flash_msg, {:success, "Comanda enviada a cocina y barra"})}
 
+      {:error, {:insufficient_stock, name}} ->
+        {:noreply,
+         socket
+         |> assign(:flash_msg, {:error, "Sin stock suficiente de «#{name}». Otro mesero lo agotó al mismo tiempo."})}
+
       {:error, _} ->
         {:noreply, assign(socket, :flash_msg, {:error, "No se pudo enviar la comanda"})}
     end

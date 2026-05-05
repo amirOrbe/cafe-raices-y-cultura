@@ -260,9 +260,9 @@ defmodule CRCWeb.Kitchen.DisplayLive do
             <%= for group <- group_kitchen_items(pending_orders(@orders)) do %>
               <% gmins = group_elapsed_minutes(group.oldest_sent_at, @now) %>
               <div class="bg-base-100 rounded-2xl border border-warning shadow-sm flex flex-col">
-                <div class="px-4 py-3 bg-warning/10 rounded-t-2xl border-b border-warning/30 flex items-center justify-between">
-                  <div>
-                    <h2 class="font-bold text-base-content">
+                <div class="px-4 py-3 bg-warning/10 rounded-t-2xl border-b border-warning/30 flex items-center gap-2">
+                  <div class="flex-1 min-w-0">
+                    <h2 class="font-bold text-base-content truncate">
                       <span class="text-primary text-lg">{group.total_qty}×</span>
                       {group.menu_item.name}
                     </h2>
@@ -270,7 +270,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                       {group.entry_count} {if group.entry_count == 1, do: "mesa", else: "mesas"}
                     </p>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 shrink-0">
                     <%= if gmins do %>
                       <span class={[
                         "text-xs font-mono font-semibold tabular-nums",
@@ -337,11 +337,12 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                 </div>
                 <div class="px-4 py-3 border-t border-base-300">
                   <button
-                    class="btn btn-success w-full btn-sm"
+                    class="btn btn-success w-full btn-sm overflow-hidden"
                     phx-click="mark_group_ready"
                     phx-value-ids={Enum.join(group.item_ids, ",")}
                   >
-                    <.icon name="hero-check" class="size-4" /> Todo listo — {group.menu_item.name}
+                    <.icon name="hero-check" class="size-4 shrink-0" />
+                    <span class="truncate">Todo listo — {group.menu_item.name}</span>
                   </button>
                 </div>
               </div>
@@ -355,16 +356,16 @@ defmodule CRCWeb.Kitchen.DisplayLive do
             <%= if food_items != [] do %>
               <div class="bg-base-100 rounded-2xl border border-warning shadow-sm flex flex-col">
                 <%!-- Order header --%>
-                <div class="px-4 py-3 bg-warning/10 rounded-t-2xl border-b border-warning/30 flex items-center justify-between">
-                  <div>
-                    <h2 class="font-bold text-base-content">{order.customer_name}</h2>
+                <div class="px-4 py-3 bg-warning/10 rounded-t-2xl border-b border-warning/30 flex items-center gap-2">
+                  <div class="flex-1 min-w-0">
+                    <h2 class="font-bold text-base-content truncate">{order.customer_name}</h2>
                     <p class="text-xs text-base-content/50">
                       {length(food_items)} {if length(food_items) == 1,
                         do: "platillo",
                         else: "platillos"}
                     </p>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 shrink-0">
                     <%= if mins do %>
                       <span class={[
                         "text-xs font-mono font-semibold tabular-nums",
@@ -463,11 +464,12 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                 <%!-- Mark all food ready --%>
                 <div class="px-4 py-3 border-t border-base-300">
                   <button
-                    class="btn btn-success w-full btn-sm"
+                    class="btn btn-success w-full btn-sm overflow-hidden"
                     phx-click="mark_order_ready"
                     phx-value-id={order.id}
                   >
-                    <.icon name="hero-check" class="size-4" /> Todo listo — {order.customer_name}
+                    <.icon name="hero-check" class="size-4 shrink-0" />
+                    <span class="truncate">Todo listo — {order.customer_name}</span>
                   </button>
                 </div>
               </div>

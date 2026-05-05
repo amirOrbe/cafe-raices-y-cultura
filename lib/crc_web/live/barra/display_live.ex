@@ -426,9 +426,9 @@ defmodule CRCWeb.Barra.DisplayLive do
   defp grouped_drink_card(assigns) do
     ~H"""
     <div class={"bg-base-100 rounded-2xl border shadow-sm flex flex-col #{@border_class}"}>
-      <div class={"px-4 py-3 rounded-t-2xl border-b flex items-center justify-between #{@header_class}"}>
-        <div>
-          <h2 class="font-bold text-base-content">
+      <div class={"px-4 py-3 rounded-t-2xl border-b flex items-center gap-2 #{@header_class}"}>
+        <div class="flex-1 min-w-0">
+          <h2 class="font-bold text-base-content truncate">
             <span class="text-primary text-lg">{@group.total_qty}×</span>
             {@group.menu_item.name}
           </h2>
@@ -436,7 +436,7 @@ defmodule CRCWeb.Barra.DisplayLive do
             {@group.entry_count} {if @group.entry_count == 1, do: "mesa", else: "mesas"}
           </p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 shrink-0">
           <%= if @gmins do %>
             <span class={[
               "text-xs font-mono font-semibold tabular-nums",
@@ -503,11 +503,12 @@ defmodule CRCWeb.Barra.DisplayLive do
       </div>
       <div class="px-4 py-3 border-t border-base-300">
         <button
-          class="btn btn-success w-full btn-sm"
+          class="btn btn-success w-full btn-sm overflow-hidden"
           phx-click="mark_group_ready"
           phx-value-ids={Enum.join(@group.item_ids, ",")}
         >
-          <.icon name="hero-check" class="size-4" /> Todo listo — {@group.menu_item.name}
+          <.icon name="hero-check" class="size-4 shrink-0" />
+          <span class="truncate">Todo listo — {@group.menu_item.name}</span>
         </button>
       </div>
     </div>
@@ -526,14 +527,14 @@ defmodule CRCWeb.Barra.DisplayLive do
     ~H"""
     <div class={"bg-base-100 rounded-2xl border shadow-sm flex flex-col #{@border_class}"}>
       <%!-- Order header --%>
-      <div class={"px-4 py-3 rounded-t-2xl border-b flex items-center justify-between #{@header_class}"}>
-        <div>
-          <h2 class="font-bold text-base-content">{@order.customer_name}</h2>
+      <div class={"px-4 py-3 rounded-t-2xl border-b flex items-center gap-2 #{@header_class}"}>
+        <div class="flex-1 min-w-0">
+          <h2 class="font-bold text-base-content truncate">{@order.customer_name}</h2>
           <p class="text-xs text-base-content/50">
             {length(@items)} {if length(@items) == 1, do: "bebida", else: "bebidas"}
           </p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 shrink-0">
           <%= if @mins do %>
             <span class={[
               "text-xs font-mono font-semibold tabular-nums",
@@ -616,12 +617,13 @@ defmodule CRCWeb.Barra.DisplayLive do
       <%!-- Mark all ready for this type --%>
       <div class="px-4 py-3 border-t border-base-300">
         <button
-          class="btn btn-success w-full btn-sm"
+          class="btn btn-success w-full btn-sm overflow-hidden"
           phx-click="mark_drinks_ready"
           phx-value-id={@order.id}
           phx-value-type={@type}
         >
-          <.icon name="hero-check" class="size-4" /> Todo listo — {@order.customer_name}
+          <.icon name="hero-check" class="size-4 shrink-0" />
+          <span class="truncate">Todo listo — {@order.customer_name}</span>
         </button>
       </div>
     </div>

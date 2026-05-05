@@ -56,6 +56,8 @@ defmodule CRCWeb.Waiter.OrderLive do
       |> assign(:low_stock_threshold, @low_stock_threshold)
       |> assign(:seen_ready_ids, ready_item_ids(order))
       |> assign(:bill_modal, false)
+      |> assign(:menu_search, "")
+      |> assign(:search_results, nil)
 
     {:ok, socket}
   rescue
@@ -156,6 +158,22 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   def handle_event("close_bill_modal", _params, socket) do
     {:noreply, assign(socket, :bill_modal, false)}
+  end
+
+  # Cross-category menu search — triggers on every keystroke (debounced in template).
+  def handle_event("search_menu", %{"query" => q}, socket) do
+    q = String.trim(q)
+
+    if q == "" do
+      {:noreply, socket |> assign(:menu_search, "") |> assign(:search_results, nil)}
+    else
+      results = Catalog.search_menu_items(q)
+      {:noreply, socket |> assign(:menu_search, q) |> assign(:search_results, results)}
+    end
+  end
+
+  def handle_event("clear_menu_search", _params, socket) do
+    {:noreply, socket |> assign(:menu_search, "") |> assign(:search_results, nil)}
   end
 
   def handle_event("select_menu_tab", %{"tab" => tab}, socket) do
@@ -1345,33 +1363,70 @@ defmodule CRCWeb.Waiter.OrderLive do
               </div>
 
               <%= if @menu_tab == :menu do %>
-                <%!-- Category tabs --%>
-                <div class="flex gap-1 overflow-x-auto px-4 py-3 border-b border-base-200">
-                  <%= for category <- @categories do %>
-                    <button
-                      class={[
-                        "btn btn-xs",
-                        if(@selected_category_id == category.id, do: "btn-primary", else: "btn-ghost")
-                      ]}
-                      phx-click="select_category"
-                      phx-value-id={category.id}
+                <%!-- Search bar --%>
+                <div class="px-4 py-2 border-b border-base-200">
+                  <div class="relative">
+                    <.icon name="hero-magnifying-glass" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-base-content/30 pointer-events-none" />
+                    <input
+                      type="search"
+                      name="query"
+                      value={@menu_search}
+                      placeholder="Buscar platillo o bebida…"
+                      class="input input-sm input-bordered w-full pl-8 pr-8"
+                      phx-change="search_menu"
+                      phx-debounce="200"
                       disabled={@order.status == "closed"}
-                    >
-                      {category.name}
-                    </button>
-                  <% end %>
+                    />
+                    <%= if @menu_search != "" do %>
+                      <button
+                        class="absolute right-2 top-1/2 -translate-y-1/2 text-base-content/30 hover:text-base-content"
+                        phx-click="clear_menu_search"
+                      >
+                        <.icon name="hero-x-mark" class="size-4" />
+                      </button>
+                    <% end %>
+                  </div>
                 </div>
 
-                <%!-- Menu items grid --%>
+                <%!-- Category tabs (hidden while searching) --%>
+                <%= if is_nil(@search_results) do %>
+                  <div class="flex gap-1 overflow-x-auto px-4 py-3 border-b border-base-200">
+                    <%= for category <- @categories do %>
+                      <button
+                        class={[
+                          "btn btn-xs",
+                          if(@selected_category_id == category.id, do: "btn-primary", else: "btn-ghost")
+                        ]}
+                        phx-click="select_category"
+                        phx-value-id={category.id}
+                        disabled={@order.status == "closed"}
+                      >
+                        {category.name}
+                      </button>
+                    <% end %>
+                  </div>
+                <% end %>
+
+                <%!-- Menu items grid — search results OR normal category view --%>
                 <div class="flex-1 overflow-y-auto p-4">
                   <%= if @order.status == "closed" do %>
                     <p class="text-center py-12 text-base-content/40 text-sm">
                       Esta cuenta está cerrada.
                     </p>
                   <% else %>
+                    <%!-- Search results label --%>
+                    <%= if @search_results != nil do %>
+                      <p class="text-xs text-base-content/40 mb-3">
+                        <%= if @search_results == [] do %>
+                          Sin resultados para "<span class="font-semibold">{@menu_search}</span>"
+                        <% else %>
+                          {length(@search_results)} resultado(s) para "<span class="font-semibold">{@menu_search}</span>"
+                        <% end %>
+                      </p>
+                    <% end %>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <%!-- portions: nil=sin receta (ilimitado), 0=agotado, n=porciones restantes --%>
-                      <%= for {menu_item, portions} <- @menu_items do %>
+                      <%= for {menu_item, portions} <- (@search_results || @menu_items) do %>
                         <% selected? = @selected_menu_item && @selected_menu_item.id == menu_item.id %>
                         <% available? = is_nil(portions) or portions > 0 %>
                         <% low_stock? =

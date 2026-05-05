@@ -29,6 +29,9 @@ defmodule CRCWeb.Admin.ProductsLive do
       |> assign(:editing_variant_id, nil)
       |> assign(:purchase_total, "")
       |> assign(:purchase_qty, "")
+      |> assign(:search, "")
+      |> assign(:page, 1)
+      |> assign(:per_page, 25)
 
     {:ok, socket}
   end
@@ -67,11 +70,20 @@ defmodule CRCWeb.Admin.ProductsLive do
 
   @impl true
   def handle_event("filter_category", %{"category" => cat}, socket) do
-    {:noreply, assign(socket, :filter_category, cat)}
+    {:noreply, socket |> assign(:filter_category, cat) |> assign(:page, 1)}
   end
 
   def handle_event("set_status_filter", %{"status" => status}, socket) do
-    {:noreply, assign(socket, :status_filter, String.to_existing_atom(status))}
+    {:noreply,
+     socket |> assign(:status_filter, String.to_existing_atom(status)) |> assign(:page, 1)}
+  end
+
+  def handle_event("search_products", %{"query" => query}, socket) do
+    {:noreply, socket |> assign(:search, query) |> assign(:page, 1)}
+  end
+
+  def handle_event("go_page", %{"page" => page}, socket) do
+    {:noreply, assign(socket, :page, String.to_integer(page))}
   end
 
   def handle_event("new_product", _params, socket) do
@@ -298,7 +310,10 @@ defmodule CRCWeb.Admin.ProductsLive do
   def render(assigns) do
     ~H"""
     <% by_status = filter_by_status(@products, @status_filter) %>
-    <% visible = filtered_products(by_status, @filter_category) %>
+    <% by_category = filtered_products(by_status, @filter_category) %>
+    <% filtered = search_filter(by_category, @search) %>
+    <% total_pages = max(1, ceil(length(filtered) / @per_page)) %>
+    <% visible = paginate(filtered, @page, @per_page) %>
     <% active_count = Enum.count(@products, & &1.active) %>
     <% inactive_count = Enum.count(@products, &(!&1.active)) %>
     <div class="space-y-6">
@@ -316,6 +331,23 @@ defmodule CRCWeb.Admin.ProductsLive do
         <button class="btn btn-primary gap-2" phx-click="new_product">
           <.icon name="hero-plus" class="size-4" /> Nuevo insumo
         </button>
+      </div>
+
+      <%!-- Search bar --%>
+      <div class="relative">
+        <.icon
+          name="hero-magnifying-glass"
+          class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/40 pointer-events-none"
+        />
+        <input
+          type="search"
+          name="query"
+          value={@search}
+          placeholder="Buscar insumo..."
+          class="input input-bordered w-full pl-9 pr-4"
+          phx-change="search_products"
+          phx-debounce="200"
+        />
       </div>
 
       <%!-- Status tabs --%>
@@ -588,6 +620,37 @@ defmodule CRCWeb.Admin.ProductsLive do
         </div>
       </div>
     </div>
+
+    <%!-- Pagination --%>
+    <%= if total_pages > 1 do %>
+      <div class="flex items-center justify-center gap-2 flex-wrap">
+        <button
+          class="btn btn-sm btn-ghost gap-1"
+          phx-click="go_page"
+          phx-value-page={@page - 1}
+          disabled={@page <= 1}
+        >
+          <.icon name="hero-chevron-left" class="size-3.5" /> Anterior
+        </button>
+        <%= for p <- 1..total_pages do %>
+          <button
+            class={["btn btn-sm", if(p == @page, do: "btn-primary", else: "btn-ghost")]}
+            phx-click="go_page"
+            phx-value-page={p}
+          >
+            {p}
+          </button>
+        <% end %>
+        <button
+          class="btn btn-sm btn-ghost gap-1"
+          phx-click="go_page"
+          phx-value-page={@page + 1}
+          disabled={@page >= total_pages}
+        >
+          Siguiente <.icon name="hero-chevron-right" class="size-3.5" />
+        </button>
+      </div>
+    <% end %>
 
     <%!-- Modal: new / edit product --%>
     <%= if @modal != nil do %>
@@ -1131,6 +1194,17 @@ defmodule CRCWeb.Admin.ProductsLive do
 
   defp filter_by_status(products, :active), do: Enum.filter(products, & &1.active)
   defp filter_by_status(products, :inactive), do: Enum.filter(products, &(!&1.active))
+
+  defp search_filter(products, ""), do: products
+
+  defp search_filter(products, query) do
+    q = query |> String.trim() |> String.downcase()
+    Enum.filter(products, fn p -> String.contains?(String.downcase(p.name), q) end)
+  end
+
+  defp paginate(items, page, per_page) do
+    items |> Enum.drop((page - 1) * per_page) |> Enum.take(per_page)
+  end
 
   defp filtered_products(products, "all"), do: products
 

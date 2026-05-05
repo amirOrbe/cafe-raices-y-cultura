@@ -23,6 +23,7 @@ defmodule CRCWeb.Admin.InventarioLive do
       |> assign(:new_qty, "")
       |> assign(:notes, "")
       |> assign(:filter, "all")
+      |> assign(:search, "")
 
     {:ok, socket}
   end
@@ -34,6 +35,10 @@ defmodule CRCWeb.Admin.InventarioLive do
   @impl true
   def handle_event("set_filter", %{"filter" => filter}, socket) do
     {:noreply, assign(socket, :filter, filter)}
+  end
+
+  def handle_event("search_stock", %{"query" => query}, socket) do
+    {:noreply, assign(socket, :search, query)}
   end
 
   # ---------------------------------------------------------------------------
@@ -142,6 +147,23 @@ defmodule CRCWeb.Admin.InventarioLive do
           </a>
         </div>
 
+        <%!-- Search bar --%>
+        <div class="relative">
+          <.icon
+            name="hero-magnifying-glass"
+            class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/40 pointer-events-none"
+          />
+          <input
+            type="search"
+            name="query"
+            value={@search}
+            placeholder="Buscar insumo..."
+            class="input input-bordered w-full pl-9 pr-4"
+            phx-change="search_stock"
+            phx-debounce="200"
+          />
+        </div>
+
         <%!-- Filter tabs --%>
         <div class="tabs tabs-box w-fit">
           <button
@@ -182,15 +204,16 @@ defmodule CRCWeb.Admin.InventarioLive do
         </div>
 
         <%!-- Product list --%>
+        <% visible = @products |> visible_products(@filter) |> search_filter(@search) %>
         <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-          <%= if visible_products(@products, @filter) == [] do %>
+          <%= if visible == [] do %>
             <div class="py-20 text-center text-base-content/40 text-sm">
               No hay insumos que mostrar en este filtro.
             </div>
           <% else %>
             <%!-- Mobile cards --%>
             <div class="md:hidden divide-y divide-base-200">
-              <%= for p <- visible_products(@products, @filter) do %>
+              <%= for p <- visible do %>
                 <div class="px-4 py-4 space-y-2">
                   <div class="flex items-center gap-2">
                     <span class={"inline-block w-2.5 h-2.5 rounded-full shrink-0 #{stock_dot_class(p)}"}></span>
@@ -243,7 +266,7 @@ defmodule CRCWeb.Admin.InventarioLive do
                   </tr>
                 </thead>
                 <tbody>
-                  <%= for p <- visible_products(@products, @filter) do %>
+                  <%= for p <- visible do %>
                     <tr class="hover:bg-base-200/40 transition-colors border-b border-base-200 last:border-0">
                       <td>
                         <div class="flex items-center gap-2">
@@ -427,6 +450,13 @@ defmodule CRCWeb.Admin.InventarioLive do
     do: Enum.reject(products, &stock_is_low?/1)
 
   defp visible_products(products, _all), do: products
+
+  defp search_filter(products, ""), do: products
+
+  defp search_filter(products, query) do
+    q = query |> String.trim() |> String.downcase()
+    Enum.filter(products, fn p -> String.contains?(String.downcase(p.name), q) end)
+  end
 
   defp stock_is_low?(%{stock_quantity: qty, min_stock: min}) do
     Decimal.compare(qty, min) != :gt

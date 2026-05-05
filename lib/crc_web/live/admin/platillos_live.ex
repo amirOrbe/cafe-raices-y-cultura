@@ -24,6 +24,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
       |> assign(:ingredient_quantity_input, "")
       |> assign(:remove_image, false)
       |> assign(:expanded_ids, MapSet.new())
+      |> assign(:search, "")
       |> allow_upload(:photo,
         accept: ~w(.jpg .jpeg .png .webp),
         max_entries: 1,
@@ -45,6 +46,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
   def handle_event("set_category_filter", %{"category" => cat}, socket) do
     {:noreply, assign(socket, :filter_category, cat)}
+  end
+
+  def handle_event("search_items", %{"query" => query}, socket) do
+    {:noreply, assign(socket, :search, query)}
   end
 
   def handle_event("toggle_expand", %{"id" => id}, socket) do
@@ -316,7 +321,8 @@ defmodule CRCWeb.Admin.PlatillosLive do
   def render(assigns) do
     ~H"""
     <% by_status = filter_by_status(@items, @status_filter) %>
-    <% visible = filter_by_category(by_status, @filter_category) %>
+    <% by_category = filter_by_category(by_status, @filter_category) %>
+    <% visible = search_filter(by_category, @search) %>
     <% available_count = Enum.count(@items, & &1.available) %>
     <% unavailable_count = Enum.count(@items, &(!&1.available)) %>
 
@@ -402,6 +408,23 @@ defmodule CRCWeb.Admin.PlatillosLive do
           </div>
         </div>
       </details>
+
+      <%!-- Search bar --%>
+      <div class="relative">
+        <.icon
+          name="hero-magnifying-glass"
+          class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/40 pointer-events-none"
+        />
+        <input
+          type="search"
+          name="query"
+          value={@search}
+          placeholder="Buscar platillo..."
+          class="input input-bordered w-full pl-9 pr-4"
+          phx-change="search_items"
+          phx-debounce="200"
+        />
+      </div>
 
       <%!-- Status filter tabs --%>
       <div class="flex gap-2">
@@ -1341,6 +1364,13 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
   defp filter_by_status(items, :available), do: Enum.filter(items, & &1.available)
   defp filter_by_status(items, :unavailable), do: Enum.filter(items, &(!&1.available))
+
+  defp search_filter(items, ""), do: items
+
+  defp search_filter(items, query) do
+    q = query |> String.trim() |> String.downcase()
+    Enum.filter(items, fn item -> String.contains?(String.downcase(item.name), q) end)
+  end
 
   defp filter_by_category(items, "all"), do: items
 

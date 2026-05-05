@@ -179,6 +179,23 @@ defmodule CRC.Catalog do
   end
 
   @doc """
+  Searches available menu items by name across all categories.
+  Returns `{menu_item, portions}` tuples, same shape as list_menu_items_for_category_with_stock/1.
+  """
+  def search_menu_items(query) when is_binary(query) and byte_size(query) > 0 do
+    pattern = "%#{String.trim(query)}%"
+
+    MenuItem
+    |> where([mi], mi.available == true and ilike(mi.name, ^pattern))
+    |> order_by(:name)
+    |> preload([:category, menu_item_ingredients: :product])
+    |> Repo.all()
+    |> Enum.map(&{&1, available_portions(&1)})
+  end
+
+  def search_menu_items(_), do: []
+
+  @doc """
   Returns all unique ingredient products used by available menu items in a given category.
   Used to populate the "extras disponibles" panel in the waiter comanda view.
   """

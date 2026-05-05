@@ -322,7 +322,7 @@ defmodule CRCWeb.Admin.ProductsLive do
         <div>
           <h1 class="text-2xl font-bold text-base-content">Insumos</h1>
           <p class="text-sm text-base-content/50 mt-0.5">
-            {length(visible)} insumos {if @status_filter == :active, do: "activos", else: "inactivos"}
+            {length(filtered)} insumos {if @status_filter == :active, do: "activos", else: "inactivos"}
             <%= if @status_filter == :active && @low_stock_count > 0 do %>
               · <span class="text-warning font-medium">{@low_stock_count} con stock bajo</span>
             <% end %>

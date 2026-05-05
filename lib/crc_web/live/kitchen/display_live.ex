@@ -26,6 +26,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
       |> assign(:nav_open, false)
       |> assign(:now, DateTime.utc_now())
       |> assign(:seen_sent_ids, sent_kitchen_ids(orders))
+      |> assign(:cancel_alerts, [])
 
     {:ok, socket}
   end
@@ -38,12 +39,36 @@ defmodule CRCWeb.Kitchen.DisplayLive do
   def handle_info({:order_updated, _order_id}, socket) do
     new_orders = Orders.list_open_orders()
     new_ids = sent_kitchen_ids(new_orders)
+    disappeared_ids = MapSet.difference(socket.assigns.seen_sent_ids, new_ids)
     new_items? = not MapSet.subset?(new_ids, socket.assigns.seen_sent_ids)
+
+    # Detect items that left "sent" due to cancellation (not just marked ready)
+    new_alerts =
+      if MapSet.size(disappeared_ids) > 0 do
+        new_orders
+        |> Enum.flat_map(& &1.order_items)
+        |> Enum.filter(fn oi ->
+          MapSet.member?(disappeared_ids, oi.id) and
+            oi.status in ["cancelled", "cancelled_waste"]
+        end)
+        |> Enum.map(fn oi ->
+          order = Enum.find(new_orders, &(&1.id == oi.order_id))
+          %{
+            id: oi.id,
+            customer: order && order.customer_name,
+            item_name: item_label(oi),
+            quantity: oi.quantity
+          }
+        end)
+      else
+        []
+      end
 
     socket =
       socket
       |> assign(:orders, new_orders)
       |> assign(:seen_sent_ids, new_ids)
+      |> update(:cancel_alerts, &(new_alerts ++ &1))
 
     socket =
       if new_items?, do: push_event(socket, "play_sound", %{type: "new_order"}), else: socket
@@ -67,6 +92,11 @@ defmodule CRCWeb.Kitchen.DisplayLive do
 
   def handle_event("close_nav", _params, socket) do
     {:noreply, assign(socket, :nav_open, false)}
+  end
+
+  def handle_event("dismiss_cancel_alert", %{"id" => id}, socket) do
+    id = String.to_integer(id)
+    {:noreply, update(socket, :cancel_alerts, &Enum.reject(&1, fn a -> a.id == id end))}
   end
 
   def handle_event("mark_item_ready", %{"id" => id}, socket) do
@@ -131,6 +161,25 @@ defmodule CRCWeb.Kitchen.DisplayLive do
             </span>
           </div>
         </div>
+
+        <%!-- Cancellation alerts --%>
+        <%= for alert <- @cancel_alerts do %>
+          <div class="alert alert-error py-2 flex items-center gap-3 shadow-sm">
+            <.icon name="hero-x-circle" class="size-5 shrink-0" />
+            <span class="text-sm font-semibold flex-1">
+              ⚠ Cancelado:
+              <span class="font-bold">{alert.customer}</span>
+              — {alert.quantity}× {alert.item_name}
+            </span>
+            <button
+              phx-click="dismiss_cancel_alert"
+              phx-value-id={alert.id}
+              class="btn btn-xs btn-ghost text-error-content"
+            >
+              Entendido
+            </button>
+          </div>
+        <% end %>
 
         <%!-- No pending orders --%>
         <%= if pending_orders(@orders) == [] do %>
@@ -371,6 +420,11 @@ defmodule CRCWeb.Kitchen.DisplayLive do
     |> Enum.filter(&(&1.status == "sent" and kitchen_item?(&1)))
     |> MapSet.new(& &1.id)
   end
+
+  # Human-readable label for a cancelled item (menu item name or product name).
+  defp item_label(%{menu_item: %{name: name}}) when not is_nil(name), do: name
+  defp item_label(%{product: %{name: name}}) when not is_nil(name), do: "Extra: #{name}"
+  defp item_label(_), do: "Artículo"
 
   defp schedule_tick, do: Process.send_after(self(), :tick, @tick_interval)
 end

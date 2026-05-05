@@ -235,6 +235,19 @@ defmodule CRCWeb.Admin.PlatillosLive do
     end
   end
 
+  def handle_event("set_barra_type", %{"id" => id, "type" => type}, socket) do
+    item = Catalog.get_menu_item!(String.to_integer(id))
+    barra_type = if type in ["fria", "caliente"], do: type, else: nil
+
+    case Catalog.update_menu_item(item, %{barra_type: barra_type}) do
+      {:ok, _} ->
+        {:noreply, assign(socket, :items, Catalog.list_all_menu_items())}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "No se pudo clasificar la bebida.")}
+    end
+  end
+
   def handle_event("remove_image", _params, socket) do
     {:noreply, assign(socket, :remove_image, true)}
   end
@@ -322,6 +335,51 @@ defmodule CRCWeb.Admin.PlatillosLive do
           <.icon name="hero-plus" class="size-4" /> Nuevo platillo
         </button>
       </div>
+
+      <%!-- Quick barra_type tagger — only shown when unclassified bar items exist --%>
+      <% unclassified = Enum.filter(@items, fn i ->
+        i.destination == "barra" and is_nil(i.barra_type) and i.available
+      end) %>
+      <%= if unclassified != [] do %>
+        <div class="rounded-xl border border-warning/50 bg-warning/5 p-4 space-y-3">
+          <div class="flex items-center gap-2">
+            <.icon name="hero-tag" class="size-4 text-warning shrink-0" />
+            <p class="text-sm font-semibold text-base-content">
+              {length(unclassified)} {if length(unclassified) == 1,
+                do: "bebida sin clasificar",
+                else: "bebidas sin clasificar"}
+              — etiquétalas para que aparezcan en la sección correcta de barra
+            </p>
+          </div>
+          <div class="space-y-2">
+            <%= for item <- unclassified do %>
+              <div class="flex items-center gap-3 bg-base-100 rounded-lg px-3 py-2 border border-base-300">
+                <span class="text-sm font-medium text-base-content flex-1 truncate">
+                  {item.name}
+                </span>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button
+                    phx-click="set_barra_type"
+                    phx-value-id={item.id}
+                    phx-value-type="fria"
+                    class="btn btn-xs btn-outline btn-info gap-1"
+                  >
+                    ❄️ Fría
+                  </button>
+                  <button
+                    phx-click="set_barra_type"
+                    phx-value-id={item.id}
+                    phx-value-type="caliente"
+                    class="btn btn-xs btn-outline btn-error gap-1"
+                  >
+                    ☕ Caliente
+                  </button>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
 
       <%!-- Margin legend --%>
       <details class="group rounded-xl border border-base-300 bg-base-100 text-sm shadow-sm">

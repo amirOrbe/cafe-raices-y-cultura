@@ -194,6 +194,36 @@ defmodule CRCWeb.Waiter.OrderLive do
     end
   end
 
+  # Repeat an existing order item — adds a new pending unit of the same menu item.
+  # Merges with an existing pending item if one exists, otherwise creates a new one.
+  def handle_event("repeat_item", %{"menu_item_id" => menu_item_id_str}, socket) do
+    menu_item_id = String.to_integer(menu_item_id_str)
+    order = socket.assigns.order
+
+    existing_pending =
+      Enum.find(order.order_items, fn oi ->
+        oi.menu_item_id == menu_item_id and oi.status == "pending"
+      end)
+
+    result =
+      if existing_pending do
+        Orders.update_item(existing_pending, %{quantity: existing_pending.quantity + 1})
+      else
+        Orders.add_item(%{order_id: order.id, menu_item_id: menu_item_id, quantity: 1})
+      end
+
+    case result do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(:order, Orders.get_order!(order.id))
+         |> assign(:flash_msg, {:success, "Artículo repetido"})}
+
+      {:error, _} ->
+        {:noreply, assign(socket, :flash_msg, {:error, "No se pudo repetir el artículo"})}
+    end
+  end
+
   def handle_event("add_item", %{"menu_item_id" => menu_item_id_str}, socket) do
     menu_item_id = String.to_integer(menu_item_id_str)
     order = socket.assigns.order
@@ -990,6 +1020,19 @@ defmodule CRCWeb.Waiter.OrderLive do
                         phx-value-id={item.id}
                       >
                         <.icon name="hero-check" class="size-3" /> Servir
+                      </button>
+                    <% end %>
+
+                    <%!-- "Repetir" button — for sent/ready menu items (not ingredient extras) --%>
+                    <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and
+                          item.status in ["sent", "ready"] and @order.status != "closed" do %>
+                      <button
+                        class="btn btn-xs btn-ghost btn-circle text-primary"
+                        phx-click="repeat_item"
+                        phx-value-menu-item-id={item.menu_item_id}
+                        title="Repetir este artículo"
+                      >
+                        <.icon name="hero-arrow-path" class="size-3.5" />
                       </button>
                     <% end %>
 

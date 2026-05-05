@@ -683,12 +683,12 @@ defmodule CRCWeb.Waiter.OrderLive do
     <div class="min-h-screen bg-base-200 pt-20 pb-10">
       <div class="max-w-6xl mx-auto px-4 space-y-4">
         <%!-- Header --%>
-        <div class="flex items-center gap-3 flex-wrap">
-          <a href="/mesa" class="btn btn-ghost btn-sm gap-1">
+        <div class="flex items-center gap-3 min-w-0">
+          <a href="/mesa" class="btn btn-ghost btn-sm gap-1 shrink-0">
             <.icon name="hero-arrow-left" class="size-4" /> Comandas
           </a>
-          <div class="flex-1">
-            <h1 class="text-xl font-bold text-base-content">
+          <div class="flex-1 min-w-0">
+            <h1 class="text-xl font-bold text-base-content truncate">
               {@order.customer_name}
             </h1>
           </div>
@@ -1627,12 +1627,12 @@ defmodule CRCWeb.Waiter.OrderLive do
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div class="bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden pointer-events-auto">
           <%!-- Header --%>
-          <div class="bg-primary text-primary-content px-5 py-4 flex items-center justify-between">
-            <div>
+          <div class="bg-primary text-primary-content px-5 py-4 flex items-center gap-3">
+            <div class="flex-1 min-w-0">
               <h2 class="font-bold text-lg">Cuenta</h2>
-              <p class="text-sm opacity-80">{@order.customer_name}</p>
+              <p class="text-sm opacity-80 truncate">{@order.customer_name}</p>
             </div>
-            <button phx-click="close_bill_modal" class="btn btn-sm btn-ghost text-primary-content">
+            <button phx-click="close_bill_modal" class="btn btn-sm btn-ghost text-primary-content shrink-0">
               <.icon name="hero-x-mark" class="size-5" />
             </button>
           </div>

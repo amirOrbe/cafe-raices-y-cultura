@@ -28,6 +28,7 @@ defmodule CRCWeb.Waiter.TableLive do
       |> assign(:name_error, nil)
       |> assign(:nav_open, false)
       |> assign(:seen_ready_ids, all_ready_ids(orders))
+      |> assign(:my_orders_only, false)
 
     {:ok, socket}
   end
@@ -70,6 +71,10 @@ defmodule CRCWeb.Waiter.TableLive do
 
   def handle_event("close_nav", _params, socket) do
     {:noreply, assign(socket, :nav_open, false)}
+  end
+
+  def handle_event("toggle_my_orders", _params, socket) do
+    {:noreply, assign(socket, :my_orders_only, !socket.assigns.my_orders_only)}
   end
 
   def handle_event("open_new_modal", _params, socket) do
@@ -131,6 +136,14 @@ defmodule CRCWeb.Waiter.TableLive do
             </p>
           </div>
           <div class="flex items-center gap-2">
+            <button
+              class={["btn btn-sm gap-1.5", if(@my_orders_only, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+              phx-click="toggle_my_orders"
+              title={if @my_orders_only, do: "Mostrando solo tus mesas", else: "Mostrando todas las mesas"}
+            >
+              <.icon name="hero-user" class="size-4" />
+              {if @my_orders_only, do: "Mis mesas", else: "Todas"}
+            </button>
             <a href="/mesa/historial" class="btn btn-ghost btn-sm gap-1">
               <.icon name="hero-clock" class="size-4" /> Historial
             </a>
@@ -140,23 +153,37 @@ defmodule CRCWeb.Waiter.TableLive do
           </div>
         </div>
 
+        <% visible_orders = if @my_orders_only,
+              do: Enum.filter(@orders, fn o -> o.user_id == @current_user.id end),
+              else: @orders %>
+
         <%!-- Empty state --%>
-        <%= if @orders == [] do %>
+        <%= if visible_orders == [] do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-20 text-center">
             <.icon
               name="hero-clipboard-document-list"
               class="size-12 text-base-content/20 mx-auto mb-3"
             />
-            <p class="text-base-content/50 text-sm">No hay comandas abiertas.</p>
-            <button class="btn btn-primary btn-sm mt-4" phx-click="open_new_modal">
-              Abrir primera cuenta
-            </button>
+            <%= if @my_orders_only do %>
+              <p class="text-base-content/50 text-sm">No tienes mesas abiertas en este turno.</p>
+              <button
+                class="btn btn-ghost btn-sm mt-3"
+                phx-click="toggle_my_orders"
+              >
+                Ver todas las mesas
+              </button>
+            <% else %>
+              <p class="text-base-content/50 text-sm">No hay comandas abiertas.</p>
+              <button class="btn btn-primary btn-sm mt-4" phx-click="open_new_modal">
+                Abrir primera cuenta
+              </button>
+            <% end %>
           </div>
         <% end %>
 
         <%!-- Comandas grid --%>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <%= for order <- @orders do %>
+          <%= for order <- visible_orders do %>
             <.cuenta_card order={order} now={@now} />
           <% end %>
         </div>

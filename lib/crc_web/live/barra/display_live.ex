@@ -27,6 +27,7 @@ defmodule CRCWeb.Barra.DisplayLive do
       |> assign(:now, DateTime.utc_now())
       |> assign(:seen_sent_ids, sent_drink_ids(orders))
       |> assign(:cancel_alerts, [])
+      |> assign(:view_mode, :by_order)
 
     {:ok, socket}
   end
@@ -106,6 +107,16 @@ defmodule CRCWeb.Barra.DisplayLive do
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "No se pudo marcar el artículo como listo.")}
     end
+  end
+
+  def handle_event("set_view_mode", %{"mode" => mode}, socket) do
+    {:noreply, assign(socket, :view_mode, String.to_existing_atom(mode))}
+  end
+
+  def handle_event("mark_group_ready", %{"ids" => ids_str}, socket) do
+    ids = ids_str |> String.split(",") |> Enum.map(&String.to_integer/1)
+    Enum.each(ids, fn id -> Orders.mark_item_ready(id, socket.assigns.current_user.id) end)
+    {:noreply, assign(socket, :orders, Orders.list_open_orders())}
   end
 
   # Marks all sent drink items of a specific barra_type (or all if type == "all") as ready.
@@ -192,76 +203,149 @@ defmodule CRCWeb.Barra.DisplayLive do
           </div>
         <% end %>
 
-        <%!-- ── Calientes section ──────────────────────────────────────────────── --%>
-        <% caliente_orders = orders_by_type(@orders, "caliente") %>
-        <%= if caliente_orders != [] do %>
-          <div class="space-y-3">
-            <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 uppercase tracking-wider">
-              <span>☕</span> Calientes
-              <span class="badge badge-sm badge-error">{length(caliente_orders)}</span>
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <%= for order <- caliente_orders do %>
-                <.drink_order_card
-                  order={order}
-                  items={typed_drink_items(order, "caliente")}
-                  badge_class="badge-error"
-                  border_class="border-error"
-                  header_class="bg-error/10 border-error/30"
-                  type="caliente"
-                  mins={elapsed_minutes(order, @now, &drink_item?/1)}
-                />
-              <% end %>
-            </div>
+        <%!-- View mode toggle --%>
+        <%= if pending_orders(@orders) != [] do %>
+          <div class="flex gap-1 bg-base-200 rounded-xl p-1 w-fit">
+            <button
+              class={["btn btn-xs gap-1.5", if(@view_mode == :by_order, do: "btn-primary", else: "btn-ghost")]}
+              phx-click="set_view_mode"
+              phx-value-mode="by_order"
+            >
+              <.icon name="hero-squares-2x2" class="size-3" /> Por mesa
+            </button>
+            <button
+              class={["btn btn-xs gap-1.5", if(@view_mode == :grouped, do: "btn-primary", else: "btn-ghost")]}
+              phx-click="set_view_mode"
+              phx-value-mode="grouped"
+            >
+              <.icon name="hero-queue-list" class="size-3" /> Agrupado
+            </button>
           </div>
         <% end %>
 
-        <%!-- ── Frías section ──────────────────────────────────────────────────── --%>
-        <% fria_orders = orders_by_type(@orders, "fria") %>
-        <%= if fria_orders != [] do %>
-          <div class="space-y-3">
-            <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 uppercase tracking-wider">
-              <span>❄️</span> Frías
-              <span class="badge badge-sm badge-info">{length(fria_orders)}</span>
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <%= for order <- fria_orders do %>
-                <.drink_order_card
-                  order={order}
-                  items={typed_drink_items(order, "fria")}
-                  badge_class="badge-info"
-                  border_class="border-info"
-                  header_class="bg-info/10 border-info/30"
-                  type="fria"
-                  mins={elapsed_minutes(order, @now, &drink_item?/1)}
-                />
-              <% end %>
+        <%!-- Grouped view — one card per drink, across all mesas --%>
+        <%= if @view_mode == :grouped do %>
+          <% grouped_caliente = group_drink_items(pending_orders(@orders), "caliente") %>
+          <%= if grouped_caliente != [] do %>
+            <div class="space-y-3">
+              <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 uppercase tracking-wider">
+                <span>☕</span> Calientes
+                <span class="badge badge-sm badge-error">{length(grouped_caliente)}</span>
+              </h2>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <%= for group <- grouped_caliente do %>
+                  <% gmins = group_elapsed_minutes(group.oldest_sent_at, @now) %>
+                  <.grouped_drink_card group={group} gmins={gmins} border_class="border-error" header_class="bg-error/10 border-error/30" />
+                <% end %>
+              </div>
             </div>
-          </div>
-        <% end %>
+          <% end %>
 
-        <%!-- ── Sin clasificar (items without barra_type set) ─────────────────── --%>
-        <% other_orders = orders_by_type(@orders, nil) %>
-        <%= if other_orders != [] do %>
-          <div class="space-y-3">
-            <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/60 uppercase tracking-wider">
-              <span>🍹</span> Bebidas
-              <span class="badge badge-sm badge-ghost">{length(other_orders)}</span>
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <%= for order <- other_orders do %>
-                <.drink_order_card
-                  order={order}
-                  items={typed_drink_items(order, nil)}
-                  badge_class="badge-info"
-                  border_class="border-info"
-                  header_class="bg-info/10 border-info/30"
-                  type="all"
-                  mins={elapsed_minutes(order, @now, &drink_item?/1)}
-                />
-              <% end %>
+          <% grouped_fria = group_drink_items(pending_orders(@orders), "fria") %>
+          <%= if grouped_fria != [] do %>
+            <div class="space-y-3">
+              <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 uppercase tracking-wider">
+                <span>❄️</span> Frías
+                <span class="badge badge-sm badge-info">{length(grouped_fria)}</span>
+              </h2>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <%= for group <- grouped_fria do %>
+                  <% gmins = group_elapsed_minutes(group.oldest_sent_at, @now) %>
+                  <.grouped_drink_card group={group} gmins={gmins} border_class="border-info" header_class="bg-info/10 border-info/30" />
+                <% end %>
+              </div>
             </div>
-          </div>
+          <% end %>
+
+          <% grouped_other = group_drink_items(pending_orders(@orders), nil) %>
+          <%= if grouped_other != [] do %>
+            <div class="space-y-3">
+              <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/60 uppercase tracking-wider">
+                <span>🍹</span> Bebidas
+                <span class="badge badge-sm badge-ghost">{length(grouped_other)}</span>
+              </h2>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <%= for group <- grouped_other do %>
+                  <% gmins = group_elapsed_minutes(group.oldest_sent_at, @now) %>
+                  <.grouped_drink_card group={group} gmins={gmins} border_class="border-info" header_class="bg-info/10 border-info/30" />
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <%!-- ── By-order view ─────────────────────────────────────────────────── --%>
+
+          <%!-- ── Calientes section ──────────────────────────────────────────────── --%>
+          <% caliente_orders = orders_by_type(@orders, "caliente") %>
+          <%= if caliente_orders != [] do %>
+            <div class="space-y-3">
+              <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 uppercase tracking-wider">
+                <span>☕</span> Calientes
+                <span class="badge badge-sm badge-error">{length(caliente_orders)}</span>
+              </h2>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <%= for order <- caliente_orders do %>
+                  <.drink_order_card
+                    order={order}
+                    items={typed_drink_items(order, "caliente")}
+                    badge_class="badge-error"
+                    border_class="border-error"
+                    header_class="bg-error/10 border-error/30"
+                    type="caliente"
+                    mins={elapsed_minutes(order, @now, &drink_item?/1)}
+                  />
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%!-- ── Frías section ──────────────────────────────────────────────────── --%>
+          <% fria_orders = orders_by_type(@orders, "fria") %>
+          <%= if fria_orders != [] do %>
+            <div class="space-y-3">
+              <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 uppercase tracking-wider">
+                <span>❄️</span> Frías
+                <span class="badge badge-sm badge-info">{length(fria_orders)}</span>
+              </h2>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <%= for order <- fria_orders do %>
+                  <.drink_order_card
+                    order={order}
+                    items={typed_drink_items(order, "fria")}
+                    badge_class="badge-info"
+                    border_class="border-info"
+                    header_class="bg-info/10 border-info/30"
+                    type="fria"
+                    mins={elapsed_minutes(order, @now, &drink_item?/1)}
+                  />
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%!-- ── Sin clasificar (items without barra_type set) ─────────────────── --%>
+          <% other_orders = orders_by_type(@orders, nil) %>
+          <%= if other_orders != [] do %>
+            <div class="space-y-3">
+              <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/60 uppercase tracking-wider">
+                <span>🍹</span> Bebidas
+                <span class="badge badge-sm badge-ghost">{length(other_orders)}</span>
+              </h2>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <%= for order <- other_orders do %>
+                  <.drink_order_card
+                    order={order}
+                    items={typed_drink_items(order, nil)}
+                    badge_class="badge-info"
+                    border_class="border-info"
+                    header_class="bg-info/10 border-info/30"
+                    type="all"
+                    mins={elapsed_minutes(order, @now, &drink_item?/1)}
+                  />
+                <% end %>
+              </div>
+            </div>
+          <% end %>
         <% end %>
 
         <%!-- Ready orders --%>
@@ -295,6 +379,106 @@ defmodule CRCWeb.Barra.DisplayLive do
   # ---------------------------------------------------------------------------
   # Private components
   # ---------------------------------------------------------------------------
+
+  # ---------------------------------------------------------------------------
+  # Grouped drink card component
+  # ---------------------------------------------------------------------------
+
+  attr :group, :map, required: true
+  attr :gmins, :any, default: nil
+  attr :border_class, :string, required: true
+  attr :header_class, :string, required: true
+
+  defp grouped_drink_card(assigns) do
+    ~H"""
+    <div class={"bg-base-100 rounded-2xl border shadow-sm flex flex-col #{@border_class}"}>
+      <div class={"px-4 py-3 rounded-t-2xl border-b flex items-center justify-between #{@header_class}"}>
+        <div>
+          <h2 class="font-bold text-base-content">
+            <span class="text-primary text-lg">{@group.total_qty}×</span>
+            {@group.menu_item.name}
+          </h2>
+          <p class="text-xs text-base-content/50">
+            {@group.entry_count} {if @group.entry_count == 1, do: "mesa", else: "mesas"}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <%= if @gmins do %>
+            <span class={[
+              "text-xs font-mono font-semibold tabular-nums",
+              cond do
+                @gmins >= 12 -> "text-error animate-pulse"
+                @gmins >= 7 -> "text-warning"
+                true -> "text-success"
+              end
+            ]}>
+              🕐 {@gmins}m
+            </span>
+          <% end %>
+          <span class="badge badge-sm badge-info">Pendiente</span>
+        </div>
+      </div>
+      <div class="flex-1 divide-y divide-base-200">
+        <%= for entry <- @group.entries do %>
+          <% item = entry.item %>
+          <% display_name = if item.for_person && item.for_person != "", do: item.for_person, else: entry.order.customer_name %>
+          <% item_variants = Enum.filter(entry.order.order_items, fn oi -> not is_nil(oi.variant_id) and oi.for_menu_item_id == item.menu_item_id end) %>
+          <div class="flex items-start gap-3 px-4 py-3">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-base-content">
+                {display_name}
+                <%= if item.quantity > 1 do %>
+                  <span class="text-xs text-base-content/50 font-normal ml-1">×{item.quantity}</span>
+                <% end %>
+              </p>
+              <%= if item_variants != [] do %>
+                <div class="flex flex-wrap items-center gap-1 mt-1">
+                  <%= for vi <- item_variants do %>
+                    <span class="badge badge-xs badge-primary">{vi.variant.name}</span>
+                  <% end %>
+                </div>
+              <% end %>
+              <%= if item.exclusions != [] do %>
+                <div class="flex flex-wrap items-center gap-1 mt-1">
+                  <span class="text-xs font-bold text-error shrink-0">⚠ Sin:</span>
+                  <%= for excl <- item.exclusions do %>
+                    <span class="badge badge-xs badge-error">{excl.product.name}</span>
+                  <% end %>
+                </div>
+              <% end %>
+              <%= if item.notes && item.notes != "" do %>
+                <div class="flex items-center gap-1 mt-1 bg-warning/15 rounded px-1.5 py-0.5">
+                  <span class="text-xs shrink-0">📝</span>
+                  <p class="text-xs font-semibold text-warning">{item.notes}</p>
+                </div>
+              <% end %>
+            </div>
+            <%= if item.status == "ready" do %>
+              <span class="badge badge-xs badge-success shrink-0">Listo</span>
+            <% else %>
+              <button
+                class="btn btn-xs btn-outline btn-success shrink-0"
+                phx-click="mark_item_ready"
+                phx-value-id={item.id}
+              >
+                Listo
+              </button>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+      <div class="px-4 py-3 border-t border-base-300">
+        <button
+          class="btn btn-success w-full btn-sm"
+          phx-click="mark_group_ready"
+          phx-value-ids={Enum.join(@group.item_ids, ",")}
+        >
+          <.icon name="hero-check" class="size-4" /> Todo listo — {@group.menu_item.name}
+        </button>
+      </div>
+    </div>
+    """
+  end
 
   attr :order, :map, required: true
   attr :items, :list, required: true
@@ -489,6 +673,48 @@ defmodule CRCWeb.Barra.DisplayLive do
   defp item_label(%{menu_item: %{name: name}}) when not is_nil(name), do: name
   defp item_label(%{product: %{name: name}}) when not is_nil(name), do: "Extra: #{name}"
   defp item_label(_), do: "Artículo"
+
+  # Groups pending drink items by menu_item_id for the given barra_type.
+  # Returns a list of group maps sorted by total quantity descending.
+  defp group_drink_items(orders, type) do
+    orders
+    |> Enum.flat_map(fn order ->
+      order.order_items
+      |> Enum.filter(fn oi ->
+        oi.status == "sent" and drink_item?(oi) and
+          barra_type(oi) == type and not is_nil(oi.menu_item_id)
+      end)
+      |> Enum.map(fn oi -> {order, oi} end)
+    end)
+    |> Enum.group_by(fn {_order, oi} -> oi.menu_item_id end)
+    |> Enum.map(fn {_id, entries} ->
+      {_order, first} = hd(entries)
+      total_qty = Enum.sum(Enum.map(entries, fn {_, oi} -> oi.quantity end))
+      item_ids = Enum.map(entries, fn {_, oi} -> oi.id end)
+
+      oldest_sent_at =
+        entries
+        |> Enum.map(fn {_, oi} -> oi.sent_at end)
+        |> Enum.reject(&is_nil/1)
+        |> case do
+          [] -> nil
+          ats -> Enum.min(ats, DateTime)
+        end
+
+      %{
+        menu_item: first.menu_item,
+        total_qty: total_qty,
+        entry_count: length(entries),
+        item_ids: item_ids,
+        oldest_sent_at: oldest_sent_at,
+        entries: Enum.map(entries, fn {order, oi} -> %{order: order, item: oi} end)
+      }
+    end)
+    |> Enum.sort_by(& &1.total_qty, :desc)
+  end
+
+  defp group_elapsed_minutes(nil, _now), do: nil
+  defp group_elapsed_minutes(sent_at, now), do: DateTime.diff(now, sent_at, :minute)
 
   defp schedule_tick, do: Process.send_after(self(), :tick, @tick_interval)
 end

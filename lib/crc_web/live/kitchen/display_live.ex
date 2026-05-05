@@ -173,6 +173,40 @@ defmodule CRCWeb.Kitchen.DisplayLive do
           </div>
         </div>
 
+        <%!-- Onboarding tip (dismissed per-browser via localStorage) --%>
+        <div
+          id="tip-cocina"
+          phx-hook="DismissableTip"
+          data-tip-id="cocina"
+          class="bg-base-100 border border-primary/30 rounded-2xl shadow-sm px-5 py-4 space-y-3"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">💡</span>
+              <p class="font-semibold text-base-content text-sm">¿Primera vez en Cocina?</p>
+            </div>
+            <button data-dismiss-tip class="btn btn-xs btn-ghost text-base-content/40">✕ Entendido</button>
+          </div>
+          <ol class="space-y-1.5 text-sm text-base-content/70 list-none pl-0">
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">1</span>
+              Los platillos aparecen aquí automáticamente cuando el mesero envía una comanda.
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">2</span>
+              El reloj 🕐 indica cuánto lleva esperando: <span class="text-success font-semibold">verde</span> &lt;7 min · <span class="text-warning font-semibold">amarillo</span> 7-12 min · <span class="text-error font-semibold animate-pulse">rojo</span> +12 min.
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">3</span>
+              Vista <strong>Agrupado</strong>: junta el mismo platillo de varias mesas para prepararlo todo de un golpe.
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">4</span>
+              Toca <strong>Listo</strong> en cada platillo o <strong>Todo listo</strong> para marcar toda la mesa como terminada.
+            </li>
+          </ol>
+        </div>
+
         <%!-- Cancellation alerts --%>
         <%= for alert <- @cancel_alerts do %>
           <div class="alert alert-error py-2 flex items-center gap-3 shadow-sm">

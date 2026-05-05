@@ -176,6 +176,40 @@ defmodule CRCWeb.Barra.DisplayLive do
           </div>
         </div>
 
+        <%!-- Onboarding tip (dismissed per-browser via localStorage) --%>
+        <div
+          id="tip-barra"
+          phx-hook="DismissableTip"
+          data-tip-id="barra"
+          class="bg-base-100 border border-info/30 rounded-2xl shadow-sm px-5 py-4 space-y-3"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">💡</span>
+              <p class="font-semibold text-base-content text-sm">¿Primera vez en Barra?</p>
+            </div>
+            <button data-dismiss-tip class="btn btn-xs btn-ghost text-base-content/40">✕ Entendido</button>
+          </div>
+          <ol class="space-y-1.5 text-sm text-base-content/70 list-none pl-0">
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 w-5 h-5 rounded-full bg-info/15 text-info text-xs flex items-center justify-center font-bold">1</span>
+              Las bebidas llegan automáticamente cuando el mesero envía una comanda.
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 w-5 h-5 rounded-full bg-info/15 text-info text-xs flex items-center justify-center font-bold">2</span>
+              Las bebidas se dividen en ☕ <strong>Calientes</strong> y ❄️ <strong>Frías</strong> para facilitar la preparación.
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 w-5 h-5 rounded-full bg-info/15 text-info text-xs flex items-center justify-center font-bold">3</span>
+              Vista <strong>Agrupado</strong>: junta la misma bebida de varias mesas — ideal para preparar varios cafés seguidos.
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 w-5 h-5 rounded-full bg-info/15 text-info text-xs flex items-center justify-center font-bold">4</span>
+              Toca <strong>Listo</strong> en cada bebida o <strong>Todo listo</strong> para avisar al mesero que puede servir.
+            </li>
+          </ol>
+        </div>
+
         <%!-- Cancellation alerts --%>
         <%= for alert <- @cancel_alerts do %>
           <div class="alert alert-error py-2 flex items-center gap-3 shadow-sm">

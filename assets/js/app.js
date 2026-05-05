@@ -151,6 +151,38 @@ const GeolocationClockIn = {
   }
 }
 
+/**
+ * DismissableTip — hides an onboarding tip panel and remembers the choice
+ * in localStorage so it never shows again for this browser.
+ *
+ * Usage: <div phx-hook="DismissableTip" data-tip-id="cocina">
+ *          ...content...
+ *          <button data-dismiss-tip>Entendido</button>
+ *        </div>
+ */
+const DismissableTip = {
+  mounted() {
+    const tipId = this.el.dataset.tipId
+    const key   = `crc_tip_dismissed_${tipId}`
+
+    // Already dismissed in a previous session — vanish immediately
+    if (localStorage.getItem(key)) {
+      this.el.style.display = "none"
+      return
+    }
+
+    const btn = this.el.querySelector("[data-dismiss-tip]")
+    if (btn) {
+      btn.addEventListener("click", () => {
+        localStorage.setItem(key, "1")
+        this.el.style.transition = "opacity 0.25s"
+        this.el.style.opacity    = "0"
+        setTimeout(() => { this.el.style.display = "none" }, 280)
+      })
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // LiveSocket setup
 // ---------------------------------------------------------------------------
@@ -162,6 +194,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
   hooks: {
     ...colocatedHooks,
     CarouselAutoplay,
+    DismissableTip,
     GeolocationClockIn,
     SoundNotifier,
   },

@@ -153,6 +153,40 @@ defmodule CRCWeb.Waiter.TableLive do
           </div>
         </div>
 
+        <%!-- Onboarding tip (dismissed per-browser via localStorage) --%>
+        <div
+          id="tip-comandas"
+          phx-hook="DismissableTip"
+          data-tip-id="comandas"
+          class="bg-base-100 border border-accent/30 rounded-2xl shadow-sm px-5 py-4 space-y-3"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">💡</span>
+              <p class="font-semibold text-base-content text-sm">¿Primera vez tomando comandas?</p>
+            </div>
+            <button data-dismiss-tip class="btn btn-xs btn-ghost text-base-content/40">✕ Entendido</button>
+          </div>
+          <ol class="space-y-1.5 text-sm text-base-content/70 list-none pl-0">
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 w-5 h-5 rounded-full bg-accent/15 text-accent text-xs flex items-center justify-center font-bold">1</span>
+              Toca <strong>Nueva cuenta</strong> e ingresa el nombre del cliente o referencia de la mesa.
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 w-5 h-5 rounded-full bg-accent/15 text-accent text-xs flex items-center justify-center font-bold">2</span>
+              Dentro de la cuenta agrega platillos y bebidas, luego presiona <strong>Enviar a cocina/barra</strong>.
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 w-5 h-5 rounded-full bg-accent/15 text-accent text-xs flex items-center justify-center font-bold">3</span>
+              La tarjeta cambia de color: <span class="text-warning font-semibold">amarillo</span> = en preparación · <span class="text-success font-semibold">verde</span> = listo para servir · <span class="text-error font-semibold">rojo</span> = más de 15 min esperando.
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="shrink-0 w-5 h-5 rounded-full bg-accent/15 text-accent text-xs flex items-center justify-center font-bold">4</span>
+              Usa <strong>Mis mesas</strong> para ver solo tus cuentas activas cuando hay varios meseros.
+            </li>
+          </ol>
+        </div>
+
         <% visible_orders = if @my_orders_only,
               do: Enum.filter(@orders, fn o -> o.user_id == @current_user.id end),
               else: @orders %>

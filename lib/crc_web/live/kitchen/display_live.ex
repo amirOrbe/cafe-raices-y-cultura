@@ -180,31 +180,31 @@ defmodule CRCWeb.Kitchen.DisplayLive do
           data-tip-id="cocina"
           class="bg-base-100 border border-primary/30 rounded-2xl shadow-sm px-5 py-4 space-y-3"
         >
-          <div class="flex items-start justify-between gap-3">
+          <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-2">
-              <span class="text-lg">💡</span>
+              <span>💡</span>
               <p class="font-semibold text-base-content text-sm">¿Primera vez en Cocina?</p>
             </div>
-            <button data-dismiss-tip class="btn btn-xs btn-ghost text-base-content/40">✕ Entendido</button>
+            <button data-dismiss-tip class="btn btn-xs btn-ghost text-base-content/40 shrink-0">✕ Entendido</button>
           </div>
-          <ol class="space-y-1.5 text-sm text-base-content/70 list-none pl-0">
+          <ul class="space-y-2 text-sm text-base-content/70">
             <li class="flex items-start gap-2">
-              <span class="shrink-0 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">1</span>
-              Los platillos aparecen aquí automáticamente cuando el mesero envía una comanda.
+              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">1</span>
+              <span>Los platillos llegan solos cuando el mesero envía una comanda.</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="shrink-0 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">2</span>
-              El reloj 🕐 indica cuánto lleva esperando: <span class="text-success font-semibold">verde</span> &lt;7 min · <span class="text-warning font-semibold">amarillo</span> 7-12 min · <span class="text-error font-semibold animate-pulse">rojo</span> +12 min.
+              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">2</span>
+              <span>El reloj 🕐 muestra el tiempo de espera: 🟢 &lt;7 min · 🟡 7-12 min · 🔴 +12 min.</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="shrink-0 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">3</span>
-              Vista <strong>Agrupado</strong>: junta el mismo platillo de varias mesas para prepararlo todo de un golpe.
+              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">3</span>
+              <span><strong>Agrupado</strong>: junta el mismo platillo de varias mesas para prepararlo todo de un golpe.</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="shrink-0 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">4</span>
-              Toca <strong>Listo</strong> en cada platillo o <strong>Todo listo</strong> para marcar toda la mesa como terminada.
+              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">4</span>
+              <span>Toca <strong>Listo</strong> en cada platillo, o <strong>Todo listo</strong> para cerrar toda la mesa de una vez.</span>
             </li>
-          </ol>
+          </ul>
         </div>
 
         <%!-- Cancellation alerts --%>

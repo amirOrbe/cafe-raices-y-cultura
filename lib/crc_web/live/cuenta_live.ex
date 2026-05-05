@@ -59,6 +59,15 @@ defmodule CRCWeb.CuentaLive do
   @impl true
   def render(assigns) do
     ~H"""
+    <%!-- Print styles: hide interactive chrome, force white background --%>
+    <style>
+      @media print {
+        .no-print { display: none !important; }
+        body { background: white !important; }
+        .print-card { box-shadow: none !important; border: 1px solid #ddd !important; }
+      }
+    </style>
+
     <div class="min-h-screen bg-base-200 flex flex-col">
       <%!-- Header --%>
       <div class="bg-primary text-primary-content px-4 py-5 text-center shadow-md">
@@ -143,6 +152,17 @@ defmodule CRCWeb.CuentaLive do
             </div>
           <% end %>
         <% end %>
+      </div>
+
+      <%!-- Download / print button --%>
+      <div class="no-print px-4 pb-4 max-w-lg mx-auto w-full">
+        <button
+          onclick="window.print()"
+          class="btn btn-outline w-full gap-2"
+        >
+          <.icon name="hero-arrow-down-tray" class="size-4" />
+          Descargar / Imprimir cuenta
+        </button>
       </div>
 
       <%!-- Footer --%>

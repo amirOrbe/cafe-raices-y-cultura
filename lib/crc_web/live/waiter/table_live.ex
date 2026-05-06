@@ -1,5 +1,5 @@
 defmodule CRCWeb.Waiter.TableLive do
-  @moduledoc "Overview of active customer tabs (cuentas) with option to create new ones."
+  @moduledoc "Visual floor map of restaurant tables with real-time order status."
 
   use CRCWeb, :live_view
 
@@ -16,19 +16,23 @@ defmodule CRCWeb.Waiter.TableLive do
       Process.send_after(self(), :tick, @tick_interval)
     end
 
-    orders = Orders.list_active_orders()
+    tables = Orders.list_active_tables()
+    orders_by_table = Orders.active_orders_by_table()
+    # Also keep "tableless" orders (created before this feature)
+    tableless = Orders.list_active_orders() |> Enum.filter(&is_nil(&1.table_id))
 
     socket =
       socket
-      |> assign(:page_title, "Comandas")
-      |> assign(:orders, orders)
+      |> assign(:page_title, "Mesas")
+      |> assign(:tables, tables)
+      |> assign(:orders_by_table, orders_by_table)
+      |> assign(:tableless, tableless)
       |> assign(:now, DateTime.utc_now())
+      |> assign(:selected_table, nil)
       |> assign(:show_new_modal, false)
-      |> assign(:new_name, "")
       |> assign(:name_error, nil)
       |> assign(:nav_open, false)
-      |> assign(:seen_ready_ids, all_ready_ids(orders))
-      |> assign(:my_orders_only, false)
+      |> assign(:seen_ready_ids, all_ready_ids_from_map(orders_by_table, tableless))
 
     {:ok, socket}
   end
@@ -39,13 +43,15 @@ defmodule CRCWeb.Waiter.TableLive do
 
   @impl true
   def handle_info({:order_updated, _order_id}, socket) do
-    new_orders = Orders.list_active_orders()
-    new_ids = all_ready_ids(new_orders)
+    orders_by_table = Orders.active_orders_by_table()
+    tableless = Orders.list_active_orders() |> Enum.filter(&is_nil(&1.table_id))
+    new_ids = all_ready_ids_from_map(orders_by_table, tableless)
     new_ready? = not MapSet.subset?(new_ids, socket.assigns.seen_ready_ids)
 
     socket =
       socket
-      |> assign(:orders, new_orders)
+      |> assign(:orders_by_table, orders_by_table)
+      |> assign(:tableless, tableless)
       |> assign(:now, DateTime.utc_now())
       |> assign(:seen_ready_ids, new_ids)
 
@@ -73,26 +79,51 @@ defmodule CRCWeb.Waiter.TableLive do
     {:noreply, assign(socket, :nav_open, false)}
   end
 
-  def handle_event("toggle_my_orders", _params, socket) do
-    {:noreply, assign(socket, :my_orders_only, !socket.assigns.my_orders_only)}
-  end
+  def handle_event("select_table", %{"id" => id}, socket) do
+    table = Enum.find(socket.assigns.tables, &(to_string(&1.id) == id))
 
-  def handle_event("open_new_modal", _params, socket) do
-    {:noreply,
-     socket
-     |> assign(:show_new_modal, true)
-     |> assign(:new_name, "")
-     |> assign(:name_error, nil)}
+    case Map.get(socket.assigns.orders_by_table, table.id) do
+      nil ->
+        # Free table — show confirmation modal to open new order
+        {:noreply,
+         socket
+         |> assign(:selected_table, table)
+         |> assign(:show_new_modal, true)
+         |> assign(:name_error, nil)}
+
+      order ->
+        # Occupied table — navigate directly to the order
+        {:noreply, push_navigate(socket, to: "/mesa/#{order.id}")}
+    end
   end
 
   def handle_event("close_modal", _params, socket) do
-    {:noreply, assign(socket, :show_new_modal, false)}
+    {:noreply,
+     socket
+     |> assign(:show_new_modal, false)
+     |> assign(:selected_table, nil)}
   end
 
-  def handle_event("update_name", %{"value" => value}, socket) do
-    {:noreply, assign(socket, :new_name, value)}
+  def handle_event("create_order_for_table", _params, socket) do
+    table = socket.assigns.selected_table
+
+    case Orders.create_order(%{
+           customer_name: "Mesa #{table.number}",
+           table_id: table.id,
+           user_id: socket.assigns.current_user.id
+         }) do
+      {:ok, order} ->
+        {:noreply,
+         socket
+         |> assign(:show_new_modal, false)
+         |> push_navigate(to: "/mesa/#{order.id}")}
+
+      {:error, _changeset} ->
+        {:noreply, assign(socket, :name_error, "No se pudo abrir la mesa, intenta de nuevo")}
+    end
   end
 
+  # Legacy: open a tableless order with a custom name
   def handle_event("create_cuenta", %{"customer_name" => name}, socket) do
     name = String.trim(name)
 
@@ -126,139 +157,143 @@ defmodule CRCWeb.Waiter.TableLive do
     />
     <div id="sound-notifier" phx-hook="SoundNotifier" class="hidden"></div>
     <div class="min-h-screen bg-base-200 pt-20 pb-10 px-4">
-      <div class="max-w-5xl mx-auto space-y-6">
+      <div class="max-w-5xl mx-auto space-y-5">
         <%!-- Header --%>
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 class="text-2xl font-bold text-base-content">Comandas</h1>
+            <h1 class="text-2xl font-bold text-base-content">Mesas</h1>
             <p class="text-sm text-base-content/50 mt-0.5">
-              Comandas activas del turno
+              {map_size(@orders_by_table)} ocupada{if map_size(@orders_by_table) != 1, do: "s"} ·
+              {length(@tables) - map_size(@orders_by_table)} libre{if (length(@tables) - map_size(@orders_by_table)) != 1, do: "s"}
             </p>
           </div>
-          <div class="flex items-center gap-2">
-            <button
-              class={["btn btn-sm gap-1.5", if(@my_orders_only, do: "btn-primary", else: "btn-ghost border border-base-300")]}
-              phx-click="toggle_my_orders"
-              title={if @my_orders_only, do: "Mostrando solo tus mesas", else: "Mostrando todas las mesas"}
+          <a href="/mesa/historial" class="btn btn-ghost btn-sm gap-1">
+            <.icon name="hero-clock" class="size-4" /> Historial
+          </a>
+        </div>
+
+        <%!-- Floor map or empty state --%>
+        <%= if @tables == [] do %>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-16 text-center space-y-3">
+            <.icon name="hero-table-cells" class="size-12 text-base-content/20 mx-auto" />
+            <p class="text-base-content/50 text-sm font-medium">No hay mesas configuradas</p>
+            <p class="text-base-content/40 text-xs">
+              Un administrador debe agregar las mesas desde
+              <a href="/admin/mesas" class="link">Admin → Mesas</a>.
+            </p>
+          </div>
+        <% else %>
+          <%!-- Map canvas --%>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+            <div
+              class="relative w-full select-none"
+              style="aspect-ratio: 16/9; background-image: radial-gradient(circle, oklch(80% 0.02 78) 1px, transparent 1px); background-size: 32px 32px;"
             >
-              <.icon name="hero-user" class="size-4" />
-              {if @my_orders_only, do: "Mis mesas", else: "Todas"}
-            </button>
-            <a href="/mesa/historial" class="btn btn-ghost btn-sm gap-1">
-              <.icon name="hero-clock" class="size-4" /> Historial
-            </a>
-            <button class="btn btn-primary btn-sm gap-1" phx-click="open_new_modal">
-              <.icon name="hero-plus" class="size-4" /> Nueva cuenta
-            </button>
-          </div>
-        </div>
-
-        <%!-- Onboarding tip (dismissed per-browser via localStorage) --%>
-        <div
-          id="tip-comandas"
-          phx-hook="DismissableTip"
-          data-tip-id="comandas"
-          class="bg-base-100 border border-accent/30 rounded-2xl shadow-sm px-5 py-4 space-y-3"
-        >
-          <div class="flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2">
-              <span>💡</span>
-              <p class="font-semibold text-base-content text-sm">¿Primera vez tomando comandas?</p>
+              <%= for table <- @tables do %>
+                <% order = Map.get(@orders_by_table, table.id) %>
+                <% {chip_class, label_text} = table_chip_style(order, @now) %>
+                <button
+                  phx-click="select_table"
+                  phx-value-id={table.id}
+                  class={"absolute -translate-x-1/2 -translate-y-1/2 #{chip_class} w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-md border-2 transition-all hover:scale-110 active:scale-95 focus:outline-none"}
+                  style={"left: #{table.x_pct}%; top: #{table.y_pct}%"}
+                  title={label_text}
+                >
+                  <span class="text-xl font-bold leading-none">{table.number}</span>
+                  <%= if table.label && table.label != "" do %>
+                    <span class="text-[9px] leading-tight truncate w-12 text-center px-0.5 mt-0.5 opacity-75">
+                      {table.label}
+                    </span>
+                  <% end %>
+                  <%= if order && overdue?(order, @now) do %>
+                    <span class="absolute -top-1.5 -right-1.5 size-3.5 rounded-full bg-error border-2 border-base-100 animate-ping" />
+                    <span class="absolute -top-1.5 -right-1.5 size-3.5 rounded-full bg-error border-2 border-base-100" />
+                  <% end %>
+                </button>
+              <% end %>
             </div>
-            <button data-dismiss-tip class="btn btn-xs btn-ghost text-base-content/40 shrink-0">✕ Entendido</button>
-          </div>
-          <ul class="space-y-2 text-sm text-base-content/70">
-            <li class="flex items-start gap-2">
-              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-accent/15 text-accent text-xs flex items-center justify-center font-bold">1</span>
-              <span>Toca <strong>Nueva cuenta</strong> e ingresa el nombre del cliente o la mesa.</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-accent/15 text-accent text-xs flex items-center justify-center font-bold">2</span>
-              <span>Agrega platillos y bebidas, luego presiona <strong>Enviar a cocina/barra</strong>.</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-accent/15 text-accent text-xs flex items-center justify-center font-bold">3</span>
-              <span>Las tarjetas cambian de color: 🟡 en preparación · 🟢 listo para servir · 🔴 +15 min esperando.</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-accent/15 text-accent text-xs flex items-center justify-center font-bold">4</span>
-              <span>Usa <strong>Mis mesas</strong> para ver solo tus cuentas cuando hay varios meseros.</span>
-            </li>
-          </ul>
-        </div>
 
-        <% visible_orders = if @my_orders_only,
-              do: Enum.filter(@orders, fn o -> o.user_id == @current_user.id end),
-              else: @orders %>
-
-        <%!-- Empty state --%>
-        <%= if visible_orders == [] do %>
-          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-20 text-center">
-            <.icon
-              name="hero-clipboard-document-list"
-              class="size-12 text-base-content/20 mx-auto mb-3"
-            />
-            <%= if @my_orders_only do %>
-              <p class="text-base-content/50 text-sm">No tienes mesas abiertas en este turno.</p>
-              <button
-                class="btn btn-ghost btn-sm mt-3"
-                phx-click="toggle_my_orders"
-              >
-                Ver todas las mesas
-              </button>
-            <% else %>
-              <p class="text-base-content/50 text-sm">No hay comandas abiertas.</p>
-              <button class="btn btn-primary btn-sm mt-4" phx-click="open_new_modal">
-                Abrir primera cuenta
-              </button>
-            <% end %>
+            <%!-- Status legend --%>
+            <div class="px-5 py-3 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-base-content/60">
+              <span class="flex items-center gap-1.5">
+                <span class="size-3 rounded bg-base-200 border border-base-300 inline-block" /> Libre
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="size-3 rounded bg-info inline-block" /> Abierta
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="size-3 rounded bg-warning inline-block" /> En cocina
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="size-3 rounded bg-success inline-block" /> Lista para servir
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="size-3 rounded bg-error inline-block animate-pulse" /> +15 min esperando
+              </span>
+            </div>
           </div>
         <% end %>
 
-        <%!-- Comandas grid --%>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <%= for order <- visible_orders do %>
-            <.cuenta_card order={order} now={@now} />
-          <% end %>
-        </div>
+        <%!-- Tableless orders (backward compat) --%>
+        <%= if @tableless != [] do %>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <.icon name="hero-clipboard-document-list" class="size-4 text-base-content/40" />
+                <h3 class="font-semibold text-sm text-base-content">Cuentas sin mesa asignada</h3>
+              </div>
+              <span class="badge badge-ghost badge-sm">{length(@tableless)}</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-4">
+              <%= for order <- @tableless do %>
+                <.cuenta_card order={order} now={@now} />
+              <% end %>
+            </div>
+          </div>
+        <% end %>
       </div>
     </div>
 
-    <%!-- Nueva cuenta modal --%>
-    <%= if @show_new_modal do %>
+    <%!-- Open table modal --%>
+    <%= if @show_new_modal and @selected_table do %>
       <div class="fixed inset-0 z-50">
-        <div class="absolute inset-0 bg-black/50" phx-click="close_modal"></div>
+        <div class="absolute inset-0 bg-black/50" phx-click="close_modal" />
         <div class="relative z-10 flex items-center justify-center min-h-full px-4 pointer-events-none">
           <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4 pointer-events-auto">
-            <h2 class="text-lg font-bold text-base-content">Nueva cuenta</h2>
-            <p class="text-sm text-base-content/50 mt-1">
-              Ingresa el nombre del cliente o una referencia (ej. "Mesa 3", "Juan G.")
-            </p>
-
-            <form phx-submit="create_cuenta" class="mt-4 space-y-3">
+            <div class="flex items-center gap-4">
+              <div class="size-14 rounded-2xl bg-primary text-primary-content flex items-center justify-center text-2xl font-bold shadow">
+                {@selected_table.number}
+              </div>
               <div>
-                <input
-                  type="text"
-                  name="customer_name"
-                  value={@new_name}
-                  placeholder="Nombre del cliente"
-                  class={["input input-bordered w-full", @name_error && "input-error"]}
-                  autofocus
-                  autocomplete="off"
-                />
-                <%= if @name_error do %>
-                  <p class="text-error text-xs mt-1">{@name_error}</p>
-                <% end %>
+                <h2 class="text-lg font-bold text-base-content">
+                  Mesa {@selected_table.number}
+                  <%= if @selected_table.label && @selected_table.label != "" do %>
+                    <span class="text-base-content/50 font-normal text-base"> · {@selected_table.label}</span>
+                  <% end %>
+                </h2>
+                <p class="text-sm text-base-content/50">
+                  {if @selected_table.capacity,
+                    do: "Hasta #{@selected_table.capacity} personas · ",
+                    else: ""}
+                  Libre
+                </p>
               </div>
-              <div class="flex gap-2 pt-1">
-                <button type="button" class="btn btn-ghost flex-1" phx-click="close_modal">
-                  Cancelar
-                </button>
-                <button type="submit" class="btn btn-primary flex-1">
-                  Abrir cuenta
-                </button>
-              </div>
-            </form>
+            </div>
+            <%= if @name_error do %>
+              <p class="text-error text-xs">{@name_error}</p>
+            <% end %>
+            <div class="flex gap-2 pt-1">
+              <button type="button" class="btn btn-ghost flex-1" phx-click="close_modal">
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary flex-1 gap-1"
+                phx-click="create_order_for_table"
+              >
+                <.icon name="hero-plus" class="size-4" /> Abrir mesa
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -267,7 +302,31 @@ defmodule CRCWeb.Waiter.TableLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Cuenta card component
+  # Table chip style helper
+  # ---------------------------------------------------------------------------
+
+  defp table_chip_style(nil, _now) do
+    {"bg-base-200 text-base-content/50 border-base-300", "Libre"}
+  end
+
+  defp table_chip_style(order, now) do
+    cond do
+      overdue?(order, now) ->
+        {"bg-error text-error-content border-error", "Tardando — #{order.customer_name}"}
+
+      all_active_items_ready?(order) ->
+        {"bg-success text-success-content border-success", "Lista — #{order.customer_name}"}
+
+      order.status == "sent" ->
+        {"bg-warning text-warning-content border-warning", "En cocina — #{order.customer_name}"}
+
+      true ->
+        {"bg-info text-info-content border-info", "Abierta — #{order.customer_name}"}
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Cuenta card (for tableless legacy orders)
   # ---------------------------------------------------------------------------
 
   attr :order, :map, required: true
@@ -276,34 +335,23 @@ defmodule CRCWeb.Waiter.TableLive do
   defp cuenta_card(assigns) do
     assigns =
       assigns
-      |> assign(:overdue?, has_overdue_items?(assigns.order, assigns.now))
-      |> assign(:drinks_ready?, drinks_ready_food_pending?(assigns.order))
+      |> assign(:overdue?, overdue?(assigns.order, assigns.now))
       |> assign(:all_ready?, all_active_items_ready?(assigns.order))
-      |> assign(:any_ready?, has_ready_items?(assigns.order))
 
     ~H"""
     <a href={"/mesa/#{@order.id}"} class="block">
       <div class={[
         "card bg-base-100 shadow-sm border-2 hover:shadow-md transition-all cursor-pointer",
-        card_border_class(@overdue?, @all_ready?, @drinks_ready?, @order.status)
+        card_border_class(@overdue?, @all_ready?, @order.status)
       ]}>
         <div class="card-body p-4 gap-2">
-          <%!-- Name + status --%>
           <div class="flex items-center justify-between gap-2">
             <span class="text-base font-bold text-base-content truncate">{@order.customer_name}</span>
             <.status_badge status={@order.status} />
           </div>
-
-          <%!-- Item count + waiter --%>
           <div class="flex items-center justify-between gap-2 text-sm text-base-content/60">
             <span>
-              <%= if length(@order.order_items) == 0 do %>
-                Sin artículos
-              <% else %>
-                {length(@order.order_items)} {if length(@order.order_items) == 1,
-                  do: "artículo",
-                  else: "artículos"}
-              <% end %>
+              {length(@order.order_items)} art{if length(@order.order_items) != 1, do: "ículos", else: "ículo"}
             </span>
             <%= if @order.user do %>
               <span class="text-xs text-base-content/40 truncate max-w-[100px]">
@@ -311,50 +359,16 @@ defmodule CRCWeb.Waiter.TableLive do
               </span>
             <% end %>
           </div>
-
-          <%!-- Indicator badges --%>
-          <div class="flex flex-wrap gap-1.5 min-h-[1.25rem]">
-            <%= if @overdue? do %>
-              <span class="badge badge-xs badge-error gap-1 animate-pulse">
-                <.icon name="hero-clock" class="size-3" /> +15 min
-              </span>
-            <% end %>
-            <%= if @drinks_ready? do %>
-              <span class="badge badge-xs badge-info gap-1">
-                <.icon name="hero-beaker" class="size-3" /> Bebidas listas
-              </span>
-            <% end %>
-            <%= if @any_ready? and not @all_ready? and not @drinks_ready? do %>
-              <span class="badge badge-xs badge-success gap-1">
-                <.icon name="hero-check" class="size-3" /> Hay listos
-              </span>
-            <% end %>
-          </div>
-
-          <%!-- CTA button --%>
-          <div class="mt-1">
-            <span class={["btn btn-xs w-full", cta_btn_class(@overdue?, @all_ready?, @order.status)]}>
-              <%= cond do %>
-                <% @overdue? -> %>
-                  <.icon name="hero-exclamation-triangle" class="size-3" /> Revisar — tardando mucho
-                <% @all_ready? -> %>
-                  <.icon name="hero-check-circle" class="size-3" /> Lista para servir
-                <% @drinks_ready? -> %>
-                  <.icon name="hero-beaker" class="size-3" /> Bebidas listas · Revisar
-                <% true -> %>
-                  Ver comanda
-              <% end %>
+          <%= if @overdue? do %>
+            <span class="badge badge-xs badge-error gap-1 animate-pulse">
+              <.icon name="hero-clock" class="size-3" /> +15 min
             </span>
-          </div>
+          <% end %>
         </div>
       </div>
     </a>
     """
   end
-
-  # ---------------------------------------------------------------------------
-  # Badge components
-  # ---------------------------------------------------------------------------
 
   defp status_badge(%{status: "open"} = assigns) do
     ~H'<span class="badge badge-sm badge-info">Abierta</span>'
@@ -372,63 +386,29 @@ defmodule CRCWeb.Waiter.TableLive do
     ~H'<span class="badge badge-sm badge-ghost">{@status}</span>'
   end
 
-  # ---------------------------------------------------------------------------
-  # Style helpers
-  # ---------------------------------------------------------------------------
-
-  defp card_border_class(true, _all_ready, _drinks_ready, _status),
-    do: "border-error animate-pulse"
-
-  defp card_border_class(_overdue, true, _drinks_ready, _status), do: "border-success"
-  defp card_border_class(_overdue, _all_ready, true, _status), do: "border-info"
-  defp card_border_class(_overdue, _all_ready, _drinks_ready, "sent"), do: "border-warning"
-  defp card_border_class(_overdue, _all_ready, _drinks_ready, _status), do: "border-base-300"
-
-  defp cta_btn_class(true, _all_ready, _status), do: "btn-error btn-outline"
-  defp cta_btn_class(_overdue, true, _status), do: "btn-success btn-outline"
-  defp cta_btn_class(_overdue, _all_ready, _status), do: "btn-outline btn-primary"
+  defp card_border_class(true, _all_ready, _status), do: "border-error animate-pulse"
+  defp card_border_class(_overdue, true, _status), do: "border-success"
+  defp card_border_class(_overdue, _all_ready, "sent"), do: "border-warning"
+  defp card_border_class(_overdue, _all_ready, _status), do: "border-base-300"
 
   # ---------------------------------------------------------------------------
   # Order state helpers
   # ---------------------------------------------------------------------------
 
-  # Any sent item (not cancelled) has been waiting more than 15 min
-  defp has_overdue_items?(order, now) do
+  defp overdue?(order, now) do
     Enum.any?(order.order_items, fn item ->
       item.status == "sent" and not is_nil(item.sent_at) and
         DateTime.diff(now, item.sent_at, :second) > @overdue_seconds
     end)
   end
 
-  # All drink items are ready but at least one food item is still pending/sent
-  defp drinks_ready_food_pending?(order) do
-    active = Enum.filter(order.order_items, &(&1.status not in ["cancelled", "cancelled_waste"]))
-    drinks = Enum.filter(active, &item_is_drink?/1)
-    food = Enum.filter(active, &(not item_is_drink?(&1)))
-
-    drinks != [] and
-      Enum.all?(drinks, &(&1.status == "ready")) and
-      Enum.any?(food, &(&1.status in ["pending", "sent"]))
-  end
-
-  # All active items are ready
   defp all_active_items_ready?(order) do
     active = Enum.filter(order.order_items, &(&1.status not in ["cancelled", "cancelled_waste"]))
     active != [] and Enum.all?(active, &(&1.status == "ready"))
   end
 
-  # At least one active item is ready
-  defp has_ready_items?(order) do
-    Enum.any?(order.order_items, &(&1.status == "ready"))
-  end
-
-  defp item_is_drink?(%{menu_item: %{destination: "barra"}}), do: true
-  defp item_is_drink?(_), do: false
-
-  # Set of all ready item IDs across all active orders.
-  # Used to detect when new items transition to "ready" and play a sound alert.
-  defp all_ready_ids(orders) do
-    orders
+  defp all_ready_ids_from_map(orders_by_table, tableless) do
+    (Map.values(orders_by_table) ++ tableless)
     |> Enum.flat_map(& &1.order_items)
     |> Enum.filter(&(&1.status == "ready"))
     |> MapSet.new(& &1.id)

@@ -2,7 +2,7 @@ defmodule CRC.Orders.Order do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias CRC.Orders.OrderItem
+  alias CRC.Orders.{OrderItem, Table}
   alias CRC.Accounts.User
 
   schema "orders" do
@@ -25,6 +25,8 @@ defmodule CRC.Orders.Order do
     belongs_to :user, User
     # Staff member who closed/charged this order
     belongs_to :closed_by, User, foreign_key: :closed_by_id
+    # Physical table this order belongs to (nullable for backward-compat)
+    belongs_to :table, Table
     has_many :order_items, OrderItem
 
     timestamps(type: :utc_datetime)
@@ -36,7 +38,7 @@ defmodule CRC.Orders.Order do
   @doc false
   def changeset(order, attrs) do
     order
-    |> cast(attrs, [:customer_name, :status, :notes, :user_id, :bill_token])
+    |> cast(attrs, [:customer_name, :status, :notes, :user_id, :table_id, :bill_token])
     |> validate_required([:customer_name, :status])
     |> validate_inclusion(:status, @valid_statuses)
   end

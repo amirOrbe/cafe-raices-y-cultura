@@ -6,7 +6,7 @@ defmodule CRC.Orders do
 
   import Ecto.Query, warn: false
   alias CRC.Repo
-  alias CRC.Orders.{Order, OrderItem, OrderItemExclusion}
+  alias CRC.Orders.{Order, OrderItem, OrderItemExclusion, Table}
   alias CRC.Catalog.{MenuItemIngredient, Package}
   alias CRC.Inventory.{Product, ProductVariant}
   alias CRC.Accounts.User
@@ -1505,5 +1505,78 @@ defmodule CRC.Orders do
         end
       end)
     end)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Restaurant tables
+  # ---------------------------------------------------------------------------
+
+  @doc "Returns all restaurant tables sorted by number."
+  def list_tables do
+    Table
+    |> order_by(:number)
+    |> Repo.all()
+  end
+
+  @doc "Returns only active restaurant tables sorted by number."
+  def list_active_tables do
+    Table
+    |> where(is_active: true)
+    |> order_by(:number)
+    |> Repo.all()
+  end
+
+  @doc "Gets a table by id. Raises if not found."
+  def get_table!(id), do: Repo.get!(Table, id)
+
+  @doc "Creates a restaurant table."
+  def create_table(attrs \\ %{}) do
+    %Table{}
+    |> Table.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc "Updates a restaurant table."
+  def update_table(%Table{} = table, attrs) do
+    table
+    |> Table.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc "Updates only the floor-map position of a table (x_pct, y_pct)."
+  def move_table(%Table{} = table, x_pct, y_pct) do
+    table
+    |> Table.position_changeset(%{x_pct: x_pct, y_pct: y_pct})
+    |> Repo.update()
+  end
+
+  @doc "Deletes a restaurant table."
+  def delete_table(%Table{} = table), do: Repo.delete(table)
+
+  @doc "Returns a changeset for a table (for form building)."
+  def change_table(%Table{} = table, attrs \\ %{}) do
+    Table.changeset(table, attrs)
+  end
+
+  @doc """
+  Returns a map of table_id => order for all currently active orders
+  that are associated with a table. Tables with no active order are absent.
+  """
+  def active_orders_by_table do
+    Order
+    |> where([o], o.status in ["open", "sent", "ready"] and not is_nil(o.table_id))
+    |> preload([
+      :user,
+      order_items: [
+        :product,
+        :variant,
+        :for_menu_item,
+        exclusions: [:product],
+        menu_item: :category,
+        package: []
+      ]
+    ])
+    |> Repo.all()
+    |> Map.new(fn order -> {order.table_id, order} end)
   end
 end

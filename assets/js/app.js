@@ -152,6 +152,70 @@ const GeolocationClockIn = {
 }
 
 /**
+ * FloorMapEditor — enables drag-and-drop repositioning of table chips on the
+ * admin floor-map canvas. On drop, pushes a "table_moved" event to the server
+ * with { id, x_pct, y_pct } so the new position can be persisted.
+ *
+ * Usage: <div id="..." phx-hook="FloorMapEditor">
+ *          <div data-table-id="1" style="left: 30%; top: 50%">...</div>
+ *        </div>
+ */
+const FloorMapEditor = {
+  mounted() {
+    const container = this.el
+    let dragging = null
+    let startClientX = 0, startClientY = 0
+    let origLeft = 0, origTop = 0
+    let moved = false
+
+    container.addEventListener('pointerdown', (e) => {
+      const chip = e.target.closest('[data-table-id]')
+      if (!chip || e.button !== 0) return
+      e.preventDefault()
+
+      dragging = chip
+      moved = false
+      startClientX = e.clientX
+      startClientY = e.clientY
+      origLeft = parseFloat(chip.style.left)
+      origTop  = parseFloat(chip.style.top)
+
+      chip.style.zIndex     = '50'
+      chip.style.transition = 'none'
+      container.setPointerCapture(e.pointerId)
+    })
+
+    container.addEventListener('pointermove', (e) => {
+      if (!dragging) return
+      const rect = container.getBoundingClientRect()
+      const dx = (e.clientX - startClientX) / rect.width  * 100
+      const dy = (e.clientY - startClientY) / rect.height * 100
+
+      if (Math.abs(dx) > 0.3 || Math.abs(dy) > 0.3) moved = true
+
+      dragging.style.left = clamp(origLeft + dx, 3, 97) + '%'
+      dragging.style.top  = clamp(origTop  + dy, 3, 97) + '%'
+    })
+
+    container.addEventListener('pointerup', (e) => {
+      if (!dragging) return
+      if (moved) {
+        this.pushEvent('table_moved', {
+          id:    parseInt(dragging.dataset.tableId),
+          x_pct: parseFloat(dragging.style.left),
+          y_pct: parseFloat(dragging.style.top)
+        })
+      }
+      dragging.style.zIndex     = ''
+      dragging.style.transition = ''
+      dragging = null
+    })
+
+    function clamp(v, min, max) { return Math.min(max, Math.max(min, v)) }
+  }
+}
+
+/**
  * DismissableTip — hides an onboarding tip panel and remembers the choice
  * in localStorage so it never shows again for this browser.
  *
@@ -195,6 +259,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
     ...colocatedHooks,
     CarouselAutoplay,
     DismissableTip,
+    FloorMapEditor,
     GeolocationClockIn,
     SoundNotifier,
   },

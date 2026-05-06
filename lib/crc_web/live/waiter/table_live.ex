@@ -7,7 +7,8 @@ defmodule CRCWeb.Waiter.TableLive do
   alias CRCWeb.Components.SiteComponents
 
   @tick_interval 30_000
-  @overdue_seconds 15 * 60
+  @overdue_seconds 15 * 60      # kitchen waiting too long
+  @unattended_seconds 10 * 60   # order open but nothing sent to kitchen
 
   @impl true
   def mount(_params, _session, socket) do
@@ -262,10 +263,14 @@ defmodule CRCWeb.Waiter.TableLive do
                         </span>
                       <% end %>
                     </div>
-                    <%!-- Overdue pulse dot --%>
+                    <%!-- Alert dot: overdue kitchen (red) or unattended (orange) --%>
                     <%= if order && overdue?(order, @now) do %>
                       <span class="absolute top-2 right-2 size-3 rounded-full bg-error border-2 border-base-100 animate-ping" />
                       <span class="absolute top-2 right-2 size-3 rounded-full bg-error border-2 border-base-100" />
+                    <% end %>
+                    <%= if order && unattended?(order, @now) && not overdue?(order, @now) do %>
+                      <span class="absolute top-2 right-2 size-3 rounded-full bg-orange-400 border-2 border-base-100 animate-ping" />
+                      <span class="absolute top-2 right-2 size-3 rounded-full bg-orange-400 border-2 border-base-100" />
                     <% end %>
                   </div>
                 </button>
@@ -279,6 +284,9 @@ defmodule CRCWeb.Waiter.TableLive do
               </span>
               <span class="flex items-center gap-1.5">
                 <span class="size-3 rounded bg-info inline-block" /> Abierta
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="size-3 rounded bg-orange-500 inline-block animate-pulse" /> Sin atender
               </span>
               <span class="flex items-center gap-1.5">
                 <span class="size-3 rounded bg-warning inline-block" /> En cocina
@@ -334,12 +342,23 @@ defmodule CRCWeb.Waiter.TableLive do
                       <span class="font-normal text-base-content/50"> · {table.label}</span>
                     <% end %>
                   </p>
-                  <p class="text-[11px] text-base-content/50 mt-0.5">
+                  <p class={[
+                    "text-[11px] mt-0.5 font-medium",
+                    cond do
+                      is_nil(order)                          -> "text-base-content/40"
+                      overdue?(order, @now)                  -> "text-error"
+                      all_active_items_ready?(order)         -> "text-success"
+                      order.status == "sent"                 -> "text-warning"
+                      unattended?(order, @now)               -> "text-orange-500"
+                      true                                   -> "text-info"
+                    end
+                  ]}>
                     <%= cond do %>
                       <% is_nil(order) -> %> Libre
-                      <% overdue?(order, @now) -> %> ⚠ +15 min
-                      <% all_active_items_ready?(order) -> %> Lista ✓
+                      <% overdue?(order, @now) -> %> ⚠ +15 min en cocina
+                      <% all_active_items_ready?(order) -> %> Lista para servir ✓
                       <% order.status == "sent" -> %> En cocina
+                      <% unattended?(order, @now) -> %> ⚠ Sin atender +10 min
                       <% true -> %> Abierta
                     <% end %>
                   </p>
@@ -452,10 +471,20 @@ defmodule CRCWeb.Waiter.TableLive do
         {"bg-warning text-warning-content border-warning", "bg-warning/60",
          "En cocina — #{order.customer_name}"}
 
+      unattended?(order, now) ->
+        {"bg-orange-500 text-white border-orange-400", "bg-orange-400/60",
+         "Sin atender — #{order.customer_name}"}
+
       true ->
         {"bg-info text-info-content border-info", "bg-info/60",
          "Abierta — #{order.customer_name}"}
     end
+  end
+
+  defp unattended?(order, now) do
+    order.status == "open" and
+      not Enum.any?(order.order_items, &(&1.status in ["sent", "ready"])) and
+      DateTime.diff(now, order.inserted_at, :second) > @unattended_seconds
   end
 
   # ---------------------------------------------------------------------------
@@ -547,6 +576,7 @@ defmodule CRCWeb.Waiter.TableLive do
       overdue?(order, now)            -> "bg-error/60"
       all_active_items_ready?(order)  -> "bg-success/60"
       order.status == "sent"          -> "bg-warning/60"
+      unattended?(order, now)         -> "bg-orange-400/60"
       true                            -> "bg-info/60"
     end
   end

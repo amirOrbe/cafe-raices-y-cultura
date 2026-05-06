@@ -132,6 +132,12 @@ defmodule CRCWeb.Admin.CalendarioLive do
     {:noreply, socket |> load_areas() |> put_flash(:info, "Área eliminada.")}
   end
 
+  def handle_event("validate_area", %{"area" => params}, socket) do
+    area = socket.assigns[:editing_area] || %Area{}
+    cs = Schedule.change_area(area, params)
+    {:noreply, assign(socket, :area_form, to_form(cs, action: :validate))}
+  end
+
   # ---------------------------------------------------------------------------
   # Events — tasks CRUD
   # ---------------------------------------------------------------------------
@@ -478,33 +484,69 @@ defmodule CRCWeb.Admin.CalendarioLive do
 
         <%!-- Area form --%>
         <%= if @area_form do %>
-          <div class="bg-base-100 border border-primary/30 rounded-2xl p-4 shadow-sm">
-            <.form for={@area_form} phx-submit="save_area" class="space-y-3">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="label text-xs font-semibold">Nombre</label>
-                  <.input field={@area_form[:name]} placeholder="Ej. Barra" class="input input-bordered w-full input-sm" />
-                </div>
-                <div>
-                  <label class="label text-xs font-semibold">Color</label>
+          <% preview_name = @area_form[:name].value || "" %>
+          <% preview_color = @area_form[:color].value || "purple" %>
+          <div class="bg-base-100 border border-primary/30 rounded-2xl p-4 shadow-sm space-y-4">
+            <.form for={@area_form} phx-submit="save_area" phx-change="validate_area" class="space-y-4">
+              <%!-- Name + live preview --%>
+              <div class="flex items-end gap-3">
+                <div class="flex-1 min-w-0">
+                  <label class="label text-xs font-semibold pb-1">Nombre del área</label>
                   <.input
-                    type="select"
-                    field={@area_form[:color]}
-                    options={[{"Morado", "purple"}, {"Azul", "blue"}, {"Verde", "green"}, {"Naranja", "orange"}, {"Rosa", "pink"}]}
-                    class="select select-bordered w-full select-sm"
+                    field={@area_form[:name]}
+                    placeholder="Ej. Barra, Cocina, Limpieza…"
+                    class="input input-bordered w-full input-sm"
                   />
                 </div>
+                <%!-- Live preview badge --%>
+                <div class="shrink-0 pb-1">
+                  <span class={"px-3 py-1.5 rounded-xl text-white text-sm font-bold whitespace-nowrap #{area_bg_class(preview_color)}"}>
+                    {if preview_name == "", do: "Vista previa", else: preview_name}
+                  </span>
+                </div>
               </div>
-              <div class="flex gap-2 justify-end">
-                <button type="button" class="btn btn-ghost btn-sm" phx-click="cancel_area_form">Cancelar</button>
-                <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+
+              <%!-- Color swatches --%>
+              <div>
+                <label class="label text-xs font-semibold pb-2">Color</label>
+                <div class="flex gap-3 flex-wrap">
+                  <%= for {label_text, value, bg} <- color_options() do %>
+                    <label
+                      class={"cursor-pointer w-8 h-8 rounded-full #{bg} transition-all duration-150
+                        has-[:checked]:scale-125 has-[:checked]:ring-2 has-[:checked]:ring-offset-2 has-[:checked]:ring-base-content
+                        opacity-40 has-[:checked]:opacity-100 hover:opacity-80 hover:scale-110"}
+                      title={label_text}
+                    >
+                      <input
+                        type="radio"
+                        name={@area_form[:color].name}
+                        value={value}
+                        checked={preview_color == value}
+                        class="sr-only"
+                      />
+                    </label>
+                  <% end %>
+                </div>
+              </div>
+
+              <div class="flex gap-2 justify-end pt-1">
+                <button type="button" class="btn btn-ghost btn-sm" phx-click="cancel_area_form">
+                  Cancelar
+                </button>
+                <button type="submit" class="btn btn-primary btn-sm gap-1">
+                  <.icon name="hero-check" class="size-3.5" /> Guardar área
+                </button>
               </div>
             </.form>
           </div>
         <% end %>
 
         <%= if @areas == [] do %>
-          <p class="text-sm text-base-content/50">Aún no hay áreas. Crea una para empezar.</p>
+          <div class="bg-base-100 rounded-2xl border border-dashed border-base-300 p-8 text-center space-y-2">
+            <.icon name="hero-squares-plus" class="size-10 text-base-content/20 mx-auto" />
+            <p class="text-sm font-medium text-base-content/60">Aún no hay áreas</p>
+            <p class="text-xs text-base-content/40">Crea una área (Barra, Cocina…) y luego agrega las actividades dentro.</p>
+          </div>
         <% end %>
 
         <%= for area <- @areas do %>
@@ -540,14 +582,19 @@ defmodule CRCWeb.Admin.CalendarioLive do
 
             <%!-- Task form (shown per-area) --%>
             <%= if @task_form && to_string(@task_area_id) == to_string(area.id) do %>
-              <div class="px-4 py-3 bg-base-200 border-b border-base-300">
-                <.form for={@task_form} phx-submit="save_task" class="flex items-end gap-2">
+              <div class="px-4 py-3 bg-base-200/60 border-b border-base-300">
+                <p class="text-xs font-semibold text-base-content/50 mb-2">Nueva actividad en <span class={"font-bold #{area_text_class(area.color)}"}>{area.name}</span></p>
+                <.form for={@task_form} phx-submit="save_task" class="flex items-center gap-2">
                   <input type="hidden" name="task[area_id]" value={area.id} />
                   <div class="flex-1">
-                    <.input field={@task_form[:name]} placeholder="Nombre de la tarea" class="input input-bordered w-full input-sm" />
+                    <.input field={@task_form[:name]} placeholder="Ej. Limpieza de mesas, Preparar jarabes…" class="input input-bordered w-full input-sm" />
                   </div>
-                  <button type="button" class="btn btn-ghost btn-sm" phx-click="cancel_task_form">✕</button>
-                  <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                  <button type="submit" class="btn btn-primary btn-sm gap-1 shrink-0">
+                    <.icon name="hero-plus" class="size-3.5" /> Agregar
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-sm shrink-0 text-base-content/40" phx-click="cancel_task_form">
+                    <.icon name="hero-x-mark" class="size-4" />
+                  </button>
                 </.form>
               </div>
             <% end %>
@@ -577,14 +624,18 @@ defmodule CRCWeb.Admin.CalendarioLive do
                 </div>
                 <%!-- Inline edit for task --%>
                 <%= if @task_form && Map.get(assigns, :editing_task) && Map.get(assigns, :editing_task).id == task.id do %>
-                  <div class="px-4 py-2 bg-base-200">
-                    <.form for={@task_form} phx-submit="save_task" class="flex items-end gap-2">
+                  <div class="px-4 py-2 bg-base-200/60">
+                    <.form for={@task_form} phx-submit="save_task" class="flex items-center gap-2">
                       <input type="hidden" name="task[area_id]" value={task.area_id} />
                       <div class="flex-1">
                         <.input field={@task_form[:name]} class="input input-bordered w-full input-sm" />
                       </div>
-                      <button type="button" class="btn btn-ghost btn-sm" phx-click="cancel_task_form">✕</button>
-                      <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                      <button type="submit" class="btn btn-primary btn-sm gap-1 shrink-0">
+                        <.icon name="hero-check" class="size-3.5" /> Guardar
+                      </button>
+                      <button type="button" class="btn btn-ghost btn-sm shrink-0 text-base-content/40" phx-click="cancel_task_form">
+                        <.icon name="hero-x-mark" class="size-4" />
+                      </button>
                     </.form>
                   </div>
                 <% end %>
@@ -666,6 +717,16 @@ defmodule CRCWeb.Admin.CalendarioLive do
 
   defp cell_select_class(%{id: id}) do
     Enum.at(@badge_colors, rem(id, length(@badge_colors)))
+  end
+
+  defp color_options do
+    [
+      {"Morado", "purple", "bg-violet-500"},
+      {"Azul", "blue", "bg-blue-500"},
+      {"Verde", "green", "bg-emerald-500"},
+      {"Naranja", "orange", "bg-orange-500"},
+      {"Rosa", "pink", "bg-pink-500"}
+    ]
   end
 
   defp area_bg_class("blue"), do: "bg-blue-500"

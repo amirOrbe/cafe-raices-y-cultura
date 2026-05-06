@@ -553,6 +553,11 @@ defmodule CRCWeb.Admin.UsersLive do
               placeholder="55 1234 5678"
             />
             <.input
+              field={@form[:birthday]}
+              type="date"
+              label="Fecha de nacimiento (opcional)"
+            />
+            <.input
               field={@form[:role]}
               type="select"
               label="Rol"

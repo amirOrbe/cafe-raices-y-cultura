@@ -23,6 +23,43 @@ defmodule CRC.Accounts do
     |> Repo.all()
   end
 
+  @doc "Returns all staff (admins + employees) who are active, sorted by days until next birthday."
+  def list_staff_with_birthdays do
+    today = Date.utc_today()
+
+    User
+    |> where([u], u.role in ["admin", "empleado"] and u.is_active == true)
+    |> order_by([u], asc: u.name)
+    |> Repo.all()
+    |> Enum.map(fn user ->
+      Map.put(user, :days_until_birthday, days_until_birthday(user.birthday, today))
+    end)
+    |> Enum.sort_by(fn user ->
+      case user.days_until_birthday do
+        nil -> 999
+        d -> d
+      end
+    end)
+  end
+
+  @doc """
+  Returns the number of days until the user's next birthday.
+  Returns `nil` if no birthday is set, `0` if today is their birthday.
+  """
+  def days_until_birthday(nil, _today), do: nil
+
+  def days_until_birthday(%Date{} = bday, %Date{} = today) do
+    Enum.find_value([today.year, today.year + 1], fn year ->
+      case Date.new(year, bday.month, bday.day) do
+        {:ok, d} ->
+          diff = Date.diff(d, today)
+          if diff >= 0, do: diff
+        {:error, _} ->
+          nil
+      end
+    end)
+  end
+
   @doc "Gets a user by id. Returns `nil` if not found."
   @spec get_user(integer()) :: User.t() | nil
   def get_user(id), do: Repo.get(User, id)

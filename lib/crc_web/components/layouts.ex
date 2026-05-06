@@ -271,6 +271,18 @@ defmodule CRCWeb.Layouts do
             <.icon name="hero-finger-print" class="size-5 shrink-0" /> Asistencia
           </a>
           <a
+            href="/admin/calendario"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-calendar" class="size-5 shrink-0" /> Calendario de actividades
+          </a>
+          <a
+            href="/admin/cumpleanos"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
+          >
+            <.icon name="hero-cake" class="size-5 shrink-0" /> Cumpleaños
+          </a>
+          <a
             href="/admin/configuracion"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
           >

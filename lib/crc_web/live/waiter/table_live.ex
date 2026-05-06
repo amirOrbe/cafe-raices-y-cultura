@@ -32,6 +32,7 @@ defmodule CRCWeb.Waiter.TableLive do
       |> assign(:show_new_modal, false)
       |> assign(:name_error, nil)
       |> assign(:nav_open, false)
+      |> assign(:view_mode, :map)
       |> assign(:seen_ready_ids, all_ready_ids_from_map(orders_by_table, tableless))
 
     {:ok, socket}
@@ -77,6 +78,10 @@ defmodule CRCWeb.Waiter.TableLive do
 
   def handle_event("close_nav", _params, socket) do
     {:noreply, assign(socket, :nav_open, false)}
+  end
+
+  def handle_event("set_view", %{"mode" => mode}, socket) do
+    {:noreply, assign(socket, :view_mode, String.to_existing_atom(mode))}
   end
 
   def handle_event("select_table", %{"id" => id}, socket) do
@@ -167,9 +172,31 @@ defmodule CRCWeb.Waiter.TableLive do
               {length(@tables) - map_size(@orders_by_table)} libre{if (length(@tables) - map_size(@orders_by_table)) != 1, do: "s"}
             </p>
           </div>
-          <a href="/mesa/historial" class="btn btn-ghost btn-sm gap-1">
-            <.icon name="hero-clock" class="size-4" /> Historial
-          </a>
+          <div class="flex items-center gap-2">
+            <%!-- View toggle --%>
+            <div class="join">
+              <button
+                class={["btn btn-sm join-item gap-1", if(@view_mode == :map, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                phx-click="set_view" phx-value-mode="map"
+                title="Vista de mapa"
+              >
+                <.icon name="hero-squares-2x2" class="size-4" />
+                <span class="hidden sm:inline">Mapa</span>
+              </button>
+              <button
+                class={["btn btn-sm join-item gap-1", if(@view_mode == :list, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                phx-click="set_view" phx-value-mode="list"
+                title="Vista de lista"
+              >
+                <.icon name="hero-list-bullet" class="size-4" />
+                <span class="hidden sm:inline">Lista</span>
+              </button>
+            </div>
+            <a href="/mesa/historial" class="btn btn-ghost btn-sm gap-1">
+              <.icon name="hero-clock" class="size-4" />
+              <span class="hidden sm:inline">Historial</span>
+            </a>
+          </div>
         </div>
 
         <%!-- Floor map or empty state --%>
@@ -183,11 +210,12 @@ defmodule CRCWeb.Waiter.TableLive do
             </p>
           </div>
         <% else %>
-          <%!-- Map canvas --%>
+          <%!-- MAP VIEW --%>
+          <%= if @view_mode == :map do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
             <div
-              class="relative w-full select-none"
-              style="aspect-ratio: 16/9; background-image: radial-gradient(circle, oklch(80% 0.02 78) 1px, transparent 1px); background-size: 32px 32px;"
+              class="relative w-full select-none aspect-square sm:aspect-video"
+              style="background-image: radial-gradient(circle, oklch(80% 0.02 78) 1px, transparent 1px); background-size: 32px 32px;"
             >
               <%= for table <- @tables do %>
                 <% order = Map.get(@orders_by_table, table.id) %>
@@ -256,13 +284,70 @@ defmodule CRCWeb.Waiter.TableLive do
                 <span class="size-3 rounded bg-warning inline-block" /> En cocina
               </span>
               <span class="flex items-center gap-1.5">
-                <span class="size-3 rounded bg-success inline-block" /> Lista para servir
+                <span class="size-3 rounded bg-success inline-block" /> Lista
               </span>
               <span class="flex items-center gap-1.5">
-                <span class="size-3 rounded bg-error inline-block animate-pulse" /> +15 min esperando
+                <span class="size-3 rounded bg-error inline-block animate-pulse" /> +15 min
               </span>
             </div>
           </div>
+          <% end %>
+
+          <%!-- LIST VIEW --%>
+          <%= if @view_mode == :list do %>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <%= for table <- @tables do %>
+              <% order = Map.get(@orders_by_table, table.id) %>
+              <% {chip_class, _chair_class, label_text} = table_chip_style(order, @now) %>
+              <button
+                phx-click="select_table"
+                phx-value-id={table.id}
+                class="bg-base-100 rounded-2xl border-2 border-base-300 shadow-sm p-4 flex flex-col items-center gap-2 hover:shadow-md active:scale-95 transition-all focus:outline-none w-full"
+                title={label_text}
+              >
+                <%!-- Mini table visual --%>
+                <% {ch_top, ch_bot, _l, _r} = chair_distribution(table.capacity) %>
+                <div class="relative">
+                  <%= if ch_top > 0 do %>
+                    <div class="flex gap-0.5 justify-center mb-0.5">
+                      <%= for _ <- 1..ch_top do %>
+                        <div class={"w-3.5 h-2 rounded-t-lg #{list_chair_class(order, @now)}"} />
+                      <% end %>
+                    </div>
+                  <% end %>
+                  <div class={"w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold shadow-sm border-2 #{chip_class}"}>
+                    {table.number}
+                  </div>
+                  <%= if ch_bot > 0 do %>
+                    <div class="flex gap-0.5 justify-center mt-0.5">
+                      <%= for _ <- 1..ch_bot do %>
+                        <div class={"w-3.5 h-2 rounded-b-lg #{list_chair_class(order, @now)}"} />
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+                <%!-- Table info --%>
+                <div class="text-center">
+                  <p class="text-xs font-semibold text-base-content leading-tight">
+                    Mesa {table.number}
+                    <%= if table.label && table.label != "" do %>
+                      <span class="font-normal text-base-content/50"> · {table.label}</span>
+                    <% end %>
+                  </p>
+                  <p class="text-[11px] text-base-content/50 mt-0.5">
+                    <%= cond do %>
+                      <% is_nil(order) -> %> Libre
+                      <% overdue?(order, @now) -> %> ⚠ +15 min
+                      <% all_active_items_ready?(order) -> %> Lista ✓
+                      <% order.status == "sent" -> %> En cocina
+                      <% true -> %> Abierta
+                    <% end %>
+                  </p>
+                </div>
+              </button>
+            <% end %>
+          </div>
+          <% end %>
         <% end %>
 
         <%!-- Tableless orders (backward compat) --%>
@@ -453,6 +538,17 @@ defmodule CRCWeb.Waiter.TableLive do
   defp all_active_items_ready?(order) do
     active = Enum.filter(order.order_items, &(&1.status not in ["cancelled", "cancelled_waste"]))
     active != [] and Enum.all?(active, &(&1.status == "ready"))
+  end
+
+  # Chair color for the compact list-view cards
+  defp list_chair_class(nil, _now), do: "bg-base-300"
+  defp list_chair_class(order, now) do
+    cond do
+      overdue?(order, now)            -> "bg-error/60"
+      all_active_items_ready?(order)  -> "bg-success/60"
+      order.status == "sent"          -> "bg-warning/60"
+      true                            -> "bg-info/60"
+    end
   end
 
   defp all_ready_ids_from_map(orders_by_table, tableless) do

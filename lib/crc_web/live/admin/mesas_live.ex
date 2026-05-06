@@ -166,8 +166,8 @@ defmodule CRCWeb.Admin.MesasLive do
         <div
           id="floor-map"
           phx-hook="FloorMapEditor"
-          class="relative w-full select-none"
-          style="aspect-ratio: 16/9; background-image: radial-gradient(circle, oklch(80% 0.02 78) 1px, transparent 1px); background-size: 32px 32px;"
+          class="relative w-full select-none aspect-square sm:aspect-video"
+          style="background-image: radial-gradient(circle, oklch(80% 0.02 78) 1px, transparent 1px); background-size: 32px 32px;"
         >
           <%= if @tables == [] do %>
             <%!-- Empty state overlay --%>

@@ -173,7 +173,8 @@ const FloorMapEditor = {
       if (e.target.closest('[data-no-drag]')) return
       const chip = e.target.closest('[data-table-id]')
       if (!chip || e.button !== 0) return
-      e.preventDefault()
+      // Don't prevent default yet — wait to see if user actually drags
+      // (prevents stealing touch-scroll when just tapping)
 
       dragging = chip
       moved = false
@@ -193,11 +194,14 @@ const FloorMapEditor = {
       const dx = (e.clientX - startClientX) / rect.width  * 100
       const dy = (e.clientY - startClientY) / rect.height * 100
 
-      if (Math.abs(dx) > 0.3 || Math.abs(dy) > 0.3) moved = true
+      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+        moved = true
+        e.preventDefault() // Only steal scroll once we know it's a drag
+      }
 
       dragging.style.left = clamp(origLeft + dx, 3, 97) + '%'
       dragging.style.top  = clamp(origTop  + dy, 3, 97) + '%'
-    })
+    }, { passive: false })
 
     container.addEventListener('pointerup', (e) => {
       if (!dragging) return

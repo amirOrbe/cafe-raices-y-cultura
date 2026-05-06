@@ -222,6 +222,40 @@ defmodule CRCWeb.Admin.CalendarioLive do
         </div>
       </div>
 
+      <%!-- How-to tip (dismissable, stored in localStorage) --%>
+      <div
+        id="tip-admin-calendario"
+        phx-hook="DismissableTip"
+        data-tip-id="admin-calendario-v1"
+        class="bg-info/10 border border-info/20 rounded-2xl p-4 flex gap-3"
+      >
+        <.icon name="hero-information-circle" class="size-5 text-info shrink-0 mt-0.5" />
+        <div class="flex-1 min-w-0 space-y-2 text-sm text-base-content/70">
+          <p class="font-semibold text-base-content">¿Cómo funciona?</p>
+          <ul class="space-y-1">
+            <li>
+              <span class="shrink-0 font-bold">1.</span>
+              <span>En la pestaña <strong>Áreas y tareas</strong> crea las secciones del café (Barra, Cocina, Limpieza…) y las actividades dentro de cada una.</span>
+            </li>
+            <li>
+              <span class="shrink-0 font-bold">2.</span>
+              <span>En la pestaña <strong>Calendario</strong> elige un empleado en cada celda — los cambios se guardan al instante.</span>
+            </li>
+            <li>
+              <span class="shrink-0 font-bold">3.</span>
+              <span>Usa <strong>Copiar semana anterior</strong> para reutilizar la misma distribución sin capturar todo de nuevo.</span>
+            </li>
+            <li>
+              <span class="shrink-0 font-bold">4.</span>
+              <span>Los empleados pueden consultar sus actividades asignadas desde su pantalla de <strong>Mi horario</strong>.</span>
+            </li>
+          </ul>
+        </div>
+        <button data-dismiss-tip class="btn btn-ghost btn-xs text-base-content/30 hover:text-base-content shrink-0 self-start">
+          <.icon name="hero-x-mark" class="size-3.5" />
+        </button>
+      </div>
+
       <%= if @tab == :calendar do %>
         <.calendar_tab
           week_start={@week_start}

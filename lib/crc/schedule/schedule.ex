@@ -152,6 +152,18 @@ defmodule CRC.Schedule do
     :ok
   end
 
+  @doc """
+  Returns all assignments for a specific user in a given week, grouped by day_of_week.
+    %{0 => [%Assignment{task: %Task{area: %Area{}}}], 3 => [...]}
+  """
+  def get_user_week_assignments(%Date{} = week_start, user_id) do
+    Assignment
+    |> where([a], a.week_start_date == ^week_start and a.user_id == ^user_id)
+    |> preload(task: :area)
+    |> Repo.all()
+    |> Enum.group_by(& &1.day_of_week)
+  end
+
   # ---------------------------------------------------------------------------
   # Users (employees)
   # ---------------------------------------------------------------------------

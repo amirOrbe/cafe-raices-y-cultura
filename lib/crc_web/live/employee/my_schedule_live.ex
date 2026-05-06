@@ -11,6 +11,7 @@ defmodule CRCWeb.Employee.MyScheduleLive do
   alias CRCWeb.Components.SiteComponents
   alias CRC.HR
   alias CRC.HR.WorkSchedule
+  alias CRC.Schedule
 
   # ---------------------------------------------------------------------------
   # Mount
@@ -31,6 +32,8 @@ defmodule CRCWeb.Employee.MyScheduleLive do
       recent =
         HR.list_attendance_for_user(user.id, today_record.date.year, today_record.date.month)
 
+      activity_week_start = Schedule.week_start(Date.utc_today())
+
       socket =
         socket
         |> assign(:page_title, "Mi horario")
@@ -41,6 +44,8 @@ defmodule CRCWeb.Employee.MyScheduleLive do
         |> assign(:recent_records, Enum.take(recent, -14) |> Enum.reverse())
         |> assign(:clock_status, :idle)
         |> assign(:location_error, nil)
+        |> assign(:activity_week_start, activity_week_start)
+        |> assign(:activity_assignments, Schedule.get_user_week_assignments(activity_week_start, user.id))
 
       {:ok, socket}
     end
@@ -185,6 +190,41 @@ defmodule CRCWeb.Employee.MyScheduleLive do
               </div>
             <% end %>
           </div>
+        </div>
+
+        <%!-- Weekly activity assignments --%>
+        <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
+          <div class="px-5 py-4 border-b border-base-200">
+            <h2 class="font-semibold text-base-content">Mis actividades esta semana</h2>
+            <p class="text-xs text-base-content/50 mt-0.5">Asignadas por el administrador</p>
+          </div>
+          <%= if @activity_assignments == %{} do %>
+            <div class="px-5 py-8 text-center text-sm text-base-content/40">
+              Sin actividades asignadas esta semana.
+            </div>
+          <% else %>
+            <div class="divide-y divide-base-200">
+              <%= for day <- 0..6 do %>
+                <% tasks_for_day = Map.get(@activity_assignments, day, []) %>
+                <%= if tasks_for_day != [] do %>
+                  <% day_date = Date.add(@activity_week_start, day) %>
+                  <div class="flex items-start gap-3 px-5 py-3">
+                    <div class={"text-xs font-bold w-8 shrink-0 pt-0.5 text-center #{if day_date == Date.utc_today(), do: "text-primary", else: "text-base-content/40"}"}>
+                      <p>{Schedule.day_name(day)}</p>
+                      <p class="font-normal opacity-70">{day_date.day}/{day_date.month}</p>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 flex-1 pt-0.5">
+                      <%= for a <- tasks_for_day do %>
+                        <span class={"badge badge-sm font-medium #{activity_badge_class(a.task.area.color)}"}>
+                          {a.task.name}
+                        </span>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          <% end %>
         </div>
 
         <%!-- Recent attendance history --%>
@@ -441,6 +481,13 @@ defmodule CRCWeb.Employee.MyScheduleLive do
   end
 
   defp format_datetime(nil), do: "–"
+
+  # Maps area color key to a DaisyUI badge class
+  defp activity_badge_class("blue"), do: "badge-info"
+  defp activity_badge_class("green"), do: "badge-success"
+  defp activity_badge_class("orange"), do: "badge-warning"
+  defp activity_badge_class("pink"), do: "badge-error"
+  defp activity_badge_class(_), do: "badge-secondary"
 
   defp format_date(%Date{} = date) do
     months =

@@ -171,14 +171,6 @@ defmodule CRCWeb.Components.SiteComponents do
                       </li>
                       <li>
                         <a
-                          href="/admin/calendario"
-                          class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
-                        >
-                          <.icon name="hero-table-cells" class="size-4 text-base-content/50" /> Calendario
-                        </a>
-                      </li>
-                      <li>
-                        <a
                           href="/mi-horario"
                           class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                         >
@@ -450,13 +442,6 @@ defmodule CRCWeb.Components.SiteComponents do
                   class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
                 >
                   <.icon name="hero-squares-2x2" class="size-5 text-primary" /> Panel de administración
-                </a>
-                <a
-                  href="/admin/calendario"
-                  phx-click="close_nav"
-                  class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
-                >
-                  <.icon name="hero-table-cells" class="size-5 text-primary" /> Calendario de actividades
                 </a>
                 <a
                   href="/mi-horario"

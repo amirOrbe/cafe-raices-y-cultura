@@ -199,17 +199,32 @@ defmodule CRCWeb.Waiter.TableLive do
                   style={"left: #{table.x_pct}%; top: #{table.y_pct}%"}
                   title={label_text}
                 >
+                  <% {ch_top, ch_bot, ch_left, ch_right} = chair_distribution(table.capacity) %>
                   <div class="relative w-20 h-20 hover:scale-110 active:scale-95 transition-transform">
                     <%!-- Top chairs --%>
-                    <div class="absolute top-0 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none">
-                      <div class={"w-6 h-3 rounded-t-xl #{chair_class}"} />
-                      <div class={"w-6 h-3 rounded-t-xl #{chair_class}"} />
-                    </div>
+                    <%= if ch_top > 0 do %>
+                      <div class="absolute top-0 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none">
+                        <%= for _ <- 1..ch_top do %>
+                          <div class={"w-5 h-3 rounded-t-xl #{chair_class}"} />
+                        <% end %>
+                      </div>
+                    <% end %>
                     <%!-- Bottom chairs --%>
-                    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none">
-                      <div class={"w-6 h-3 rounded-b-xl #{chair_class}"} />
-                      <div class={"w-6 h-3 rounded-b-xl #{chair_class}"} />
-                    </div>
+                    <%= if ch_bot > 0 do %>
+                      <div class="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none">
+                        <%= for _ <- 1..ch_bot do %>
+                          <div class={"w-5 h-3 rounded-b-xl #{chair_class}"} />
+                        <% end %>
+                      </div>
+                    <% end %>
+                    <%!-- Left chair --%>
+                    <%= if ch_left > 0 do %>
+                      <div class={"absolute left-0 top-1/2 -translate-y-1/2 w-3 h-9 rounded-l-xl pointer-events-none #{chair_class}"} />
+                    <% end %>
+                    <%!-- Right chair --%>
+                    <%= if ch_right > 0 do %>
+                      <div class={"absolute right-0 top-1/2 -translate-y-1/2 w-3 h-9 rounded-r-xl pointer-events-none #{chair_class}"} />
+                    <% end %>
                     <%!-- Table chip --%>
                     <div class={"absolute inset-3 rounded-2xl flex flex-col items-center justify-center shadow-md border-2 #{chip_class}"}>
                       <span class="text-xl font-bold leading-none">{table.number}</span>
@@ -320,6 +335,18 @@ defmodule CRCWeb.Waiter.TableLive do
   # ---------------------------------------------------------------------------
   # Table chip style helper
   # ---------------------------------------------------------------------------
+
+  # {top, bottom, left, right} chair counts for a given capacity.
+  defp chair_distribution(nil), do: {2, 2, 0, 0}
+  defp chair_distribution(1),   do: {1, 0, 0, 0}
+  defp chair_distribution(2),   do: {1, 1, 0, 0}
+  defp chair_distribution(3),   do: {2, 1, 0, 0}
+  defp chair_distribution(4),   do: {2, 2, 0, 0}
+  defp chair_distribution(5),   do: {2, 2, 1, 0}
+  defp chair_distribution(6),   do: {2, 2, 1, 1}
+  defp chair_distribution(7),   do: {3, 2, 1, 1}
+  defp chair_distribution(8),   do: {3, 3, 1, 1}
+  defp chair_distribution(_),   do: {3, 3, 1, 1}
 
   # Returns {chip_class, chair_class, label}
   defp table_chip_style(nil, _now) do

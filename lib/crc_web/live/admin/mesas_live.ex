@@ -201,17 +201,32 @@ defmodule CRCWeb.Admin.MesasLive do
                  chip_cls  = if active, do: "bg-primary text-primary-content border-primary/40", else: "bg-base-200 text-base-content/40 border-base-300"
                  chair_cls = if active, do: "bg-primary/55", else: "bg-base-300"
               %>
+              <% {ch_top, ch_bot, ch_left, ch_right} = chair_distribution(table.capacity) %>
               <div class="relative w-20 h-20">
                 <%!-- Top chairs --%>
-                <div class="absolute top-0 left-1/2 -translate-x-1/2 flex gap-1">
-                  <div class={"w-6 h-3 rounded-t-xl #{chair_cls}"} />
-                  <div class={"w-6 h-3 rounded-t-xl #{chair_cls}"} />
-                </div>
+                <%= if ch_top > 0 do %>
+                  <div class="absolute top-0 left-1/2 -translate-x-1/2 flex gap-1">
+                    <%= for _ <- 1..ch_top do %>
+                      <div class={"w-5 h-3 rounded-t-xl #{chair_cls}"} />
+                    <% end %>
+                  </div>
+                <% end %>
                 <%!-- Bottom chairs --%>
-                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-1">
-                  <div class={"w-6 h-3 rounded-b-xl #{chair_cls}"} />
-                  <div class={"w-6 h-3 rounded-b-xl #{chair_cls}"} />
-                </div>
+                <%= if ch_bot > 0 do %>
+                  <div class="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-1">
+                    <%= for _ <- 1..ch_bot do %>
+                      <div class={"w-5 h-3 rounded-b-xl #{chair_cls}"} />
+                    <% end %>
+                  </div>
+                <% end %>
+                <%!-- Left chair --%>
+                <%= if ch_left > 0 do %>
+                  <div class={"absolute left-0 top-1/2 -translate-y-1/2 w-3 h-9 rounded-l-xl #{chair_cls}"} />
+                <% end %>
+                <%!-- Right chair --%>
+                <%= if ch_right > 0 do %>
+                  <div class={"absolute right-0 top-1/2 -translate-y-1/2 w-3 h-9 rounded-r-xl #{chair_cls}"} />
+                <% end %>
                 <%!-- Table chip --%>
                 <div class={"absolute inset-3 rounded-2xl flex flex-col items-center justify-center shadow-md border-2 #{chip_cls}"}>
                   <span class="text-xl font-bold leading-none">{table.number}</span>
@@ -446,6 +461,19 @@ defmodule CRCWeb.Admin.MesasLive do
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------
+
+  # {top, bottom, left, right} chair counts for a given capacity.
+  # nil capacity defaults to 4 chairs (2+2).
+  defp chair_distribution(nil), do: {2, 2, 0, 0}
+  defp chair_distribution(1),   do: {1, 0, 0, 0}
+  defp chair_distribution(2),   do: {1, 1, 0, 0}
+  defp chair_distribution(3),   do: {2, 1, 0, 0}
+  defp chair_distribution(4),   do: {2, 2, 0, 0}
+  defp chair_distribution(5),   do: {2, 2, 1, 0}
+  defp chair_distribution(6),   do: {2, 2, 1, 1}
+  defp chair_distribution(7),   do: {3, 2, 1, 1}
+  defp chair_distribution(8),   do: {3, 3, 1, 1}
+  defp chair_distribution(_),   do: {3, 3, 1, 1}
 
   defp next_available_number(tables) do
     used = MapSet.new(tables, & &1.number)

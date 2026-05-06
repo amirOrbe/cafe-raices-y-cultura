@@ -291,22 +291,22 @@ defmodule CRCWeb.Admin.CalendarioLive do
     ~H"""
     <div class="space-y-4">
       <%!-- Week navigation --%>
-      <div class="flex items-center justify-between flex-wrap gap-3">
-        <div class="flex items-center gap-2">
-          <button class="btn btn-ghost btn-sm" phx-click="prev_week">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div class="flex items-center gap-1">
+          <button class="btn btn-ghost btn-sm shrink-0" phx-click="prev_week">
             <.icon name="hero-chevron-left" class="size-4" />
           </button>
-          <span class="font-semibold text-base-content text-sm min-w-48 text-center">
+          <span class="font-semibold text-base-content text-sm flex-1 text-center sm:min-w-52">
             <%= format_week(@week_start) %>
           </span>
-          <button class="btn btn-ghost btn-sm" phx-click="next_week">
+          <button class="btn btn-ghost btn-sm shrink-0" phx-click="next_week">
             <.icon name="hero-chevron-right" class="size-4" />
           </button>
-          <button class="btn btn-ghost btn-xs text-base-content/50" phx-click="go_today">
+          <button class="btn btn-ghost btn-xs text-base-content/50 shrink-0" phx-click="go_today">
             Hoy
           </button>
         </div>
-        <button class="btn btn-outline btn-sm gap-1.5" phx-click="copy_prev_week">
+        <button class="btn btn-outline btn-sm gap-1.5 w-full sm:w-auto" phx-click="copy_prev_week">
           <.icon name="hero-document-duplicate" class="size-4" /> Copiar semana anterior
         </button>
       </div>
@@ -394,36 +394,43 @@ defmodule CRCWeb.Admin.CalendarioLive do
         <div class="md:hidden space-y-4">
           <%= for area <- @areas do %>
             <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-              <div class={"px-4 py-2 font-bold text-sm text-white #{area_bg_class(area.color)}"}>
+              <div class={"px-4 py-2.5 font-bold text-sm text-white #{area_bg_class(area.color)}"}>
                 {area.name}
               </div>
               <%= for task <- area.tasks do %>
-                <div class="px-4 py-3 border-b border-base-200 last:border-0">
-                  <p class="text-sm font-medium text-base-content mb-2">{task.name}</p>
-                  <div class="grid grid-cols-7 gap-1">
-                    <%= for day <- @days do %>
-                      <% assignment = get_in(@assignments, [task.id, day]) %>
-                      <% user = assignment && assignment.user %>
-                      <div class="text-center">
-                        <p class={"text-xs font-semibold mb-0.5 #{if Date.add(@week_start, day) == Date.utc_today(), do: "text-primary", else: "text-base-content/40"}"}>
-                          <%= String.first(Schedule.day_name(day)) %>
-                        </p>
-                        <select
-                          class="select select-xs w-full text-center px-0 font-bold"
-                          phx-change="assign_user"
-                          phx-value-task={task.id}
-                          phx-value-day={day}
-                          phx-value-user={if user, do: user.id, else: ""}
-                        >
-                          <option value="">—</option>
-                          <%= for emp <- @employees do %>
-                            <option value={emp.id} selected={user && user.id == emp.id}>
-                              {Schedule.initials(emp)}
-                            </option>
-                          <% end %>
-                        </select>
-                      </div>
-                    <% end %>
+                <div class="px-3 py-3 border-b border-base-200 last:border-0">
+                  <p class="text-sm font-medium text-base-content mb-2 px-1">{task.name}</p>
+                  <%!-- Scrollable 7-day row so it never gets crushed on tiny screens --%>
+                  <div class="overflow-x-auto -mx-1">
+                    <div class="flex gap-1.5 px-1 min-w-max">
+                      <%= for day <- @days do %>
+                        <% assignment = get_in(@assignments, [task.id, day]) %>
+                        <% user = assignment && assignment.user %>
+                        <% is_today = Date.add(@week_start, day) == Date.utc_today() %>
+                        <div class={"flex flex-col items-center gap-1 w-10 #{if is_today, do: "rounded-xl bg-primary/5 py-1 -my-1", else: ""}"}>
+                          <span class={"text-xs font-bold #{if is_today, do: "text-primary", else: "text-base-content/40"}"}>
+                            <%= String.first(Schedule.day_name(day)) %>
+                          </span>
+                          <select
+                            class={[
+                              "select select-xs w-full text-center px-0 font-semibold text-xs",
+                              if(user, do: cell_select_class(user), else: "select-ghost text-base-content/30")
+                            ]}
+                            phx-change="assign_user"
+                            phx-value-task={task.id}
+                            phx-value-day={day}
+                            phx-value-user={if user, do: user.id, else: ""}
+                          >
+                            <option value="">—</option>
+                            <%= for emp <- @employees do %>
+                              <option value={emp.id} selected={user && user.id == emp.id}>
+                                {Schedule.initials(emp)}
+                              </option>
+                            <% end %>
+                          </select>
+                        </div>
+                      <% end %>
+                    </div>
                   </div>
                 </div>
               <% end %>
@@ -503,9 +510,9 @@ defmodule CRCWeb.Admin.CalendarioLive do
         <%= for area <- @areas do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
             <%!-- Area header --%>
-            <div class={"flex items-center justify-between px-4 py-3 #{area_bg_class(area.color)}"}>
-              <span class="font-bold text-white text-sm">{area.name}</span>
-              <div class="flex gap-1">
+            <div class={"flex items-center gap-2 px-4 py-3 #{area_bg_class(area.color)}"}>
+              <span class="font-bold text-white text-sm flex-1 min-w-0 truncate">{area.name}</span>
+              <div class="flex gap-1 shrink-0">
                 <button
                   class="btn btn-xs btn-ghost text-white/70 hover:text-white"
                   phx-click="edit_area"
@@ -548,9 +555,9 @@ defmodule CRCWeb.Admin.CalendarioLive do
             <%!-- Tasks list --%>
             <div class="divide-y divide-base-200">
               <%= for task <- area.tasks do %>
-                <div class="flex items-center justify-between px-4 py-2.5">
-                  <span class="text-sm text-base-content">{task.name}</span>
-                  <div class="flex gap-1">
+                <div class="flex items-center gap-2 px-4 py-2.5">
+                  <span class="text-sm text-base-content flex-1 min-w-0 truncate">{task.name}</span>
+                  <div class="flex gap-1 shrink-0">
                     <button
                       class="btn btn-xs btn-ghost text-base-content/40 hover:text-base-content"
                       phx-click="edit_task"

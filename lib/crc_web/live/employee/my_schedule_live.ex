@@ -209,7 +209,7 @@ defmodule CRCWeb.Employee.MyScheduleLive do
                 <%= if tasks_for_day != [] do %>
                   <% day_date = Date.add(@activity_week_start, day) %>
                   <div class="flex items-start gap-3 px-5 py-3">
-                    <div class={"text-xs font-bold w-8 shrink-0 pt-0.5 text-center #{if day_date == Date.utc_today(), do: "text-primary", else: "text-base-content/40"}"}>
+                    <div class={"text-xs font-bold w-10 shrink-0 pt-0.5 text-center #{if day_date == Date.utc_today(), do: "text-primary", else: "text-base-content/40"}"}>
                       <p>{Schedule.day_name(day)}</p>
                       <p class="font-normal opacity-70">{day_date.day}/{day_date.month}</p>
                     </div>

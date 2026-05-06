@@ -100,6 +100,7 @@ defmodule CRCWeb.Router do
       on_mount: [{CRCWeb.UserAuth, :require_authenticated_user}] do
       live "/mi-horario", MyScheduleLive
       live "/mi-perfil", ProfileLive
+      live "/calendario", CalendarioLive
     end
   end
 

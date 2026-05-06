@@ -25,13 +25,36 @@ defmodule CRCWeb.Admin.CumpleanosLive do
 
   @impl true
   def render(assigns) do
+    today = assigns.today
+
+    today_bdays = Enum.filter(assigns.staff, &(&1.days_until_birthday == 0))
+    no_bdays = Enum.filter(assigns.staff, &is_nil(&1.days_until_birthday))
+
+    # Group remaining staff (excluding today) by the calendar month of their next birthday
+    month_groups =
+      assigns.staff
+      |> Enum.filter(&(not is_nil(&1.days_until_birthday) and &1.days_until_birthday > 0))
+      |> Enum.map(fn user ->
+        next_date = Date.add(today, user.days_until_birthday)
+        Map.put(user, :next_birthday_date, next_date)
+      end)
+      |> Enum.group_by(fn user ->
+        {user.next_birthday_date.year, user.next_birthday_date.month}
+      end)
+      |> Enum.sort_by(fn {{year, month}, _} -> {year, month} end)
+      |> Enum.map(fn {{_year, month}, users} ->
+        %{
+          month: month,
+          label: month_name(month),
+          users: Enum.sort_by(users, & &1.next_birthday_date.day)
+        }
+      end)
+
     assigns =
       assigns
-      |> assign(:today_bdays, Enum.filter(assigns.staff, &(&1.days_until_birthday == 0)))
-      |> assign(:week_bdays, Enum.filter(assigns.staff, &(&1.days_until_birthday in 1..7)))
-      |> assign(:month_bdays, Enum.filter(assigns.staff, &(&1.days_until_birthday in 8..30)))
-      |> assign(:later_bdays, Enum.filter(assigns.staff, &((&1.days_until_birthday || 999) > 30)))
-      |> assign(:no_bdays, Enum.filter(assigns.staff, &is_nil(&1.days_until_birthday)))
+      |> assign(:today_bdays, today_bdays)
+      |> assign(:month_groups, month_groups)
+      |> assign(:no_bdays, no_bdays)
 
     ~H"""
     <div class="space-y-6">
@@ -72,38 +95,30 @@ defmodule CRCWeb.Admin.CumpleanosLive do
         </div>
       <% end %>
 
-      <%!-- SECTIONS grid: next 7 days + next 30 days side by side on desktop --%>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <%!-- Esta semana --%>
-        <.section
-          title="Esta semana"
-          icon="hero-sparkles"
-          color="warning"
-          users={@week_bdays}
-          today={@today}
-          empty_msg="Nadie cumple años en los próximos 7 días"
-        />
-        <%!-- Este mes --%>
-        <.section
-          title="Este mes"
-          icon="hero-calendar-days"
-          color="info"
-          users={@month_bdays}
-          today={@today}
-          empty_msg="Nadie más cumple años en los próximos 30 días"
-        />
-      </div>
+      <%!-- Month groups --%>
+      <%= if @month_groups == [] and @today_bdays == [] and @no_bdays == [] do %>
+        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-16 text-center">
+          <.icon name="hero-cake" class="size-12 text-base-content/20 mx-auto mb-3" />
+          <p class="text-base-content/50 text-sm">No hay empleados con fecha de nacimiento registrada.</p>
+          <p class="text-base-content/40 text-xs mt-1">Agrégalas desde <a href="/admin/usuarios" class="link">Usuarios</a>.</p>
+        </div>
+      <% end %>
 
-      <%!-- Later in the year --%>
-      <%= if @later_bdays != [] do %>
-        <.section
-          title="Más adelante"
-          icon="hero-forward"
-          color="neutral"
-          users={@later_bdays}
-          today={@today}
-          empty_msg=""
-        />
+      <%= for group <- @month_groups do %>
+        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+          <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-calendar-days" class="size-4 text-base-content/40" />
+              <h3 class="font-semibold text-sm text-base-content">{group.label}</h3>
+            </div>
+            <span class="badge badge-ghost badge-sm">{length(group.users)}</span>
+          </div>
+          <div class="divide-y divide-base-200">
+            <%= for user <- group.users do %>
+              <.user_row user={user} today={@today} />
+            <% end %>
+          </div>
+        </div>
       <% end %>
 
       <%!-- No birthday set --%>
@@ -118,42 +133,6 @@ defmodule CRCWeb.Admin.CumpleanosLive do
               <.user_row user={user} today={@today} />
             <% end %>
           </div>
-        </div>
-      <% end %>
-    </div>
-    """
-  end
-
-  # ---------------------------------------------------------------------------
-  # Section component
-  # ---------------------------------------------------------------------------
-
-  attr :title, :string, required: true
-  attr :icon, :string, required: true
-  attr :color, :string, required: true
-  attr :users, :list, required: true
-  attr :today, :any, required: true
-  attr :empty_msg, :string, default: ""
-
-  defp section(assigns) do
-    ~H"""
-    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-      <div class={"px-5 py-3 border-b border-base-200 flex items-center justify-between"}>
-        <div class="flex items-center gap-2">
-          <.icon name={@icon} class={"size-4 #{section_icon_class(@color)}"} />
-          <h3 class="font-semibold text-sm text-base-content">{@title}</h3>
-        </div>
-        <%= if @users != [] do %>
-          <span class={"badge badge-sm #{section_badge_class(@color)}"}>{length(@users)}</span>
-        <% end %>
-      </div>
-      <%= if @users == [] do %>
-        <p class="px-5 py-6 text-sm text-base-content/40 text-center">{@empty_msg}</p>
-      <% else %>
-        <div class="divide-y divide-base-200">
-          <%= for user <- @users do %>
-            <.user_row user={user} today={@today} />
-          <% end %>
         </div>
       <% end %>
     </div>
@@ -271,11 +250,6 @@ defmodule CRCWeb.Admin.CumpleanosLive do
     "#{String.capitalize(day_name)}, #{date.day} de #{Enum.at(months, date.month - 1)} #{date.year}"
   end
 
-  defp section_icon_class("warning"), do: "text-warning"
-  defp section_icon_class("info"), do: "text-info"
-  defp section_icon_class(_), do: "text-base-content/40"
-
-  defp section_badge_class("warning"), do: "badge-warning"
-  defp section_badge_class("info"), do: "badge-info"
-  defp section_badge_class(_), do: "badge-ghost"
+  @month_names ~w(Enero Febrero Marzo Abril Mayo Junio Julio Agosto Septiembre Octubre Noviembre Diciembre)
+  defp month_name(month), do: Enum.at(@month_names, month - 1)
 end

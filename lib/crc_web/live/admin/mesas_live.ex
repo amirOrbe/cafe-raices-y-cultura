@@ -186,6 +186,7 @@ defmodule CRCWeb.Admin.MesasLive do
             >
               <%!-- Edit button (visible on hover) --%>
               <button
+                data-no-drag
                 phx-click="edit_table"
                 phx-value-id={table.id}
                 class="absolute -top-2 -right-2 z-10 size-5 rounded-full bg-base-100 border border-base-300 shadow-sm

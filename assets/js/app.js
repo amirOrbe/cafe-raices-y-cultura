@@ -169,6 +169,8 @@ const FloorMapEditor = {
     let moved = false
 
     container.addEventListener('pointerdown', (e) => {
+      // Let clicks on action buttons (edit, etc.) propagate normally
+      if (e.target.closest('[data-no-drag]')) return
       const chip = e.target.closest('[data-table-id]')
       if (!chip || e.button !== 0) return
       e.preventDefault()
@@ -205,6 +207,10 @@ const FloorMapEditor = {
           x_pct: parseFloat(dragging.style.left),
           y_pct: parseFloat(dragging.style.top)
         })
+      } else {
+        // Short tap (no drag) — treat as click: open the edit modal
+        const id = parseInt(dragging.dataset.tableId)
+        this.pushEvent('edit_table', { id: id })
       }
       dragging.style.zIndex     = ''
       dragging.style.transition = ''

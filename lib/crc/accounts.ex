@@ -141,6 +141,36 @@ defmodule CRC.Accounts do
   end
 
   @doc """
+  Permanently deletes a user from the database.
+
+  Requires the caller to be an administrator and not the same user.
+  Returns `{:error, :cannot_delete_self}` if the admin tries to delete themselves.
+  Returns `{:error, :has_records}` if the user has FK-constrained records (orders, etc.).
+  """
+  @spec delete_user(User.t(), User.t()) ::
+          {:ok, User.t()} | {:error, :unauthorized | :cannot_delete_self | :has_records}
+  def delete_user(%User{role: "admin", id: admin_id}, %User{id: id}) when admin_id == id do
+    {:error, :cannot_delete_self}
+  end
+
+  def delete_user(%User{role: "admin"}, %User{} = user) do
+    case Repo.delete(user) do
+      {:ok, deleted} ->
+        Phoenix.PubSub.broadcast(CRC.PubSub, "admin:users", {:user_changed, deleted})
+        {:ok, deleted}
+
+      {:error, changeset} ->
+        if Enum.any?(changeset.errors, fn {_, {_, opts}} ->
+             Keyword.get(opts, :constraint) == :foreign
+           end),
+           do: {:error, :has_records},
+           else: {:error, changeset}
+    end
+  end
+
+  def delete_user(%User{}, _user), do: {:error, :unauthorized}
+
+  @doc """
   Deactivates a user (is_active = false).
 
   Requires the caller to be an administrator and not the same user.

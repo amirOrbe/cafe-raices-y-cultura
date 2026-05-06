@@ -20,6 +20,7 @@ defmodule CRCWeb.Admin.UsersLive do
       |> assign(:form, nil)
       |> assign(:form_role, "admin")
       |> assign(:remove_avatar, false)
+      |> assign(:confirm_delete_user, false)
       |> allow_upload(:avatar,
         accept: ~w(.jpg .jpeg .png .webp),
         max_entries: 1,
@@ -76,7 +77,52 @@ defmodule CRCWeb.Admin.UsersLive do
   end
 
   def handle_event("close_modal", _params, socket) do
-    {:noreply, assign(socket, modal: nil, form: nil, form_role: "admin", remove_avatar: false)}
+    {:noreply,
+     assign(socket,
+       modal: nil,
+       form: nil,
+       form_role: "admin",
+       remove_avatar: false,
+       confirm_delete_user: false
+     )}
+  end
+
+  def handle_event("confirm_delete_user", _params, socket) do
+    {:noreply, assign(socket, :confirm_delete_user, true)}
+  end
+
+  def handle_event("delete_user", _params, socket) do
+    admin = socket.assigns.current_user
+
+    user =
+      case socket.assigns.modal do
+        {:edit, u} -> u
+        _ -> nil
+      end
+
+    case user && Accounts.delete_user(admin, user) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(modal: nil, form: nil, confirm_delete_user: false)
+         |> assign(:users, Accounts.list_users())
+         |> put_flash(:info, "Usuario eliminado correctamente.")}
+
+      {:error, :cannot_delete_self} ->
+        {:noreply, put_flash(socket, :error, "No puedes eliminar tu propia cuenta.")}
+
+      {:error, :has_records} ->
+        {:noreply,
+         socket
+         |> assign(:confirm_delete_user, false)
+         |> put_flash(
+           :error,
+           "No se puede eliminar: el usuario tiene órdenes u otros registros asociados. Desactívalo en su lugar."
+         )}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "No se pudo eliminar el usuario.")}
+    end
   end
 
   def handle_event("validate_upload", _params, socket), do: {:noreply, socket}
@@ -409,6 +455,7 @@ defmodule CRCWeb.Admin.UsersLive do
         form_role={@form_role}
         uploads={@uploads}
         remove_avatar={@remove_avatar}
+        confirm_delete_user={@confirm_delete_user}
       />
     <% end %>
     """
@@ -423,6 +470,7 @@ defmodule CRCWeb.Admin.UsersLive do
   attr :form_role, :string, required: true
   attr :uploads, :map, required: true
   attr :remove_avatar, :boolean, default: false
+  attr :confirm_delete_user, :boolean, default: false
 
   defp user_modal(assigns) do
     title =
@@ -615,6 +663,41 @@ defmodule CRCWeb.Admin.UsersLive do
               </button>
             </div>
           </.form>
+
+          <%!-- Danger zone — only in edit mode --%>
+          <%= if @modal != :new do %>
+            <div class="px-6 pb-5 pt-1 border-t border-base-200 mt-2">
+              <%= if @confirm_delete_user do %>
+                <p class="text-xs text-error mb-3 font-medium">
+                  ¿Seguro que deseas eliminar este usuario permanentemente? Esta acción no se puede deshacer.
+                </p>
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-error btn-sm flex-1"
+                    phx-click="delete_user"
+                  >
+                    Sí, eliminar permanentemente
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-sm flex-1"
+                    phx-click="close_modal"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              <% else %>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm text-error gap-1.5 w-full sm:w-auto"
+                  phx-click="confirm_delete_user"
+                >
+                  <.icon name="hero-trash" class="size-4" /> Eliminar usuario
+                </button>
+              <% end %>
+            </div>
+          <% end %>
         </div>
       </div>
     </div>

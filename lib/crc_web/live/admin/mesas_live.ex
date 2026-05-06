@@ -184,36 +184,43 @@ defmodule CRCWeb.Admin.MesasLive do
               class="absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing group"
               style={"left: #{table.x_pct}%; top: #{table.y_pct}%"}
             >
-              <%!-- Edit button (visible on hover) --%>
+              <%!-- Edit button (visible on hover / tap) --%>
               <button
                 data-no-drag
                 phx-click="edit_table"
                 phx-value-id={table.id}
-                class="absolute -top-2 -right-2 z-10 size-5 rounded-full bg-base-100 border border-base-300 shadow-sm
+                class="absolute -top-1 -right-1 z-10 size-5 rounded-full bg-base-100 border border-base-300 shadow-sm
                        flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Editar mesa"
               >
                 <.icon name="hero-pencil-square" class="size-3 text-base-content/60" />
               </button>
-              <%!-- Table chip --%>
-              <div class={[
-                "w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-md border-2 transition-all",
-                if(table.is_active,
-                  do: "bg-primary text-primary-content border-primary/50",
-                  else: "bg-base-200 text-base-content/40 border-base-300"
-                )
-              ]}>
-                <span class="text-xl font-bold leading-none">{table.number}</span>
-                <%= if table.label && table.label != "" do %>
-                  <span class="text-[9px] leading-tight truncate w-12 text-center px-0.5 mt-0.5 opacity-75">
-                    {table.label}
-                  </span>
-                <% end %>
-                <%= if table.capacity do %>
-                  <span class="text-[9px] leading-none opacity-50 mt-0.5">
-                    <.icon name="hero-user" class="size-2 inline" />{table.capacity}
-                  </span>
-                <% end %>
+
+              <%!-- Table + chairs --%>
+              <% active = table.is_active
+                 chip_cls  = if active, do: "bg-primary text-primary-content border-primary/40", else: "bg-base-200 text-base-content/40 border-base-300"
+                 chair_cls = if active, do: "bg-primary/55", else: "bg-base-300"
+              %>
+              <div class="relative w-20 h-20">
+                <%!-- Top chairs --%>
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 flex gap-1">
+                  <div class={"w-6 h-3 rounded-t-xl #{chair_cls}"} />
+                  <div class={"w-6 h-3 rounded-t-xl #{chair_cls}"} />
+                </div>
+                <%!-- Bottom chairs --%>
+                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-1">
+                  <div class={"w-6 h-3 rounded-b-xl #{chair_cls}"} />
+                  <div class={"w-6 h-3 rounded-b-xl #{chair_cls}"} />
+                </div>
+                <%!-- Table chip --%>
+                <div class={"absolute inset-3 rounded-2xl flex flex-col items-center justify-center shadow-md border-2 #{chip_cls}"}>
+                  <span class="text-xl font-bold leading-none">{table.number}</span>
+                  <%= if table.label && table.label != "" do %>
+                    <span class="text-[9px] leading-tight truncate w-10 text-center px-0.5 mt-0.5 opacity-75">
+                      {table.label}
+                    </span>
+                  <% end %>
+                </div>
               </div>
             </div>
           <% end %>

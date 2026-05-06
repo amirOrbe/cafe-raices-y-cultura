@@ -191,24 +191,40 @@ defmodule CRCWeb.Waiter.TableLive do
             >
               <%= for table <- @tables do %>
                 <% order = Map.get(@orders_by_table, table.id) %>
-                <% {chip_class, label_text} = table_chip_style(order, @now) %>
+                <% {chip_class, chair_class, label_text} = table_chip_style(order, @now) %>
                 <button
                   phx-click="select_table"
                   phx-value-id={table.id}
-                  class={"absolute -translate-x-1/2 -translate-y-1/2 #{chip_class} w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-md border-2 transition-all hover:scale-110 active:scale-95 focus:outline-none"}
+                  class="absolute -translate-x-1/2 -translate-y-1/2 focus:outline-none"
                   style={"left: #{table.x_pct}%; top: #{table.y_pct}%"}
                   title={label_text}
                 >
-                  <span class="text-xl font-bold leading-none">{table.number}</span>
-                  <%= if table.label && table.label != "" do %>
-                    <span class="text-[9px] leading-tight truncate w-12 text-center px-0.5 mt-0.5 opacity-75">
-                      {table.label}
-                    </span>
-                  <% end %>
-                  <%= if order && overdue?(order, @now) do %>
-                    <span class="absolute -top-1.5 -right-1.5 size-3.5 rounded-full bg-error border-2 border-base-100 animate-ping" />
-                    <span class="absolute -top-1.5 -right-1.5 size-3.5 rounded-full bg-error border-2 border-base-100" />
-                  <% end %>
+                  <div class="relative w-20 h-20 hover:scale-110 active:scale-95 transition-transform">
+                    <%!-- Top chairs --%>
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none">
+                      <div class={"w-6 h-3 rounded-t-xl #{chair_class}"} />
+                      <div class={"w-6 h-3 rounded-t-xl #{chair_class}"} />
+                    </div>
+                    <%!-- Bottom chairs --%>
+                    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none">
+                      <div class={"w-6 h-3 rounded-b-xl #{chair_class}"} />
+                      <div class={"w-6 h-3 rounded-b-xl #{chair_class}"} />
+                    </div>
+                    <%!-- Table chip --%>
+                    <div class={"absolute inset-3 rounded-2xl flex flex-col items-center justify-center shadow-md border-2 #{chip_class}"}>
+                      <span class="text-xl font-bold leading-none">{table.number}</span>
+                      <%= if table.label && table.label != "" do %>
+                        <span class="text-[9px] leading-tight truncate w-10 text-center px-0.5 mt-0.5 opacity-75">
+                          {table.label}
+                        </span>
+                      <% end %>
+                    </div>
+                    <%!-- Overdue pulse dot --%>
+                    <%= if order && overdue?(order, @now) do %>
+                      <span class="absolute top-2 right-2 size-3 rounded-full bg-error border-2 border-base-100 animate-ping" />
+                      <span class="absolute top-2 right-2 size-3 rounded-full bg-error border-2 border-base-100" />
+                    <% end %>
+                  </div>
                 </button>
               <% end %>
             </div>
@@ -305,23 +321,28 @@ defmodule CRCWeb.Waiter.TableLive do
   # Table chip style helper
   # ---------------------------------------------------------------------------
 
+  # Returns {chip_class, chair_class, label}
   defp table_chip_style(nil, _now) do
-    {"bg-base-200 text-base-content/50 border-base-300", "Libre"}
+    {"bg-base-200 text-base-content/50 border-base-300", "bg-base-300", "Libre"}
   end
 
   defp table_chip_style(order, now) do
     cond do
       overdue?(order, now) ->
-        {"bg-error text-error-content border-error", "Tardando — #{order.customer_name}"}
+        {"bg-error text-error-content border-error", "bg-error/60",
+         "Tardando — #{order.customer_name}"}
 
       all_active_items_ready?(order) ->
-        {"bg-success text-success-content border-success", "Lista — #{order.customer_name}"}
+        {"bg-success text-success-content border-success", "bg-success/60",
+         "Lista — #{order.customer_name}"}
 
       order.status == "sent" ->
-        {"bg-warning text-warning-content border-warning", "En cocina — #{order.customer_name}"}
+        {"bg-warning text-warning-content border-warning", "bg-warning/60",
+         "En cocina — #{order.customer_name}"}
 
       true ->
-        {"bg-info text-info-content border-info", "Abierta — #{order.customer_name}"}
+        {"bg-info text-info-content border-info", "bg-info/60",
+         "Abierta — #{order.customer_name}"}
     end
   end
 

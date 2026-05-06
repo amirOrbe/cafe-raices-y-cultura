@@ -170,6 +170,7 @@ defmodule CRC.Schedule do
 
   def list_employees do
     User
+    |> where([u], u.is_active == true)
     |> order_by([u], asc: u.name)
     |> Repo.all()
   end

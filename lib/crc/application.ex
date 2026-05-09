@@ -8,9 +8,10 @@ defmodule CRC.Application do
   @impl true
   def start(_type, _args) do
     # Run pending Ecto migrations automatically on startup in production.
-    # Mix is excluded from releases, so this only fires in production.
-    # Ecto uses advisory locks — safe with rolling deploys / multiple replicas.
-    unless Code.ensure_loaded?(Mix) do
+    # DATABASE_URL is only set on Gigalixir — safe in dev/test.
+    # Ecto.Migrator.with_repo starts a temporary repo pool, so this runs
+    # before the main supervision tree and doesn't conflict with CRC.Repo.
+    if System.get_env("DATABASE_URL") do
       CRC.Release.migrate()
     end
 

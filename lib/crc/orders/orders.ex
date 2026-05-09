@@ -15,6 +15,8 @@ defmodule CRC.Orders do
   @pubsub_topic "orders"
   # Waiter menu browsers subscribe to this for real-time stock availability
   @stock_topic "menu_stock"
+  # Waiter floor map subscribes to this for real-time table layout updates
+  @tables_topic "restaurant_tables"
 
   # ---------------------------------------------------------------------------
   # Orders
@@ -43,6 +45,49 @@ defmodule CRC.Orders do
   def list_active_orders do
     Order
     |> where([o], o.status in ["open", "sent", "ready"])
+    |> order_by([o], o.inserted_at)
+    |> preload([
+      :user,
+      order_items: [
+        :product,
+        :variant,
+        :for_menu_item,
+        exclusions: [:product],
+        menu_item: :category,
+        package: []
+      ]
+    ])
+    |> Repo.all()
+  end
+
+  @doc "Returns active group orders (is_group: true), sorted oldest first."
+  def list_active_groups do
+    Order
+    |> where([o], o.status in ["open", "sent", "ready"] and o.is_group == true)
+    |> order_by([o], o.inserted_at)
+    |> preload([
+      :user,
+      order_items: [
+        :product,
+        :variant,
+        :for_menu_item,
+        exclusions: [:product],
+        menu_item: :category,
+        package: []
+      ]
+    ])
+    |> Repo.all()
+  end
+
+  @doc "Returns active takeout orders (order_type: takeout, not a group, no table), sorted oldest first."
+  def list_active_takeout do
+    Order
+    |> where([o],
+      o.status in ["open", "sent", "ready"] and
+      o.order_type == "takeout" and
+      o.is_group == false and
+      is_nil(o.table_id)
+    )
     |> order_by([o], o.inserted_at)
     |> preload([
       :user,
@@ -840,6 +885,10 @@ defmodule CRC.Orders do
     Phoenix.PubSub.broadcast(CRC.PubSub, @pubsub_topic, message)
   end
 
+  defp broadcast_tables_changed do
+    Phoenix.PubSub.broadcast(CRC.PubSub, @tables_topic, :tables_changed)
+  end
+
   # Reverses the stock deduction for a single order item.
   # Called inside a transaction from cancel_item/2 when :not_prepared.
   # Excluded ingredients were never deducted, so they are NOT restored.
@@ -1529,29 +1578,45 @@ defmodule CRC.Orders do
   @doc "Gets a table by id. Raises if not found."
   def get_table!(id), do: Repo.get!(Table, id)
 
-  @doc "Creates a restaurant table."
+  @doc "Creates a restaurant table and broadcasts the change to all connected floor maps."
   def create_table(attrs \\ %{}) do
-    %Table{}
-    |> Table.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %Table{}
+      |> Table.changeset(attrs)
+      |> Repo.insert()
+
+    if match?({:ok, _}, result), do: broadcast_tables_changed()
+    result
   end
 
-  @doc "Updates a restaurant table."
+  @doc "Updates a restaurant table and broadcasts the change to all connected floor maps."
   def update_table(%Table{} = table, attrs) do
-    table
-    |> Table.changeset(attrs)
-    |> Repo.update()
+    result =
+      table
+      |> Table.changeset(attrs)
+      |> Repo.update()
+
+    if match?({:ok, _}, result), do: broadcast_tables_changed()
+    result
   end
 
-  @doc "Updates only the floor-map position of a table (x_pct, y_pct)."
+  @doc "Updates only the floor-map position of a table (x_pct, y_pct) and broadcasts."
   def move_table(%Table{} = table, x_pct, y_pct) do
-    table
-    |> Table.position_changeset(%{x_pct: x_pct, y_pct: y_pct})
-    |> Repo.update()
+    result =
+      table
+      |> Table.position_changeset(%{x_pct: x_pct, y_pct: y_pct})
+      |> Repo.update()
+
+    if match?({:ok, _}, result), do: broadcast_tables_changed()
+    result
   end
 
-  @doc "Deletes a restaurant table."
-  def delete_table(%Table{} = table), do: Repo.delete(table)
+  @doc "Deletes a restaurant table and broadcasts the change to all connected floor maps."
+  def delete_table(%Table{} = table) do
+    result = Repo.delete(table)
+    if match?({:ok, _}, result), do: broadcast_tables_changed()
+    result
+  end
 
   @doc "Returns a changeset for a table (for form building)."
   def change_table(%Table{} = table, attrs \\ %{}) do

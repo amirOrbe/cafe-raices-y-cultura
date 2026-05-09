@@ -20,6 +20,10 @@ defmodule CRC.Orders.Order do
     field :manual_entry, :boolean, default: false
     # Unique token used to generate a public customer-facing bill URL (/cuenta/:token).
     field :bill_token, :string
+    # Order type: "dine_in" (para comer aquí, default) or "takeout" (para llevar)
+    field :order_type, :string, default: "dine_in"
+    # True for grupo de comensales — an order not tied to a physical table, explicitly created as a group
+    field :is_group, :boolean, default: false
 
     # Waiter who opened this order (user_id FK)
     belongs_to :user, User
@@ -34,13 +38,15 @@ defmodule CRC.Orders.Order do
 
   @valid_statuses ~w(open sent ready closed)
   @valid_payment_methods ~w(efectivo tarjeta transferencia)
+  @valid_order_types ~w(dine_in takeout)
 
   @doc false
   def changeset(order, attrs) do
     order
-    |> cast(attrs, [:customer_name, :status, :notes, :user_id, :table_id, :bill_token])
+    |> cast(attrs, [:customer_name, :status, :notes, :user_id, :table_id, :bill_token, :order_type, :is_group])
     |> validate_required([:customer_name, :status])
     |> validate_inclusion(:status, @valid_statuses)
+    |> validate_inclusion(:order_type, @valid_order_types)
   end
 
   @doc """

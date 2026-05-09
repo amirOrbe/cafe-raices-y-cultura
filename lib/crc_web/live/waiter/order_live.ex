@@ -691,6 +691,18 @@ defmodule CRCWeb.Waiter.OrderLive do
             <h1 class="text-xl font-bold text-base-content truncate">
               {@order.customer_name}
             </h1>
+            <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <%= if @order.order_type == "takeout" do %>
+                <span class="badge badge-xs badge-accent gap-1">
+                  <.icon name="hero-shopping-bag" class="size-3" /> Para llevar
+                </span>
+              <% end %>
+              <%= if @order.is_group do %>
+                <span class="badge badge-xs badge-ghost gap-1">
+                  <.icon name="hero-user-group" class="size-3" /> Grupo
+                </span>
+              <% end %>
+            </div>
           </div>
           <.order_status_badge status={@order.status} />
         </div>

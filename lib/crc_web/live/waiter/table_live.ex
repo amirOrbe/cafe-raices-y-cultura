@@ -14,27 +14,38 @@ defmodule CRCWeb.Waiter.TableLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(CRC.PubSub, "orders")
+      Phoenix.PubSub.subscribe(CRC.PubSub, "restaurant_tables")
       Process.send_after(self(), :tick, @tick_interval)
     end
 
     tables = Orders.list_active_tables()
     orders_by_table = Orders.active_orders_by_table()
-    # Also keep "tableless" orders (created before this feature)
-    tableless = Orders.list_active_orders() |> Enum.filter(&is_nil(&1.table_id))
+    groups = Orders.list_active_groups()
+    takeout = Orders.list_active_takeout()
+    # Legacy tableless: active, no table, not a group, dine_in
+    tableless =
+      Orders.list_active_orders()
+      |> Enum.filter(&(is_nil(&1.table_id) and not &1.is_group and &1.order_type == "dine_in"))
 
     socket =
       socket
       |> assign(:page_title, "Mesas")
       |> assign(:tables, tables)
       |> assign(:orders_by_table, orders_by_table)
+      |> assign(:groups, groups)
+      |> assign(:takeout, takeout)
       |> assign(:tableless, tableless)
       |> assign(:now, DateTime.utc_now())
       |> assign(:selected_table, nil)
       |> assign(:show_new_modal, false)
+      |> assign(:show_group_modal, false)
+      |> assign(:show_takeout_modal, false)
+      |> assign(:name_input, "")
+      |> assign(:person_count_input, "")
       |> assign(:name_error, nil)
       |> assign(:nav_open, false)
       |> assign(:view_mode, :map)
-      |> assign(:seen_ready_ids, all_ready_ids_from_map(orders_by_table, tableless))
+      |> assign(:seen_ready_ids, all_ready_ids(orders_by_table, groups, takeout, tableless))
 
     {:ok, socket}
   end
@@ -46,13 +57,20 @@ defmodule CRCWeb.Waiter.TableLive do
   @impl true
   def handle_info({:order_updated, _order_id}, socket) do
     orders_by_table = Orders.active_orders_by_table()
-    tableless = Orders.list_active_orders() |> Enum.filter(&is_nil(&1.table_id))
-    new_ids = all_ready_ids_from_map(orders_by_table, tableless)
+    groups = Orders.list_active_groups()
+    takeout = Orders.list_active_takeout()
+    tableless =
+      Orders.list_active_orders()
+      |> Enum.filter(&(is_nil(&1.table_id) and not &1.is_group and &1.order_type == "dine_in"))
+
+    new_ids = all_ready_ids(orders_by_table, groups, takeout, tableless)
     new_ready? = not MapSet.subset?(new_ids, socket.assigns.seen_ready_ids)
 
     socket =
       socket
       |> assign(:orders_by_table, orders_by_table)
+      |> assign(:groups, groups)
+      |> assign(:takeout, takeout)
       |> assign(:tableless, tableless)
       |> assign(:now, DateTime.utc_now())
       |> assign(:seen_ready_ids, new_ids)
@@ -63,13 +81,17 @@ defmodule CRCWeb.Waiter.TableLive do
     {:noreply, socket}
   end
 
+  def handle_info(:tables_changed, socket) do
+    {:noreply, assign(socket, :tables, Orders.list_active_tables())}
+  end
+
   def handle_info(:tick, socket) do
     Process.send_after(self(), :tick, @tick_interval)
     {:noreply, assign(socket, :now, DateTime.utc_now())}
   end
 
   # ---------------------------------------------------------------------------
-  # Events
+  # Events — navigation / view
   # ---------------------------------------------------------------------------
 
   @impl true
@@ -84,6 +106,10 @@ defmodule CRCWeb.Waiter.TableLive do
   def handle_event("set_view", %{"mode" => mode}, socket) do
     {:noreply, assign(socket, :view_mode, String.to_existing_atom(mode))}
   end
+
+  # ---------------------------------------------------------------------------
+  # Events — table selection
+  # ---------------------------------------------------------------------------
 
   def handle_event("select_table", %{"id" => id}, socket) do
     table = Enum.find(socket.assigns.tables, &(to_string(&1.id) == id))
@@ -107,7 +133,12 @@ defmodule CRCWeb.Waiter.TableLive do
     {:noreply,
      socket
      |> assign(:show_new_modal, false)
-     |> assign(:selected_table, nil)}
+     |> assign(:show_group_modal, false)
+     |> assign(:show_takeout_modal, false)
+     |> assign(:selected_table, nil)
+     |> assign(:name_input, "")
+     |> assign(:person_count_input, "")
+     |> assign(:name_error, nil)}
   end
 
   def handle_event("create_order_for_table", _params, socket) do
@@ -116,6 +147,7 @@ defmodule CRCWeb.Waiter.TableLive do
     case Orders.create_order(%{
            customer_name: "Mesa #{table.number}",
            table_id: table.id,
+           order_type: "dine_in",
            user_id: socket.assigns.current_user.id
          }) do
       {:ok, order} ->
@@ -129,18 +161,97 @@ defmodule CRCWeb.Waiter.TableLive do
     end
   end
 
-  # Legacy: open a tableless order with a custom name
-  def handle_event("create_cuenta", %{"customer_name" => name}, socket) do
-    name = String.trim(name)
+  # ---------------------------------------------------------------------------
+  # Events — group modal
+  # ---------------------------------------------------------------------------
+
+  def handle_event("open_group_modal", _params, socket) do
+    # Auto-generate a group name based on how many groups are already open
+    count = length(socket.assigns.groups) + 1
+    name = "Grupo #{count}"
+
+    {:noreply,
+     socket
+     |> assign(:show_group_modal, true)
+     |> assign(:name_input, name)
+     |> assign(:person_count_input, "")
+     |> assign(:name_error, nil)}
+  end
+
+  def handle_event("update_name_input", %{"value" => val}, socket) do
+    {:noreply, assign(socket, :name_input, val)}
+  end
+
+  def handle_event("update_person_count_input", %{"value" => val}, socket) do
+    {:noreply, assign(socket, :person_count_input, val)}
+  end
+
+  def handle_event("create_group", _params, socket) do
+    name = String.trim(socket.assigns.name_input)
+    count_str = String.trim(socket.assigns.person_count_input)
+
+    name =
+      if name == "" do
+        "Grupo #{length(socket.assigns.groups) + 1}"
+      else
+        name
+      end
+
+    # Append person count if provided
+    customer_name =
+      case Integer.parse(count_str) do
+        {n, _} when n > 0 -> "#{name} · #{n} personas"
+        _ -> name
+      end
+
+    case Orders.create_order(%{
+           customer_name: customer_name,
+           is_group: true,
+           order_type: "dine_in",
+           user_id: socket.assigns.current_user.id
+         }) do
+      {:ok, order} ->
+        {:noreply,
+         socket
+         |> assign(:show_group_modal, false)
+         |> assign(:name_input, "")
+         |> assign(:person_count_input, "")
+         |> push_navigate(to: "/mesa/#{order.id}")}
+
+      {:error, _changeset} ->
+        {:noreply, assign(socket, :name_error, "No se pudo crear el grupo, intenta de nuevo")}
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Events — takeout modal
+  # ---------------------------------------------------------------------------
+
+  def handle_event("open_takeout_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_takeout_modal, true)
+     |> assign(:name_input, "")
+     |> assign(:name_error, nil)}
+  end
+
+  def handle_event("create_takeout", _params, socket) do
+    name = String.trim(socket.assigns.name_input)
 
     if name == "" do
-      {:noreply, assign(socket, :name_error, "El nombre no puede estar vacío")}
+      {:noreply, assign(socket, :name_error, "Ingresa el nombre del cliente")}
     else
-      case Orders.create_order(%{customer_name: name, user_id: socket.assigns.current_user.id}) do
+      case Orders.create_order(%{
+             customer_name: name,
+             order_type: "takeout",
+             is_group: false,
+             user_id: socket.assigns.current_user.id
+           }) do
         {:ok, order} ->
           {:noreply,
            socket
-           |> assign(:show_new_modal, false)
+           |> assign(:show_takeout_modal, false)
+           |> assign(:name_input, "")
            |> push_navigate(to: "/mesa/#{order.id}")}
 
         {:error, _changeset} ->
@@ -173,7 +284,7 @@ defmodule CRCWeb.Waiter.TableLive do
               {length(@tables) - map_size(@orders_by_table)} libre{if (length(@tables) - map_size(@orders_by_table)) != 1, do: "s"}
             </p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <%!-- View toggle --%>
             <div class="join">
               <button
@@ -193,6 +304,23 @@ defmodule CRCWeb.Waiter.TableLive do
                 <span class="hidden sm:inline">Lista</span>
               </button>
             </div>
+            <%!-- Quick-action buttons --%>
+            <button
+              class="btn btn-sm btn-ghost border border-base-300 gap-1"
+              phx-click="open_group_modal"
+              title="Nuevo grupo de comensales"
+            >
+              <.icon name="hero-user-group" class="size-4" />
+              <span class="hidden sm:inline">Grupo</span>
+            </button>
+            <button
+              class="btn btn-sm btn-ghost border border-base-300 gap-1"
+              phx-click="open_takeout_modal"
+              title="Para llevar"
+            >
+              <.icon name="hero-shopping-bag" class="size-4" />
+              <span class="hidden sm:inline">Llevar</span>
+            </button>
             <a href="/mesa/historial" class="btn btn-ghost btn-sm gap-1">
               <.icon name="hero-clock" class="size-4" />
               <span class="hidden sm:inline">Historial</span>
@@ -369,7 +497,43 @@ defmodule CRCWeb.Waiter.TableLive do
           <% end %>
         <% end %>
 
-        <%!-- Tableless orders (backward compat) --%>
+        <%!-- Grupos de comensales --%>
+        <%= if @groups != [] do %>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <.icon name="hero-user-group" class="size-4 text-base-content/40" />
+                <h3 class="font-semibold text-sm text-base-content">Grupos de comensales</h3>
+              </div>
+              <span class="badge badge-ghost badge-sm">{length(@groups)}</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-4">
+              <%= for order <- @groups do %>
+                <.cuenta_card order={order} now={@now} />
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <%!-- Para llevar --%>
+        <%= if @takeout != [] do %>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <.icon name="hero-shopping-bag" class="size-4 text-base-content/40" />
+                <h3 class="font-semibold text-sm text-base-content">Para llevar</h3>
+              </div>
+              <span class="badge badge-ghost badge-sm">{length(@takeout)}</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-4">
+              <%= for order <- @takeout do %>
+                <.cuenta_card order={order} now={@now} />
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <%!-- Cuentas sin mesa (legacy backward compat) --%>
         <%= if @tableless != [] do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
             <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between gap-2">
@@ -433,6 +597,127 @@ defmodule CRCWeb.Waiter.TableLive do
         </div>
       </div>
     <% end %>
+
+    <%!-- Group order modal --%>
+    <%= if @show_group_modal do %>
+      <div class="fixed inset-0 z-50">
+        <div class="absolute inset-0 bg-black/50" phx-click="close_modal" />
+        <div class="relative z-10 flex items-center justify-center min-h-full px-4 pointer-events-none">
+          <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4 pointer-events-auto">
+            <div class="flex items-center gap-3">
+              <div class="size-12 rounded-2xl bg-secondary/20 text-secondary flex items-center justify-center shadow">
+                <.icon name="hero-user-group" class="size-6" />
+              </div>
+              <div>
+                <h2 class="text-lg font-bold text-base-content">Nuevo grupo</h2>
+                <p class="text-sm text-base-content/50">Sin mesa asignada</p>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="label pb-1">
+                  <span class="label-text text-xs font-semibold">Nombre del grupo</span>
+                </label>
+                <input
+                  type="text"
+                  class="input input-bordered w-full"
+                  value={@name_input}
+                  placeholder="Grupo 1"
+                  phx-blur="update_name_input"
+                  phx-value-value={@name_input}
+                  phx-keyup="update_name_input"
+                />
+              </div>
+              <div>
+                <label class="label pb-1">
+                  <span class="label-text text-xs font-semibold">Número de personas (opcional)</span>
+                </label>
+                <input
+                  type="number"
+                  class="input input-bordered w-full"
+                  min="1"
+                  value={@person_count_input}
+                  placeholder="4"
+                  phx-blur="update_person_count_input"
+                  phx-value-value={@person_count_input}
+                  phx-keyup="update_person_count_input"
+                />
+              </div>
+            </div>
+
+            <%= if @name_error do %>
+              <p class="text-error text-xs">{@name_error}</p>
+            <% end %>
+
+            <div class="flex gap-2 pt-1">
+              <button type="button" class="btn btn-ghost flex-1" phx-click="close_modal">
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary flex-1 gap-1"
+                phx-click="create_group"
+              >
+                <.icon name="hero-plus" class="size-4" /> Abrir cuenta
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%!-- Takeout modal --%>
+    <%= if @show_takeout_modal do %>
+      <div class="fixed inset-0 z-50">
+        <div class="absolute inset-0 bg-black/50" phx-click="close_modal" />
+        <div class="relative z-10 flex items-center justify-center min-h-full px-4 pointer-events-none">
+          <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4 pointer-events-auto">
+            <div class="flex items-center gap-3">
+              <div class="size-12 rounded-2xl bg-accent/20 text-accent flex items-center justify-center shadow">
+                <.icon name="hero-shopping-bag" class="size-6" />
+              </div>
+              <div>
+                <h2 class="text-lg font-bold text-base-content">Para llevar</h2>
+                <p class="text-sm text-base-content/50">Nueva orden de takeout</p>
+              </div>
+            </div>
+
+            <div>
+              <label class="label pb-1">
+                <span class="label-text text-xs font-semibold">Nombre del cliente *</span>
+              </label>
+              <input
+                type="text"
+                class="input input-bordered w-full"
+                value={@name_input}
+                placeholder="Nombre del cliente"
+                phx-blur="update_name_input"
+                phx-value-value={@name_input}
+                phx-keyup="update_name_input"
+              />
+            </div>
+
+            <%= if @name_error do %>
+              <p class="text-error text-xs">{@name_error}</p>
+            <% end %>
+
+            <div class="flex gap-2 pt-1">
+              <button type="button" class="btn btn-ghost flex-1" phx-click="close_modal">
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary flex-1 gap-1"
+                phx-click="create_takeout"
+              >
+                <.icon name="hero-plus" class="size-4" /> Abrir cuenta
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
     """
   end
 
@@ -488,7 +773,7 @@ defmodule CRCWeb.Waiter.TableLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Cuenta card (for tableless legacy orders)
+  # Cuenta card (for groups, takeout, and legacy tableless orders)
   # ---------------------------------------------------------------------------
 
   attr :order, :map, required: true
@@ -510,6 +795,19 @@ defmodule CRCWeb.Waiter.TableLive do
           <div class="flex items-center justify-between gap-2">
             <span class="text-base font-bold text-base-content truncate">{@order.customer_name}</span>
             <.status_badge status={@order.status} />
+          </div>
+          <%!-- Order type / group badge --%>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <%= if @order.is_group do %>
+              <span class="badge badge-xs badge-ghost gap-1">
+                <.icon name="hero-user-group" class="size-3" /> Grupo
+              </span>
+            <% end %>
+            <%= if @order.order_type == "takeout" do %>
+              <span class="badge badge-xs badge-ghost gap-1">
+                <.icon name="hero-shopping-bag" class="size-3" /> Para llevar
+              </span>
+            <% end %>
           </div>
           <div class="flex items-center justify-between gap-2 text-sm text-base-content/60">
             <span>
@@ -581,8 +879,8 @@ defmodule CRCWeb.Waiter.TableLive do
     end
   end
 
-  defp all_ready_ids_from_map(orders_by_table, tableless) do
-    (Map.values(orders_by_table) ++ tableless)
+  defp all_ready_ids(orders_by_table, groups, takeout, tableless) do
+    (Map.values(orders_by_table) ++ groups ++ takeout ++ tableless)
     |> Enum.flat_map(& &1.order_items)
     |> Enum.filter(&(&1.status == "ready"))
     |> MapSet.new(& &1.id)

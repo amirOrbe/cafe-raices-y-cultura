@@ -358,7 +358,15 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                 <%!-- Order header --%>
                 <div class="px-4 py-3 bg-warning/10 rounded-t-2xl border-b border-warning/30 flex items-center gap-2">
                   <div class="flex-1 min-w-0">
-                    <h2 class="font-bold text-base-content truncate">{order.customer_name}</h2>
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <h2 class="font-bold text-base-content truncate">{order.customer_name}</h2>
+                      <%= if order.order_type == "takeout" do %>
+                        <span class="badge badge-xs badge-accent shrink-0">🛍 Para llevar</span>
+                      <% end %>
+                      <%= if order.is_group do %>
+                        <span class="badge badge-xs badge-ghost shrink-0">👥 Grupo</span>
+                      <% end %>
+                    </div>
                     <p class="text-xs text-base-content/50">
                       {length(food_items)} {if length(food_items) == 1,
                         do: "platillo",

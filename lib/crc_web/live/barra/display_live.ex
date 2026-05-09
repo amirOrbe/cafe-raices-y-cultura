@@ -529,7 +529,15 @@ defmodule CRCWeb.Barra.DisplayLive do
       <%!-- Order header --%>
       <div class={"px-4 py-3 rounded-t-2xl border-b flex items-center gap-2 #{@header_class}"}>
         <div class="flex-1 min-w-0">
-          <h2 class="font-bold text-base-content truncate">{@order.customer_name}</h2>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="font-bold text-base-content truncate">{@order.customer_name}</h2>
+            <%= if @order.order_type == "takeout" do %>
+              <span class="badge badge-xs badge-accent shrink-0">🛍 Para llevar</span>
+            <% end %>
+            <%= if @order.is_group do %>
+              <span class="badge badge-xs badge-ghost shrink-0">👥 Grupo</span>
+            <% end %>
+          </div>
           <p class="text-xs text-base-content/50">
             {length(@items)} {if length(@items) == 1, do: "bebida", else: "bebidas"}
           </p>

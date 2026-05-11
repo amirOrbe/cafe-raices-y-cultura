@@ -382,6 +382,48 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
   end
 
   # ---------------------------------------------------------------------------
+  # Ver cuenta / QR button visibility
+  # ---------------------------------------------------------------------------
+
+  describe "Ver cuenta / QR button" do
+    test "no aparece en una cuenta abierta aunque tenga artículos", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      refute html =~ "Ver cuenta / QR"
+    end
+
+    test "no aparece cuando la cuenta no tiene artículos", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      order = insert_order()
+
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      refute html =~ "Ver cuenta / QR"
+    end
+
+    test "aparece en una cuenta cerrada con artículos", %{conn: conn} do
+      {conn, _user} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      render_click(lv, "show_payment_step")
+      render_click(lv, "set_payment_method", %{"method" => "tarjeta"})
+      # confirm_close_order redirects; re-mount to check the closed view
+      render_click(lv, "confirm_close_order")
+
+      {:ok, _lv2, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Ver cuenta / QR"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
   # Item status badges
   # ---------------------------------------------------------------------------
 

@@ -1175,8 +1175,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                 <% end %>
               </button>
 
-              <%!-- Bill / QR modal trigger --%>
-              <%= if @order.order_items != [] do %>
+              <%!-- Bill / QR modal trigger — solo cuando la cuenta está cerrada --%>
+              <%= if @order.status == "closed" and @order.order_items != [] do %>
                 <button
                   class="btn btn-outline btn-accent w-full"
                   phx-click="generate_bill"

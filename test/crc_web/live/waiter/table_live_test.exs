@@ -37,6 +37,24 @@ defmodule CRCWeb.Waiter.TableLiveTest do
     order
   end
 
+  defp insert_table(overrides \\ %{}) do
+    {:ok, table} =
+      Orders.create_table(
+        Map.merge(
+          %{
+            number: System.unique_integer([:positive]),
+            label: "Mesa Test",
+            capacity: 4,
+            x_pct: 50.0,
+            y_pct: 50.0
+          },
+          overrides
+        )
+      )
+
+    table
+  end
+
   # ---------------------------------------------------------------------------
   # Authentication
   # ---------------------------------------------------------------------------
@@ -53,13 +71,13 @@ defmodule CRCWeb.Waiter.TableLiveTest do
   # ---------------------------------------------------------------------------
 
   describe "mount" do
-    test "shows empty state when no active orders", %{conn: conn} do
+    test "shows 'no tables configured' state when no tables exist", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       {:ok, _lv, html} = live(conn, "/mesa")
-      assert html =~ "No hay comandas abiertas"
+      assert html =~ "No hay mesas configuradas"
     end
 
-    test "shows active open orders", %{conn: conn} do
+    test "shows active open orders in tableless section", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       insert_order(%{customer_name: "Sofía", status: "open"})
       {:ok, _lv, html} = live(conn, "/mesa")
@@ -103,47 +121,178 @@ defmodule CRCWeb.Waiter.TableLiveTest do
   end
 
   # ---------------------------------------------------------------------------
-  # Nueva cuenta modal
+  # Table selection → creates a dine-in order for a physical table
   # ---------------------------------------------------------------------------
 
-  describe "nueva cuenta modal" do
-    test "opens modal on button click", %{conn: conn} do
+  describe "table selection" do
+    test "selecting a free table opens the confirmation modal", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      table = insert_table()
+      {:ok, lv, _html} = live(conn, "/mesa")
+
+      html = render_click(lv, "select_table", %{"id" => to_string(table.id)})
+      # Modal shows the table number and "Abrir mesa" button
+      assert html =~ to_string(table.number)
+      assert html =~ "Abrir mesa"
+    end
+
+    test "closing the modal hides it", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      table = insert_table()
+      {:ok, lv, _html} = live(conn, "/mesa")
+
+      render_click(lv, "select_table", %{"id" => to_string(table.id)})
+      html = render_click(lv, "close_modal")
+      refute html =~ "Abrir mesa"
+    end
+
+    test "confirming opens an order and redirects to order page", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      table = insert_table()
+      {:ok, lv, _html} = live(conn, "/mesa")
+
+      render_click(lv, "select_table", %{"id" => to_string(table.id)})
+
+      assert {:error, {:live_redirect, %{to: path}}} =
+               render_click(lv, "create_order_for_table")
+
+      assert path =~ "/mesa/"
+    end
+
+    test "selecting an occupied table redirects directly to the order", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      table = insert_table()
+      {:ok, order} = Orders.create_order(%{customer_name: "Mesa Ocupada", table_id: table.id})
+      {:ok, lv, _html} = live(conn, "/mesa")
+
+      assert {:error, {:live_redirect, %{to: path}}} =
+               render_click(lv, "select_table", %{"id" => to_string(table.id)})
+
+      assert path == "/mesa/#{order.id}"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Grupo modal
+  # ---------------------------------------------------------------------------
+
+  describe "grupo modal" do
+    test "open_group_modal shows the group creation form", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       {:ok, lv, _html} = live(conn, "/mesa")
 
-      html = lv |> render_click("open_new_modal")
-      assert html =~ "Nueva cuenta"
+      html = render_click(lv, "open_group_modal")
+      assert html =~ "Nuevo grupo"
+      assert html =~ "Nombre del grupo"
+    end
+
+    test "close_modal hides the group modal", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      {:ok, lv, _html} = live(conn, "/mesa")
+
+      render_click(lv, "open_group_modal")
+      html = render_click(lv, "close_modal")
+      refute html =~ "Nombre del grupo"
+    end
+
+    test "create_group redirects to new order page", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      {:ok, lv, _html} = live(conn, "/mesa")
+
+      render_click(lv, "open_group_modal")
+
+      assert {:error, {:live_redirect, %{to: path}}} = render_click(lv, "create_group")
+      assert path =~ "/mesa/"
+    end
+
+    test "create_group with name and count builds correct customer name", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      {:ok, lv, _html} = live(conn, "/mesa")
+
+      render_click(lv, "open_group_modal")
+      render_keyup(lv, "update_name_input", %{"value" => "Cumpleaños"})
+      render_keyup(lv, "update_person_count_input", %{"value" => "8"})
+
+      assert {:error, {:live_redirect, %{to: path}}} = render_click(lv, "create_group")
+
+      order_id = path |> String.replace_leading("/mesa/", "") |> String.to_integer()
+      order = Orders.get_order!(order_id)
+      assert order.customer_name == "Cumpleaños · 8 personas"
+      assert order.is_group == true
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Takeout modal
+  # ---------------------------------------------------------------------------
+
+  describe "takeout modal" do
+    test "open_takeout_modal shows the takeout creation form", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      {:ok, lv, _html} = live(conn, "/mesa")
+
+      html = render_click(lv, "open_takeout_modal")
+      assert html =~ "Para llevar"
       assert html =~ "Nombre del cliente"
     end
 
-    test "closes modal on cancel", %{conn: conn} do
+    test "close_modal hides the takeout modal", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       {:ok, lv, _html} = live(conn, "/mesa")
 
-      lv |> render_click("open_new_modal")
-      html = lv |> render_click("close_modal")
-      refute html =~ "Nombre del cliente"
+      render_click(lv, "open_takeout_modal")
+      html = render_click(lv, "close_modal")
+      refute html =~ "Nueva orden de takeout"
     end
 
-    test "shows validation error when submitting empty name", %{conn: conn} do
+    test "create_takeout with empty name shows error", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       {:ok, lv, _html} = live(conn, "/mesa")
 
-      lv |> render_click("open_new_modal")
-      html = lv |> render_submit("create_cuenta", %{"customer_name" => "   "})
-      assert html =~ "El nombre no puede estar vacío"
+      render_click(lv, "open_takeout_modal")
+      # name_input is empty by default
+      html = render_click(lv, "create_takeout")
+      assert html =~ "Ingresa el nombre del cliente"
     end
 
-    test "creates cuenta and redirects to order page", %{conn: conn} do
+    test "create_takeout with name redirects to order page", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       {:ok, lv, _html} = live(conn, "/mesa")
 
-      lv |> render_click("open_new_modal")
+      render_click(lv, "open_takeout_modal")
+      render_keyup(lv, "update_name_input", %{"value" => "Cliente Takeout"})
 
-      assert {:error, {:live_redirect, %{to: path}}} =
-               lv |> render_submit("create_cuenta", %{"customer_name" => "Luis"})
-
+      assert {:error, {:live_redirect, %{to: path}}} = render_click(lv, "create_takeout")
       assert path =~ "/mesa/"
+
+      order_id = path |> String.replace_leading("/mesa/", "") |> String.to_integer()
+      order = Orders.get_order!(order_id)
+      assert order.customer_name == "Cliente Takeout"
+      assert order.order_type == "takeout"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # update_name_input event
+  # ---------------------------------------------------------------------------
+
+  describe "update_name_input event" do
+    test "tracks the input value in the group modal", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      {:ok, lv, _} = live(conn, "/mesa")
+
+      render_click(lv, "open_group_modal")
+      render_keyup(lv, "update_name_input", %{"value" => "Reserva Flores"})
+      assert render(lv) =~ "Reserva Flores"
+    end
+
+    test "tracks the input value in the takeout modal", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      {:ok, lv, _} = live(conn, "/mesa")
+
+      render_click(lv, "open_takeout_modal")
+      render_keyup(lv, "update_name_input", %{"value" => "Ana García"})
+      assert render(lv) =~ "Ana García"
     end
   end
 
@@ -161,6 +310,17 @@ defmodule CRCWeb.Waiter.TableLiveTest do
 
       html = render(lv)
       assert html =~ "PubSub Test"
+    end
+
+    test "refreshes tables when tables_changed is broadcast", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      {:ok, lv, html_before} = live(conn, "/mesa")
+      refute html_before =~ "99"  # table number not yet present
+
+      table = insert_table(%{number: 99})
+      Phoenix.PubSub.broadcast(CRC.PubSub, "restaurant_tables", :tables_changed)
+
+      assert render(lv) =~ to_string(table.number)
     end
   end
 
@@ -184,19 +344,8 @@ defmodule CRCWeb.Waiter.TableLiveTest do
     end
   end
 
-  describe "update_name event" do
-    test "update_name tracks the input value", %{conn: conn} do
-      {conn, _} = auth_conn(conn)
-      {:ok, lv, _} = live(conn, "/mesa")
-
-      lv |> render_click("open_new_modal")
-      lv |> render_change("update_name", %{"value" => "Luis Pérez"})
-      assert render(lv) =~ "Luis Pérez"
-    end
-  end
-
   # ---------------------------------------------------------------------------
-  # Visual indicators: overdue, drinks-ready, all-ready
+  # Visual indicators: overdue
   # ---------------------------------------------------------------------------
 
   describe "overdue indicator" do
@@ -257,35 +406,27 @@ defmodule CRCWeb.Waiter.TableLiveTest do
     end
   end
 
-  describe "drinks-ready indicator" do
-    test "shows Bebidas listas badge when drinks ready but food pending", %{conn: conn} do
-      {conn, _} = auth_conn(conn)
+  # ---------------------------------------------------------------------------
+  # All items ready indicator (list view)
+  # ---------------------------------------------------------------------------
+
+  describe "all items ready indicator (list view)" do
+    test "shows 'Lista para servir' in list view when all items are ready", %{conn: conn} do
+      {conn, _user} = auth_conn(conn)
       alias CRC.Catalog
 
+      table = insert_table()
       {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
 
-      {:ok, mi_drink} =
-        Catalog.create_menu_item(%{
-          name: "Refresco",
-          price: "30.00",
-          category_id: cat.id,
-          destination: "barra"
-        })
+      {:ok, mi} =
+        Catalog.create_menu_item(%{name: "Platillo Listo", price: "60.00", category_id: cat.id})
 
-      {:ok, mi_food} =
-        Catalog.create_menu_item(%{
-          name: "Taco",
-          price: "60.00",
-          category_id: cat.id,
-          destination: "cocina"
-        })
-
-      order = insert_order(%{customer_name: "Drinks Ready", status: "sent"})
+      order = insert_order(%{customer_name: "Lista Test", status: "sent", table_id: table.id})
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 
       CRC.Repo.insert!(%CRC.Orders.OrderItem{
         order_id: order.id,
-        menu_item_id: mi_drink.id,
+        menu_item_id: mi.id,
         quantity: 1,
         status: "ready",
         sent_at: now,
@@ -294,79 +435,22 @@ defmodule CRCWeb.Waiter.TableLiveTest do
         updated_at: now
       })
 
-      CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id,
-        menu_item_id: mi_food.id,
-        quantity: 1,
-        status: "sent",
-        sent_at: now,
-        inserted_at: now,
-        updated_at: now
-      })
-
-      {:ok, _lv, html} = live(conn, "/mesa")
-      assert html =~ "Bebidas listas"
-    end
-
-    test "does not show Bebidas listas when food is also ready", %{conn: conn} do
-      {conn, _} = auth_conn(conn)
-      alias CRC.Catalog
-
-      {:ok, cat} = Catalog.create_category(%{name: "Cat #{System.unique_integer()}"})
-
-      {:ok, mi_drink} =
-        Catalog.create_menu_item(%{
-          name: "Agua",
-          price: "20.00",
-          category_id: cat.id,
-          destination: "barra"
-        })
-
-      {:ok, mi_food} =
-        Catalog.create_menu_item(%{
-          name: "Sopa",
-          price: "50.00",
-          category_id: cat.id,
-          destination: "cocina"
-        })
-
-      order = insert_order(%{customer_name: "All Ready", status: "ready"})
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
-
-      CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id,
-        menu_item_id: mi_drink.id,
-        quantity: 1,
-        status: "ready",
-        sent_at: now,
-        ready_at: now,
-        inserted_at: now,
-        updated_at: now
-      })
-
-      CRC.Repo.insert!(%CRC.Orders.OrderItem{
-        order_id: order.id,
-        menu_item_id: mi_food.id,
-        quantity: 1,
-        status: "ready",
-        sent_at: now,
-        ready_at: now,
-        inserted_at: now,
-        updated_at: now
-      })
-
-      {:ok, _lv, html} = live(conn, "/mesa")
-      refute html =~ "Bebidas listas"
-      assert html =~ "Lista para servir"
+      {:ok, lv, _html} = live(conn, "/mesa")
+      render_click(lv, "set_view", %{"mode" => "list"})
+      assert render(lv) =~ "Lista para servir"
     end
   end
 
+  # ---------------------------------------------------------------------------
+  # Order item count on cards
+  # ---------------------------------------------------------------------------
+
   describe "order item count on cards" do
-    test "shows Sin artículos when order has no items", %{conn: conn} do
+    test "shows 0 artículos when order has no items", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       insert_order(%{customer_name: "Sin Items"})
       {:ok, _lv, html} = live(conn, "/mesa")
-      assert html =~ "Sin artículos"
+      assert html =~ "0 artículos"
     end
 
     test "shows singular artículo when order has exactly 1 item", %{conn: conn} do
@@ -382,7 +466,7 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       Orders.add_item(%{order_id: order.id, menu_item_id: mi.id, quantity: 1})
 
       {:ok, _lv, html} = live(conn, "/mesa")
-      assert html =~ "artículo"
+      assert html =~ "1 artículo"
     end
 
     test "shows plural artículos when order has 2+ items", %{conn: conn} do
@@ -402,7 +486,7 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       Orders.add_item(%{order_id: order.id, menu_item_id: mi2.id, quantity: 1})
 
       {:ok, _lv, html} = live(conn, "/mesa")
-      assert html =~ "artículos"
+      assert html =~ "2 artículos"
     end
   end
 end

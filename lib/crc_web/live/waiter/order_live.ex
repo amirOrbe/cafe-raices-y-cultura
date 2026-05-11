@@ -555,6 +555,21 @@ defmodule CRCWeb.Waiter.OrderLive do
     end
   end
 
+  def handle_event("set_order_type", %{"type" => type}, socket)
+      when type in ["dine_in", "takeout"] do
+    order = socket.assigns.order
+
+    case Orders.update_order(order, %{order_type: type}) do
+      {:ok, _updated} ->
+        updated = Orders.get_order!(order.id)
+        Phoenix.PubSub.broadcast(CRC.PubSub, "orders", {:order_updated, order.id})
+        {:noreply, assign(socket, :order, updated)}
+
+      {:error, _} ->
+        {:noreply, assign(socket, :flash_msg, {:error, "No se pudo actualizar el tipo de orden."})}
+    end
+  end
+
   def handle_event("send_to_kitchen", _params, socket) do
     case Orders.send_to_kitchen(socket.assigns.order) do
       {:ok, updated_order} ->
@@ -692,10 +707,43 @@ defmodule CRCWeb.Waiter.OrderLive do
               {@order.customer_name}
             </h1>
             <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-              <%= if @order.order_type == "takeout" do %>
-                <span class="badge badge-xs badge-accent gap-1">
-                  <.icon name="hero-shopping-bag" class="size-3" /> Para llevar
-                </span>
+              <%!-- Toggle de tipo de orden (editable si no está cerrada) --%>
+              <%= if @order.status != "closed" do %>
+                <div class="join" data-order-type={@order.order_type}>
+                  <button
+                    class={[
+                      "btn btn-xs join-item gap-1",
+                      if(@order.order_type == "dine_in",
+                        do: "btn-primary",
+                        else: "btn-ghost border border-base-300"
+                      )
+                    ]}
+                    phx-click="set_order_type"
+                    phx-value-type="dine_in"
+                  >
+                    <.icon name="hero-building-storefront" class="size-3" /> En el lugar
+                  </button>
+                  <button
+                    class={[
+                      "btn btn-xs join-item gap-1",
+                      if(@order.order_type == "takeout",
+                        do: "btn-accent",
+                        else: "btn-ghost border border-base-300"
+                      )
+                    ]}
+                    phx-click="set_order_type"
+                    phx-value-type="takeout"
+                  >
+                    <.icon name="hero-shopping-bag" class="size-3" /> Para llevar
+                  </button>
+                </div>
+              <% else %>
+                <%!-- Cuenta cerrada: solo badge de lectura --%>
+                <%= if @order.order_type == "takeout" do %>
+                  <span class="badge badge-xs badge-accent gap-1">
+                    <.icon name="hero-shopping-bag" class="size-3" /> Para llevar
+                  </span>
+                <% end %>
               <% end %>
               <%= if @order.is_group do %>
                 <span class="badge badge-xs badge-ghost gap-1">

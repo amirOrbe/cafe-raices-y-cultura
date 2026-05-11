@@ -153,13 +153,26 @@ defmodule CRCWeb.E2E.RestaurantWorkflowTest do
     conn_barra = auth_conn(build_conn(), barman)
     {:ok, _, html_barra} = live(conn_barra, "/barra")
 
-    views = [
-      {"comanda", html_comanda},
-      {"cocina", html_cocina},
-      {"barra", html_barra}
-    ]
+    # En la comanda (orden abierta) el tipo se indica con data-order-type en el
+    # toggle interactivo. En cocina y barra se usa el badge de texto "Para llevar".
+    if scenario.expect_takeout_badge do
+      assert html_comanda =~ ~s(data-order-type="takeout"),
+             "expected data-order-type=takeout in comanda for scenario '#{scenario.label}'"
+    else
+      refute html_comanda =~ ~s(data-order-type="takeout"),
+             "unexpected data-order-type=takeout in comanda for scenario '#{scenario.label}'"
+    end
 
-    for {view_name, html} <- views do
+    if scenario.expect_group_badge do
+      assert html_comanda =~ "Grupo",
+             "expected 'Grupo' badge in comanda for scenario '#{scenario.label}'"
+    else
+      refute html_comanda =~ "Grupo",
+             "unexpected 'Grupo' badge in comanda for scenario '#{scenario.label}'"
+    end
+
+    # Cocina y barra usan badges de texto — la lógica original aplica sin cambios
+    for {view_name, html} <- [{"cocina", html_cocina}, {"barra", html_barra}] do
       if scenario.expect_takeout_badge do
         assert html =~ "Para llevar",
                "expected 'Para llevar' badge in #{view_name} for scenario '#{scenario.label}'"

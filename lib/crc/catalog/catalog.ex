@@ -213,15 +213,23 @@ defmodule CRC.Catalog do
   end
 
   @doc """
-  Returns the ingredients for a specific menu item as `{%Product{}, portion_quantity}` tuples,
-  using the exact quantities defined in that item's recipe.
+  Returns only the ingredients that belong to this menu item's own recipe
+  as `{%Product{}, portion_quantity}` tuples, sorted by product name.
 
-  Only ingredients that belong to this item's recipe are returned — ingredients from
-  other dishes in the same category are intentionally excluded to avoid showing
-  unrelated modifiers (e.g. "filtrado" should not appear on an espresso).
-
-  Results are sorted by product name.
+  Used in the waiter comanda extras panel so only the ingredients of the
+  selected dish are shown — nothing from other dishes in the same category.
   """
+  def list_recipe_ingredients(menu_item_id) do
+    from(mii in MenuItemIngredient,
+      join: p in Product,
+      on: p.id == mii.product_id,
+      where: mii.menu_item_id == ^menu_item_id and p.active == true,
+      order_by: p.name,
+      select: {p, mii.quantity}
+    )
+    |> Repo.all()
+  end
+
   def list_extras_for_menu_item(menu_item_id, category_id) do
     # Own ingredients — use exact recipe quantities
     own =

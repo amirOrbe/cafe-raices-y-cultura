@@ -114,7 +114,7 @@ defmodule CRCWeb.Waiter.OrderLive do
     socket =
       if socket.assigns.selected_menu_item do
         mi = socket.assigns.selected_menu_item
-        extras = Catalog.list_extras_for_menu_item(mi.id, mi.category_id)
+        extras = Catalog.list_recipe_ingredients(mi.id)
         assign(socket, :extras, extras)
       else
         socket
@@ -233,7 +233,7 @@ defmodule CRCWeb.Waiter.OrderLive do
       end)
 
     if menu_item do
-      extras = Catalog.list_extras_for_menu_item(menu_item.id, menu_item.category_id)
+      extras = Catalog.list_recipe_ingredients(menu_item.id)
 
       {:noreply,
        socket

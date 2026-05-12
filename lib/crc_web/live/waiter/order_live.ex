@@ -555,6 +555,17 @@ defmodule CRCWeb.Waiter.OrderLive do
     end
   end
 
+  def handle_event("cancel_order", _params, socket) do
+    order = socket.assigns.order
+
+    if order.order_items == [] and order.status == "open" do
+      CRC.Repo.delete(order)
+      {:noreply, redirect(socket, to: "/mesa")}
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("set_order_type", %{"type" => type}, socket)
       when type in ["dine_in", "takeout"] do
     order = socket.assigns.order
@@ -1131,6 +1142,26 @@ defmodule CRCWeb.Waiter.OrderLive do
                       </button>
                     <% end %>
 
+                    <%!-- "Extras" button — only on pending menu items (not extras/packages) --%>
+                    <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and
+                          is_nil(item.package_id) and item.status == "pending" and
+                          @order.status != "closed" do %>
+                      <button
+                        class={[
+                          "btn btn-xs btn-ghost btn-circle",
+                          if(@selected_menu_item && @selected_menu_item.id == item.menu_item_id,
+                            do: "text-accent",
+                            else: "text-base-content/50"
+                          )
+                        ]}
+                        phx-click="select_menu_item_extras"
+                        phx-value-id={item.menu_item_id}
+                        title="Agregar extras a este platillo"
+                      >
+                        <.icon name="hero-plus-circle" class="size-3.5" />
+                      </button>
+                    <% end %>
+
                     <%!-- "Repetir" button — for sent/ready menu items (not ingredient extras) --%>
                     <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and
                           item.status in ["sent", "ready"] and @order.status != "closed" do %>
@@ -1222,6 +1253,17 @@ defmodule CRCWeb.Waiter.OrderLive do
                   </span>
                 <% end %>
               </button>
+
+              <%!-- Cancelar comanda vacía — solo si no tiene artículos y está abierta --%>
+              <%= if @order.order_items == [] and @order.status == "open" do %>
+                <button
+                  class="btn btn-outline btn-error w-full"
+                  phx-click="cancel_order"
+                  data-confirm="¿Cancelar esta comanda? Se eliminará y no podrá recuperarse."
+                >
+                  <.icon name="hero-x-mark" class="size-4" /> Cancelar comanda
+                </button>
+              <% end %>
 
               <%!-- Bill / QR modal trigger — solo cuando la cuenta está cerrada --%>
               <%= if @order.status == "closed" and @order.order_items != [] do %>
@@ -1551,17 +1593,6 @@ defmodule CRCWeb.Waiter.OrderLive do
                                 low_stock? -> "Agregar"
                                 true -> "Agregar"
                               end}
-                            </button>
-                            <button
-                              class={[
-                                "btn btn-xs",
-                                if(selected?, do: "btn-accent", else: "btn-ghost btn-outline")
-                              ]}
-                              phx-click="select_menu_item_extras"
-                              phx-value-id={menu_item.id}
-                              title="Ver extras de este platillo"
-                            >
-                              <.icon name="hero-plus-circle" class="size-3.5" />
                             </button>
                           </div>
                         </div>

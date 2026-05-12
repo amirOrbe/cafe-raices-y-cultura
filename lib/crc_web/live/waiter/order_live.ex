@@ -220,10 +220,17 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   def handle_event("select_menu_item_extras", %{"id" => id}, socket) do
     menu_item_id = String.to_integer(id)
-    # Find the menu item struct from the already-loaded list
+
+    # Try the already-loaded category list first; fall back to a DB fetch so
+    # that the extras button on order item rows works regardless of which
+    # category is currently visible in the catalog panel.
     menu_item =
       socket.assigns.menu_items
       |> Enum.find_value(fn {mi, _in_stock?} -> if mi.id == menu_item_id, do: mi end)
+      |> then(fn
+        nil -> CRC.Repo.get(CRC.Catalog.MenuItem, menu_item_id) |> CRC.Repo.preload(:category)
+        mi -> mi
+      end)
 
     if menu_item do
       extras = Catalog.list_extras_for_menu_item(menu_item.id, menu_item.category_id)

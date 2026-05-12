@@ -716,14 +716,18 @@ defmodule CRCWeb.Waiter.OrderLive do
     <div class="min-h-screen bg-base-200 pt-20 pb-10">
       <div class="max-w-6xl mx-auto px-4 space-y-4">
         <%!-- Header --%>
-        <div class="flex items-center gap-3 min-w-0">
-          <a href="/mesa" class="btn btn-ghost btn-sm gap-1 shrink-0">
+        <div class="flex items-start gap-3 min-w-0">
+          <a href="/mesa" class="btn btn-ghost btn-sm gap-1 shrink-0 mt-0.5">
             <.icon name="hero-arrow-left" class="size-4" /> Comandas
           </a>
           <div class="flex-1 min-w-0">
-            <h1 class="text-xl font-bold text-base-content truncate">
-              {@order.customer_name}
-            </h1>
+            <%!-- Nombre + badge de estado en la misma línea --%>
+            <div class="flex items-center gap-2 min-w-0">
+              <h1 class="text-xl font-bold text-base-content truncate min-w-0 flex-1">
+                {@order.customer_name}
+              </h1>
+              <span class="shrink-0"><.order_status_badge status={@order.status} /></span>
+            </div>
             <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
               <%!-- Toggle de tipo de orden (editable si no está cerrada) --%>
               <%= if @order.status != "closed" do %>
@@ -770,7 +774,6 @@ defmodule CRCWeb.Waiter.OrderLive do
               <% end %>
             </div>
           </div>
-          <span class="shrink-0"><.order_status_badge status={@order.status} /></span>
         </div>
 
         <%!-- Flash message --%>

@@ -770,7 +770,7 @@ defmodule CRCWeb.Waiter.OrderLive do
               <% end %>
             </div>
           </div>
-          <.order_status_badge status={@order.status} />
+          <span class="shrink-0"><.order_status_badge status={@order.status} /></span>
         </div>
 
         <%!-- Flash message --%>

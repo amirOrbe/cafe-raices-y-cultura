@@ -793,8 +793,8 @@ defmodule CRCWeb.Waiter.TableLive do
       ]}>
         <div class="card-body p-4 gap-2">
           <div class="flex items-center justify-between gap-2">
-            <span class="text-base font-bold text-base-content truncate">{@order.customer_name}</span>
-            <.status_badge status={@order.status} />
+            <span class="text-base font-bold text-base-content truncate min-w-0 flex-1">{@order.customer_name}</span>
+            <span class="shrink-0"><.status_badge status={@order.status} /></span>
           </div>
           <%!-- Order type / group badge --%>
           <div class="flex items-center gap-1.5 flex-wrap">

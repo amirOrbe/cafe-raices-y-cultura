@@ -145,8 +145,9 @@ defmodule CRCWeb.E2E.WaiterAttributionTest do
       render_change(lv_order, "update_amount_paid", %{"value" => scenario.amount_paid})
     end
 
+    render_click(lv_order, "confirm_close_order")
     assert {:error, {:redirect, %{to: "/mesa"}}} =
-             render_click(lv_order, "confirm_close_order")
+             render_click(lv_order, "close_bill_modal")
 
     # Ticket belongs to this waiter — both opened and closed by the same person
     closed = CRC.Orders.get_order!(order_id)
@@ -340,6 +341,7 @@ defmodule CRCWeb.E2E.WaiterAttributionTest do
           render_click(lv, "show_payment_step")
           render_click(lv, "set_payment_method", %{"method" => "tarjeta"})
           render_click(lv, "confirm_close_order")
+          render_click(lv, "close_bill_modal")
 
           closed = CRC.Orders.get_order!(order.id)
           {waiter, closed}

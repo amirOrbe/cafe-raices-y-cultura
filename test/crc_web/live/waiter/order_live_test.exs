@@ -349,7 +349,7 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       assert html =~ "Efectivo"
     end
 
-    test "redirects to /mesa after confirming tarjeta payment", %{conn: conn} do
+    test "al cerrar muestra el modal QR y al cerrarlo redirige a /mesa", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       cat = insert_category()
       mi = insert_menu_item(cat.id)
@@ -360,8 +360,13 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       render_click(lv, "show_payment_step")
       render_click(lv, "set_payment_method", %{"method" => "tarjeta"})
 
+      # confirm_close_order now opens the QR bill modal instead of redirecting
+      html = render_click(lv, "confirm_close_order")
+      assert html =~ "Cuenta"
+
+      # closing the modal redirects to /mesa
       assert {:error, {:redirect, %{to: "/mesa"}}} =
-               render_click(lv, "confirm_close_order")
+               render_click(lv, "close_bill_modal")
     end
 
     test "closed order no longer appears in active list", %{conn: conn} do
@@ -375,6 +380,8 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       render_click(lv, "show_payment_step")
       render_click(lv, "set_payment_method", %{"method" => "transferencia"})
       render_click(lv, "confirm_close_order")
+      # close the bill modal to trigger the redirect
+      render_click(lv, "close_bill_modal")
 
       {:ok, _lv2, html} = live(conn, "/mesa")
       refute html =~ "Miguel"
@@ -415,10 +422,10 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
       render_click(lv, "show_payment_step")
       render_click(lv, "set_payment_method", %{"method" => "tarjeta"})
-      # confirm_close_order redirects; re-mount to check the closed view
-      render_click(lv, "confirm_close_order")
 
-      {:ok, _lv2, html} = live(conn, "/mesa/#{order.id}")
+      # confirm_close_order now opens the QR modal automatically;
+      # the "Ver cuenta / QR" button is also visible in the closed-order sidebar
+      html = render_click(lv, "confirm_close_order")
       assert html =~ "Ver cuenta / QR"
     end
   end

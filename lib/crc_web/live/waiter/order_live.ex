@@ -157,7 +157,11 @@ defmodule CRCWeb.Waiter.OrderLive do
   end
 
   def handle_event("close_bill_modal", _params, socket) do
-    {:noreply, assign(socket, :bill_modal, false)}
+    if socket.assigns.order.status == "closed" do
+      {:noreply, redirect(socket, to: "/mesa")}
+    else
+      {:noreply, assign(socket, :bill_modal, false)}
+    end
   end
 
   # Cross-category menu search — triggers on every keystroke (debounced in template).
@@ -684,11 +688,20 @@ defmodule CRCWeb.Waiter.OrderLive do
            %{payment_method: method, amount_paid: amount_paid},
            socket.assigns.current_user.id
          ) do
-      {:ok, _} ->
+      {:ok, closed_order} ->
+        # Generate bill token and open the QR modal so the waiter can show
+        # the digital ticket to the customer before returning to the floor map.
+        closed_with_token =
+          case Orders.generate_bill_token(closed_order) do
+            {:ok, o} -> o
+            _ -> closed_order
+          end
+
         {:noreply,
          socket
-         |> put_flash(:info, "Cuenta cerrada.")
-         |> redirect(to: "/mesa")}
+         |> assign(:order, Orders.get_order!(closed_with_token.id))
+         |> assign(:payment_step, false)
+         |> assign(:bill_modal, true)}
 
       {:error, changeset} ->
         msg =

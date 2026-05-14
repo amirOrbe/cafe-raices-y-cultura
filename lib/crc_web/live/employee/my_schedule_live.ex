@@ -224,11 +224,11 @@ defmodule CRCWeb.Employee.MyScheduleLive do
                       <p>{Schedule.day_name(day)}</p>
                       <p class="font-normal opacity-70">{day_date.day}/{day_date.month}</p>
                     </div>
-                    <div class="flex flex-col gap-1.5 flex-1 pt-0.5">
+                    <div class="flex flex-col gap-1.5 flex-1 min-w-0 pt-0.5">
                       <%= for a <- tasks_for_day do %>
-                        <div class={"flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium #{activity_row_class(a.task.area.color)}"}>
+                        <div class={"flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium min-w-0 #{activity_row_class(a.task.area.color)}"}>
                           <span class={"size-2 rounded-full shrink-0 #{activity_dot_class(a.task.area.color)}"}></span>
-                          {a.task.name}
+                          <span class="truncate">{a.task.name}</span>
                         </div>
                       <% end %>
                     </div>

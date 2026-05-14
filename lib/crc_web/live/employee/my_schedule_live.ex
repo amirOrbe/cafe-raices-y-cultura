@@ -25,6 +25,8 @@ defmodule CRCWeb.Employee.MyScheduleLive do
     if user.role == "cliente" do
       {:ok, push_navigate(socket, to: "/")}
     else
+      if connected?(socket), do: Phoenix.PubSub.subscribe(CRC.PubSub, "schedule:assignments")
+
       schedules = HR.list_work_schedules(user.id)
       today_record = HR.get_or_create_today_record(user)
       week = build_week(schedules)
@@ -54,6 +56,15 @@ defmodule CRCWeb.Employee.MyScheduleLive do
   # ---------------------------------------------------------------------------
   # Events
   # ---------------------------------------------------------------------------
+
+  @impl true
+  def handle_info(:assignments_updated, socket) do
+    user = socket.assigns.current_user
+    week_start = socket.assigns.activity_week_start
+
+    {:noreply,
+     assign(socket, :activity_assignments, Schedule.get_user_week_assignments(week_start, user.id))}
+  end
 
   def handle_event("toggle_nav", _params, socket),
     do: {:noreply, assign(socket, :nav_open, !socket.assigns.nav_open)}

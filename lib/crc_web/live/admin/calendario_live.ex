@@ -69,6 +69,8 @@ defmodule CRCWeb.Admin.CalendarioLive do
       user_id
     )
 
+    Phoenix.PubSub.broadcast(CRC.PubSub, "schedule:assignments", :assignments_updated)
+
     {:noreply, load_assignments(socket)}
   end
 

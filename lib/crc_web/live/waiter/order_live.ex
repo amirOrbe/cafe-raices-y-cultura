@@ -459,12 +459,24 @@ defmodule CRCWeb.Waiter.OrderLive do
     item = Enum.find(socket.assigns.order.order_items, &(to_string(&1.id) == id))
 
     if item do
-      case Orders.update_item(item, %{quantity: item.quantity + 1}) do
-        {:ok, _} ->
-          {:noreply, assign(socket, :order, Orders.get_order!(socket.assigns.order.id))}
+      # Check available stock before incrementing so the waiter gets immediate
+      # feedback instead of a confusing error at send-to-kitchen time.
+      max_qty = item_max_quantity(item)
 
-        {:error, _} ->
-          {:noreply, socket}
+      if max_qty != nil and item.quantity >= max_qty do
+        {:noreply,
+         assign(socket, :flash_msg,
+           {:error,
+            "Sin stock suficiente para agregar más «#{item_display_name(item)}». Solo quedan #{max_qty} porciones."}
+         )}
+      else
+        case Orders.update_item(item, %{quantity: item.quantity + 1}) do
+          {:ok, _} ->
+            {:noreply, assign(socket, :order, Orders.get_order!(socket.assigns.order.id))}
+
+          {:error, _} ->
+            {:noreply, socket}
+        end
       end
     else
       {:noreply, socket}
@@ -1210,11 +1222,13 @@ defmodule CRCWeb.Waiter.OrderLive do
                           <.icon name="hero-minus" class="size-3" />
                         </button>
                         <span class="w-6 text-center text-sm font-semibold">{item.quantity}</span>
+                        <% max_qty = item_max_quantity(item) %>
                         <button
                           class="btn btn-xs btn-ghost btn-circle"
                           phx-click="increment_item"
                           phx-value-id={item.id}
-                          disabled={@order.status == "closed"}
+                          disabled={@order.status == "closed" or (max_qty != nil and item.quantity >= max_qty)}
+                          title={if max_qty != nil and item.quantity >= max_qty, do: "Sin stock suficiente", else: nil}
                         >
                           <.icon name="hero-plus" class="size-3" />
                         </button>
@@ -1956,4 +1970,16 @@ defmodule CRCWeb.Waiter.OrderLive do
     |> Enum.filter(&(&1.status == "ready"))
     |> MapSet.new(& &1.id)
   end
+
+  # Returns the maximum quantity allowed for an order item based on current
+  # ingredient stock. Returns nil when there is no recipe (unlimited).
+  # The menu_item must be preloaded with menu_item_ingredients + product.
+  defp item_max_quantity(%{menu_item: %{menu_item_ingredients: [_ | _]} = mi}),
+    do: Catalog.available_portions(mi)
+
+  defp item_max_quantity(_), do: nil
+
+  defp item_display_name(%{menu_item: %{name: name}}), do: name
+  defp item_display_name(%{product: %{name: name}}), do: name
+  defp item_display_name(_), do: "artículo"
 end

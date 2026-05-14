@@ -369,23 +369,24 @@ defmodule CRCWeb.Admin.CalendarioLive do
                       <% assignment = get_in(@assignments, [task.id, day]) %>
                       <% user = assignment && assignment.user %>
                       <td class="text-center p-1">
-                        <select
-                          class={[
-                            "select select-xs w-full text-center font-semibold",
-                            if(user, do: "#{cell_select_class(user)}", else: "select-ghost text-base-content/30")
-                          ]}
-                          phx-change="assign_user"
-                          name="user"
-                          phx-value-task={task.id}
-                          phx-value-day={day}
-                        >
-                          <option value="">—</option>
-                          <%= for emp <- @employees do %>
-                            <option value={emp.id} selected={user && user.id == emp.id}>
-                              {Schedule.initials(emp)}
-                            </option>
-                          <% end %>
-                        </select>
+                        <form phx-change="assign_user" class="w-full">
+                          <input type="hidden" name="task" value={task.id} />
+                          <input type="hidden" name="day" value={day} />
+                          <select
+                            class={[
+                              "select select-xs w-full text-center font-semibold",
+                              if(user, do: "#{cell_select_class(user)}", else: "select-ghost text-base-content/30")
+                            ]}
+                            name="user"
+                          >
+                            <option value="">—</option>
+                            <%= for emp <- @employees do %>
+                              <option value={emp.id} selected={user && user.id == emp.id}>
+                                {Schedule.initials(emp)}
+                              </option>
+                            <% end %>
+                          </select>
+                        </form>
                       </td>
                     <% end %>
                   </tr>
@@ -416,23 +417,24 @@ defmodule CRCWeb.Admin.CalendarioLive do
                           <span class={"text-xs font-bold #{if is_today, do: "text-primary", else: "text-base-content/40"}"}>
                             <%= String.first(Schedule.day_name(day)) %>
                           </span>
-                          <select
-                            class={[
-                              "select select-xs w-full text-center px-0 font-semibold text-xs",
-                              if(user, do: cell_select_class(user), else: "select-ghost text-base-content/30")
-                            ]}
-                            phx-change="assign_user"
-                            name="user"
-                            phx-value-task={task.id}
-                            phx-value-day={day}
-                          >
-                            <option value="">—</option>
-                            <%= for emp <- @employees do %>
-                              <option value={emp.id} selected={user && user.id == emp.id}>
-                                {Schedule.initials(emp)}
-                              </option>
-                            <% end %>
-                          </select>
+                          <form phx-change="assign_user">
+                            <input type="hidden" name="task" value={task.id} />
+                            <input type="hidden" name="day" value={day} />
+                            <select
+                              class={[
+                                "select select-xs w-full text-center px-0 font-semibold text-xs",
+                                if(user, do: cell_select_class(user), else: "select-ghost text-base-content/30")
+                              ]}
+                              name="user"
+                            >
+                              <option value="">—</option>
+                              <%= for emp <- @employees do %>
+                                <option value={emp.id} selected={user && user.id == emp.id}>
+                                  {Schedule.initials(emp)}
+                                </option>
+                              <% end %>
+                            </select>
+                          </form>
                         </div>
                       <% end %>
                     </div>

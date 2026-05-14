@@ -3,6 +3,8 @@ defmodule CRCWeb.Admin.CalendarioLive do
 
   use CRCWeb, :live_view
 
+  require Logger
+
   alias CRC.Schedule
   alias CRC.Schedule.{Area, Task}
 
@@ -61,17 +63,31 @@ defmodule CRCWeb.Admin.CalendarioLive do
   # Events — assignment
   # ---------------------------------------------------------------------------
 
-  def handle_event("assign_user", %{"task" => task_id, "day" => day, "user" => user_id}, socket) do
-    Schedule.upsert_assignment(
-      String.to_integer(task_id),
-      String.to_integer(day),
-      socket.assigns.week_start,
-      user_id
-    )
+  def handle_event("assign_user", params, socket) do
+    Logger.info("[CalendarioLive] assign_user params: #{inspect(params)}")
 
-    Phoenix.PubSub.broadcast(CRC.PubSub, "schedule:assignments", :assignments_updated)
+    task_id  = Map.get(params, "task")
+    day      = Map.get(params, "day")
+    user_id  = Map.get(params, "user")
 
-    {:noreply, load_assignments(socket)}
+    cond do
+      is_nil(task_id) or is_nil(day) ->
+        Logger.warning("[CalendarioLive] assign_user: missing task or day — params: #{inspect(params)}")
+        {:noreply, socket}
+
+      true ->
+        result = Schedule.upsert_assignment(
+          String.to_integer(task_id),
+          String.to_integer(day),
+          socket.assigns.week_start,
+          user_id || ""
+        )
+
+        Logger.info("[CalendarioLive] upsert_assignment result: #{inspect(result)}")
+
+        Phoenix.PubSub.broadcast(CRC.PubSub, "schedule:assignments", :assignments_updated)
+        {:noreply, load_assignments(socket)}
+    end
   end
 
   def handle_event("copy_prev_week", _params, socket) do

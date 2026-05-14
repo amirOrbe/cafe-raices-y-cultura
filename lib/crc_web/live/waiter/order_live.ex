@@ -1569,12 +1569,14 @@ defmodule CRCWeb.Waiter.OrderLive do
                       </p>
                     <% end %>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <%!-- portions: nil=sin receta (ilimitado), 0=agotado, n=porciones restantes --%>
+                      <%!-- portions: nil=sin receta (ilimitado), %{count, bottleneck}=con receta --%>
                       <%= for {menu_item, portions} <- (@search_results || @menu_items) do %>
                         <% selected? = @selected_menu_item && @selected_menu_item.id == menu_item.id %>
-                        <% available? = is_nil(portions) or portions > 0 %>
+                        <% count = if is_nil(portions), do: nil, else: portions.count %>
+                        <% bottleneck = if is_nil(portions), do: nil, else: portions.bottleneck %>
+                        <% available? = is_nil(count) or count > 0 %>
                         <% low_stock? =
-                          not is_nil(portions) and portions > 0 and portions <= @low_stock_threshold %>
+                          not is_nil(count) and count > 0 and count <= @low_stock_threshold %>
                         <div class={[
                           "rounded-xl p-3 flex flex-col gap-2 border transition-all",
                           cond do
@@ -1591,17 +1593,27 @@ defmodule CRCWeb.Waiter.OrderLive do
                               </p>
                               <%!-- Agotado --%>
                               <%= if not available? do %>
-                                <p class="text-xs text-error mt-0.5 flex items-center gap-0.5">
-                                  <.icon name="hero-x-circle" class="size-3 shrink-0" /> Agotado
+                                <p class="text-xs text-error mt-0.5 flex items-center gap-1">
+                                  <.icon name="hero-x-circle" class="size-3 shrink-0" />
+                                  {if bottleneck,
+                                    do: "Agotado · sin #{bottleneck}",
+                                    else: "Agotado"}
                                 </p>
-                                <%!-- Bajo stock: warning con porciones exactas --%>
+                                <%!-- Bajo stock: warning con insumo limitante --%>
                               <% else %>
                                 <%= if low_stock? do %>
-                                  <p class="text-xs text-warning font-semibold mt-0.5 flex items-center gap-0.5">
+                                  <p class="text-xs text-warning font-semibold mt-0.5 flex items-center gap-1">
                                     <.icon name="hero-exclamation-triangle" class="size-3 shrink-0" />
-                                    {if portions == 1,
-                                      do: "¡Es el último!",
-                                      else: "¡Solo quedan #{portions}!"}
+                                    {cond do
+                                      count == 1 and bottleneck ->
+                                        "¡Solo sale 1! · se acaba #{bottleneck}"
+                                      count == 1 ->
+                                        "¡Es el último!"
+                                      bottleneck ->
+                                        "¡Solo salen #{count}! · se acaba #{bottleneck}"
+                                      true ->
+                                        "¡Solo quedan #{count}!"
+                                    end}
                                   </p>
                                 <% end %>
                               <% end %>
@@ -1626,7 +1638,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                             >
                               {cond do
                                 not available? -> "Agotado"
-                                low_stock? and portions == 1 -> "¡Agregar — último!"
+                                low_stock? and count == 1 -> "¡Agregar — último!"
                                 low_stock? -> "Agregar"
                                 true -> "Agregar"
                               end}
@@ -1975,7 +1987,7 @@ defmodule CRCWeb.Waiter.OrderLive do
   # ingredient stock. Returns nil when there is no recipe (unlimited).
   # The menu_item must be preloaded with menu_item_ingredients + product.
   defp item_max_quantity(%{menu_item: %{menu_item_ingredients: [_ | _]} = mi}),
-    do: Catalog.available_portions(mi)
+    do: Catalog.available_portions(mi)  # still returns plain integer — used for +/- limit only
 
   defp item_max_quantity(_), do: nil
 

@@ -175,12 +175,12 @@ defmodule CRC.Catalog do
     |> order_by(:name)
     |> preload([:category, menu_item_ingredients: :product])
     |> Repo.all()
-    |> Enum.map(&{&1, available_portions(&1)})
+    |> Enum.map(&{&1, available_portions_info(&1)})
   end
 
   @doc """
   Searches available menu items by name across all categories.
-  Returns `{menu_item, portions}` tuples, same shape as list_menu_items_for_category_with_stock/1.
+  Returns `{menu_item, portions_info}` tuples, same shape as list_menu_items_for_category_with_stock/1.
   """
   def search_menu_items(query) when is_binary(query) and byte_size(query) > 0 do
     pattern = "%#{String.trim(query)}%"
@@ -190,7 +190,7 @@ defmodule CRC.Catalog do
     |> order_by(:name)
     |> preload([:category, menu_item_ingredients: :product])
     |> Repo.all()
-    |> Enum.map(&{&1, available_portions(&1)})
+    |> Enum.map(&{&1, available_portions_info(&1)})
   end
 
   def search_menu_items(_), do: []
@@ -289,6 +289,38 @@ defmodule CRC.Catalog do
       end
     end)
     |> Enum.min()
+  end
+
+  @doc """
+  Like `available_portions/1` but also returns the name of the bottleneck ingredient.
+
+  Returns:
+  - `nil`                        — no recipe; unlimited availability
+  - `%{count: n, bottleneck: name}` — n portions possible; `name` is the ingredient
+                                      that will run out first (lowest stock ratio)
+  """
+  def available_portions_info(%MenuItem{menu_item_ingredients: []}), do: nil
+
+  def available_portions_info(%MenuItem{menu_item_ingredients: ingredients}) do
+    {count, name} =
+      ingredients
+      |> Enum.map(fn mii ->
+        portions =
+          if is_nil(mii.product) or not mii.product.active do
+            0
+          else
+            mii.product.stock_quantity
+            |> Decimal.div(mii.quantity)
+            |> Decimal.round(0, :floor)
+            |> Decimal.to_integer()
+          end
+
+        name = if is_nil(mii.product), do: "insumo", else: mii.product.name
+        {portions, name}
+      end)
+      |> Enum.min_by(fn {portions, _} -> portions end)
+
+    %{count: count, bottleneck: name}
   end
 
   @doc """

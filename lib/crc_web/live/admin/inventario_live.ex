@@ -455,7 +455,27 @@ defmodule CRCWeb.Admin.InventarioLive do
 
   defp search_filter(products, query) do
     q = query |> String.trim() |> String.downcase()
-    Enum.filter(products, fn p -> String.contains?(String.downcase(p.name), q) end)
+
+    # Build search variants to handle Spanish plurals:
+    # "totopos" → also try "totopo"; "chilaquiles" → also try "chilaquil" (strip "es")
+    variants =
+      [q, strip_plural(q)]
+      |> Enum.uniq()
+      |> Enum.reject(&(&1 == ""))
+
+    Enum.filter(products, fn p ->
+      name = String.downcase(p.name)
+      Enum.any?(variants, &String.contains?(name, &1))
+    end)
+  end
+
+  # Strips common Spanish plural suffixes to improve search recall.
+  defp strip_plural(q) do
+    cond do
+      String.ends_with?(q, "es") and String.length(q) > 4 -> String.slice(q, 0..-3//1)
+      String.ends_with?(q, "s") and String.length(q) > 2  -> String.slice(q, 0..-2//1)
+      true -> q
+    end
   end
 
   defp stock_is_low?(%{stock_quantity: qty, min_stock: min}) do

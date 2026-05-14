@@ -373,12 +373,9 @@ defmodule CRCWeb.Admin.CalendarioLive do
                             if(user, do: "#{cell_select_class(user)}", else: "select-ghost text-base-content/30")
                           ]}
                           phx-change="assign_user"
-                          name={"assign_#{task.id}_#{day}"}
-                          data-task={task.id}
-                          data-day={day}
+                          name="user"
                           phx-value-task={task.id}
                           phx-value-day={day}
-                          phx-value-user={if user, do: user.id, else: ""}
                         >
                           <option value="">—</option>
                           <%= for emp <- @employees do %>
@@ -423,9 +420,9 @@ defmodule CRCWeb.Admin.CalendarioLive do
                               if(user, do: cell_select_class(user), else: "select-ghost text-base-content/30")
                             ]}
                             phx-change="assign_user"
+                            name="user"
                             phx-value-task={task.id}
                             phx-value-day={day}
-                            phx-value-user={if user, do: user.id, else: ""}
                           >
                             <option value="">—</option>
                             <%= for emp <- @employees do %>

@@ -219,16 +219,17 @@ defmodule CRCWeb.Employee.MyScheduleLive do
                 <% tasks_for_day = Map.get(@activity_assignments, day, []) %>
                 <%= if tasks_for_day != [] do %>
                   <% day_date = Date.add(@activity_week_start, day) %>
-                  <div class="flex items-start gap-3 px-5 py-3">
+                  <div class={"flex items-start gap-3 px-5 py-3 #{if day_date == Date.utc_today(), do: "bg-primary/5", else: ""}"}>
                     <div class={"text-xs font-bold w-10 shrink-0 pt-0.5 text-center #{if day_date == Date.utc_today(), do: "text-primary", else: "text-base-content/40"}"}>
                       <p>{Schedule.day_name(day)}</p>
                       <p class="font-normal opacity-70">{day_date.day}/{day_date.month}</p>
                     </div>
-                    <div class="flex flex-wrap gap-1.5 flex-1 pt-0.5">
+                    <div class="flex flex-col gap-1.5 flex-1 pt-0.5">
                       <%= for a <- tasks_for_day do %>
-                        <span class={"badge badge-sm font-medium #{activity_badge_class(a.task.area.color)}"}>
+                        <div class={"flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium #{activity_row_class(a.task.area.color)}"}>
+                          <span class={"size-2 rounded-full shrink-0 #{activity_dot_class(a.task.area.color)}"}></span>
                           {a.task.name}
-                        </span>
+                        </div>
                       <% end %>
                     </div>
                   </div>
@@ -493,12 +494,19 @@ defmodule CRCWeb.Employee.MyScheduleLive do
 
   defp format_datetime(nil), do: "–"
 
-  # Maps area color key to a DaisyUI badge class
-  defp activity_badge_class("blue"), do: "badge-info"
-  defp activity_badge_class("green"), do: "badge-success"
-  defp activity_badge_class("orange"), do: "badge-warning"
-  defp activity_badge_class("pink"), do: "badge-error"
-  defp activity_badge_class(_), do: "badge-secondary"
+  # Activity row background + text per area color
+  defp activity_row_class("blue"),   do: "bg-blue-50 text-blue-700"
+  defp activity_row_class("green"),  do: "bg-emerald-50 text-emerald-700"
+  defp activity_row_class("orange"), do: "bg-orange-50 text-orange-700"
+  defp activity_row_class("pink"),   do: "bg-pink-50 text-pink-700"
+  defp activity_row_class(_),        do: "bg-violet-50 text-violet-700"
+
+  # Dot color matching the area
+  defp activity_dot_class("blue"),   do: "bg-blue-400"
+  defp activity_dot_class("green"),  do: "bg-emerald-400"
+  defp activity_dot_class("orange"), do: "bg-orange-400"
+  defp activity_dot_class("pink"),   do: "bg-pink-400"
+  defp activity_dot_class(_),        do: "bg-violet-400"
 
   defp format_date(%Date{} = date) do
     months =

@@ -4,6 +4,7 @@ defmodule CRCWeb.Components.SiteComponents do
   use Phoenix.Component
 
   import CRCWeb.CoreComponents, only: [icon: 1]
+  alias Phoenix.LiveView.JS
 
   use Phoenix.VerifiedRoutes,
     endpoint: CRCWeb.Endpoint,
@@ -630,9 +631,14 @@ defmodule CRCWeb.Components.SiteComponents do
   attr :item, :map, required: true
 
   def menu_item_card(assigns) do
+    desc = Map.get(assigns.item, :description)
+    has_desc = is_binary(desc) && String.trim(desc) != ""
+    assigns = assign(assigns, :desc, desc)
+    assigns = assign(assigns, :has_desc, has_desc)
+
     ~H"""
     <div class="bg-base-100 border border-base-300 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
-      <%!-- Photo (only shown when item has an image) --%>
+      <%!-- Photo --%>
       <%= if Map.get(@item, :image_url) do %>
         <div class="aspect-[4/3] overflow-hidden">
           <img
@@ -645,7 +651,7 @@ defmodule CRCWeb.Components.SiteComponents do
       <% end %>
 
       <div class="p-5 sm:p-6 flex flex-col gap-3 flex-1">
-        <!-- Name + Price row -->
+        <%!-- Name + Price --%>
         <div class="flex items-start justify-between gap-4">
           <h3 class="text-base sm:text-lg font-bold text-base-content leading-snug">
             {@item.name}
@@ -654,25 +660,83 @@ defmodule CRCWeb.Components.SiteComponents do
             ${format_price(@item.price)}
           </span>
         </div>
-        
-    <!-- Description -->
-        <div
-          :if={not is_nil(Map.get(@item, :description)) and Map.get(@item, :description) != ""}
-          class="max-h-[4.5rem] overflow-y-auto pr-1"
-        >
-          <p class="text-sm text-base-content/60 leading-relaxed break-words whitespace-pre-line">
-            {Map.get(@item, :description)}
+
+        <%!-- Description — 2 lines max + "ver más" button --%>
+        <%= if @has_desc do %>
+          <p class="text-sm text-base-content/60 leading-relaxed line-clamp-2">
+            {@desc}
           </p>
-        </div>
-    <!-- Badge -->
+          <button
+            class="text-xs text-primary font-semibold -mt-1 self-start hover:underline focus:outline-none"
+            phx-click={JS.show(to: "#item-detail-#{@item.id}")}
+          >
+            ver más
+          </button>
+        <% end %>
+
+        <%!-- Featured badge --%>
         <div :if={Map.get(@item, :featured)} class="mt-auto">
           <span class="inline-block bg-accent/20 text-accent-content border border-accent/40 text-xs font-semibold px-3 py-1 rounded-full">
             Recomendado
           </span>
         </div>
       </div>
-      <%!-- end inner padding div --%>
     </div>
+
+    <%!-- ── Detail modal (per item, client-side only) ────────────────────── --%>
+    <%= if @has_desc do %>
+      <div
+        id={"item-detail-#{@item.id}"}
+        class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      >
+        <%!-- Backdrop — click to close --%>
+        <div
+          class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          phx-click={JS.hide(to: "#item-detail-#{@item.id}")}
+        >
+        </div>
+
+        <%!-- Sheet (mobile: slides from bottom; desktop: centered card) --%>
+        <div class="relative w-full sm:max-w-sm bg-base-100 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
+          <%!-- Close button --%>
+          <button
+            class="absolute top-3 right-3 z-10 btn btn-sm btn-circle btn-ghost bg-black/20 hover:bg-black/40 text-white"
+            phx-click={JS.hide(to: "#item-detail-#{@item.id}")}
+          >
+            <.icon name="hero-x-mark" class="size-4" />
+          </button>
+
+          <%!-- Photo header (if available) --%>
+          <%= if Map.get(@item, :image_url) do %>
+            <div class="aspect-[16/9] overflow-hidden">
+              <img
+                src={@item.image_url}
+                alt={@item.name}
+                class="w-full h-full object-cover"
+              />
+            </div>
+          <% end %>
+
+          <%!-- Content --%>
+          <div class="p-5 space-y-3">
+            <div class="flex items-start justify-between gap-4">
+              <h3 class="text-lg font-bold text-base-content leading-snug">{@item.name}</h3>
+              <span class="text-xl font-bold text-primary whitespace-nowrap shrink-0">
+                ${format_price(@item.price)}
+              </span>
+            </div>
+            <p class="text-sm text-base-content/70 leading-relaxed whitespace-pre-line">
+              {@desc}
+            </p>
+            <div :if={Map.get(@item, :featured)}>
+              <span class="inline-block bg-accent/20 text-accent-content border border-accent/40 text-xs font-semibold px-3 py-1 rounded-full">
+                Recomendado
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
     """
   end
 

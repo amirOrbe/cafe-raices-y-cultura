@@ -169,8 +169,8 @@ defmodule CRC.Orders do
 
   @doc """
   Calculates the running total for an order from its preloaded items.
-  Menu item lines and variant selections with an extra_charge contribute to the total.
-  Plain product extras have no customer-facing price.
+  Menu item lines, variant selections with an extra_charge, and product
+  extras with a sale_price (unit_price > 0) all contribute to the total.
   """
   def calculate_order_total(%Order{order_items: items}) do
     Enum.reduce(items, Decimal.new(0), fn item, acc ->
@@ -185,6 +185,11 @@ defmodule CRC.Orders do
 
           # Variant selection with an extra charge
           item.variant_id && item.unit_price &&
+              Decimal.compare(item.unit_price, Decimal.new(0)) == :gt ->
+            Decimal.add(acc, Decimal.mult(item.unit_price, Decimal.new(item.quantity)))
+
+          # Product extra with a customer-facing sale price
+          item.product_id && item.unit_price &&
               Decimal.compare(item.unit_price, Decimal.new(0)) == :gt ->
             Decimal.add(acc, Decimal.mult(item.unit_price, Decimal.new(item.quantity)))
 

@@ -313,7 +313,7 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   def handle_event(
         "add_extra",
-        %{"product_id" => product_id_str, "portion_qty" => portion_qty_str},
+        %{"product_id" => product_id_str, "portion_qty" => portion_qty_str} = params,
         socket
       ) do
     product_id = String.to_integer(product_id_str)
@@ -321,6 +321,16 @@ defmodule CRCWeb.Waiter.OrderLive do
     order = socket.assigns.order
     # Capture which dish this extra belongs to so cocina/barra knows where it goes
     for_menu_item_id = socket.assigns[:selected_menu_item] && socket.assigns.selected_menu_item.id
+
+    # Customer-facing price for this extra (nil or 0 = no charge)
+    sale_price =
+      case Map.get(params, "sale_price") do
+        nil -> nil
+        "0" -> nil
+        str ->
+          d = Decimal.new(str)
+          if Decimal.compare(d, Decimal.new(0)) == :gt, do: d, else: nil
+      end
 
     # Merge only if same product, same parent dish, and still pending
     existing_pending =
@@ -338,6 +348,7 @@ defmodule CRCWeb.Waiter.OrderLive do
           order_id: order.id,
           product_id: product_id,
           portion_quantity: portion_qty,
+          unit_price: sale_price,
           quantity: 1,
           for_menu_item_id: for_menu_item_id
         })
@@ -1733,16 +1744,21 @@ defmodule CRCWeb.Waiter.OrderLive do
                 <div class="p-4">
                   <div class="flex flex-wrap gap-2">
                     <%= for {product, portion_qty} <- @extras do %>
+                      <% sale = product.sale_price %>
                       <button
                         class="btn btn-sm btn-outline btn-accent gap-1.5"
                         phx-click="add_extra"
                         phx-value-product_id={product.id}
                         phx-value-portion_qty={Decimal.to_string(portion_qty)}
+                        phx-value-sale_price={if sale, do: Decimal.to_string(sale), else: "0"}
                       >
                         <.icon name="hero-plus" class="size-3" />
                         {product.name}
                         <span class="text-xs opacity-70">
                           {format_qty(portion_qty)} {product.unit}
+                          <%= if sale && Decimal.compare(sale, Decimal.new(0)) == :gt do %>
+                            · ${ format_price(sale)}
+                          <% end %>
                         </span>
                       </button>
                     <% end %>

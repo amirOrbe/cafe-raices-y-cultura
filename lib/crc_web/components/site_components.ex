@@ -633,8 +633,12 @@ defmodule CRCWeb.Components.SiteComponents do
   def menu_item_card(assigns) do
     desc = Map.get(assigns.item, :description)
     has_desc = is_binary(desc) && String.trim(desc) != ""
+    # Only show "ver más" when the description is long enough to actually be
+    # clipped at 2 lines (~80 chars covers most card widths).
+    needs_expand = has_desc && String.length(String.trim(desc)) > 80
     assigns = assign(assigns, :desc, desc)
     assigns = assign(assigns, :has_desc, has_desc)
+    assigns = assign(assigns, :needs_expand, needs_expand)
 
     ~H"""
     <div class="bg-base-100 border border-base-300 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
@@ -661,17 +665,19 @@ defmodule CRCWeb.Components.SiteComponents do
           </span>
         </div>
 
-        <%!-- Description — 2 lines max + "ver más" button --%>
+        <%!-- Description --%>
         <%= if @has_desc do %>
-          <p class="text-sm text-base-content/60 leading-relaxed line-clamp-2">
+          <p class={"text-sm text-base-content/60 leading-relaxed #{if @needs_expand, do: "line-clamp-2", else: ""}"}>
             {@desc}
           </p>
-          <button
-            class="text-xs text-primary font-semibold -mt-1 self-start hover:underline focus:outline-none"
-            phx-click={JS.show(to: "#item-detail-#{@item.id}", display: "flex")}
-          >
-            ver más
-          </button>
+          <%= if @needs_expand do %>
+            <button
+              class="text-xs text-primary font-semibold -mt-1 self-start hover:underline focus:outline-none"
+              phx-click={JS.show(to: "#item-detail-#{@item.id}", display: "flex")}
+            >
+              ver más
+            </button>
+          <% end %>
         <% end %>
 
         <%!-- Featured badge --%>
@@ -683,8 +689,8 @@ defmodule CRCWeb.Components.SiteComponents do
       </div>
     </div>
 
-    <%!-- ── Detail modal (per item, client-side only) ────────────────────── --%>
-    <%= if @has_desc do %>
+    <%!-- ── Detail modal — only rendered when description is long enough ── --%>
+    <%= if @needs_expand do %>
       <div
         id={"item-detail-#{@item.id}"}
         class="hidden fixed inset-0 z-50 items-center justify-center p-4"

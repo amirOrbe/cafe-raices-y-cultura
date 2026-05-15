@@ -668,7 +668,7 @@ defmodule CRCWeb.Components.SiteComponents do
           </p>
           <button
             class="text-xs text-primary font-semibold -mt-1 self-start hover:underline focus:outline-none"
-            phx-click={JS.show(to: "#item-detail-#{@item.id}")}
+            phx-click={JS.show(to: "#item-detail-#{@item.id}", display: "flex")}
           >
             ver más
           </button>
@@ -687,7 +687,7 @@ defmodule CRCWeb.Components.SiteComponents do
     <%= if @has_desc do %>
       <div
         id={"item-detail-#{@item.id}"}
-        class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+        class="hidden fixed inset-0 z-50 items-center justify-center p-4"
       >
         <%!-- Backdrop — click to close --%>
         <div
@@ -696,8 +696,8 @@ defmodule CRCWeb.Components.SiteComponents do
         >
         </div>
 
-        <%!-- Sheet (mobile: slides from bottom; desktop: centered card) --%>
-        <div class="relative w-full sm:max-w-sm bg-base-100 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
+        <%!-- Modal card — centrado, responsive --%>
+        <div class="relative w-full max-w-sm bg-base-100 rounded-2xl shadow-2xl overflow-hidden mx-auto">
           <%!-- Close button --%>
           <button
             class="absolute top-3 right-3 z-10 btn btn-sm btn-circle btn-ghost bg-black/20 hover:bg-black/40 text-white"

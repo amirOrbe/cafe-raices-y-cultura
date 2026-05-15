@@ -22,6 +22,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
       |> assign(:date_to, "")
       |> assign(:filter_user_id, nil)
       |> assign(:expanded_id, nil)
+      |> assign(:bill_qr_order, nil)
       |> load_orders()
 
     {:ok, socket}
@@ -75,6 +76,30 @@ defmodule CRCWeb.Waiter.HistorialLive do
     id = String.to_integer(id_str)
     expanded = if socket.assigns.expanded_id == id, do: nil, else: id
     {:noreply, assign(socket, :expanded_id, expanded)}
+  end
+
+  def handle_event("show_bill_qr", %{"id" => id_str}, socket) do
+    id = String.to_integer(id_str)
+    order = Enum.find(socket.assigns.orders, &(&1.id == id))
+
+    if order do
+      # Ensure a bill token exists (idempotent — reuses existing token if present)
+      order_with_token =
+        case Orders.generate_bill_token(order) do
+          {:ok, updated} -> updated
+          _ -> order
+        end
+
+      # Patch the token into the in-memory struct so we don't need to re-query the list
+      order_with_token = %{order | bill_token: order_with_token.bill_token}
+      {:noreply, assign(socket, :bill_qr_order, order_with_token)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_bill_qr", _params, socket) do
+    {:noreply, assign(socket, :bill_qr_order, nil)}
   end
 
   # ---------------------------------------------------------------------------
@@ -274,9 +299,18 @@ defmodule CRCWeb.Waiter.HistorialLive do
                     </div>
                   <% end %>
 
-                  <div class="pt-3 mt-2 border-t border-base-200 flex justify-between items-center">
-                    <span class="text-sm text-base-content/50">Total cobrado</span>
-                    <span class="font-bold text-base-content">${format_total(order.total)}</span>
+                  <div class="pt-3 mt-2 border-t border-base-200 flex items-center justify-between gap-3">
+                    <div>
+                      <span class="text-sm text-base-content/50">Total cobrado</span>
+                      <span class="font-bold text-base-content ml-2">${format_total(order.total)}</span>
+                    </div>
+                    <button
+                      class="btn btn-sm btn-outline btn-accent gap-1.5 shrink-0"
+                      phx-click="show_bill_qr"
+                      phx-value-id={order.id}
+                    >
+                      <.icon name="hero-qr-code" class="size-4" /> Mostrar QR
+                    </button>
                   </div>
                 </div>
               <% end %>
@@ -285,6 +319,63 @@ defmodule CRCWeb.Waiter.HistorialLive do
         </div>
       </div>
     </div>
+
+    <%!-- ── QR modal (historial) ───────────────────────────────────────────── --%>
+    <%= if @bill_qr_order do %>
+      <% qr_order = @bill_qr_order %>
+      <%!-- Backdrop --%>
+      <div class="fixed inset-0 z-40 bg-black/60" phx-click="close_bill_qr"></div>
+      <%!-- Modal --%>
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div class="bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden pointer-events-auto">
+          <%!-- Header --%>
+          <div class="bg-primary text-primary-content px-5 py-4 flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <h2 class="font-bold text-lg">Cuenta</h2>
+              <p class="text-sm opacity-80 truncate">{qr_order.customer_name}</p>
+            </div>
+            <button phx-click="close_bill_qr" class="btn btn-sm btn-ghost text-primary-content shrink-0">
+              <.icon name="hero-x-mark" class="size-5" />
+            </button>
+          </div>
+
+          <div class="px-5 py-6 space-y-4">
+            <%!-- Total --%>
+            <div class="text-center">
+              <p class="text-xs text-base-content/50 mb-1">Total cobrado</p>
+              <p class="text-3xl font-bold text-primary">${format_total(qr_order.total)}</p>
+              <p class="text-xs text-base-content/40 mt-1">
+                {format_time_full(qr_order.closed_at)} · {payment_label(qr_order.payment_method)}
+              </p>
+            </div>
+
+            <%!-- QR code --%>
+            <%= if qr_order.bill_token do %>
+              <% cuenta_url = CRCWeb.Endpoint.url() <> "/cuenta/#{qr_order.bill_token}" %>
+              <div class="flex flex-col items-center gap-3 pt-1">
+                <p class="text-xs text-base-content/50 text-center">
+                  El cliente puede escanear este QR para ver su cuenta
+                </p>
+                <div class="bg-white p-3 rounded-xl border border-base-300 shadow-sm">
+                  <img
+                    src={"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=#{URI.encode_www_form(cuenta_url)}"}
+                    alt="QR cuenta"
+                    class="w-48 h-48 block"
+                  />
+                </div>
+                <p class="text-xs text-base-content/40 font-mono text-center break-all">
+                  {cuenta_url}
+                </p>
+              </div>
+            <% end %>
+
+            <button phx-click="close_bill_qr" class="btn btn-ghost w-full">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
     """
   end
 
@@ -364,6 +455,17 @@ defmodule CRCWeb.Waiter.HistorialLive do
     h = local.hour |> Integer.to_string() |> String.pad_leading(2, "0")
     m = local.minute |> Integer.to_string() |> String.pad_leading(2, "0")
     "#{h}:#{m}"
+  end
+
+  defp format_time_full(nil), do: ""
+
+  defp format_time_full(dt) do
+    local = DateTime.add(dt, -6 * 3600, :second)
+    months = ~w(ene feb mar abr may jun jul ago sep oct nov dic)
+    month = Enum.at(months, local.month - 1)
+    h = local.hour |> Integer.to_string() |> String.pad_leading(2, "0")
+    m = local.minute |> Integer.to_string() |> String.pad_leading(2, "0")
+    "#{local.day} #{month} #{h}:#{m}"
   end
 
   defp payment_label("efectivo"), do: "Efectivo"

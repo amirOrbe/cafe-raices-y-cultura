@@ -157,11 +157,7 @@ defmodule CRCWeb.Waiter.OrderLive do
   end
 
   def handle_event("close_bill_modal", _params, socket) do
-    if socket.assigns.order.status == "closed" do
-      {:noreply, redirect(socket, to: "/mesa")}
-    else
-      {:noreply, assign(socket, :bill_modal, false)}
-    end
+    {:noreply, assign(socket, :bill_modal, false)}
   end
 
   # Cross-category menu search — triggers on every keystroke (debounced in template).
@@ -714,8 +710,8 @@ defmodule CRCWeb.Waiter.OrderLive do
            socket.assigns.current_user.id
          ) do
       {:ok, closed_order} ->
-        # Generate bill token and open the QR modal so the waiter can show
-        # the digital ticket to the customer before returning to the floor map.
+        # Pre-generate the bill token so the QR is ready whenever the waiter
+        # needs to show it — but don't auto-open the modal; let them tap the button.
         closed_with_token =
           case Orders.generate_bill_token(closed_order) do
             {:ok, o} -> o
@@ -726,7 +722,7 @@ defmodule CRCWeb.Waiter.OrderLive do
          socket
          |> assign(:order, Orders.get_order!(closed_with_token.id))
          |> assign(:payment_step, false)
-         |> assign(:bill_modal, true)}
+         |> assign(:flash_msg, {:success, "Cuenta cerrada · usa «Mostrar QR» si el cliente lo pide"})}
 
       {:error, changeset} ->
         msg =
@@ -1317,12 +1313,17 @@ defmodule CRCWeb.Waiter.OrderLive do
 
               <%!-- Bill / QR modal trigger — solo cuando la cuenta está cerrada --%>
               <%= if @order.status == "closed" and @order.order_items != [] do %>
-                <button
-                  class="btn btn-outline btn-accent w-full"
-                  phx-click="generate_bill"
-                >
-                  <.icon name="hero-qr-code" class="size-4" /> Ver cuenta / QR
-                </button>
+                <div class="flex gap-2">
+                  <a href="/mesa" class="btn btn-ghost flex-1">
+                    <.icon name="hero-arrow-left" class="size-4" /> Volver
+                  </a>
+                  <button
+                    class="btn btn-accent flex-1"
+                    phx-click="generate_bill"
+                  >
+                    <.icon name="hero-qr-code" class="size-4" /> Mostrar QR
+                  </button>
+                </div>
               <% end %>
 
               <%!-- Close / payment flow --%>

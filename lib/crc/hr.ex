@@ -40,6 +40,12 @@ defmodule CRC.HR do
   # Minutes after scheduled_start before the record is considered "late"
   @grace_minutes 15
 
+  # Mexico City is UTC-6 with no DST since March 2023.
+  # All scheduled times are stored as CDMX local times; clocked_in_at / clocked_out_at
+  # are stored in UTC.  To compare them we must shift the scheduled time to UTC by
+  # adding this offset.
+  @cdmx_utc_offset_seconds 6 * 3600
+
   # ---------------------------------------------------------------------------
   # Work Schedules — public API
   # ---------------------------------------------------------------------------
@@ -101,7 +107,7 @@ defmodule CRC.HR do
   """
   @spec get_or_create_today_record(User.t()) :: AttendanceRecord.t()
   def get_or_create_today_record(%User{id: user_id} = _user) do
-    today = Date.utc_today()
+    today = cdmx_today()
     day_of_week = Date.day_of_week(today)
 
     case get_attendance_record(user_id, today) do
@@ -183,7 +189,7 @@ defmodule CRC.HR do
   @spec clock_out(User.t()) ::
           {:ok, AttendanceRecord.t()} | {:error, :not_clocked_in}
   def clock_out(%User{} = user) do
-    today = Date.utc_today()
+    today = cdmx_today()
 
     case get_attendance_record(user.id, today) do
       %{clocked_in_at: nil} ->
@@ -203,7 +209,7 @@ defmodule CRC.HR do
   @spec clock_out_manual(User.t(), User.t(), DateTime.t()) ::
           {:ok, AttendanceRecord.t()} | {:error, any()}
   def clock_out_manual(%User{role: "admin"}, %User{} = employee, %DateTime{} = clock_out_time) do
-    today = Date.utc_today()
+    today = cdmx_today()
 
     case get_attendance_record(employee.id, today) do
       nil ->
@@ -239,7 +245,7 @@ defmodule CRC.HR do
   """
   @spec list_staff_today() :: [{User.t(), AttendanceRecord.t() | nil}]
   def list_staff_today do
-    today = Date.utc_today()
+    today = cdmx_today()
 
     users =
       User
@@ -290,7 +296,10 @@ defmodule CRC.HR do
         records
         |> Enum.filter(&((&1.status == "late" and &1.clocked_in_at) && &1.scheduled_start))
         |> Enum.map(fn r ->
-          sched_dt = DateTime.new!(r.date, r.scheduled_start, "Etc/UTC")
+          sched_dt =
+            DateTime.new!(r.date, r.scheduled_start, "Etc/UTC")
+            |> DateTime.add(@cdmx_utc_offset_seconds, :second)
+
           DateTime.diff(r.clocked_in_at, sched_dt, :minute)
         end)
 
@@ -301,7 +310,10 @@ defmodule CRC.HR do
         records
         |> Enum.filter(&((&1.status == "early" and &1.clocked_in_at) && &1.scheduled_start))
         |> Enum.map(fn r ->
-          sched_dt = DateTime.new!(r.date, r.scheduled_start, "Etc/UTC")
+          sched_dt =
+            DateTime.new!(r.date, r.scheduled_start, "Etc/UTC")
+            |> DateTime.add(@cdmx_utc_offset_seconds, :second)
+
           # Positive value = minutes early
           abs(DateTime.diff(r.clocked_in_at, sched_dt, :minute))
         end)
@@ -316,7 +328,8 @@ defmodule CRC.HR do
           r.clocked_out_at && r.scheduled_end &&
             DateTime.diff(
               r.clocked_out_at,
-              DateTime.new!(r.date, r.scheduled_end, "Etc/UTC"),
+              DateTime.new!(r.date, r.scheduled_end, "Etc/UTC")
+              |> DateTime.add(@cdmx_utc_offset_seconds, :second),
               :minute
             ) > 30
         end)
@@ -378,8 +391,13 @@ defmodule CRC.HR do
   defp compute_status(nil, _clocked_in_at), do: "on_time"
 
   defp compute_status(scheduled_start, clocked_in_at) do
-    # Build a UTC DateTime for the scheduled start on today's date
-    sched_dt = DateTime.new!(Date.utc_today(), scheduled_start, "Etc/UTC")
+    # scheduled_start is stored as a CDMX local time; clocked_in_at is UTC.
+    # Convert the scheduled start to UTC by pairing it with today's CDMX date
+    # and then adding the CDMX→UTC offset (UTC = CDMX + 6 h).
+    sched_dt =
+      DateTime.new!(cdmx_today(), scheduled_start, "Etc/UTC")
+      |> DateTime.add(@cdmx_utc_offset_seconds, :second)
+
     diff_minutes = DateTime.diff(clocked_in_at, sched_dt, :minute)
 
     cond do
@@ -387,6 +405,15 @@ defmodule CRC.HR do
       diff_minutes <= @grace_minutes -> "on_time"
       true -> "late"
     end
+  end
+
+  # Returns today's date in Mexico City (UTC-6, no DST since March 2023).
+  # Using Date.utc_today() would give the wrong date after 6 PM CDMX because
+  # at that point the UTC clock has already rolled over to the next calendar day.
+  defp cdmx_today do
+    DateTime.utc_now()
+    |> DateTime.add(-@cdmx_utc_offset_seconds, :second)
+    |> DateTime.to_date()
   end
 
   defp haversine_distance(lat1, lng1, lat2, lng2) do

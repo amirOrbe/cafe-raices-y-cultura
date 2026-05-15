@@ -702,8 +702,8 @@ defmodule CRCWeb.Components.SiteComponents do
         >
         </div>
 
-        <%!-- Modal card — centrado, responsive --%>
-        <div class="relative w-full max-w-sm bg-base-100 rounded-2xl shadow-2xl overflow-hidden mx-auto">
+        <%!-- Modal card — centrado, responsive. z-10 garantiza que quede sobre el backdrop --%>
+        <div class="relative z-10 w-full max-w-sm bg-base-100 rounded-2xl shadow-2xl overflow-hidden mx-auto">
           <%!-- Photo header (if available) --%>
           <%= if Map.get(@item, :image_url) do %>
             <div class="aspect-[16/9] overflow-hidden">

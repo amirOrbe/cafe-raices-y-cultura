@@ -322,14 +322,16 @@ defmodule CRCWeb.Waiter.OrderLive do
     # Capture which dish this extra belongs to so cocina/barra knows where it goes
     for_menu_item_id = socket.assigns[:selected_menu_item] && socket.assigns.selected_menu_item.id
 
-    # Customer-facing price for this extra (nil or 0 = no charge)
-    sale_price =
+    # Customer-facing price for this extra: sale_price × portion_qty (nil or 0 = no charge)
+    unit_price =
       case Map.get(params, "sale_price") do
         nil -> nil
         "0" -> nil
         str ->
           d = Decimal.new(str)
-          if Decimal.compare(d, Decimal.new(0)) == :gt, do: d, else: nil
+          if Decimal.compare(d, Decimal.new(0)) == :gt,
+            do: Decimal.mult(d, portion_qty) |> Decimal.round(2),
+            else: nil
       end
 
     # Merge only if same product, same parent dish, and still pending
@@ -348,7 +350,7 @@ defmodule CRCWeb.Waiter.OrderLive do
           order_id: order.id,
           product_id: product_id,
           portion_quantity: portion_qty,
-          unit_price: sale_price,
+          unit_price: unit_price,
           quantity: 1,
           for_menu_item_id: for_menu_item_id
         })
@@ -1745,6 +1747,10 @@ defmodule CRCWeb.Waiter.OrderLive do
                   <div class="flex flex-wrap gap-2">
                     <%= for {product, portion_qty} <- @extras do %>
                       <% sale = product.sale_price %>
+                      <% extra_price =
+                        if sale && Decimal.compare(sale, Decimal.new(0)) == :gt,
+                          do: Decimal.mult(sale, portion_qty) |> Decimal.round(2),
+                          else: nil %>
                       <button
                         class="btn btn-sm btn-outline btn-accent gap-1.5"
                         phx-click="add_extra"
@@ -1756,8 +1762,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                         {product.name}
                         <span class="text-xs opacity-70">
                           {format_qty(portion_qty)} {product.unit}
-                          <%= if sale && Decimal.compare(sale, Decimal.new(0)) == :gt do %>
-                            · ${ format_price(sale)}
+                          <%= if extra_price do %>
+                            · ${ format_price(extra_price)}
                           <% end %>
                         </span>
                       </button>

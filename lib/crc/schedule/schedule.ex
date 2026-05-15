@@ -87,6 +87,21 @@ defmodule CRC.Schedule do
     end)
   end
 
+  @doc "Gets a single assignment by id. Raises if not found."
+  def get_assignment!(id), do: Repo.get!(Assignment, id)
+
+  @doc """
+  Toggles the completed state of an assignment.
+  Sets completed_at to now when marking done, nil when undoing.
+  """
+  def toggle_assignment_completed(%Assignment{} = assignment) do
+    new_state = !assignment.completed
+
+    assignment
+    |> Assignment.complete_changeset(new_state)
+    |> Repo.update()
+  end
+
   @doc """
   Creates or updates an assignment for a specific task/day/week.
   Pass user_id: nil to clear the slot.

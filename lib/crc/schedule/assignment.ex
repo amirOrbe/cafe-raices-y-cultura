@@ -6,6 +6,8 @@ defmodule CRC.Schedule.Assignment do
     # 0 = Monday … 6 = Sunday
     field :day_of_week, :integer
     field :week_start_date, :date
+    field :completed, :boolean, default: false
+    field :completed_at, :utc_datetime
 
     belongs_to :task, CRC.Schedule.Task
     belongs_to :user, CRC.Accounts.User
@@ -22,5 +24,13 @@ defmodule CRC.Schedule.Assignment do
     |> assoc_constraint(:task)
     |> assoc_constraint(:user)
     |> unique_constraint([:task_id, :day_of_week, :week_start_date])
+  end
+
+  @doc "Changeset for toggling completion status."
+  def complete_changeset(assignment, completed) do
+    now = if completed, do: DateTime.utc_now() |> DateTime.truncate(:second), else: nil
+
+    assignment
+    |> change(%{completed: completed, completed_at: now})
   end
 end

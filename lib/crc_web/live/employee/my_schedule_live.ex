@@ -66,6 +66,20 @@ defmodule CRCWeb.Employee.MyScheduleLive do
      assign(socket, :activity_assignments, Schedule.get_user_week_assignments(week_start, user.id))}
   end
 
+  def handle_event("complete_activity", %{"id" => id_str}, socket) do
+    assignment = Schedule.get_assignment!(String.to_integer(id_str))
+    {:ok, _} = Schedule.toggle_assignment_completed(assignment)
+
+    # Notify admin calendario in real-time
+    Phoenix.PubSub.broadcast(CRC.PubSub, "schedule:assignments", :assignments_updated)
+
+    user = socket.assigns.current_user
+    week_start = socket.assigns.activity_week_start
+
+    {:noreply,
+     assign(socket, :activity_assignments, Schedule.get_user_week_assignments(week_start, user.id))}
+  end
+
   def handle_event("toggle_nav", _params, socket),
     do: {:noreply, assign(socket, :nav_open, !socket.assigns.nav_open)}
 
@@ -207,7 +221,7 @@ defmodule CRCWeb.Employee.MyScheduleLive do
         <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
           <div class="px-5 py-4 border-b border-base-200">
             <h2 class="font-semibold text-base-content">Mis actividades esta semana</h2>
-            <p class="text-xs text-base-content/50 mt-0.5">Asignadas por el administrador</p>
+            <p class="text-xs text-base-content/50 mt-0.5">Toca ✓ cuando termines una actividad</p>
           </div>
           <%= if @activity_assignments == %{} do %>
             <div class="px-5 py-8 text-center text-sm text-base-content/40">
@@ -219,16 +233,42 @@ defmodule CRCWeb.Employee.MyScheduleLive do
                 <% tasks_for_day = Map.get(@activity_assignments, day, []) %>
                 <%= if tasks_for_day != [] do %>
                   <% day_date = Date.add(@activity_week_start, day) %>
-                  <div class={"flex items-start gap-3 px-5 py-3 #{if day_date == Date.utc_today(), do: "bg-primary/5", else: ""}"}>
-                    <div class={"text-xs font-bold w-10 shrink-0 pt-0.5 text-center #{if day_date == Date.utc_today(), do: "text-primary", else: "text-base-content/40"}"}>
+                  <% is_today = day_date == Date.utc_today() %>
+                  <% is_past = Date.compare(day_date, Date.utc_today()) == :lt %>
+                  <div class={"flex items-start gap-3 px-5 py-3 #{if is_today, do: "bg-primary/5", else: ""}"}>
+                    <div class={"text-xs font-bold w-10 shrink-0 pt-1 text-center #{if is_today, do: "text-primary", else: "text-base-content/40"}"}>
                       <p>{Schedule.day_name(day)}</p>
                       <p class="font-normal opacity-70">{day_date.day}/{day_date.month}</p>
                     </div>
-                    <div class="flex flex-col gap-1.5 flex-1 min-w-0 pt-0.5">
+                    <div class="flex flex-col gap-2 flex-1 min-w-0">
                       <%= for a <- tasks_for_day do %>
-                        <div class={"flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium min-w-0 #{activity_row_class(a.task.area.color)}"}>
-                          <span class={"size-2 rounded-full shrink-0 #{activity_dot_class(a.task.area.color)}"}></span>
-                          <span class="truncate">{a.task.name}</span>
+                        <div class={"flex items-center gap-2 rounded-xl px-3 py-2 min-w-0 transition-all
+                          #{if a.completed, do: "bg-success/10 border border-success/30", else: activity_row_class(a.task.area.color)}"}>
+                          <%!-- Color dot --%>
+                          <span class={"size-2 rounded-full shrink-0
+                            #{if a.completed, do: "bg-success", else: activity_dot_class(a.task.area.color)}"}></span>
+
+                          <%!-- Task name --%>
+                          <span class={"text-sm font-medium flex-1 min-w-0 truncate
+                            #{if a.completed, do: "text-success line-through decoration-success/60", else: ""}"}>
+                            {a.task.name}
+                          </span>
+
+                          <%!-- Complete button — only for today or past days --%>
+                          <%= if is_today or is_past do %>
+                            <button
+                              phx-click="complete_activity"
+                              phx-value-id={a.id}
+                              class={"btn btn-xs shrink-0 gap-1
+                                #{if a.completed,
+                                  do: "btn-success",
+                                  else: "btn-ghost border border-base-300 hover:btn-success"}"}
+                              title={if a.completed, do: "Marcar como pendiente", else: "Marcar como hecha"}
+                            >
+                              <.icon name="hero-check" class="size-3.5" />
+                              {if a.completed, do: "Hecha", else: "Listo"}
+                            </button>
+                          <% end %>
                         </div>
                       <% end %>
                     </div>

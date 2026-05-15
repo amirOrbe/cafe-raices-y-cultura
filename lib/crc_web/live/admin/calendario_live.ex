@@ -385,24 +385,29 @@ defmodule CRCWeb.Admin.CalendarioLive do
                       <% assignment = get_in(@assignments, [task.id, day]) %>
                       <% user = assignment && assignment.user %>
                       <td class="text-center p-1">
-                        <form phx-change="assign_user" class="w-full">
-                          <input type="hidden" name="task" value={task.id} />
-                          <input type="hidden" name="day" value={day} />
-                          <select
-                            class={[
-                              "select select-xs w-full text-center font-semibold",
-                              if(user, do: "#{cell_select_class(user)}", else: "select-ghost text-base-content/30")
-                            ]}
-                            name="user"
-                          >
-                            <option value="">—</option>
-                            <%= for emp <- @employees do %>
-                              <option value={emp.id} selected={user && user.id == emp.id}>
-                                {Schedule.initials(emp)}
-                              </option>
-                            <% end %>
-                          </select>
-                        </form>
+                        <div class="flex flex-col items-center gap-0.5">
+                          <form phx-change="assign_user" class="w-full">
+                            <input type="hidden" name="task" value={task.id} />
+                            <input type="hidden" name="day" value={day} />
+                            <select
+                              class={[
+                                "select select-xs w-full text-center font-semibold",
+                                if(user, do: "#{cell_select_class(user)}", else: "select-ghost text-base-content/30")
+                              ]}
+                              name="user"
+                            >
+                              <option value="">—</option>
+                              <%= for emp <- @employees do %>
+                                <option value={emp.id} selected={user && user.id == emp.id}>
+                                  {Schedule.initials(emp)}
+                                </option>
+                              <% end %>
+                            </select>
+                          </form>
+                          <%= if assignment && assignment.completed do %>
+                            <span class="text-success text-xs font-bold leading-none">✓ hecha</span>
+                          <% end %>
+                        </div>
                       </td>
                     <% end %>
                   </tr>
@@ -451,6 +456,9 @@ defmodule CRCWeb.Admin.CalendarioLive do
                               <% end %>
                             </select>
                           </form>
+                          <%= if assignment && assignment.completed do %>
+                            <span class="text-success text-xs leading-none">✓</span>
+                          <% end %>
                         </div>
                       <% end %>
                     </div>

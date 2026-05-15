@@ -703,15 +703,7 @@ defmodule CRCWeb.Components.SiteComponents do
         </div>
 
         <%!-- Modal card — centrado, responsive --%>
-        <div class="relative w-full max-w-sm bg-base-100 rounded-2xl shadow-2xl overflow-hidden mx-auto">
-          <%!-- Close button --%>
-          <button
-            class="absolute top-3 right-3 z-10 btn btn-sm btn-circle btn-ghost bg-black/20 hover:bg-black/40 text-white"
-            phx-click={JS.hide(to: "#item-detail-#{@item.id}")}
-          >
-            <.icon name="hero-x-mark" class="size-4" />
-          </button>
-
+        <div class="w-full max-w-sm bg-base-100 rounded-2xl shadow-2xl overflow-hidden mx-auto">
           <%!-- Photo header (if available) --%>
           <%= if Map.get(@item, :image_url) do %>
             <div class="aspect-[16/9] overflow-hidden">
@@ -725,11 +717,19 @@ defmodule CRCWeb.Components.SiteComponents do
 
           <%!-- Content --%>
           <div class="p-5 space-y-3">
-            <div class="flex items-start justify-between gap-4">
-              <h3 class="text-lg font-bold text-base-content leading-snug">{@item.name}</h3>
+            <%!-- Name + Price + Close button in one row — avoids any overlap --%>
+            <div class="flex items-start gap-2">
+              <h3 class="flex-1 text-lg font-bold text-base-content leading-snug">{@item.name}</h3>
               <span class="text-xl font-bold text-primary whitespace-nowrap shrink-0">
                 ${format_price(@item.price)}
               </span>
+              <button
+                class="btn btn-sm btn-circle btn-ghost shrink-0 -mt-0.5"
+                phx-click={JS.hide(to: "#item-detail-#{@item.id}")}
+                aria-label="Cerrar"
+              >
+                <.icon name="hero-x-mark" class="size-4" />
+              </button>
             </div>
             <p class="text-sm text-base-content/70 leading-relaxed whitespace-pre-line">
               {@desc}

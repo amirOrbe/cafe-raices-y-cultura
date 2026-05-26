@@ -343,8 +343,8 @@ defmodule CRCWeb.Waiter.TableLive do
           <%= if @view_mode == :map do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
             <div
-              class="relative w-full select-none aspect-square sm:aspect-video"
-              style="background-image: radial-gradient(circle, oklch(80% 0.02 78) 1px, transparent 1px); background-size: 32px 32px;"
+              class="relative w-full select-none"
+              style="height: calc(100svh - 220px); min-height: 320px; background-image: radial-gradient(circle, oklch(80% 0.02 78) 1px, transparent 1px); background-size: 32px 32px;"
             >
               <%= for table <- @tables do %>
                 <% order = Map.get(@orders_by_table, table.id) %>

@@ -33,6 +33,12 @@ defmodule CRCWeb.HomeLive do
     {:noreply, assign(socket, :active_slide, next)}
   end
 
+  def handle_event("carousel_prev", _params, socket) do
+    total = length(socket.assigns.photos)
+    prev = rem(socket.assigns.active_slide - 1 + total, total)
+    {:noreply, assign(socket, :active_slide, prev)}
+  end
+
   def handle_event("carousel_goto", %{"index" => index}, socket) do
     {:noreply, assign(socket, :active_slide, String.to_integer(index))}
   end
@@ -145,13 +151,35 @@ defmodule CRCWeb.HomeLive do
         <% end %>
       </div>
       
+    <!-- Previous arrow -->
+      <button
+        phx-click="carousel_prev"
+        class="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 sm:p-3 transition-all backdrop-blur-sm"
+        aria-label="Foto anterior"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+    <!-- Next arrow -->
+      <button
+        phx-click="carousel_next"
+        class="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 sm:p-3 transition-all backdrop-blur-sm"
+        aria-label="Foto siguiente"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+
     <!-- Dot indicators -->
       <div class="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2">
         <%= for {_photo, index} <- Enum.with_index(@photos) do %>
           <button
             phx-click="carousel_goto"
             phx-value-index={index}
-            class={"rounded-full transition-all #{if index == @active_slide, do: "w-6 h-2.5 bg-white", else: "w-2.5 h-2.5 bg-white/50 hover:bg-white/75"}"}
+            class={"rounded-full transition-all #{if index == @active_slide, do: "w-8 h-4 bg-white", else: "w-4 h-4 bg-white/50 hover:bg-white/75"}"}
             aria-label={"Ir a la foto #{index + 1}"}
           />
         <% end %>

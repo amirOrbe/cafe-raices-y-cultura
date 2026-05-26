@@ -21,12 +21,23 @@ import topbar from "../vendor/topbar"
 const CarouselAutoplay = {
   mounted() {
     this.interval = null
+    this._touchStartX = null
     this.startAutoplay()
 
     this.el.addEventListener("mouseenter", () => this.stopAutoplay())
     this.el.addEventListener("mouseleave", () => this.startAutoplay())
-    this.el.addEventListener("touchstart", () => this.stopAutoplay(), {passive: true})
-    this.el.addEventListener("touchend", () => {
+    this.el.addEventListener("touchstart", (e) => {
+      this.stopAutoplay()
+      this._touchStartX = e.touches[0].clientX
+    }, {passive: true})
+    this.el.addEventListener("touchend", (e) => {
+      if (this._touchStartX !== null) {
+        const dx = e.changedTouches[0].clientX - this._touchStartX
+        if (Math.abs(dx) > 50) {
+          this.pushEvent(dx < 0 ? "carousel_next" : "carousel_prev", {})
+        }
+        this._touchStartX = null
+      }
       clearTimeout(this._touchTimeout)
       this._touchTimeout = setTimeout(() => this.startAutoplay(), 3000)
     }, {passive: true})

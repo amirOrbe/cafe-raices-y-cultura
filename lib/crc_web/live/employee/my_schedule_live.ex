@@ -31,8 +31,14 @@ defmodule CRCWeb.Employee.MyScheduleLive do
       today_record = HR.get_or_create_today_record(user)
       week = build_week(schedules)
 
-      recent =
-        HR.list_attendance_for_user(user.id, today_record.date.year, today_record.date.month)
+      today_date = today_record.date
+      week_start = Date.add(today_date, -(Date.day_of_week(today_date) - 1))
+
+      month_attendance =
+        HR.list_attendance_for_user(user.id, today_date.year, today_date.month)
+        |> Enum.reverse()
+
+      week_attendance = Enum.filter(month_attendance, &(Date.compare(&1.date, week_start) in [:gt, :eq]))
 
       activity_week_start = Schedule.week_start(Date.utc_today())
 
@@ -43,7 +49,10 @@ defmodule CRCWeb.Employee.MyScheduleLive do
         |> assign(:schedules, schedules)
         |> assign(:today_record, today_record)
         |> assign(:week, week)
-        |> assign(:recent_records, Enum.take(recent, -14) |> Enum.reverse())
+        |> assign(:week_attendance, week_attendance)
+        |> assign(:month_attendance, month_attendance)
+        |> assign(:all_attendance, nil)
+        |> assign(:attendance_filter, :week)
         |> assign(:clock_status, :idle)
         |> assign(:location_error, nil)
         |> assign(:activity_week_start, activity_week_start)
@@ -78,6 +87,25 @@ defmodule CRCWeb.Employee.MyScheduleLive do
 
     {:noreply,
      assign(socket, :activity_assignments, Schedule.get_user_week_assignments(week_start, user.id))}
+  end
+
+  def handle_event("set_attendance_filter", %{"filter" => filter}, socket) do
+    filter_atom = case filter do
+      "week" -> :week
+      "month" -> :month
+      _ -> :all
+    end
+
+    socket =
+      if filter_atom == :all and is_nil(socket.assigns.all_attendance) do
+        user = socket.assigns.current_user
+        today = socket.assigns.today_record.date
+        assign(socket, :all_attendance, load_all_attendance(user.id, today))
+      else
+        socket
+      end
+
+    {:noreply, assign(socket, :attendance_filter, filter_atom)}
   end
 
   def handle_event("toggle_nav", _params, socket),
@@ -279,37 +307,71 @@ defmodule CRCWeb.Employee.MyScheduleLive do
           <% end %>
         </div>
 
-        <%!-- Recent attendance history --%>
-        <%= if @recent_records != [] do %>
+        <%!-- Attendance history --%>
+        <%= if @month_attendance != [] do %>
           <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
             <div class="px-5 py-4 border-b border-base-200">
-              <h2 class="font-semibold text-base-content">Historial reciente</h2>
+              <h2 class="font-semibold text-base-content mb-2">Asistencia</h2>
+              <div class="join">
+                <button
+                  class={["join-item btn btn-xs", if(@attendance_filter == :week, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                  phx-click="set_attendance_filter"
+                  phx-value-filter="week"
+                >
+                  Semana
+                </button>
+                <button
+                  class={["join-item btn btn-xs", if(@attendance_filter == :month, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                  phx-click="set_attendance_filter"
+                  phx-value-filter="month"
+                >
+                  Mes
+                </button>
+                <button
+                  class={["join-item btn btn-xs", if(@attendance_filter == :all, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                  phx-click="set_attendance_filter"
+                  phx-value-filter="all"
+                >
+                  Todo
+                </button>
+              </div>
             </div>
-            <ul class="divide-y divide-base-200">
-              <%= for record <- @recent_records do %>
-                <li class="flex items-center gap-4 px-5 py-3">
-                  <.status_badge status={record.status} />
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-base-content">
-                      {format_date(record.date)}
-                    </p>
-                    <p class="text-xs text-base-content/50">
-                      <%= if record.clocked_in_at do %>
-                        Entrada: {format_datetime(record.clocked_in_at)}
-                        <%= if record.clocked_out_at do %>
-                          · Salida: {format_datetime(record.clocked_out_at)}
+            <% display_records = case @attendance_filter do
+              :week -> @week_attendance
+              :month -> @month_attendance
+              :all -> @all_attendance || []
+            end %>
+            <%= if display_records == [] do %>
+              <p class="px-5 py-8 text-center text-sm text-base-content/40">
+                Sin registros para este período.
+              </p>
+            <% else %>
+              <ul class="divide-y divide-base-200">
+                <%= for record <- display_records do %>
+                  <li class="flex items-center gap-4 px-5 py-3">
+                    <.status_badge status={record.status} />
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-base-content">
+                        {format_date(record.date)}
+                      </p>
+                      <p class="text-xs text-base-content/50">
+                        <%= if record.clocked_in_at do %>
+                          Entrada: {format_datetime(record.clocked_in_at)}
+                          <%= if record.clocked_out_at do %>
+                            · Salida: {format_datetime(record.clocked_out_at)}
+                          <% end %>
+                        <% else %>
+                          Sin registro de entrada
                         <% end %>
-                      <% else %>
-                        Sin registro de entrada
-                      <% end %>
-                    </p>
-                  </div>
-                  <%= if record.manual_entry do %>
-                    <span class="badge badge-ghost badge-xs">Admin</span>
-                  <% end %>
-                </li>
-              <% end %>
-            </ul>
+                      </p>
+                    </div>
+                    <%= if record.manual_entry do %>
+                      <span class="badge badge-ghost badge-xs">Admin</span>
+                    <% end %>
+                  </li>
+                <% end %>
+              </ul>
+            <% end %>
           </div>
         <% end %>
       </div>
@@ -547,6 +609,21 @@ defmodule CRCWeb.Employee.MyScheduleLive do
   defp activity_dot_class("orange"), do: "bg-orange-400"
   defp activity_dot_class("pink"),   do: "bg-pink-400"
   defp activity_dot_class(_),        do: "bg-violet-400"
+
+  defp load_all_attendance(user_id, today) do
+    for offset <- 0..2 do
+      {year, month} =
+        case today.month - offset do
+          m when m > 0 -> {today.year, m}
+          m -> {today.year - 1, m + 12}
+        end
+
+      HR.list_attendance_for_user(user_id, year, month)
+    end
+    |> List.flatten()
+    |> Enum.sort_by(& &1.date, {:desc, Date})
+    |> Enum.uniq_by(& &1.date)
+  end
 
   defp format_date(%Date{} = date) do
     months =

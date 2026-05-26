@@ -60,6 +60,17 @@ defmodule CRCWeb.Admin.UsersLive do
      |> assign(:remove_avatar, false)}
   end
 
+  def handle_event("new_guest_user", _params, socket) do
+    changeset = User.changeset(%User{}, %{role: "empleado", stations: ["sala"]})
+
+    {:noreply,
+     socket
+     |> assign(:modal, :new_guest)
+     |> assign(:form, to_form(changeset))
+     |> assign(:form_role, "empleado")
+     |> assign(:remove_avatar, false)}
+  end
+
   def handle_event("edit_user", %{"id" => id}, socket) do
     user = Accounts.get_user!(String.to_integer(id))
     changeset = User.changeset(user, %{})
@@ -162,7 +173,7 @@ defmodule CRCWeb.Admin.UsersLive do
 
     result =
       case socket.assigns.modal do
-        :new ->
+        modal when modal in [:new, :new_guest] ->
           Accounts.create_user(admin, params)
 
         {:edit, user} ->
@@ -179,7 +190,7 @@ defmodule CRCWeb.Admin.UsersLive do
 
     case result do
       {:ok, _user} ->
-        label = if socket.assigns.modal == :new, do: "creado", else: "actualizado"
+        label = if socket.assigns.modal in [:new, :new_guest], do: "creado", else: "actualizado"
 
         {:noreply,
          socket
@@ -246,9 +257,14 @@ defmodule CRCWeb.Admin.UsersLive do
             {if @status_filter == :active, do: "activos", else: "inactivos"}
           </p>
         </div>
-        <button id="btn-new-user" class="btn btn-primary gap-2" phx-click="new_user">
-          <.icon name="hero-plus" class="size-4" /> Nuevo usuario
-        </button>
+        <div class="flex gap-2">
+          <button class="btn btn-outline btn-primary gap-2" phx-click="new_guest_user">
+            <.icon name="hero-bolt" class="size-4" /> Acceso rápido
+          </button>
+          <button id="btn-new-user" class="btn btn-primary gap-2" phx-click="new_user">
+            <.icon name="hero-plus" class="size-4" /> Nuevo usuario
+          </button>
+        </div>
       </div>
 
       <%!-- Status tabs --%>
@@ -476,6 +492,7 @@ defmodule CRCWeb.Admin.UsersLive do
     title =
       case assigns.modal do
         :new -> "Nuevo usuario"
+        :new_guest -> "Acceso rápido"
         {:edit, _} -> "Editar usuario"
       end
 
@@ -516,8 +533,16 @@ defmodule CRCWeb.Admin.UsersLive do
             phx-change="validate_upload"
             class="space-y-1"
           >
+            <%!-- Acceso rápido hint --%>
+            <%= if @modal == :new_guest do %>
+              <div class="alert alert-info text-sm mb-2 py-2 px-3">
+                <.icon name="hero-bolt" class="size-4 shrink-0" />
+                <span>Crea un acceso temporal de empleado de sala con nombre, correo y contraseña.</span>
+              </div>
+            <% end %>
+
             <%!-- ── Avatar ──────────────────────────────────────────────────────── --%>
-            <div class="pb-2">
+            <div class={"pb-2 #{if @modal == :new_guest, do: "hidden"}"}>
               <p class="text-sm font-medium text-base-content mb-2">
                 Foto de perfil <span class="text-base-content/40 font-normal">(opcional)</span>
               </p>
@@ -594,30 +619,34 @@ defmodule CRCWeb.Admin.UsersLive do
               label="Correo electrónico"
               placeholder="correo@ejemplo.com"
             />
-            <.input
-              field={@form[:phone]}
-              type="text"
-              label="Teléfono (opcional)"
-              placeholder="55 1234 5678"
-            />
-            <.input
-              field={@form[:birthday]}
-              type="date"
-              label="Fecha de nacimiento (opcional)"
-            />
-            <.input
-              field={@form[:role]}
-              type="select"
-              label="Rol"
-              options={[
-                {"Administrador", "admin"},
-                {"Empleado", "empleado"},
-                {"Cliente", "cliente"}
-              ]}
-              phx-change="role_changed"
-            />
-            <%!-- Station checkboxes — only shown when role is "empleado" --%>
-            <%= if @form_role == "empleado" do %>
+            <%= if @modal != :new_guest do %>
+              <.input
+                field={@form[:phone]}
+                type="text"
+                label="Teléfono (opcional)"
+                placeholder="55 1234 5678"
+              />
+              <.input
+                field={@form[:birthday]}
+                type="date"
+                label="Fecha de nacimiento (opcional)"
+              />
+              <.input
+                field={@form[:role]}
+                type="select"
+                label="Rol"
+                options={[
+                  {"Administrador", "admin"},
+                  {"Empleado", "empleado"},
+                  {"Cliente", "cliente"}
+                ]}
+                phx-change="role_changed"
+              />
+            <% else %>
+              <input type="hidden" name="user[role]" value="empleado" />
+            <% end %>
+            <%!-- Station checkboxes — shown when role is "empleado" or guest mode --%>
+            <%= if @form_role == "empleado" or @modal == :new_guest do %>
               <div class="form-control">
                 <label class="label pb-1">
                   <span class="label-text text-sm font-medium">Estaciones</span>
@@ -647,25 +676,31 @@ defmodule CRCWeb.Admin.UsersLive do
               field={@form[:password]}
               type="password"
               label={
-                if @modal == :new,
+                if @modal in [:new, :new_guest],
                   do: "Contraseña",
                   else: "Contraseña (dejar en blanco para no cambiar)"
               }
               placeholder={
-                if @modal == :new, do: "Mínimo 8 caracteres", else: "Nueva contraseña (opcional)"
+                if @modal in [:new, :new_guest],
+                  do: "Mínimo 8 caracteres",
+                  else: "Nueva contraseña (opcional)"
               }
             />
 
             <div class="flex justify-end gap-3 pt-4">
               <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
               <button type="submit" class="btn btn-primary">
-                {if @modal == :new, do: "Crear usuario", else: "Guardar cambios"}
+                {case @modal do
+                  :new -> "Crear usuario"
+                  :new_guest -> "Crear acceso"
+                  _ -> "Guardar cambios"
+                end}
               </button>
             </div>
           </.form>
 
           <%!-- Danger zone — only in edit mode --%>
-          <%= if @modal != :new do %>
+          <%= if @modal not in [:new, :new_guest] do %>
             <div class="px-6 pb-5 pt-1 border-t border-base-200 mt-2">
               <%= if @confirm_delete_user do %>
                 <p class="text-xs text-error mb-3 font-medium">

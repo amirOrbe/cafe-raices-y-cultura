@@ -182,14 +182,24 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   def handle_event("select_category", %{"id" => id}, socket) do
     category_id = String.to_integer(id)
-    menu_items = Catalog.list_menu_items_for_category_with_stock(category_id)
 
-    {:noreply,
-     socket
-     |> assign(:selected_category_id, category_id)
-     |> assign(:menu_items, menu_items)
-     |> assign(:selected_menu_item, nil)
-     |> assign(:extras, [])}
+    if socket.assigns.selected_category_id == category_id do
+      {:noreply,
+       socket
+       |> assign(:selected_category_id, nil)
+       |> assign(:menu_items, [])
+       |> assign(:selected_menu_item, nil)
+       |> assign(:extras, [])}
+    else
+      menu_items = Catalog.list_menu_items_for_category_with_stock(category_id)
+
+      {:noreply,
+       socket
+       |> assign(:selected_category_id, category_id)
+       |> assign(:menu_items, menu_items)
+       |> assign(:selected_menu_item, nil)
+       |> assign(:extras, [])}
+    end
   end
 
   def handle_event("add_package", %{"package_id" => package_id_str}, socket) do
@@ -928,7 +938,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                   <% overdue? = item_overdue?(item, @now) %>
                   <%!-- Color-coded left border by status for at-a-glance scanning --%>
                   <div class={[
-                    "flex items-center gap-3 px-4 py-3 border-l-[3px]",
+                    "flex items-center gap-3 px-4 py-4 border-l-[3px]",
                     cond do
                       cancelled? -> "opacity-40 border-l-base-300"
                       served? -> "opacity-40 bg-base-200/40 border-l-base-300"
@@ -1178,11 +1188,11 @@ defmodule CRCWeb.Waiter.OrderLive do
                     <%!-- "Servir" button — only for ready items --%>
                     <%= if item.status == "ready" and @order.status != "closed" do %>
                       <button
-                        class="btn btn-xs btn-success gap-1 shrink-0"
+                        class="btn btn-sm btn-success gap-1 shrink-0"
                         phx-click="mark_item_served"
                         phx-value-id={item.id}
                       >
-                        <.icon name="hero-check" class="size-3" /> Servir
+                        <.icon name="hero-check" class="size-4" /> Servir
                       </button>
                     <% end %>
 
@@ -1192,7 +1202,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                           @order.status != "closed" do %>
                       <button
                         class={[
-                          "btn btn-xs btn-ghost btn-circle",
+                          "btn btn-sm btn-ghost btn-circle",
                           if(@selected_menu_item && @selected_menu_item.id == item.menu_item_id,
                             do: "text-accent",
                             else: "text-base-content/50"
@@ -1202,7 +1212,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                         phx-value-id={item.menu_item_id}
                         title="Agregar extras a este platillo"
                       >
-                        <.icon name="hero-plus-circle" class="size-3.5" />
+                        <.icon name="hero-plus-circle" class="size-4" />
                       </button>
                     <% end %>
 
@@ -1210,12 +1220,12 @@ defmodule CRCWeb.Waiter.OrderLive do
                     <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and
                           item.status in ["sent", "ready"] and @order.status != "closed" do %>
                       <button
-                        class="btn btn-xs btn-ghost btn-circle text-primary"
+                        class="btn btn-sm btn-ghost btn-circle text-primary"
                         phx-click="repeat_item"
                         phx-value-menu-item-id={item.menu_item_id}
                         title="Repetir este artículo"
                       >
-                        <.icon name="hero-arrow-path" class="size-3.5" />
+                        <.icon name="hero-arrow-path" class="size-4" />
                       </button>
                     <% end %>
 
@@ -1223,23 +1233,23 @@ defmodule CRCWeb.Waiter.OrderLive do
                     <%= if !cancelled? and !served? do %>
                       <div class="flex items-center gap-1">
                         <button
-                          class="btn btn-xs btn-ghost btn-circle"
+                          class="btn btn-sm btn-ghost btn-circle"
                           phx-click="decrement_item"
                           phx-value-id={item.id}
                           disabled={item.quantity <= 1 or @order.status == "closed"}
                         >
-                          <.icon name="hero-minus" class="size-3" />
+                          <.icon name="hero-minus" class="size-4" />
                         </button>
-                        <span class="w-6 text-center text-sm font-semibold">{item.quantity}</span>
+                        <span class="w-8 text-center text-base font-bold">{item.quantity}</span>
                         <% max_qty = item_max_quantity(item) %>
                         <button
-                          class="btn btn-xs btn-ghost btn-circle"
+                          class="btn btn-sm btn-ghost btn-circle"
                           phx-click="increment_item"
                           phx-value-id={item.id}
                           disabled={@order.status == "closed" or (max_qty != nil and item.quantity >= max_qty)}
                           title={if max_qty != nil and item.quantity >= max_qty, do: "Sin stock suficiente", else: nil}
                         >
-                          <.icon name="hero-plus" class="size-3" />
+                          <.icon name="hero-plus" class="size-4" />
                         </button>
                       </div>
                     <% end %>
@@ -1248,19 +1258,19 @@ defmodule CRCWeb.Waiter.OrderLive do
                     <%= if !cancelled? and !served? and @order.status != "closed" do %>
                       <%= if item.status == "pending" do %>
                         <button
-                          class="btn btn-xs btn-ghost btn-circle text-error"
+                          class="btn btn-sm btn-ghost btn-circle text-error"
                           phx-click="remove_item"
                           phx-value-id={item.id}
                         >
-                          <.icon name="hero-trash" class="size-3.5" />
+                          <.icon name="hero-trash" class="size-4" />
                         </button>
                       <% else %>
                         <button
-                          class="btn btn-xs btn-ghost btn-circle text-error"
+                          class="btn btn-sm btn-ghost btn-circle text-error"
                           phx-click="request_cancel_item"
                           phx-value-id={item.id}
                         >
-                          <.icon name="hero-x-circle" class="size-3.5" />
+                          <.icon name="hero-x-circle" class="size-4" />
                         </button>
                       <% end %>
                     <% end %>
@@ -1521,22 +1531,23 @@ defmodule CRCWeb.Waiter.OrderLive do
               </div>
 
               <%= if @menu_tab == :menu do %>
-                <%!-- Search bar --%>
-                <div class="px-4 py-2 border-b border-base-200">
+                <%!-- Search bar — wrapped in form so phx-change fires with name key --%>
+                <form phx-change="search_menu" class="px-4 py-2 border-b border-base-200">
                   <div class="relative">
                     <.icon name="hero-magnifying-glass" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-base-content/30 pointer-events-none" />
                     <input
-                      type="search"
+                      type="text"
                       name="query"
                       value={@menu_search}
                       placeholder="Buscar platillo o bebida…"
                       class="input input-sm input-bordered w-full pl-8 pr-8"
-                      phx-change="search_menu"
                       phx-debounce="200"
+                      autocomplete="off"
                       disabled={@order.status == "closed"}
                     />
                     <%= if @menu_search != "" do %>
                       <button
+                        type="button"
                         class="absolute right-2 top-1/2 -translate-y-1/2 text-base-content/30 hover:text-base-content"
                         phx-click="clear_menu_search"
                       >
@@ -1544,131 +1555,178 @@ defmodule CRCWeb.Waiter.OrderLive do
                       </button>
                     <% end %>
                   </div>
-                </div>
+                </form>
 
-                <%!-- Category tabs (hidden while searching) --%>
-                <%= if is_nil(@search_results) do %>
-                  <div class="flex gap-1 overflow-x-auto px-4 py-3 border-b border-base-200">
-                    <%= for category <- @categories do %>
-                      <button
-                        class={[
-                          "btn btn-xs",
-                          if(@selected_category_id == category.id, do: "btn-primary", else: "btn-ghost")
-                        ]}
-                        phx-click="select_category"
-                        phx-value-id={category.id}
-                        disabled={@order.status == "closed"}
-                      >
-                        {category.name}
-                      </button>
-                    <% end %>
-                  </div>
-                <% end %>
-
-                <%!-- Menu items grid — search results OR normal category view --%>
-                <div class="flex-1 overflow-y-auto p-4">
-                  <%= if @order.status == "closed" do %>
+                <%= if @order.status == "closed" do %>
+                  <div class="flex-1 flex items-center justify-center">
                     <p class="text-center py-12 text-base-content/40 text-sm">
                       Esta cuenta está cerrada.
                     </p>
-                  <% else %>
-                    <%!-- Search results label --%>
-                    <%= if @search_results != nil do %>
+                  </div>
+                <% else %>
+                  <%= if @search_results != nil do %>
+                    <%!-- Search results --%>
+                    <div class="flex-1 overflow-y-auto p-3">
                       <p class="text-xs text-base-content/40 mb-3">
                         <%= if @search_results == [] do %>
                           Sin resultados para "<span class="font-semibold">{@menu_search}</span>"
                         <% else %>
-                          {length(@search_results)} resultado(s) para "<span class="font-semibold">{@menu_search}</span>"
+                          {length(@search_results)} resultado(s)
                         <% end %>
                       </p>
-                    <% end %>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <%!-- portions: nil=sin receta (ilimitado), %{count, bottleneck}=con receta --%>
-                      <%= for {menu_item, portions} <- (@search_results || @menu_items) do %>
-                        <% selected? = @selected_menu_item && @selected_menu_item.id == menu_item.id %>
-                        <% count = if is_nil(portions), do: nil, else: portions.count %>
-                        <% bottleneck = if is_nil(portions), do: nil, else: portions.bottleneck %>
-                        <% available? = is_nil(count) or count > 0 %>
-                        <% low_stock? =
-                          not is_nil(count) and count > 0 and count <= @low_stock_threshold %>
-                        <div class={[
-                          "rounded-xl p-3 flex flex-col gap-2 border transition-all",
-                          cond do
-                            selected? -> "bg-accent/10 border-accent"
-                            not available? -> "bg-base-100 border-error/20 opacity-60"
-                            low_stock? -> "bg-warning/5 border-warning/40"
-                            true -> "bg-base-200/60 border-transparent"
-                          end
-                        ]}>
-                          <div class="flex items-start justify-between gap-2">
-                            <div class="flex-1 min-w-0">
-                              <p class="text-sm font-medium text-base-content leading-snug">
-                                {menu_item.name}
-                              </p>
-                              <%!-- Agotado --%>
-                              <%= if not available? do %>
-                                <p class="text-xs text-error mt-0.5 flex items-center gap-1">
-                                  <.icon name="hero-x-circle" class="size-3 shrink-0" />
-                                  {if bottleneck,
-                                    do: "Agotado · sin #{bottleneck}",
-                                    else: "Agotado"}
-                                </p>
-                                <%!-- Bajo stock: warning con insumo limitante --%>
-                              <% else %>
-                                <%= if low_stock? do %>
-                                  <p class="text-xs text-warning font-semibold mt-0.5 flex items-center gap-1">
-                                    <.icon name="hero-exclamation-triangle" class="size-3 shrink-0" />
-                                    {cond do
-                                      count == 1 and bottleneck ->
-                                        "¡Solo sale 1! · se acaba #{bottleneck}"
-                                      count == 1 ->
-                                        "¡Es el último!"
-                                      bottleneck ->
-                                        "¡Solo salen #{count}! · se acaba #{bottleneck}"
-                                      true ->
-                                        "¡Solo quedan #{count}!"
-                                    end}
+                      <div class="grid grid-cols-2 gap-2">
+                        <%= for {menu_item, portions} <- @search_results do %>
+                          <% count = if is_nil(portions), do: nil, else: portions.count %>
+                          <% bottleneck = if is_nil(portions), do: nil, else: portions.bottleneck %>
+                          <% available? = is_nil(count) or count > 0 %>
+                          <% low_stock? = not is_nil(count) and count > 0 and count <= @low_stock_threshold %>
+                          <div class={["rounded-xl p-3 flex flex-col gap-2 border transition-all",
+                            cond do
+                              not available? -> "bg-base-100 border-error/20 opacity-60"
+                              low_stock? -> "bg-warning/5 border-warning/40"
+                              true -> "bg-base-200/60 border-transparent"
+                            end]}>
+                            <div class="flex items-start justify-between gap-2">
+                              <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-base-content leading-snug">{menu_item.name}</p>
+                                <%= if not available? do %>
+                                  <p class="text-xs text-error mt-0.5 flex items-center gap-1">
+                                    <.icon name="hero-x-circle" class="size-3 shrink-0" />
+                                    {if bottleneck, do: "Agotado · sin #{bottleneck}", else: "Agotado"}
                                   </p>
+                                <% else %>
+                                  <%= if low_stock? do %>
+                                    <p class="text-xs text-warning font-semibold mt-0.5 flex items-center gap-1">
+                                      <.icon name="hero-exclamation-triangle" class="size-3 shrink-0" />
+                                      {cond do
+                                        count == 1 and bottleneck -> "¡Solo sale 1! · se acaba #{bottleneck}"
+                                        count == 1 -> "¡Es el último!"
+                                        bottleneck -> "¡Solo salen #{count}! · se acaba #{bottleneck}"
+                                        true -> "¡Solo quedan #{count}!"
+                                      end}
+                                    </p>
+                                  <% end %>
                                 <% end %>
-                              <% end %>
+                              </div>
+                              <span class="text-sm font-bold text-primary whitespace-nowrap shrink-0">
+                                ${format_price(menu_item.price)}
+                              </span>
                             </div>
-                            <span class="text-sm font-bold text-primary whitespace-nowrap shrink-0">
-                              ${format_price(menu_item.price)}
-                            </span>
-                          </div>
-                          <div class="flex gap-1.5">
                             <button
-                              class={[
-                                "btn btn-xs flex-1",
-                                cond do
-                                  not available? -> "btn-disabled"
-                                  low_stock? -> "btn-warning"
-                                  true -> "btn-outline btn-primary"
-                                end
-                              ]}
+                              class={["btn btn-xs w-full", cond do
+                                not available? -> "btn-disabled"
+                                low_stock? -> "btn-warning"
+                                true -> "btn-outline btn-primary"
+                              end]}
                               phx-click="add_item"
                               phx-value-menu_item_id={menu_item.id}
                               disabled={not available?}
                             >
-                              {cond do
-                                not available? -> "Agotado"
-                                low_stock? and count == 1 -> "¡Agregar — último!"
-                                low_stock? -> "Agregar"
-                                true -> "Agregar"
-                              end}
+                              {if not available?, do: "Agotado", else: "Agregar"}
                             </button>
                           </div>
-                        </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% else %>
+                    <%!-- Category button grid --%>
+                    <div class="grid grid-cols-2 gap-1.5 p-3 border-b border-base-200 max-h-44 overflow-y-auto shrink-0">
+                      <%= for category <- @categories do %>
+                        <% has_items? = length(category.menu_items) > 0 %>
+                        <button
+                          class={[
+                            "btn btn-sm justify-between gap-1 w-full",
+                            if(@selected_category_id == category.id,
+                              do: "btn-primary",
+                              else: "btn-ghost border border-base-300"),
+                            if(not has_items?, do: "opacity-40", else: "")
+                          ]}
+                          phx-click="select_category"
+                          phx-value-id={category.id}
+                          disabled={@order.status == "closed" or not has_items?}
+                        >
+                          <span class="truncate text-left flex-1">{category.name}</span>
+                          <span class={[
+                            "badge badge-xs shrink-0",
+                            if(@selected_category_id == category.id,
+                              do: "badge-primary-content/40",
+                              else: "badge-ghost")
+                          ]}>
+                            {length(category.menu_items)}
+                          </span>
+                        </button>
                       <% end %>
+                    </div>
 
-                      <%= if @menu_items == [] do %>
-                        <p class="col-span-2 text-center py-8 text-base-content/40 text-sm">
-                          No hay artículos en esta categoría.
+                    <%!-- Items for selected category --%>
+                    <div class="flex-1 overflow-y-auto p-3">
+                      <%= if is_nil(@selected_category_id) do %>
+                        <p class="text-center py-10 text-base-content/40 text-sm">
+                          Selecciona una categoría
                         </p>
+                      <% else %>
+                        <div class="grid grid-cols-2 gap-2">
+                          <%= for {menu_item, portions} <- @menu_items do %>
+                            <% count = if is_nil(portions), do: nil, else: portions.count %>
+                            <% bottleneck = if is_nil(portions), do: nil, else: portions.bottleneck %>
+                            <% available? = is_nil(count) or count > 0 %>
+                            <% low_stock? = not is_nil(count) and count > 0 and count <= @low_stock_threshold %>
+                            <div class={["rounded-xl p-3 flex flex-col gap-2 border transition-all",
+                              cond do
+                                not available? -> "bg-base-100 border-error/20 opacity-60"
+                                low_stock? -> "bg-warning/5 border-warning/40"
+                                true -> "bg-base-200/60 border-transparent"
+                              end]}>
+                              <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                  <p class="text-sm font-medium text-base-content leading-snug">{menu_item.name}</p>
+                                  <%= if not available? do %>
+                                    <p class="text-xs text-error mt-0.5 flex items-center gap-1">
+                                      <.icon name="hero-x-circle" class="size-3 shrink-0" />
+                                      {if bottleneck, do: "Agotado · sin #{bottleneck}", else: "Agotado"}
+                                    </p>
+                                  <% else %>
+                                    <%= if low_stock? do %>
+                                      <p class="text-xs text-warning font-semibold mt-0.5 flex items-center gap-1">
+                                        <.icon name="hero-exclamation-triangle" class="size-3 shrink-0" />
+                                        {cond do
+                                          count == 1 and bottleneck -> "¡Solo sale 1! · se acaba #{bottleneck}"
+                                          count == 1 -> "¡Es el último!"
+                                          bottleneck -> "¡Solo salen #{count}! · se acaba #{bottleneck}"
+                                          true -> "¡Solo quedan #{count}!"
+                                        end}
+                                      </p>
+                                    <% end %>
+                                  <% end %>
+                                </div>
+                                <span class="text-sm font-bold text-primary whitespace-nowrap shrink-0">
+                                  ${format_price(menu_item.price)}
+                                </span>
+                              </div>
+                              <button
+                                class={["btn btn-xs w-full", cond do
+                                  not available? -> "btn-disabled"
+                                  low_stock? -> "btn-warning"
+                                  true -> "btn-outline btn-primary"
+                                end]}
+                                phx-click="add_item"
+                                phx-value-menu_item_id={menu_item.id}
+                                disabled={not available?}
+                              >
+                                {if not available?, do: "Agotado", else: "Agregar"}
+                              </button>
+                            </div>
+                          <% end %>
+                          <%= if @menu_items == [] do %>
+                            <p class="col-span-2 text-center py-8 text-base-content/40 text-sm">
+                              No hay artículos en esta categoría.
+                            </p>
+                          <% end %>
+                        </div>
                       <% end %>
                     </div>
                   <% end %>
-                </div>
+                <% end %>
               <% else %>
                 <%!-- Packages grid --%>
                 <div class="flex-1 overflow-y-auto p-4">

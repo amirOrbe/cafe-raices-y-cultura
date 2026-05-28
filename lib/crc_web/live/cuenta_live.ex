@@ -16,12 +16,14 @@ defmodule CRCWeb.CuentaLive do
     end
 
     order = Orders.get_order_by_token!(token)
-    total = Orders.calculate_order_total(order)
+    subtotal = Orders.calculate_order_total(order)
+    total = if order.status == "closed" && order.total, do: order.total, else: subtotal
 
     socket =
       socket
       |> assign(:page_title, "Tu cuenta — #{order.customer_name}")
       |> assign(:order, order)
+      |> assign(:subtotal, subtotal)
       |> assign(:total, total)
 
     {:ok, socket}
@@ -41,11 +43,14 @@ defmodule CRCWeb.CuentaLive do
   def handle_info({:order_updated, order_id}, socket) do
     if socket.assigns.order.id == order_id do
       order = Orders.get_order_by_token!(socket.assigns.order.bill_token)
+      subtotal = Orders.calculate_order_total(order)
+      total = if order.status == "closed" && order.total, do: order.total, else: subtotal
 
       {:noreply,
        socket
        |> assign(:order, order)
-       |> assign(:total, Orders.calculate_order_total(order))}
+       |> assign(:subtotal, subtotal)
+       |> assign(:total, total)}
     else
       {:noreply, socket}
     end
@@ -196,7 +201,17 @@ defmodule CRCWeb.CuentaLive do
               <% end %>
             </div>
 
-            <%!-- Total --%>
+            <%!-- Discount breakdown + Total --%>
+            <%= if @order.discount_percentage && @order.discount_percentage > 0 do %>
+              <div class="px-4 py-2 border-t border-base-300 flex items-center justify-between text-sm text-base-content/60">
+                <span>Subtotal</span>
+                <span>${format_price(@subtotal)}</span>
+              </div>
+              <div class="px-4 py-2 flex items-center justify-between text-sm text-success font-medium">
+                <span>Descuento {if @order.discount, do: @order.discount.name, else: "#{@order.discount_percentage}%"} (-{@order.discount_percentage}%)</span>
+                <span>-${format_price(Decimal.sub(@subtotal, @total))}</span>
+              </div>
+            <% end %>
             <div class="px-4 py-4 bg-base-200/60 border-t border-base-300
                         flex items-center justify-between">
               <span class="font-semibold text-base-content">Total</span>

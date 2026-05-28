@@ -142,6 +142,7 @@ defmodule CRC.Orders do
     |> Repo.get_by!(bill_token: token)
     |> Repo.preload([
       :user,
+      :discount,
       order_items: [
         :product,
         :variant,
@@ -208,7 +209,17 @@ defmodule CRC.Orders do
   and, when efectivo, %{amount_paid: Decimal}.
   """
   def close_order(%Order{} = order, attrs, closed_by_id \\ nil) do
-    total = calculate_order_total(order)
+    subtotal = calculate_order_total(order)
+    discount_pct = Map.get(attrs, :discount_percentage, 0) || 0
+
+    total =
+      if discount_pct > 0 do
+        Decimal.mult(subtotal, Decimal.new(100 - discount_pct))
+        |> Decimal.div(Decimal.new(100))
+      else
+        subtotal
+      end
+
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     result =

@@ -132,6 +132,7 @@ defmodule CRCWeb.Router do
       live "/rendimiento", RendimientoLive
       live "/finanzas", FinanzasLive
       live "/mesas", MesasLive
+      live "/descuentos", DescuentosLive
       live "/horarios", HorariosLive
       live "/asistencia", AsistenciaLive
       live "/calendario", CalendarioLive

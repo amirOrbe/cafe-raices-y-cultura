@@ -9,7 +9,7 @@ defmodule CRC.Settings do
   import Ecto.Query
 
   alias CRC.Repo
-  alias CRC.Settings.CafeHours
+  alias CRC.Settings.{CafeHours, Discount}
 
   @days 1..7
 
@@ -252,4 +252,38 @@ defmodule CRC.Settings do
   # "Lun" for a single day, "Lun – Vie" for a range.
   defp days_label(day, day), do: CafeHours.day_short(day)
   defp days_label(first, last), do: "#{CafeHours.day_short(first)} – #{CafeHours.day_short(last)}"
+
+  # ---------------------------------------------------------------------------
+  # Discounts — public API
+  # ---------------------------------------------------------------------------
+
+  @doc "Returns all discounts ordered by percentage ascending."
+  def list_discounts do
+    Repo.all(from d in Discount, order_by: d.percentage)
+  end
+
+  @doc "Returns only active discounts, ordered by percentage ascending."
+  def list_active_discounts do
+    Repo.all(from d in Discount, where: d.active == true, order_by: d.percentage)
+  end
+
+  def get_discount!(id), do: Repo.get!(Discount, id)
+
+  def create_discount(attrs) do
+    %Discount{}
+    |> Discount.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def update_discount(%Discount{} = discount, attrs) do
+    discount
+    |> Discount.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def delete_discount(%Discount{} = discount), do: Repo.delete(discount)
+
+  def change_discount(%Discount{} = discount, attrs \\ %{}) do
+    Discount.changeset(discount, attrs)
+  end
 end

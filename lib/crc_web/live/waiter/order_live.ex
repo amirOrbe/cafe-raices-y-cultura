@@ -51,6 +51,8 @@ defmodule CRCWeb.Waiter.OrderLive do
       |> assign(:change_due, nil)
       |> assign(:split_count, nil)
       |> assign(:split_input, "")
+      |> assign(:discount_pct, nil)
+      |> assign(:discounts, [])
       |> assign(:cancelling_item, nil)
       |> assign(:now, DateTime.utc_now())
       |> assign(:low_stock_threshold, @low_stock_threshold)
@@ -642,7 +644,13 @@ defmodule CRCWeb.Waiter.OrderLive do
   end
 
   def handle_event("show_payment_step", _params, socket) do
-    {:noreply, assign(socket, :payment_step, true)}
+    discounts = CRC.Settings.list_active_discounts()
+
+    {:noreply,
+     socket
+     |> assign(:payment_step, true)
+     |> assign(:discounts, discounts)
+     |> assign(:discount_pct, nil)}
   end
 
   def handle_event("cancel_payment", _params, socket) do
@@ -653,7 +661,30 @@ defmodule CRCWeb.Waiter.OrderLive do
      |> assign(:amount_paid_input, "")
      |> assign(:change_due, nil)
      |> assign(:split_count, nil)
-     |> assign(:split_input, "")}
+     |> assign(:split_input, "")
+     |> assign(:discount_pct, nil)
+     |> assign(:discounts, [])}
+  end
+
+  def handle_event("set_discount_pct", %{"pct" => pct_str}, socket) do
+    pct = String.to_integer(pct_str)
+
+    change_due =
+      if socket.assigns.payment_method == "efectivo" && socket.assigns.amount_paid_input != "" do
+        case Decimal.parse(socket.assigns.amount_paid_input) do
+          {amount, ""} ->
+            subtotal = Orders.calculate_order_total(socket.assigns.order)
+            total = apply_discount_to_total(subtotal, pct)
+            Decimal.sub(amount, total)
+
+          _ ->
+            nil
+        end
+      else
+        nil
+      end
+
+    {:noreply, socket |> assign(:discount_pct, pct) |> assign(:change_due, change_due)}
   end
 
   def handle_event("update_split_input", %{"value" => value}, socket) do
@@ -682,13 +713,13 @@ defmodule CRCWeb.Waiter.OrderLive do
   end
 
   def handle_event("update_amount_paid", %{"value" => value}, socket) do
-    total = Orders.calculate_order_total(socket.assigns.order)
+    subtotal = Orders.calculate_order_total(socket.assigns.order)
+    total = apply_discount_to_total(subtotal, socket.assigns.discount_pct || 0)
 
     change =
       case Decimal.parse(value) do
         {amount, ""} ->
-          diff = Decimal.sub(amount, total)
-          diff
+          Decimal.sub(amount, total)
 
         _ ->
           nil
@@ -703,6 +734,7 @@ defmodule CRCWeb.Waiter.OrderLive do
   def handle_event("confirm_close_order", _params, socket) do
     order = socket.assigns.order
     method = socket.assigns.payment_method
+    discount_pct = socket.assigns.discount_pct || 0
 
     amount_paid =
       if method == "efectivo" do
@@ -714,9 +746,21 @@ defmodule CRCWeb.Waiter.OrderLive do
         nil
       end
 
+    discount_id =
+      if discount_pct > 0 do
+        Enum.find_value(socket.assigns.discounts, fn d ->
+          if d.percentage == discount_pct, do: d.id
+        end)
+      end
+
     case Orders.close_order(
            order,
-           %{payment_method: method, amount_paid: amount_paid},
+           %{
+             payment_method: method,
+             amount_paid: amount_paid,
+             discount_percentage: discount_pct,
+             discount_id: discount_id
+           },
            socket.assigns.current_user.id
          ) do
       {:ok, closed_order} ->
@@ -1347,7 +1391,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                   </button>
                 <% else %>
                   <%!-- Inline payment panel --%>
-                  <% total = Orders.calculate_order_total(@order) %>
+                  <% subtotal = Orders.calculate_order_total(@order) %>
+                  <% total = apply_discount_to_total(subtotal, @discount_pct || 0) %>
                   <div class="bg-base-200 rounded-xl p-4 space-y-3 border border-base-300">
                     <div class="flex items-center justify-between">
                       <h3 class="font-semibold text-sm text-base-content">Cobro</h3>
@@ -1356,9 +1401,52 @@ defmodule CRCWeb.Waiter.OrderLive do
                       </button>
                     </div>
 
+                    <%!-- Discount selector --%>
+                    <div class="space-y-1.5">
+                      <p class="text-xs text-base-content/60 font-medium">¿Aplicar descuento?</p>
+                      <div class="flex flex-col gap-1">
+                        <button
+                          class={[
+                            "btn btn-sm w-full justify-between",
+                            if(@discount_pct == 0,
+                              do: "btn-primary",
+                              else: "btn-outline btn-ghost"
+                            )
+                          ]}
+                          phx-click="set_discount_pct"
+                          phx-value-pct="0"
+                        >
+                          <span>Sin descuento</span>
+                          <span class={["badge badge-sm", if(@discount_pct == 0, do: "badge-primary-content/30", else: "badge-ghost")]}>0%</span>
+                        </button>
+                        <%= for d <- @discounts do %>
+                          <button
+                            class={[
+                              "btn btn-sm w-full justify-between",
+                              if(@discount_pct == d.percentage,
+                                do: "btn-primary",
+                                else: "btn-outline btn-ghost"
+                              )
+                            ]}
+                            phx-click="set_discount_pct"
+                            phx-value-pct={d.percentage}
+                          >
+                            <span class="truncate text-left">{d.name}</span>
+                            <span class={["badge badge-sm shrink-0", if(@discount_pct == d.percentage, do: "badge-primary-content/30", else: "badge-ghost")]}>{d.percentage}%</span>
+                          </button>
+                        <% end %>
+                      </div>
+                    </div>
+
                     <%!-- Total + split --%>
                     <div class="text-center py-1 space-y-2">
-                      <p class="text-xs text-base-content/50">Total a cobrar</p>
+                      <%= if @discount_pct && @discount_pct > 0 do %>
+                        <p class="text-xs text-base-content/50">Subtotal</p>
+                        <p class="text-lg text-base-content/60 line-through">${format_price(subtotal)}</p>
+                        <p class="text-xs text-success font-medium">-{@discount_pct}% descuento aplicado</p>
+                      <% else %>
+                        <p class="text-xs text-base-content/50">Total a cobrar</p>
+                      <% end %>
                       <p class="text-3xl font-bold text-primary">${format_price(total)}</p>
 
                       <%!-- Split bill row --%>
@@ -1473,7 +1561,8 @@ defmodule CRCWeb.Waiter.OrderLive do
 
                     <%!-- Confirm button --%>
                     <% can_confirm? =
-                      @payment_method != nil and
+                      @discount_pct != nil and
+                        @payment_method != nil and
                         (@payment_method != "efectivo" or
                            (@change_due != nil and not Decimal.lt?(@change_due, Decimal.new(0)))) %>
                     <button
@@ -2075,4 +2164,11 @@ defmodule CRCWeb.Waiter.OrderLive do
   defp item_display_name(%{menu_item: %{name: name}}), do: name
   defp item_display_name(%{product: %{name: name}}), do: name
   defp item_display_name(_), do: "artículo"
+
+  defp apply_discount_to_total(subtotal, 0), do: subtotal
+
+  defp apply_discount_to_total(subtotal, pct) do
+    Decimal.mult(subtotal, Decimal.new(100 - pct))
+    |> Decimal.div(Decimal.new(100))
+  end
 end

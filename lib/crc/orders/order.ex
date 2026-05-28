@@ -4,6 +4,7 @@ defmodule CRC.Orders.Order do
 
   alias CRC.Orders.{OrderItem, Table}
   alias CRC.Accounts.User
+  alias CRC.Settings.Discount
 
   schema "orders" do
     field :customer_name, :string
@@ -24,6 +25,8 @@ defmodule CRC.Orders.Order do
     field :order_type, :string, default: "dine_in"
     # True for grupo de comensales — an order not tied to a physical table, explicitly created as a group
     field :is_group, :boolean, default: false
+    # Discount applied at close time (denormalized for historical accuracy)
+    field :discount_percentage, :integer, default: 0
 
     # Waiter who opened this order (user_id FK)
     belongs_to :user, User
@@ -31,6 +34,8 @@ defmodule CRC.Orders.Order do
     belongs_to :closed_by, User, foreign_key: :closed_by_id
     # Physical table this order belongs to (nullable for backward-compat)
     belongs_to :table, Table
+    # Discount applied at close time (nullable — nil means no discount)
+    belongs_to :discount, Discount
     has_many :order_items, OrderItem
 
     timestamps(type: :utc_datetime)
@@ -80,7 +85,16 @@ defmodule CRC.Orders.Order do
   """
   def close_changeset(order, attrs) do
     order
-    |> cast(attrs, [:status, :payment_method, :amount_paid, :total, :closed_at, :closed_by_id])
+    |> cast(attrs, [
+      :status,
+      :payment_method,
+      :amount_paid,
+      :total,
+      :closed_at,
+      :closed_by_id,
+      :discount_id,
+      :discount_percentage
+    ])
     |> validate_required([:status, :payment_method, :total])
     |> validate_inclusion(:status, @valid_statuses)
     |> validate_inclusion(:payment_method, @valid_payment_methods,

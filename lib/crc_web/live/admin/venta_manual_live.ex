@@ -13,6 +13,7 @@ defmodule CRCWeb.Admin.VentaManualLive do
 
   alias CRC.Catalog
   alias CRC.Orders
+  alias CRC.Settings
 
   @impl true
   def mount(_params, _session, socket) do
@@ -30,6 +31,8 @@ defmodule CRCWeb.Admin.VentaManualLive do
       |> assign(:payment_method, "efectivo")
       |> assign(:datetime_input, default_dt)
       |> assign(:notes, "")
+      |> assign(:discount_pct, 0)
+      |> assign(:discounts, Settings.list_active_discounts())
       |> assign(:errors, [])
 
     {:ok, socket}
@@ -81,21 +84,36 @@ defmodule CRCWeb.Admin.VentaManualLive do
     {:noreply, assign(socket, :payment_method, method)}
   end
 
+  def handle_event("set_discount_pct", %{"pct" => pct_str}, socket) do
+    {:noreply, assign(socket, :discount_pct, String.to_integer(pct_str))}
+  end
+
   def handle_event("submit", _params, socket) do
     errors = validate(socket.assigns)
 
     if errors != [] do
       {:noreply, assign(socket, :errors, errors)}
     else
-      total = compute_total(socket.assigns.lines)
+      subtotal = compute_total(socket.assigns.lines)
+      discount_pct = socket.assigns.discount_pct || 0
+      total = apply_discount(subtotal, discount_pct)
       closed_at = parse_datetime(socket.assigns.datetime_input)
+
+      discount_id =
+        if discount_pct > 0 do
+          Enum.find_value(socket.assigns.discounts, fn d ->
+            if d.percentage == discount_pct, do: d.id
+          end)
+        end
 
       attrs = %{
         customer_name: socket.assigns.customer_name,
         payment_method: socket.assigns.payment_method,
         total: total,
         closed_at: closed_at,
-        notes: socket.assigns.notes
+        notes: socket.assigns.notes,
+        discount_percentage: discount_pct,
+        discount_id: discount_id
       }
 
       items =
@@ -110,6 +128,7 @@ defmodule CRCWeb.Admin.VentaManualLive do
            |> assign(:lines, [])
            |> assign(:customer_name, "")
            |> assign(:notes, "")
+           |> assign(:discount_pct, 0)
            |> assign(:errors, [])
            |> put_flash(:info, "Venta registrada correctamente.")}
 
@@ -229,6 +248,8 @@ defmodule CRCWeb.Admin.VentaManualLive do
 
             <%!-- Lines --%>
             <%= if @lines != [] do %>
+              <% subtotal = compute_total(@lines) %>
+              <% final_total = apply_discount(subtotal, @discount_pct) %>
               <div class="bg-base-200 rounded-xl divide-y divide-base-300">
                 <%= for {line, idx} <- Enum.with_index(@lines) do %>
                   <div class="flex items-center gap-3 px-4 py-2.5">
@@ -246,15 +267,58 @@ defmodule CRCWeb.Admin.VentaManualLive do
                     </button>
                   </div>
                 <% end %>
-                <%!-- Total row --%>
+                <%!-- Subtotal + descuento + total --%>
+                <%= if @discount_pct > 0 do %>
+                  <div class="flex items-center justify-between px-4 py-2 text-sm text-base-content/60">
+                    <span>Subtotal</span>
+                    <span>${format_price(subtotal)}</span>
+                  </div>
+                  <div class="flex items-center justify-between px-4 py-2 text-sm text-success font-medium">
+                    <span>Descuento {@discount_pct}%</span>
+                    <span>-${format_price(Decimal.sub(subtotal, final_total))}</span>
+                  </div>
+                <% end %>
                 <div class="flex items-center justify-between px-4 py-2.5 bg-base-300/40 rounded-b-xl">
                   <span class="text-sm font-semibold text-base-content">Total</span>
                   <span class="text-lg font-bold text-primary">
-                    ${format_price(compute_total(@lines))}
+                    ${format_price(final_total)}
                   </span>
                 </div>
               </div>
             <% end %>
+          </div>
+
+          <%!-- Descuento --%>
+          <div class="form-control">
+            <label class="label"><span class="label-text font-medium">Descuento</span></label>
+            <div class="flex flex-col gap-1">
+              <button
+                type="button"
+                class={[
+                  "btn btn-sm w-full justify-between",
+                  if(@discount_pct == 0, do: "btn-primary", else: "btn-outline btn-ghost")
+                ]}
+                phx-click="set_discount_pct"
+                phx-value-pct="0"
+              >
+                <span>Sin descuento</span>
+                <span class={["badge badge-sm", if(@discount_pct == 0, do: "badge-primary-content/30", else: "badge-ghost")]}>0%</span>
+              </button>
+              <%= for d <- @discounts do %>
+                <button
+                  type="button"
+                  class={[
+                    "btn btn-sm w-full justify-between",
+                    if(@discount_pct == d.percentage, do: "btn-primary", else: "btn-outline btn-ghost")
+                  ]}
+                  phx-click="set_discount_pct"
+                  phx-value-pct={d.percentage}
+                >
+                  <span class="truncate text-left">{d.name}</span>
+                  <span class={["badge badge-sm shrink-0", if(@discount_pct == d.percentage, do: "badge-primary-content/30", else: "badge-ghost")]}>{d.percentage}%</span>
+                </button>
+              <% end %>
+            </div>
           </div>
 
           <%!-- Payment method --%>
@@ -340,6 +404,13 @@ defmodule CRCWeb.Admin.VentaManualLive do
     Enum.reduce(lines, Decimal.new(0), fn %{item: item, qty: qty}, acc ->
       Decimal.add(acc, Decimal.mult(item.price, Decimal.new(qty)))
     end)
+  end
+
+  defp apply_discount(subtotal, 0), do: subtotal
+
+  defp apply_discount(subtotal, pct) do
+    Decimal.mult(subtotal, Decimal.new(100 - pct))
+    |> Decimal.div(Decimal.new(100))
   end
 
   defp validate(assigns) do

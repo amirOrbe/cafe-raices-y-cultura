@@ -68,7 +68,9 @@ defmodule CRC.Orders.Order do
       :total,
       :closed_at,
       :closed_by_id,
-      :manual_entry
+      :manual_entry,
+      :discount_percentage,
+      :discount_id
     ])
     |> validate_required([:customer_name, :payment_method, :total, :closed_at])
     |> put_change(:status, "closed")

@@ -1966,11 +1966,23 @@ defmodule CRCWeb.Waiter.OrderLive do
                 <% end %>
               </div>
 
-              <%!-- Total --%>
+              <%!-- Discount breakdown + Total --%>
+              <% bill_subtotal = Orders.calculate_order_total(@order) %>
+              <% bill_total = if @order.status == "closed" && @order.total, do: @order.total, else: bill_subtotal %>
+              <%= if @order.discount_percentage && @order.discount_percentage > 0 do %>
+                <div class="flex items-center justify-between border-t border-base-300 pt-3 text-sm text-base-content/60">
+                  <span>Subtotal</span>
+                  <span>${format_price(bill_subtotal)}</span>
+                </div>
+                <div class="flex items-center justify-between text-sm text-success font-medium">
+                  <span>Descuento {@order.discount_percentage}%</span>
+                  <span>-${format_price(Decimal.sub(bill_subtotal, bill_total))}</span>
+                </div>
+              <% end %>
               <div class="flex items-center justify-between border-t border-base-300 pt-3">
                 <span class="font-semibold">Total</span>
                 <span class="text-2xl font-bold text-primary">
-                  ${format_price(Orders.calculate_order_total(@order))}
+                  ${format_price(bill_total)}
                 </span>
               </div>
             <% end %>

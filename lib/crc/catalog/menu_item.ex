@@ -2,7 +2,7 @@ defmodule CRC.Catalog.MenuItem do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias CRC.Catalog.{Category, MenuItemIngredient}
+  alias CRC.Catalog.{Category, MenuItemIngredient, MenuItemOptionalExtra}
 
   @destinations ~w(cocina barra)
   # Only relevant when destination == "barra". nil means unclassified.
@@ -24,6 +24,7 @@ defmodule CRC.Catalog.MenuItem do
 
     belongs_to :category, Category
     has_many :menu_item_ingredients, MenuItemIngredient
+    has_many :menu_item_optional_extras, MenuItemOptionalExtra
 
     timestamps(type: :utc_datetime)
   end

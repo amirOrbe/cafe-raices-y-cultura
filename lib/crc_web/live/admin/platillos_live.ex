@@ -22,6 +22,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
       |> assign(:ingredients_draft, [])
       |> assign(:selected_product_id, "")
       |> assign(:ingredient_quantity_input, "")
+      |> assign(:optional_extras_draft, [])
+      |> assign(:selected_optional_product_id, "")
+      |> assign(:optional_extra_qty_input, "")
+      |> assign(:optional_extra_price_input, "")
       |> assign(:remove_image, false)
       |> assign(:expanded_ids, MapSet.new())
       |> assign(:search, "")
@@ -77,6 +81,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
      |> assign(:ingredients_draft, [])
      |> assign(:selected_product_id, "")
      |> assign(:ingredient_quantity_input, "")
+     |> assign(:optional_extras_draft, [])
+     |> assign(:selected_optional_product_id, "")
+     |> assign(:optional_extra_qty_input, "")
+     |> assign(:optional_extra_price_input, "")
      |> assign(:remove_image, false)}
   end
 
@@ -94,6 +102,17 @@ defmodule CRCWeb.Admin.PlatillosLive do
         }
       end)
 
+    optional_draft =
+      Enum.map(item.menu_item_optional_extras, fn e ->
+        %{
+          product_id: e.product_id,
+          product_name: e.product.name,
+          portion_quantity: e.portion_quantity,
+          sale_price: e.sale_price,
+          unit: e.product.unit
+        }
+      end)
+
     {:noreply,
      socket
      |> assign(:modal, {:edit, item})
@@ -101,6 +120,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
      |> assign(:ingredients_draft, draft)
      |> assign(:selected_product_id, "")
      |> assign(:ingredient_quantity_input, "")
+     |> assign(:optional_extras_draft, optional_draft)
+     |> assign(:selected_optional_product_id, "")
+     |> assign(:optional_extra_qty_input, "")
+     |> assign(:optional_extra_price_input, "")
      |> assign(:remove_image, false)}
   end
 
@@ -110,6 +133,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
        modal: nil,
        form: nil,
        ingredients_draft: [],
+       optional_extras_draft: [],
+       selected_optional_product_id: "",
+       optional_extra_qty_input: "",
+       optional_extra_price_input: "",
        remove_image: false
      )}
   end
@@ -179,6 +206,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
     case result do
       {:ok, item} ->
         Catalog.set_menu_item_ingredients(item.id, socket.assigns.ingredients_draft)
+        Catalog.set_menu_item_optional_extras(item.id, socket.assigns.optional_extras_draft)
         label = if socket.assigns.modal == :new, do: "creado", else: "actualizado"
 
         socket =
@@ -188,6 +216,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
           |> assign(:modal, nil)
           |> assign(:form, nil)
           |> assign(:ingredients_draft, [])
+          |> assign(:optional_extras_draft, [])
+          |> assign(:selected_optional_product_id, "")
+          |> assign(:optional_extra_qty_input, "")
+          |> assign(:optional_extra_price_input, "")
           |> assign(:remove_image, false)
 
         socket =
@@ -311,6 +343,69 @@ defmodule CRCWeb.Admin.PlatillosLive do
     pid = String.to_integer(pid_str)
     draft = Enum.reject(socket.assigns.ingredients_draft, &(&1.product_id == pid))
     {:noreply, assign(socket, :ingredients_draft, draft)}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Optional extras events
+  # ---------------------------------------------------------------------------
+
+  def handle_event("select_optional_product", %{"optional_product_id" => pid}, socket) do
+    {:noreply, assign(socket, :selected_optional_product_id, pid)}
+  end
+
+  def handle_event("set_optional_extra_qty", %{"optional_extra_qty" => qty}, socket) do
+    {:noreply, assign(socket, :optional_extra_qty_input, qty)}
+  end
+
+  def handle_event("set_optional_extra_price", %{"optional_extra_price" => price}, socket) do
+    {:noreply, assign(socket, :optional_extra_price_input, price)}
+  end
+
+  def handle_event("add_optional_extra", _params, socket) do
+    %{
+      available_products: products,
+      selected_optional_product_id: pid_str,
+      optional_extra_qty_input: qty_str,
+      optional_extra_price_input: price_str,
+      optional_extras_draft: draft
+    } = socket.assigns
+
+    with true <- pid_str != "" and pid_str != nil,
+         {pid, _} <- Integer.parse(pid_str),
+         product <- Enum.find(products, &(&1.id == pid)),
+         true <- product != nil,
+         false <- Enum.any?(draft, &(&1.product_id == pid)),
+         {qty_float, _} <- Float.parse(qty_str <> ""),
+         true <- qty_float > 0 do
+      sale_price =
+        case Float.parse(price_str <> "") do
+          {p, _} when p > 0 -> Decimal.from_float(p)
+          _ -> nil
+        end
+
+      entry = %{
+        product_id: product.id,
+        product_name: product.name,
+        portion_quantity: Decimal.from_float(qty_float),
+        sale_price: sale_price,
+        unit: product.unit
+      }
+
+      {:noreply,
+       socket
+       |> assign(:optional_extras_draft, draft ++ [entry])
+       |> assign(:selected_optional_product_id, "")
+       |> assign(:optional_extra_qty_input, "")
+       |> assign(:optional_extra_price_input, "")}
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("remove_optional_extra", %{"product_id" => pid_str}, socket) do
+    pid = String.to_integer(pid_str)
+    draft = Enum.reject(socket.assigns.optional_extras_draft, &(&1.product_id == pid))
+    {:noreply, assign(socket, :optional_extras_draft, draft)}
   end
 
   # ---------------------------------------------------------------------------
@@ -771,6 +866,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
         available_products={@available_products}
         selected_product_id={@selected_product_id}
         ingredient_quantity_input={@ingredient_quantity_input}
+        optional_extras_draft={@optional_extras_draft}
+        selected_optional_product_id={@selected_optional_product_id}
+        optional_extra_qty_input={@optional_extra_qty_input}
+        optional_extra_price_input={@optional_extra_price_input}
         uploads={@uploads}
         remove_image={@remove_image}
       />
@@ -789,6 +888,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
   attr :available_products, :list, required: true
   attr :selected_product_id, :string, required: true
   attr :ingredient_quantity_input, :string, required: true
+  attr :optional_extras_draft, :list, required: true
+  attr :selected_optional_product_id, :string, required: true
+  attr :optional_extra_qty_input, :string, required: true
+  attr :optional_extra_price_input, :string, required: true
   attr :uploads, :map, required: true
   attr :remove_image, :boolean, default: false
 
@@ -1215,6 +1318,119 @@ defmodule CRCWeb.Admin.PlatillosLive do
               <% end %>
             </div>
             <%!-- ── End Ingredientes ───────────────────────────────────────────── --%>
+
+            <%!-- ── ④ Extras opcionales ──────────────────────────────────────────── --%>
+            <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
+              <div class="flex items-center gap-1.5">
+                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+                  4
+                </span>
+                <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40">
+                  Extras opcionales
+                </p>
+                <span class="badge badge-xs badge-ghost">{length(@optional_extras_draft)}</span>
+              </div>
+              <p class="text-xs text-base-content/40 leading-relaxed">
+                Insumos que el cliente puede pedir aparte, pero que <strong>no forman parte de la receta base</strong>.
+                Solo se descuentan del stock si el mesero los agrega a la comanda.
+                El precio es opcional; déjalo en 0 si no tienen cargo extra.
+              </p>
+
+              <%!-- Current optional extras list --%>
+              <%= if @optional_extras_draft != [] do %>
+                <div class="space-y-1.5">
+                  <%= for e <- @optional_extras_draft do %>
+                    <div class="flex items-center justify-between py-1.5 px-3 bg-base-100 border border-base-300 rounded-lg">
+                      <span class="text-sm font-medium text-base-content">{e.product_name}</span>
+                      <div class="flex items-center gap-3">
+                        <span class="text-xs font-mono text-base-content/60">
+                          {format_qty(e.portion_quantity)} {unit_abbr(e.unit)}
+                        </span>
+                        <%= if e.sale_price && Decimal.compare(e.sale_price, Decimal.new(0)) == :gt do %>
+                          <span class="badge badge-xs badge-accent">+${format_qty(e.sale_price)}</span>
+                        <% else %>
+                          <span class="badge badge-xs badge-ghost">Sin cargo</span>
+                        <% end %>
+                        <button
+                          type="button"
+                          class="btn btn-ghost btn-xs text-error p-0"
+                          phx-click="remove_optional_extra"
+                          phx-value-product_id={e.product_id}
+                          title="Quitar extra opcional"
+                        >
+                          <.icon name="hero-x-mark" class="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+
+              <%!-- Add optional extra picker --%>
+              <% sel_opt_product = Enum.find(@available_products, &(to_string(&1.id) == @selected_optional_product_id)) %>
+              <% sel_opt_unit = if sel_opt_product, do: unit_abbr(sel_opt_product.unit), else: nil %>
+
+              <div class="space-y-2">
+                <div>
+                  <label class="label text-xs pb-0.5">Insumo</label>
+                  <select
+                    class="select select-sm w-full"
+                    phx-change="select_optional_product"
+                    name="optional_product_id"
+                  >
+                    <option value="">— Selecciona insumo —</option>
+                    <%= for p <- @available_products do %>
+                      <option value={p.id} selected={to_string(p.id) == @selected_optional_product_id}>
+                        {p.name} ({unit_abbr(p.unit)})
+                      </option>
+                    <% end %>
+                  </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label class="label text-xs pb-0.5">
+                      Cantidad por porción
+                      <%= if sel_opt_unit do %>
+                        <span class="badge badge-xs badge-primary badge-outline ml-1">{sel_opt_unit}</span>
+                      <% end %>
+                    </label>
+                    <input
+                      type="number"
+                      class="input input-sm w-full"
+                      placeholder={if sel_opt_unit, do: "0.000 #{sel_opt_unit}", else: "0.000"}
+                      step="0.001"
+                      min="0"
+                      value={@optional_extra_qty_input}
+                      phx-change="set_optional_extra_qty"
+                      name="optional_extra_qty"
+                    />
+                  </div>
+                  <div>
+                    <label class="label text-xs pb-0.5">Precio extra (0 = sin cargo)</label>
+                    <input
+                      type="number"
+                      class="input input-sm w-full"
+                      placeholder="0.00"
+                      step="0.50"
+                      min="0"
+                      value={@optional_extra_price_input}
+                      phx-change="set_optional_extra_price"
+                      name="optional_extra_price"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline btn-secondary"
+                  phx-click="add_optional_extra"
+                >
+                  <.icon name="hero-plus" class="size-3.5" /> Agregar extra opcional
+                </button>
+              </div>
+            </div>
+            <%!-- ── End Extras opcionales ─────────────────────────────────────────── --%>
 
             <div class="flex justify-end gap-3 pt-2">
               <button type="button" class="btn btn-ghost" phx-click="close_modal">

@@ -170,6 +170,14 @@ defmodule CRCWeb.CuentaLive do
                       </p>
                     <% end %>
 
+                    <%!-- Optional extras added (e.g. leche en infusión) --%>
+                    <%= for e <- line.extras do %>
+                      <p class="text-xs text-secondary/80 mt-0.5 flex items-baseline gap-1">
+                        <span>+ {e.quantity}× {e.name}</span>
+                        <span class="text-base-content/40">+${format_price(e.unit_price)}</span>
+                      </p>
+                    <% end %>
+
                     <%!-- Ingredient exclusions --%>
                     <%= if line.exclusions != [] do %>
                       <p class="text-xs text-error mt-0.5">
@@ -264,10 +272,9 @@ defmodule CRCWeb.CuentaLive do
   # ---------------------------------------------------------------------------
 
   # Returns customer-visible line items with full breakdown per item.
-  # Excludes cancelled items, ingredient extras, and variant-only rows.
+  # Excludes cancelled items and variant-only rows.
   defp bill_items(%{order_items: items}) do
-    # Build a lookup: menu_item_id → list of %{name, extra_price} for each selected variant.
-    # Variant items with unit_price > 0 have an extra charge that contributes to the total.
+    # Build lookup: menu_item_id → list of %{name, extra_price} for selected variants
     variant_map =
       items
       |> Enum.filter(fn oi ->
@@ -283,6 +290,18 @@ defmodule CRCWeb.CuentaLive do
         %{name: oi.variant.name, extra_price: extra}
       end)
 
+    # Build lookup: for_menu_item_id → list of %{name, unit_price} for product extras with charge
+    extras_map =
+      items
+      |> Enum.filter(fn oi ->
+        not is_nil(oi.product_id) and not is_nil(oi.for_menu_item_id) and
+          not is_nil(oi.product) and oi.status not in ["cancelled", "cancelled_waste"] and
+          oi.unit_price && Decimal.gt?(oi.unit_price, Decimal.new(0))
+      end)
+      |> Enum.group_by(& &1.for_menu_item_id, fn oi ->
+        %{name: oi.product.name, quantity: oi.quantity, unit_price: oi.unit_price}
+      end)
+
     items
     |> Enum.filter(fn oi ->
       oi.status not in ["cancelled", "cancelled_waste"] and
@@ -292,6 +311,7 @@ defmodule CRCWeb.CuentaLive do
       unit_price = oi.unit_price || oi.menu_item.price
       exclusion_names = Enum.map(oi.exclusions, fn e -> e.product && e.product.name end) |> Enum.reject(&is_nil/1)
       variants = Map.get(variant_map, oi.menu_item_id, [])
+      extras = Map.get(extras_map, oi.menu_item_id, [])
 
       %{
         name: oi.menu_item.name,
@@ -302,6 +322,7 @@ defmodule CRCWeb.CuentaLive do
         unit_price: unit_price,
         subtotal: Decimal.mult(unit_price, Decimal.new(oi.quantity)),
         variants: variants,
+        extras: extras,
         exclusions: exclusion_names
       }
     end)

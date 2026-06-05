@@ -116,7 +116,7 @@ defmodule CRCWeb.Waiter.OrderLive do
     socket =
       if socket.assigns.selected_menu_item do
         mi = socket.assigns.selected_menu_item
-        extras = Catalog.list_recipe_ingredients(mi.id)
+        extras = Catalog.list_extras_for_waiter(mi.id)
         assign(socket, :extras, extras)
       else
         socket
@@ -245,7 +245,7 @@ defmodule CRCWeb.Waiter.OrderLive do
       end)
 
     if menu_item do
-      extras = Catalog.list_recipe_ingredients(menu_item.id)
+      extras = Catalog.list_extras_for_waiter(menu_item.id)
 
       {:noreply,
        socket
@@ -1893,25 +1893,24 @@ defmodule CRCWeb.Waiter.OrderLive do
                 </div>
                 <div class="p-4">
                   <div class="flex flex-wrap gap-2">
-                    <%= for {product, portion_qty} <- @extras do %>
-                      <% sale = product.sale_price %>
+                    <%= for {product, portion_qty, sale_price} <- @extras do %>
                       <% extra_price =
-                        if sale && Decimal.compare(sale, Decimal.new(0)) == :gt,
-                          do: Decimal.mult(sale, portion_qty) |> Decimal.round(2),
+                        if sale_price && Decimal.compare(sale_price, Decimal.new(0)) == :gt,
+                          do: sale_price |> Decimal.round(2),
                           else: nil %>
                       <button
                         class="btn btn-sm btn-outline btn-accent gap-1.5"
                         phx-click="add_extra"
                         phx-value-product_id={product.id}
                         phx-value-portion_qty={Decimal.to_string(portion_qty)}
-                        phx-value-sale_price={if sale, do: Decimal.to_string(sale), else: "0"}
+                        phx-value-sale_price={if sale_price, do: Decimal.to_string(sale_price), else: "0"}
                       >
                         <.icon name="hero-plus" class="size-3" />
                         {product.name}
                         <span class="text-xs opacity-70">
                           {format_qty(portion_qty)} {product.unit}
                           <%= if extra_price do %>
-                            · ${ format_price(extra_price)}
+                            · +${format_price(extra_price)}
                           <% end %>
                         </span>
                       </button>

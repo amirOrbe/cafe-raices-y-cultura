@@ -5,7 +5,7 @@ defmodule CRC.Catalog do
 
   import Ecto.Query, warn: false
   alias CRC.Repo
-  alias CRC.Catalog.{Category, MenuItem, MenuItemIngredient, Package, PackageItem}
+  alias CRC.Catalog.{Category, MenuItem, MenuItemIngredient, MenuItemOptionalExtra, Package, PackageItem}
   alias CRC.Inventory.Product
 
   # ---------------------------------------------------------------------------
@@ -93,6 +93,7 @@ defmodule CRC.Catalog do
     |> Repo.get!(id)
     |> Repo.preload(:category)
     |> Repo.preload(menu_item_ingredients: :product)
+    |> Repo.preload(menu_item_optional_extras: :product)
   end
 
   @doc "Returns a changeset for a menu item."
@@ -156,6 +157,66 @@ defmodule CRC.Catalog do
         |> Repo.insert!()
       end)
     end)
+  end
+
+  @doc """
+  Replaces all optional extras for a menu item.
+  Each entry is a map with :product_id, :portion_quantity, and optional :sale_price keys.
+  """
+  def set_menu_item_optional_extras(menu_item_id, extras) when is_list(extras) do
+    Repo.transaction(fn ->
+      Repo.delete_all(
+        from(e in MenuItemOptionalExtra, where: e.menu_item_id == ^menu_item_id)
+      )
+
+      Enum.each(extras, fn entry ->
+        %MenuItemOptionalExtra{}
+        |> MenuItemOptionalExtra.changeset(%{
+          menu_item_id: menu_item_id,
+          product_id: entry.product_id,
+          portion_quantity: entry.portion_quantity,
+          sale_price: entry[:sale_price]
+        })
+        |> Repo.insert!()
+      end)
+    end)
+  end
+
+  @doc """
+  Returns extras available for a menu item in the waiter comanda panel as
+  `{%Product{}, portion_quantity, sale_price}` triples.
+
+  Includes:
+  - Recipe ingredients (portion from recipe, sale_price from product.sale_price)
+  - Optional extras (portion and sale_price from menu_item_optional_extras)
+
+  Optional extras appear after recipe ingredients, alphabetically.
+  """
+  def list_extras_for_waiter(menu_item_id) do
+    recipe =
+      from(mii in MenuItemIngredient,
+        join: p in Product,
+        on: p.id == mii.product_id,
+        where: mii.menu_item_id == ^menu_item_id and p.active == true,
+        order_by: p.name,
+        select: {p, mii.quantity, p.sale_price}
+      )
+      |> Repo.all()
+
+    recipe_product_ids = Enum.map(recipe, fn {p, _, _} -> p.id end)
+
+    optional =
+      from(e in MenuItemOptionalExtra,
+        join: p in Product,
+        on: p.id == e.product_id,
+        where: e.menu_item_id == ^menu_item_id and p.active == true,
+        where: p.id not in ^recipe_product_ids,
+        order_by: p.name,
+        select: {p, e.portion_quantity, e.sale_price}
+      )
+      |> Repo.all()
+
+    recipe ++ optional
   end
 
   # ---------------------------------------------------------------------------

@@ -603,20 +603,14 @@ defmodule CRCWeb.Components.SiteComponents do
           <p class="text-xs text-neutral-content/30">
             Diseñado y desarrollado por
             <a
-              href="https://amirOrbe.github.io"
+              href="https://livecraft.com.mx/"
               target="_blank"
               rel="noopener noreferrer"
               class="hover:text-neutral-content/60 transition-colors underline underline-offset-2"
             >
-              Amir Orbe
+              LiveCraft
             </a>
-            ·
-            <a
-              href="mailto:orbebrian@gmail.com"
-              class="hover:text-neutral-content/60 transition-colors"
-            >
-              orbebrian@gmail.com
-            </a>
+            · Cotiza tu proyecto en línea
           </p>
         </div>
       </div>

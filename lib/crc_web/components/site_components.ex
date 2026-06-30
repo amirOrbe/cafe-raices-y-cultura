@@ -601,7 +601,7 @@ defmodule CRCWeb.Components.SiteComponents do
 
         <div class="mt-6 pt-5 border-t border-neutral-content/10 text-center">
           <p class="text-xs text-neutral-content/30">
-            Diseñado y desarrollado por
+            Desarrollado por{" "}
             <a
               href="https://livecraft.com.mx/"
               target="_blank"
@@ -610,7 +610,6 @@ defmodule CRCWeb.Components.SiteComponents do
             >
               LiveCraft
             </a>
-            · Cotiza tu proyecto en línea
           </p>
         </div>
       </div>

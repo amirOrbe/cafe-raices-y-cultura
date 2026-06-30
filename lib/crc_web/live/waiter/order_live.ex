@@ -22,15 +22,7 @@ defmodule CRCWeb.Waiter.OrderLive do
 
     order = Orders.get_order!(order_id)
     categories = Catalog.list_categories()
-    first_category = List.first(categories)
     packages = Catalog.list_packages()
-
-    menu_items =
-      if first_category do
-        Catalog.list_menu_items_for_category_with_stock(first_category.id)
-      else
-        []
-      end
 
     socket =
       socket
@@ -38,9 +30,9 @@ defmodule CRCWeb.Waiter.OrderLive do
       |> assign(:order, order)
       |> assign(:categories, categories)
       |> assign(:packages, packages)
-      |> assign(:selected_category_id, first_category && first_category.id)
+      |> assign(:selected_category_id, nil)
       |> assign(:menu_tab, :menu)
-      |> assign(:menu_items, menu_items)
+      |> assign(:menu_items, [])
       |> assign(:selected_menu_item, nil)
       |> assign(:extras, [])
       |> assign(:flash_msg, nil)
@@ -61,6 +53,7 @@ defmodule CRCWeb.Waiter.OrderLive do
       |> assign(:menu_search, "")
       |> assign(:search_results, nil)
       |> assign(:mobile_tab, :menu)
+      |> assign(:menu_step, :categories)
 
     {:ok, socket}
   rescue
@@ -180,29 +173,33 @@ defmodule CRCWeb.Waiter.OrderLive do
   end
 
   def handle_event("select_menu_tab", %{"tab" => tab}, socket) do
-    {:noreply, assign(socket, :menu_tab, String.to_existing_atom(tab))}
+    {:noreply,
+     socket
+     |> assign(:menu_tab, String.to_existing_atom(tab))
+     |> assign(:menu_step, :categories)
+     |> assign(:selected_category_id, nil)
+     |> assign(:menu_items, [])}
   end
 
   def handle_event("select_category", %{"id" => id}, socket) do
     category_id = String.to_integer(id)
+    menu_items = Catalog.list_menu_items_for_category_with_stock(category_id)
 
-    if socket.assigns.selected_category_id == category_id do
-      {:noreply,
-       socket
-       |> assign(:selected_category_id, nil)
-       |> assign(:menu_items, [])
-       |> assign(:selected_menu_item, nil)
-       |> assign(:extras, [])}
-    else
-      menu_items = Catalog.list_menu_items_for_category_with_stock(category_id)
+    {:noreply,
+     socket
+     |> assign(:selected_category_id, category_id)
+     |> assign(:menu_items, menu_items)
+     |> assign(:menu_step, :items)
+     |> assign(:selected_menu_item, nil)
+     |> assign(:extras, [])}
+  end
 
-      {:noreply,
-       socket
-       |> assign(:selected_category_id, category_id)
-       |> assign(:menu_items, menu_items)
-       |> assign(:selected_menu_item, nil)
-       |> assign(:extras, [])}
-    end
+  def handle_event("back_to_categories", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:menu_step, :categories)
+     |> assign(:selected_category_id, nil)
+     |> assign(:menu_items, [])}
   end
 
   def handle_event("add_package", %{"package_id" => package_id_str}, socket) do
@@ -1381,40 +1378,45 @@ defmodule CRCWeb.Waiter.OrderLive do
                         </div>
                       </div>
                     <% else %>
-                      <%!-- Pills de categoría con scroll horizontal --%>
-                      <div class="px-3 pt-3 pb-2 overflow-x-auto" style="scrollbar-width: none; -ms-overflow-style: none;">
-                        <div class="flex gap-2 min-w-max">
-                          <%= for category <- @categories do %>
-                            <% has_items? = length(category.menu_items) > 0 %>
-                            <button
-                              class={[
-                                "btn btn-sm whitespace-nowrap rounded-full transition-all",
-                                if(@selected_category_id == category.id,
-                                  do: "btn-primary shadow-sm",
-                                  else: "btn-ghost border border-base-300"),
-                                if(not has_items?, do: "opacity-40", else: "")
-                              ]}
-                              phx-click="select_category"
-                              phx-value-id={category.id}
-                              disabled={not has_items?}
-                            >
-                              {category.name}
-                              <span class={["badge badge-xs ml-0.5", if(@selected_category_id == category.id, do: "badge-primary-content/40", else: "badge-ghost")]}>
-                                {length(category.menu_items)}
-                              </span>
-                            </button>
+                      <%= if @menu_step == :categories do %>
+                        <%!-- Paso 1: grid de categorías --%>
+                        <div class="p-3">
+                          <p class="text-xs text-base-content/50 font-medium px-1 mb-3">¿Qué sección?</p>
+                          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2.5">
+                            <%= for category <- @categories do %>
+                              <% has_items? = length(category.menu_items) > 0 %>
+                              <button
+                                class={[
+                                  "rounded-xl border-2 p-4 flex flex-col items-start gap-1 text-left transition-all active:scale-95",
+                                  if(has_items?,
+                                    do: "bg-base-200/60 border-transparent hover:border-primary/40 hover:bg-primary/5 cursor-pointer",
+                                    else: "bg-base-200/30 border-transparent opacity-40 cursor-not-allowed")
+                                ]}
+                                phx-click="select_category"
+                                phx-value-id={category.id}
+                                disabled={not has_items?}
+                              >
+                                <span class="text-sm font-bold text-base-content leading-tight">{category.name}</span>
+                                <span class="text-xs text-base-content/50">{length(category.menu_items)} platillo{if length(category.menu_items) != 1, do: "s"}</span>
+                              </button>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% else %>
+                        <%!-- Paso 2: platillos de la categoría seleccionada --%>
+                        <% selected_cat = Enum.find(@categories, &(&1.id == @selected_category_id)) %>
+                        <div class="flex items-center gap-2 px-4 py-2.5 border-b border-base-200">
+                          <button
+                            class="btn btn-xs btn-ghost gap-1 text-base-content/60"
+                            phx-click="back_to_categories"
+                          >
+                            <.icon name="hero-arrow-left" class="size-3.5" /> Categorías
+                          </button>
+                          <%= if selected_cat do %>
+                            <span class="text-sm font-semibold text-base-content">{selected_cat.name}</span>
                           <% end %>
                         </div>
-                      </div>
-
-                      <%!-- Grid de platillos --%>
-                      <div class="p-3">
-                        <%= if is_nil(@selected_category_id) do %>
-                          <div class="py-12 text-center text-base-content/40">
-                            <.icon name="hero-squares-2x2" class="size-8 mx-auto mb-2 opacity-30" />
-                            <p class="text-sm">Selecciona una categoría</p>
-                          </div>
-                        <% else %>
+                        <div class="p-3">
                           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2.5">
                             <%= for {menu_item, portions} <- @menu_items do %>
                               <.menu_item_card menu_item={menu_item} portions={portions} low_stock_threshold={@low_stock_threshold} />
@@ -1425,8 +1427,16 @@ defmodule CRCWeb.Waiter.OrderLive do
                               </p>
                             <% end %>
                           </div>
-                        <% end %>
-                      </div>
+                          <div class="mt-4 pt-3 border-t border-base-200">
+                            <button
+                              class="btn btn-sm btn-ghost w-full gap-2 text-base-content/60"
+                              phx-click="back_to_categories"
+                            >
+                              <.icon name="hero-squares-2x2" class="size-4" /> Ver otras categorías
+                            </button>
+                          </div>
+                        </div>
+                      <% end %>
                     <% end %>
                   <% end %>
                 <% else %>

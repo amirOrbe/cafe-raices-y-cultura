@@ -1,22 +1,12 @@
 defmodule CRC.Accounts.UserEmail do
-  @moduledoc """
-  Builds transactional email messages for user account events.
-
-  Emails are composed with Swoosh and delivered via the configured mailer
-  adapter (Local in dev, Resend in production).
-
-  ## Sender address
-  In dev, emails are sent from `onboarding@resend.dev` (Resend's shared test
-  domain). Before going to production, update `@from` to a verified domain
-  address (e.g. `noreply@cafercyc.com`).
-  """
+  @moduledoc false
 
   import Swoosh.Email
 
-  # Update this address once your domain is verified in Resend.
-  # Dev fallback: onboarding@resend.dev (Resend shared domain, no verification needed).
-  @from {"Café Raíces y Cultura",
-         Application.compile_env(:crc, :mailer_from_address, "onboarding@resend.dev")}
+  defp from_address do
+    {"Café Raíces y Cultura",
+     Application.get_env(:crc, :mailer_from_address, "onboarding@resend.dev")}
+  end
 
   # ---------------------------------------------------------------------------
   # Public API
@@ -32,7 +22,7 @@ defmodule CRC.Accounts.UserEmail do
   def welcome_confirmation(%{name: name, email: email} = _user, confirmation_url) do
     new()
     |> to({name, email})
-    |> from(@from)
+    |> from(from_address())
     |> subject("Bienvenido a Café Raíces y Cultura — confirma tu cuenta")
     |> html_body(build_html(name, confirmation_url))
     |> text_body(build_text(name, confirmation_url))
@@ -45,7 +35,7 @@ defmodule CRC.Accounts.UserEmail do
   def password_reset(%{name: name, email: email} = _user, reset_url) do
     new()
     |> to({name, email})
-    |> from(@from)
+    |> from(from_address())
     |> subject("Recupera tu contraseña — Café Raíces y Cultura")
     |> html_body(build_reset_html(name, reset_url))
     |> text_body(build_reset_text(name, reset_url))

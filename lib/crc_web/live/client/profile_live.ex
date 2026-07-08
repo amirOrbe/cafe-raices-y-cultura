@@ -3,6 +3,7 @@ defmodule CRCWeb.Client.ProfileLive do
 
   alias CRC.Accounts
   alias CRC.Accounts.User
+  alias CRCWeb.Components.SiteComponents
 
   @impl true
   def mount(_params, _session, socket) do
@@ -15,13 +16,22 @@ defmodule CRCWeb.Client.ProfileLive do
        form: to_form(changeset, as: "user"),
        visit_count: visit_count,
        page_title: "Mi perfil",
-       editing: false
+       editing: false,
+       nav_open: false
      )}
   end
 
   @impl true
   def handle_event("edit", _params, socket) do
     {:noreply, assign(socket, editing: true)}
+  end
+
+  def handle_event("toggle_nav", _params, socket) do
+    {:noreply, assign(socket, :nav_open, !socket.assigns.nav_open)}
+  end
+
+  def handle_event("close_nav", _params, socket) do
+    {:noreply, assign(socket, :nav_open, false)}
   end
 
   def handle_event("cancel_edit", _params, socket) do
@@ -60,127 +70,152 @@ defmodule CRCWeb.Client.ProfileLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="max-w-md mx-auto px-4 py-6">
-      <div class="flex items-center justify-between mb-4">
-        <h1 class="text-2xl font-bold text-primary">Mi perfil</h1>
-        <.link
-          href="/cerrar-sesion"
-          method="delete"
-          class="btn btn-ghost btn-sm text-secondary"
-        >
-          <.icon name="hero-arrow-right-on-rectangle" class="size-5" /> Cerrar sesión
-        </.link>
-      </div>
+    <div class="min-h-screen flex flex-col bg-base-200">
+      <SiteComponents.site_navbar
+        nav_open={@nav_open}
+        current_page={:perfil}
+        current_user={@current_user}
+      />
 
-      <div class="card bg-base-100 shadow-sm rounded-2xl p-6 mb-4">
-        <div class="flex items-center gap-4">
-          <div class="w-16 h-16 rounded-full bg-primary text-primary-content flex items-center justify-center text-2xl font-bold shrink-0">
-            {String.first(@current_user.name || "?") |> String.upcase()}
+      <main class="flex-1 w-full max-w-2xl mx-auto px-4 py-8 space-y-5">
+        <%!-- Identity card --%>
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body flex-row items-center gap-5">
+            <div class="w-16 h-16 rounded-full bg-primary text-primary-content flex items-center justify-center text-2xl font-bold shrink-0">
+              {String.first(@current_user.name || "?") |> String.upcase()}
+            </div>
+            <div class="min-w-0">
+              <p class="text-xl font-bold text-base-content truncate">{@current_user.name}</p>
+              <p class="text-sm text-base-content/60 truncate">{@current_user.email}</p>
+              <span
+                :if={@current_user.confirmed_at}
+                class="badge badge-success badge-sm mt-1 gap-1"
+              >
+                <.icon name="hero-check-badge" class="size-3" /> Verificado
+              </span>
+            </div>
           </div>
-          <div class="min-w-0">
-            <p class="text-lg font-semibold truncate">{@current_user.name}</p>
-            <p class="text-sm text-base-content/70 truncate">{@current_user.email}</p>
-            <span
-              :if={@current_user.confirmed_at}
-              class="badge badge-success badge-sm mt-1 gap-1"
+        </div>
+
+        <%!-- QR + Loyalty side by side on md+ --%>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <%!-- QR card --%>
+          <div class="card bg-base-100 shadow-sm">
+            <div class="card-body items-center text-center">
+              <h2 class="card-title text-primary text-base">Mi código QR</h2>
+              <div class="my-2">
+                {Phoenix.HTML.raw(render_qr(@current_user.qr_token))}
+              </div>
+              <p class="text-xs text-base-content/50">
+                Muéstralo en caja para acumular visitas
+              </p>
+            </div>
+          </div>
+
+          <%!-- Loyalty card --%>
+          <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+              <h2 class="card-title text-primary text-base">Tarjeta de lealtad</h2>
+              <div class="grid grid-cols-5 gap-2 my-2">
+                <div
+                  :for={i <- 1..10}
+                  class={[
+                    "aspect-square rounded-full flex items-center justify-center text-lg",
+                    stamp_filled?(@visit_count, i) && "bg-accent/20 text-accent",
+                    !stamp_filled?(@visit_count, i) &&
+                      "border-2 border-dashed border-base-300 text-base-content/20"
+                  ]}
+                >
+                  <span :if={stamp_filled?(@visit_count, i)}>☕</span>
+                </div>
+              </div>
+              <p class="text-sm text-base-content/60">
+                Visitas totales:
+                <span class="font-bold text-primary text-lg ml-1">{@visit_count}</span>
+              </p>
+              <p class="text-xs text-base-content/40">Cada 10 visitas completas = recompensa</p>
+            </div>
+          </div>
+        </div>
+
+        <%!-- Personal data --%>
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body">
+            <div class="flex items-center justify-between">
+              <h2 class="card-title text-primary text-base">Datos personales</h2>
+              <button
+                :if={!@editing}
+                type="button"
+                phx-click="edit"
+                class="btn btn-outline btn-primary btn-sm"
+              >
+                Editar
+              </button>
+            </div>
+
+            <div :if={!@editing} class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+              <div>
+                <p class="text-xs text-base-content/50 uppercase tracking-wide">Nombre</p>
+                <p class="font-medium mt-0.5">{@current_user.name}</p>
+              </div>
+              <div>
+                <p class="text-xs text-base-content/50 uppercase tracking-wide">Correo</p>
+                <p class="font-medium mt-0.5 truncate">{@current_user.email}</p>
+              </div>
+              <div>
+                <p class="text-xs text-base-content/50 uppercase tracking-wide">Teléfono</p>
+                <p class="font-medium mt-0.5">{@current_user.phone || "—"}</p>
+              </div>
+              <div>
+                <p class="text-xs text-base-content/50 uppercase tracking-wide">Cumpleaños</p>
+                <p class="font-medium mt-0.5">{@current_user.birthday || "—"}</p>
+              </div>
+            </div>
+
+            <.form
+              :if={@editing}
+              for={@form}
+              phx-change="validate"
+              phx-submit="save"
+              class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2"
             >
-              <.icon name="hero-check-badge" class="size-4" /> Cliente verificado
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div class="card bg-base-100 shadow-sm rounded-2xl p-6 mb-4">
-        <h2 class="text-lg font-semibold text-primary mb-4">Mi código QR</h2>
-        <div class="flex justify-center">
-          {Phoenix.HTML.raw(render_qr(@current_user.qr_token))}
-        </div>
-        <p class="text-xs text-center text-base-content/60 mt-3">
-          Muestra este código en caja para acumular visitas
-        </p>
-      </div>
-
-      <div class="card bg-base-100 shadow-sm rounded-2xl p-6 mb-4">
-        <h2 class="text-lg font-semibold text-primary mb-4">Tarjeta de lealtad</h2>
-        <div class="grid grid-cols-5 gap-2">
-          <div
-            :for={i <- 1..10}
-            class={[
-              "aspect-square rounded-full flex items-center justify-center text-xl",
-              stamp_filled?(@visit_count, i) && "bg-accent/20 text-accent",
-              !stamp_filled?(@visit_count, i) && "border-2 border-dashed border-base-300 text-base-content/30"
-            ]}
-          >
-            <span :if={stamp_filled?(@visit_count, i)}>☕</span>
-          </div>
-        </div>
-        <p class="text-sm text-base-content/70 mt-4">
-          Visitas totales: <span class="font-semibold text-primary">{@visit_count}</span>
-        </p>
-      </div>
-
-      <div class="card bg-base-100 shadow-sm rounded-2xl p-6 mb-4">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-primary">Datos personales</h2>
-          <button
-            :if={!@editing}
-            type="button"
-            phx-click="edit"
-            class="btn btn-outline btn-primary btn-sm"
-          >
-            Editar perfil
-          </button>
-        </div>
-
-        <div :if={!@editing} class="space-y-3">
-          <div>
-            <p class="text-xs text-base-content/60">Nombre</p>
-            <p class="font-medium">{@current_user.name}</p>
-          </div>
-          <div>
-            <p class="text-xs text-base-content/60">Teléfono</p>
-            <p class="font-medium">{@current_user.phone || "—"}</p>
-          </div>
-          <div>
-            <p class="text-xs text-base-content/60">Fecha de nacimiento</p>
-            <p class="font-medium">{@current_user.birthday || "—"}</p>
+              <div class="sm:col-span-2">
+                <.input field={@form[:name]} type="text" label="Nombre completo" />
+              </div>
+              <.input
+                field={@form[:phone]}
+                type="tel"
+                label="Teléfono"
+                placeholder="+52 55 0000 0000"
+              />
+              <.input field={@form[:birthday]} type="date" label="Fecha de nacimiento" />
+              <div class="sm:col-span-2 flex gap-2 pt-1">
+                <button type="submit" class="btn btn-primary flex-1">Guardar</button>
+                <button type="button" phx-click="cancel_edit" class="btn btn-ghost flex-1">
+                  Cancelar
+                </button>
+              </div>
+            </.form>
           </div>
         </div>
 
-        <.form
-          :if={@editing}
-          for={@form}
-          phx-change="validate"
-          phx-submit="save"
-          class="space-y-2"
-        >
-          <.input field={@form[:name]} type="text" label="Nombre" />
-          <.input
-            field={@form[:phone]}
-            type="tel"
-            label="Teléfono"
-            placeholder="+52 55 0000 0000"
-          />
-          <.input field={@form[:birthday]} type="date" label="Fecha de nacimiento" />
-
-          <div class="flex gap-2 pt-2">
-            <button type="submit" class="btn btn-primary flex-1">Guardar</button>
-            <button
-              type="button"
-              phx-click="cancel_edit"
-              class="btn btn-ghost flex-1"
-            >
-              Cancelar
-            </button>
+        <%!-- Quick actions --%>
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body">
+            <h2 class="card-title text-primary text-base">Acciones rápidas</h2>
+            <div class="flex flex-wrap gap-3 mt-1">
+              <.link navigate="/cliente/pedidos" class="btn btn-outline btn-sm">
+                <.icon name="hero-shopping-bag" class="size-4" /> Mis pedidos
+              </.link>
+              <.link navigate="/menu" class="btn btn-outline btn-sm">
+                <.icon name="hero-book-open" class="size-4" /> Ver menú
+              </.link>
+            </div>
           </div>
-        </.form>
-      </div>
+        </div>
+      </main>
 
-      <nav class="flex justify-around text-sm mt-6">
-        <.link navigate="/" class="text-primary font-medium">Inicio</.link>
-        <.link navigate="/menu" class="text-primary font-medium">Menú</.link>
-        <.link navigate="/cliente/pedidos" class="text-primary font-medium">Mis pedidos</.link>
-      </nav>
+      <SiteComponents.site_footer />
     </div>
     """
   end

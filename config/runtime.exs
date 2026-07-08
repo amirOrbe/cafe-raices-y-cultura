@@ -108,20 +108,13 @@ if config_env() == :prod do
       api_secret: cloudinary_secret
   end
 
-  # Mailer — Brevo SMTP adapter for production.
-  # Set BREVO_SMTP_LOGIN and BREVO_SMTP_PASSWORD in Gigalixir env vars.
-  if brevo_password = System.get_env("BREVO_SMTP_PASSWORD") do
+  # Mailer — Brevo REST API adapter for production.
+  # Set BREVO_API_KEY and MAILER_FROM_ADDRESS in Gigalixir env vars.
+  if brevo_api_key = System.get_env("BREVO_API_KEY") do
     config :crc, CRC.Mailer,
-      adapter: Swoosh.Adapters.SMTP,
-      relay: "smtp-relay.brevo.com",
-      port: 587,
-      tls: :always,
-      tls_options: [verify: :verify_none],
-      auth: :always,
-      username: System.get_env("BREVO_SMTP_LOGIN"),
-      password: brevo_password
+      adapter: CRC.BrevoAdapter,
+      api_key: brevo_api_key
 
-    # SMTP adapter does not use the HTTP API client.
     config :swoosh, :api_client, false
 
     if from_address = System.get_env("MAILER_FROM_ADDRESS") do

@@ -5,7 +5,7 @@ defmodule CRC.Accounts.UserEmail do
 
   defp from_address do
     {"Café Raíces y Cultura",
-     Application.get_env(:crc, :mailer_from_address, "onboarding@resend.dev")}
+     Application.get_env(:crc, :mailer_from_address, "noreply@caferaicescultura.cafe")}
   end
 
   # ---------------------------------------------------------------------------

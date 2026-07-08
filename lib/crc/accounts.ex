@@ -272,6 +272,47 @@ defmodule CRC.Accounts do
   # ---------------------------------------------------------------------------
 
   @doc """
+  Looks up a user by email and sends a password-reset email if found and active.
+  Always returns `:ok` to avoid revealing whether the email exists.
+  """
+  @spec request_password_reset(String.t()) :: :ok
+  def request_password_reset(email) do
+    case Repo.get_by(User, email: email) do
+      %User{is_active: true} = user ->
+        Task.start(fn -> deliver_password_reset_email(user) end)
+
+      _ ->
+        :ok
+    end
+
+    :ok
+  end
+
+  @doc """
+  Resets the password for the user identified by a signed reset token.
+  Tokens are valid for 1 hour. Returns `{:ok, user}` or `{:error, reason}`.
+  """
+  @spec reset_password_by_token(String.t(), String.t()) ::
+          {:ok, User.t()} | {:error, :invalid_token | Ecto.Changeset.t()}
+  def reset_password_by_token(token, new_password) do
+    case Phoenix.Token.verify(CRCWeb.Endpoint, "password_reset", token, max_age: 3600) do
+      {:ok, user_id} ->
+        case get_user(user_id) do
+          %User{} = user ->
+            user
+            |> User.password_changeset(%{"password" => new_password})
+            |> Repo.update()
+
+          nil ->
+            {:error, :invalid_token}
+        end
+
+      {:error, _} ->
+        {:error, :invalid_token}
+    end
+  end
+
+  @doc """
   Authenticates a user by email and password.
 
   Returns:
@@ -291,6 +332,27 @@ defmodule CRC.Accounts do
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------
+
+  defp build_password_reset_url(user) do
+    token = Phoenix.Token.sign(CRCWeb.Endpoint, "password_reset", user.id)
+    "#{CRCWeb.Endpoint.url()}/recuperar-contrasena/#{token}"
+  end
+
+  defp deliver_password_reset_email(user) do
+    url = build_password_reset_url(user)
+
+    user
+    |> UserEmail.password_reset(url)
+    |> Mailer.deliver()
+    |> case do
+      {:ok, _} ->
+        :ok
+
+      {:error, reason} ->
+        require Logger
+        Logger.error("Failed to deliver password reset email to #{user.email}: #{inspect(reason)}")
+    end
+  end
 
   defp broadcast_user_change({:ok, user} = result) do
     Phoenix.PubSub.broadcast(CRC.PubSub, "admin:users", {:user_changed, user})

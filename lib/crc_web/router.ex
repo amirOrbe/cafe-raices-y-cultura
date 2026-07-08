@@ -51,6 +51,8 @@ defmodule CRCWeb.Router do
       live "/confirmar-email", EmailConfirmLive
       # Customer-facing bill page — no login required
       live "/cuenta/:token", CuentaLive
+      live "/recuperar-contrasena", ForgotPasswordLive
+      live "/recuperar-contrasena/:token", ResetPasswordLive
     end
   end
 

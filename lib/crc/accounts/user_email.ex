@@ -38,6 +38,19 @@ defmodule CRC.Accounts.UserEmail do
     |> text_body(build_text(name, confirmation_url))
   end
 
+  @doc """
+  Builds a password-reset email with a 1-hour expiry link.
+  """
+  @spec password_reset(map(), String.t()) :: Swoosh.Email.t()
+  def password_reset(%{name: name, email: email} = _user, reset_url) do
+    new()
+    |> to({name, email})
+    |> from(@from)
+    |> subject("Recupera tu contraseña — Café Raíces y Cultura")
+    |> html_body(build_reset_html(name, reset_url))
+    |> text_body(build_reset_text(name, reset_url))
+  end
+
   # ---------------------------------------------------------------------------
   # HTML template (inline styles required for email client compatibility)
   # ---------------------------------------------------------------------------
@@ -143,6 +156,100 @@ defmodule CRC.Accounts.UserEmail do
 
     </body>
     </html>
+    """
+  end
+
+  defp build_reset_html(name, url) do
+    first_name = name |> String.split() |> List.first()
+    year = Date.utc_today().year
+
+    """
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Recupera tu contraseña</title>
+    </head>
+    <body style="margin:0;padding:0;background-color:#f5f0e8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%"
+             style="background-color:#f5f0e8;padding:40px 16px;">
+        <tr>
+          <td align="center">
+            <table role="presentation" cellpadding="0" cellspacing="0"
+                   width="100%" style="max-width:560px;">
+              <tr>
+                <td align="center" style="padding-bottom:24px;">
+                  <h1 style="margin:0;font-size:22px;font-weight:700;color:#5c3d1e;letter-spacing:-0.5px;">
+                    Café Raíces y Cultura
+                  </h1>
+                  <p style="margin:4px 0 0;font-size:13px;color:#9c7a5a;">Sistema de gestión interna</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="background-color:#ffffff;border-radius:16px;padding:40px 36px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                  <p style="margin:0 0 16px;font-size:20px;font-weight:700;color:#1a1a1a;">
+                    Hola, #{first_name}
+                  </p>
+                  <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#444;">
+                    Recibimos una solicitud para restablecer la contraseña de tu cuenta.
+                    Haz clic en el botón para crear una nueva contraseña.
+                  </p>
+                  <p style="margin:0 0 8px;font-size:13px;color:#888;">
+                    Este enlace es válido por <strong>1 hora</strong>.
+                  </p>
+                  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0;">
+                    <tr>
+                      <td style="border-radius:10px;background-color:#6b4226;">
+                        <a href="#{url}"
+                           style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;">
+                          Restablecer contraseña
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin:0 0 8px;font-size:13px;color:#888;">
+                    Si el botón no funciona, copia y pega este enlace:
+                  </p>
+                  <p style="margin:0;font-size:12px;color:#9c7a5a;word-break:break-all;">#{url}</p>
+                  <hr style="border:none;border-top:1px solid #f0e8dc;margin:28px 0;" />
+                  <p style="margin:0;font-size:13px;color:#aaa;line-height:1.5;">
+                    Si no solicitaste este cambio, puedes ignorar este correo.
+                    Tu contraseña actual seguirá siendo válida.
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td align="center" style="padding-top:24px;">
+                  <p style="margin:0;font-size:12px;color:#b8a898;">
+                    © #{year} Café Raíces y Cultura · Todos los derechos reservados
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+    """
+  end
+
+  defp build_reset_text(name, url) do
+    first_name = name |> String.split() |> List.first()
+
+    """
+    Hola, #{first_name}
+
+    Recibimos una solicitud para restablecer la contraseña de tu cuenta en Café Raíces y Cultura.
+
+    Visita el siguiente enlace para crear una nueva contraseña (válido por 1 hora):
+
+    #{url}
+
+    Si no solicitaste este cambio, puedes ignorar este correo.
+
+    — Café Raíces y Cultura
     """
   end
 

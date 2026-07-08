@@ -108,19 +108,21 @@ if config_env() == :prod do
       api_secret: cloudinary_secret
   end
 
-  # Mailer — Resend adapter for production.
-  # If RESEND_API_KEY is not set the mailer simply stays disabled (no emails sent).
-  # Set RESEND_API_KEY when you are ready to enable transactional emails.
-  if resend_api_key = System.get_env("RESEND_API_KEY") do
+  # Mailer — Brevo SMTP adapter for production.
+  # Set BREVO_SMTP_LOGIN and BREVO_SMTP_PASSWORD in Gigalixir env vars.
+  if brevo_password = System.get_env("BREVO_SMTP_PASSWORD") do
     config :crc, CRC.Mailer,
-      adapter: Swoosh.Adapters.Resend,
-      api_key: resend_api_key
+      adapter: Swoosh.Adapters.SMTP,
+      relay: "smtp-relay.brevo.com",
+      port: 587,
+      tls: :always,
+      auth: :always,
+      username: System.get_env("BREVO_SMTP_LOGIN"),
+      password: brevo_password
 
-    # Resend requires an HTTP API client.
-    config :swoosh, :api_client, Swoosh.ApiClient.Req
+    # SMTP adapter does not use the HTTP API client.
+    config :swoosh, :api_client, false
 
-    # Sender address — must match a verified domain in your Resend account.
-    # Set MAILER_FROM_ADDRESS=noreply@tudominio.com in your deployment platform.
     if from_address = System.get_env("MAILER_FROM_ADDRESS") do
       config :crc, mailer_from_address: from_address
     end

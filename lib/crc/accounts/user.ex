@@ -31,6 +31,7 @@ defmodule CRC.Accounts.User do
     field :stations, {:array, :string}, default: []
     field :avatar_url, :string
     field :birthday, :date
+    field :qr_token, :string
     field :is_active, :boolean, default: true
     field :confirmed_at, :utc_datetime
     field :password_hash, :string
@@ -80,6 +81,49 @@ defmodule CRC.Accounts.User do
   def profile_changeset(user, attrs) do
     user
     |> cast(attrs, [:name, :avatar_url])
+    |> update_change(:name, &CRC.Utils.title_case/1)
+    |> validate_required([:name], message: "no puede estar en blanco")
+    |> validate_length(:name,
+      min: 2,
+      max: 100,
+      message: "debe tener al menos %{count} caracteres"
+    )
+  end
+
+  @doc """
+  Changeset for public self-registration. Role is always forced to "cliente"
+  and a unique QR token is generated automatically.
+  """
+  @spec registration_changeset(t(), map()) :: Ecto.Changeset.t()
+  def registration_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:name, :email, :phone, :birthday, :password])
+    |> put_change(:role, "cliente")
+    |> put_change(:stations, [])
+    |> put_change(:qr_token, Ecto.UUID.generate())
+    |> update_change(:name, &CRC.Utils.title_case/1)
+    |> validate_required([:name, :email, :password],
+      message: "no puede estar en blanco"
+    )
+    |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/,
+      message: "tiene formato inválido"
+    )
+    |> validate_length(:password,
+      min: @min_password_length,
+      message: "debe tener al menos %{count} caracteres"
+    )
+    |> unique_constraint(:email, message: "ya está en uso")
+    |> unique_constraint(:qr_token)
+    |> hash_password()
+  end
+
+  @doc """
+  Changeset for a client updating their own profile fields.
+  """
+  @spec client_profile_changeset(t(), map()) :: Ecto.Changeset.t()
+  def client_profile_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:name, :phone, :birthday])
     |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name], message: "no puede estar en blanco")
     |> validate_length(:name,

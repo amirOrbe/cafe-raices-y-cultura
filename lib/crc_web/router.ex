@@ -56,6 +56,30 @@ defmodule CRCWeb.Router do
     end
   end
 
+  # Public client routes (no auth required)
+  scope "/", CRCWeb.Client, as: :client_public do
+    pipe_through :browser
+
+    live_session :client_public,
+      on_mount: [{CRCWeb.UserAuth, :fetch_current_user}] do
+      live "/registro", RegistrationLive
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Client portal — authenticated customers only
+  # ---------------------------------------------------------------------------
+
+  scope "/cliente", CRCWeb.Client, as: :client do
+    pipe_through [:browser, :require_auth]
+
+    live_session :client,
+      on_mount: [{CRCWeb.UserAuth, :require_client}] do
+      live "/perfil", ProfileLive
+      live "/pedidos", PedidosLive
+    end
+  end
+
   # ---------------------------------------------------------------------------
   # Authentication — only accessible without an active session
   # ---------------------------------------------------------------------------

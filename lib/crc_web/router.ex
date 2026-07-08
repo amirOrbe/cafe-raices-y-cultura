@@ -109,21 +109,21 @@ defmodule CRCWeb.Router do
     pipe_through [:browser, :require_auth]
 
     live_session :staff,
-      on_mount: [{CRCWeb.UserAuth, :require_authenticated_user}] do
+      on_mount: [{CRCWeb.UserAuth, :require_staff}] do
       live "/bitacora", BitacoraLive
       live "/produccion", ProduccionLive
     end
   end
 
   # ---------------------------------------------------------------------------
-  # Employee self-service — any authenticated non-client user
+  # Employee self-service — staff only (admin / empleado), not clients
   # ---------------------------------------------------------------------------
 
   scope "/", CRCWeb.Employee, as: :employee do
     pipe_through [:browser, :require_auth]
 
     live_session :employee,
-      on_mount: [{CRCWeb.UserAuth, :require_authenticated_user}] do
+      on_mount: [{CRCWeb.UserAuth, :require_staff}] do
       live "/mi-horario", MyScheduleLive
       live "/mi-perfil", ProfileLive
       live "/calendario", CalendarioLive

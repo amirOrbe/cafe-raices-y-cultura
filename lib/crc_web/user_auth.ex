@@ -145,6 +145,26 @@ defmodule CRCWeb.UserAuth do
     end
   end
 
+  def on_mount(:require_staff, _params, session, socket) do
+    socket = assign_current_user(socket, session)
+
+    case socket.assigns.current_user do
+      %{role: role} when role in ["admin", "empleado"] ->
+        {:cont, socket}
+
+      %{role: "cliente"} ->
+        {:halt, Phoenix.LiveView.redirect(socket, to: "/cliente/perfil")}
+
+      _ ->
+        socket =
+          socket
+          |> Phoenix.LiveView.put_flash(:error, "Debes iniciar sesión para continuar.")
+          |> Phoenix.LiveView.redirect(to: "/iniciar-sesion")
+
+        {:halt, socket}
+    end
+  end
+
   def on_mount(:require_client, _params, session, socket) do
     socket = assign_current_user(socket, session)
 

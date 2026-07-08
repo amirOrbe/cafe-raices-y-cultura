@@ -116,6 +116,7 @@ if config_env() == :prod do
       relay: "smtp-relay.brevo.com",
       port: 587,
       tls: :always,
+      tls_options: [verify: :verify_none],
       auth: :always,
       username: System.get_env("BREVO_SMTP_LOGIN"),
       password: brevo_password

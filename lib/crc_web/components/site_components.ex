@@ -114,51 +114,78 @@ defmodule CRCWeb.Components.SiteComponents do
                     <li class="px-3 py-2 border-b border-base-200 mb-1 pointer-events-none">
                       <p class="text-sm font-semibold text-base-content">{@current_user.name}</p>
                       <p class="text-xs text-base-content/50">
-                        {if @current_user.role == "admin", do: "Administrador", else: "Empleado"}
+                        {case @current_user.role do
+                          "admin" -> "Administrador"
+                          "empleado" -> "Empleado"
+                          "cliente" -> "Cliente"
+                          _ -> ""
+                        end}
                         {if @current_user.stations != [],
                           do: " · #{Enum.join(@current_user.stations, " · ")}",
                           else: ""}
                       </p>
                     </li>
-                    <%!-- Common staff links --%>
-                    <li>
-                      <a
-                        href="/mi-perfil"
-                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
-                      >
-                        <.icon name="hero-user-circle" class="size-4 text-base-content/50" />
-                        Mi Perfil
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="/bitacora"
-                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
-                      >
-                        <.icon
-                          name="hero-clipboard-document-check"
-                          class="size-4 text-base-content/50"
-                        /> Bitácora de Turno
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="/produccion"
-                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
-                      >
-                        <.icon name="hero-beaker" class="size-4 text-base-content/50" /> Producción
-                      </a>
-                    </li>
-                    <%!-- Calendario para empleados (no admin) --%>
-                    <%= if @current_user.role != "admin" do %>
+                    <%!-- Cliente links --%>
+                    <%= if @current_user.role == "cliente" do %>
                       <li>
                         <a
-                          href="/calendario"
+                          href="/cliente/perfil"
                           class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                         >
-                          <.icon name="hero-table-cells" class="size-4 text-base-content/50" /> Calendario
+                          <.icon name="hero-user-circle" class="size-4 text-base-content/50" />
+                          Mi perfil
                         </a>
                       </li>
+                      <li>
+                        <a
+                          href="/cliente/pedidos"
+                          class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
+                        >
+                          <.icon name="hero-shopping-bag" class="size-4 text-base-content/50" />
+                          Mis pedidos
+                        </a>
+                      </li>
+                    <% end %>
+                    <%!-- Staff links (empleado / admin only) --%>
+                    <%= if @current_user.role in ["admin", "empleado"] do %>
+                      <li>
+                        <a
+                          href="/mi-perfil"
+                          class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
+                        >
+                          <.icon name="hero-user-circle" class="size-4 text-base-content/50" />
+                          Mi Perfil
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="/bitacora"
+                          class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
+                        >
+                          <.icon
+                            name="hero-clipboard-document-check"
+                            class="size-4 text-base-content/50"
+                          /> Bitácora de Turno
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="/produccion"
+                          class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
+                        >
+                          <.icon name="hero-beaker" class="size-4 text-base-content/50" /> Producción
+                        </a>
+                      </li>
+                      <%= if @current_user.role == "empleado" do %>
+                        <li>
+                          <a
+                            href="/calendario"
+                            class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
+                          >
+                            <.icon name="hero-table-cells" class="size-4 text-base-content/50" /> Calendario
+                          </a>
+                        </li>
+                      <% end %>
                     <% end %>
                     <%!-- Admin links --%>
                     <%= if @current_user.role == "admin" do %>
@@ -394,7 +421,12 @@ defmodule CRCWeb.Components.SiteComponents do
               <div class="min-w-0">
                 <p class="text-sm font-semibold text-base-content truncate">{@current_user.name}</p>
                 <p class="text-xs text-base-content/50">
-                  {if @current_user.role == "admin", do: "Administrador", else: "Empleado"}
+                  {case @current_user.role do
+                    "admin" -> "Administrador"
+                    "empleado" -> "Empleado"
+                    "cliente" -> "Cliente"
+                    _ -> ""
+                  end}
                   {if @current_user.stations != [],
                     do: " · #{Enum.join(@current_user.stations, " · ")}",
                     else: ""}
@@ -402,7 +434,28 @@ defmodule CRCWeb.Components.SiteComponents do
               </div>
             </div>
 
-            <%!-- Staff links --%>
+            <%!-- Cliente links --%>
+            <%= if @current_user.role == "cliente" do %>
+              <div class="space-y-1 pb-1">
+                <a
+                  href="/cliente/perfil"
+                  phx-click="close_nav"
+                  class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
+                >
+                  <.icon name="hero-user-circle" class="size-5 text-primary" /> Mi perfil
+                </a>
+                <a
+                  href="/cliente/pedidos"
+                  phx-click="close_nav"
+                  class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
+                >
+                  <.icon name="hero-shopping-bag" class="size-5 text-primary" /> Mis pedidos
+                </a>
+              </div>
+            <% end %>
+
+            <%!-- Staff links (empleado / admin only) --%>
+            <%= if @current_user.role in ["admin", "empleado"] do %>
             <div class="space-y-1 pb-1">
               <a
                 href="/mi-perfil"
@@ -426,8 +479,7 @@ defmodule CRCWeb.Components.SiteComponents do
               >
                 <.icon name="hero-beaker" class="size-5 text-primary" /> Producción
               </a>
-              <%!-- Calendario para empleados (no admin) --%>
-              <%= if @current_user.role != "admin" do %>
+              <%= if @current_user.role == "empleado" do %>
                 <a
                   href="/calendario"
                   phx-click="close_nav"
@@ -524,6 +576,7 @@ defmodule CRCWeb.Components.SiteComponents do
                 <% end %>
               <% end %>
             </div>
+            <% end %>
 
             <%!-- Logout --%>
             <div class="border-t border-base-300 pt-2">

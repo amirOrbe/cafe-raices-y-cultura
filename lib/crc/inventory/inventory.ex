@@ -85,6 +85,11 @@ defmodule CRC.Inventory do
     |> Repo.preload(:variants)
   end
 
+  @doc "Returns all active products ordered by name (no preloads)."
+  def list_all_active_products do
+    Repo.all(from p in Product, where: p.active == true, order_by: [asc: p.name])
+  end
+
   @doc "Returns products (without variants) with stock at or below minimum threshold."
   @spec list_low_stock_products() :: [Product.t()]
   def list_low_stock_products do
@@ -321,6 +326,21 @@ defmodule CRC.Inventory do
     |> Repo.all()
   end
 
+  @doc "Returns stock additions with reason 'compra' registered today (local time)."
+  def list_todays_purchases do
+    utc_offset = Application.get_env(:crc, :utc_offset_hours, -6)
+    now_local = DateTime.add(DateTime.utc_now(), utc_offset * 3600, :second)
+    start_of_day_local = %{now_local | hour: 0, minute: 0, second: 0, microsecond: {0, 6}}
+    start_of_day_utc = DateTime.add(start_of_day_local, -utc_offset * 3600, :second)
+
+    from(a in StockAdjustment,
+      where: a.reason == "compra" and a.inserted_at >= ^start_of_day_utc,
+      order_by: [desc: a.inserted_at],
+      preload: [:adjusted_by, :product]
+    )
+    |> Repo.all()
+  end
+
   @doc "Returns the most recent adjustments across all products."
   def list_recent_adjustments(limit \\ 100) do
     from(a in StockAdjustment,
@@ -368,6 +388,7 @@ defmodule CRC.Inventory do
   end
 
   @doc "Human-readable labels for adjustment reasons."
+  def adjustment_reason_label("compra"), do: "Compra"
   def adjustment_reason_label("caducidad"), do: "Caducidad"
   def adjustment_reason_label("derrame"), do: "Derrame / rotura"
   def adjustment_reason_label("robo"), do: "Robo / extravío"

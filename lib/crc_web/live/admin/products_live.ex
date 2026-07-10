@@ -78,7 +78,7 @@ defmodule CRCWeb.Admin.ProductsLive do
      socket |> assign(:status_filter, String.to_existing_atom(status)) |> assign(:page, 1)}
   end
 
-  def handle_event("search_products", %{"query" => query}, socket) do
+  def handle_event("search_products", %{"value" => query}, socket) do
     {:noreply, socket |> assign(:search, query) |> assign(:page, 1)}
   end
 
@@ -345,7 +345,7 @@ defmodule CRCWeb.Admin.ProductsLive do
           value={@search}
           placeholder="Buscar insumo..."
           class="input input-bordered w-full pl-9 pr-4"
-          phx-change="search_products"
+          phx-keyup="search_products"
           phx-debounce="200"
         />
       </div>

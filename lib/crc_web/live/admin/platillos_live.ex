@@ -52,7 +52,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
     {:noreply, assign(socket, :filter_category, cat)}
   end
 
-  def handle_event("search_items", %{"query" => query}, socket) do
+  def handle_event("search_items", %{"value" => query}, socket) do
     {:noreply, assign(socket, :search, query)}
   end
 
@@ -516,7 +516,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
           value={@search}
           placeholder="Buscar platillo..."
           class="input input-bordered w-full pl-9 pr-4"
-          phx-change="search_items"
+          phx-keyup="search_items"
           phx-debounce="200"
         />
       </div>

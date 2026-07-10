@@ -37,7 +37,7 @@ defmodule CRCWeb.Admin.InventarioLive do
     {:noreply, assign(socket, :filter, filter)}
   end
 
-  def handle_event("search_stock", %{"query" => query}, socket) do
+  def handle_event("search_stock", %{"value" => query}, socket) do
     {:noreply, assign(socket, :search, query)}
   end
 
@@ -159,7 +159,7 @@ defmodule CRCWeb.Admin.InventarioLive do
             value={@search}
             placeholder="Buscar insumo..."
             class="input input-bordered w-full pl-9 pr-4"
-            phx-change="search_stock"
+            phx-keyup="search_stock"
             phx-debounce="200"
           />
         </div>

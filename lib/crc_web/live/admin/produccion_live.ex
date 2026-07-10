@@ -27,6 +27,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
       |> assign(:modal, nil)
       |> assign(:recipe_form, nil)
       |> assign(:ingredient_rows, [])
+      |> assign(:output_min_stock, nil)
       |> assign(:tab, :recipes)
 
     {:ok, socket}
@@ -66,6 +67,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
      socket
      |> assign(:modal, :new)
      |> assign(:recipe_form, to_form(changeset, as: "recipe"))
+     |> assign(:output_min_stock, nil)
      |> assign(:ingredient_rows, [fresh_row()])}
   end
 
@@ -89,6 +91,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
      socket
      |> assign(:modal, {:edit, recipe})
      |> assign(:recipe_form, to_form(changeset, as: "recipe"))
+     |> assign(:output_min_stock, recipe.output_product && recipe.output_product.min_stock)
      |> assign(:ingredient_rows, rows)}
   end
 
@@ -152,6 +155,12 @@ defmodule CRCWeb.Admin.ProduccionLive do
          put_flash(socket, :error, "No se pudo crear el insumo de salida. Inténtalo de nuevo.")}
 
       {:ok, product} ->
+        # Update min_stock on the output product if provided
+        case parse_min_stock(full_params["min_stock"]) do
+          {:ok, min} -> Inventory.update_product(product, %{min_stock: min})
+          :skip -> :ok
+        end
+
         params_with_product = Map.put(params, "output_product_id", product.id)
 
         result =
@@ -517,6 +526,26 @@ defmodule CRCWeb.Admin.ProduccionLive do
                   </div>
                 </div>
 
+                <%!-- Minimum stock --%>
+                <div class="form-control">
+                  <label class="label pb-1">
+                    <span class="label-text font-medium">Stock mínimo en inventario</span>
+                    <span class="label-text-alt text-base-content/40">Opcional</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="min_stock"
+                    value={if @output_min_stock, do: Decimal.to_string(@output_min_stock), else: ""}
+                    min="0"
+                    step="any"
+                    class="input input-bordered w-full"
+                    placeholder="Ej: 0.5"
+                  />
+                  <p class="text-xs text-base-content/40 mt-1">
+                    Aparece como "faltante" cuando el stock baje de este valor. Usa las mismas unidades del rendimiento.
+                  </p>
+                </div>
+
                 <%!-- Notes --%>
                 <div class="form-control">
                   <label class="label pb-1">
@@ -699,4 +728,17 @@ defmodule CRCWeb.Admin.ProduccionLive do
     do: Calendar.strftime(dt, "%d %b %H:%M")
 
   defp format_dt(_), do: "—"
+
+  defp parse_min_stock(nil), do: :skip
+  defp parse_min_stock(""), do: :skip
+
+  defp parse_min_stock(str) do
+    case Decimal.parse(String.trim(str)) do
+      {d, ""} ->
+        if Decimal.negative?(d), do: :skip, else: {:ok, d}
+
+      _ ->
+        :skip
+    end
+  end
 end

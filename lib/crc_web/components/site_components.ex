@@ -149,6 +149,14 @@ defmodule CRCWeb.Components.SiteComponents do
                         <.icon name="hero-beaker" class="size-4 text-base-content/50" /> Producción
                       </a>
                     </li>
+                    <li>
+                      <a
+                        href="/faltantes"
+                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold bg-warning/10 text-warning hover:bg-warning/20"
+                      >
+                        <.icon name="hero-shopping-cart" class="size-4" /> Faltantes
+                      </a>
+                    </li>
                     <%!-- Calendario para empleados (no admin) --%>
                     <%= if @current_user.role != "admin" do %>
                       <li>
@@ -425,6 +433,13 @@ defmodule CRCWeb.Components.SiteComponents do
                 class="flex items-center gap-3 py-2.5 px-2 text-sm font-medium text-base-content rounded-lg hover:bg-base-200 transition-colors"
               >
                 <.icon name="hero-beaker" class="size-5 text-primary" /> Producción
+              </a>
+              <a
+                href="/faltantes"
+                phx-click="close_nav"
+                class="flex items-center gap-3 py-2.5 px-2 text-sm font-semibold text-warning bg-warning/10 rounded-lg hover:bg-warning/20 transition-colors"
+              >
+                <.icon name="hero-shopping-cart" class="size-5" /> Faltantes
               </a>
               <%!-- Calendario para empleados (no admin) --%>
               <%= if @current_user.role != "admin" do %>

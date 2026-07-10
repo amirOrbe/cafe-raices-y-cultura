@@ -88,6 +88,7 @@ defmodule CRCWeb.Router do
       on_mount: [{CRCWeb.UserAuth, :require_authenticated_user}] do
       live "/bitacora", BitacoraLive
       live "/produccion", ProduccionLive
+      live "/faltantes", FaltantesLive
     end
   end
 

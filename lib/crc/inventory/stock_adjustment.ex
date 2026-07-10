@@ -20,7 +20,7 @@ defmodule CRC.Inventory.StockAdjustment do
   alias CRC.Inventory.Product
   alias CRC.Accounts.User
 
-  @valid_reasons ~w(caducidad derrame robo ajuste_manual otro)
+  @valid_reasons ~w(compra caducidad derrame robo ajuste_manual otro)
 
   schema "stock_adjustments" do
     field :quantity, :decimal

@@ -100,6 +100,39 @@ defmodule CRC.Accounts do
   def create_user(%User{}, _attrs), do: {:error, :unauthorized}
 
   @doc """
+  Public self-registration. Always assigns role "cliente" regardless of what
+  the caller passes. Sends a welcome confirmation email after creation.
+  """
+  @spec register_client(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def register_client(attrs) do
+    result =
+      %User{}
+      |> User.registration_changeset(attrs)
+      |> Repo.insert()
+
+    case result do
+      {:ok, user} ->
+        Task.start(fn -> deliver_welcome_email(user) end)
+        {:ok, user}
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  Allows a client to update their own profile (name, phone, birthday).
+  Role, email, stations and other privileged fields cannot be changed here.
+  """
+  @spec update_client_profile(User.t(), map()) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def update_client_profile(%User{} = user, attrs) do
+    user
+    |> User.client_profile_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
   Updates an existing user's data.
 
   Requires the caller to be an administrator; otherwise returns

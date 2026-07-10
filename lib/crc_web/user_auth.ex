@@ -68,6 +68,9 @@ defmodule CRCWeb.UserAuth do
       %{role: "admin"} ->
         conn |> redirect(to: "/admin") |> halt()
 
+      %{role: "cliente"} ->
+        conn |> redirect(to: "/cliente/perfil") |> halt()
+
       %{} ->
         conn |> redirect(to: "/") |> halt()
 
@@ -80,12 +83,18 @@ defmodule CRCWeb.UserAuth do
   # Session management
   # ---------------------------------------------------------------------------
 
-  @doc "Logs in: saves user_id in session and redirects to the admin panel."
+  @doc "Logs in: saves user_id in session and redirects based on role."
   def log_in_user(conn, user) do
+    destination =
+      case user.role do
+        "cliente" -> "/cliente/perfil"
+        _ -> "/admin"
+      end
+
     conn
     |> renew_session()
     |> put_session(@session_key, user.id)
-    |> redirect(to: "/admin")
+    |> redirect(to: destination)
   end
 
   @doc "Logs out: clears the session and redirects to home."
@@ -130,6 +139,50 @@ defmodule CRCWeb.UserAuth do
         socket =
           socket
           |> Phoenix.LiveView.put_flash(:error, "No tienes permiso para acceder a esta sección.")
+          |> Phoenix.LiveView.redirect(to: "/")
+
+        {:halt, socket}
+    end
+  end
+
+  def on_mount(:require_staff, _params, session, socket) do
+    socket = assign_current_user(socket, session)
+
+    case socket.assigns.current_user do
+      %{role: role} when role in ["admin", "empleado"] ->
+        {:cont, socket}
+
+      %{role: "cliente"} ->
+        {:halt, Phoenix.LiveView.redirect(socket, to: "/cliente/perfil")}
+
+      _ ->
+        socket =
+          socket
+          |> Phoenix.LiveView.put_flash(:error, "Debes iniciar sesión para continuar.")
+          |> Phoenix.LiveView.redirect(to: "/iniciar-sesion")
+
+        {:halt, socket}
+    end
+  end
+
+  def on_mount(:require_client, _params, session, socket) do
+    socket = assign_current_user(socket, session)
+
+    case socket.assigns.current_user do
+      %{role: "cliente"} ->
+        {:cont, socket}
+
+      nil ->
+        socket =
+          socket
+          |> Phoenix.LiveView.put_flash(:error, "Debes iniciar sesión para continuar.")
+          |> Phoenix.LiveView.redirect(to: "/iniciar-sesion")
+
+        {:halt, socket}
+
+      _ ->
+        socket =
+          socket
           |> Phoenix.LiveView.redirect(to: "/")
 
         {:halt, socket}

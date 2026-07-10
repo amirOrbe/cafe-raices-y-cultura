@@ -16,7 +16,12 @@ defmodule CRCWeb.Endpoint do
   socket "/live", Phoenix.LiveView.Socket,
     websocket: [
       connect_info: [session: @session_options],
-      check_origin: ["https://caferaicescultura.cafe", "//caferaicescultura.cafe"]
+      check_origin: [
+        "https://caferaicescultura.cafe",
+        "//caferaicescultura.cafe",
+        "https://www.caferaicescultura.cafe",
+        "//www.caferaicescultura.cafe"
+      ]
     ],
     longpoll: [connect_info: [session: @session_options]]
 

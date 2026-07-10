@@ -995,12 +995,40 @@ defmodule CRC.Orders do
   end
 
   defp filter_by_period(query, :week) do
-    start = DateTime.utc_now() |> DateTime.add(-7, :day)
+    offset_hours = Application.get_env(:crc, :utc_offset_hours, -6)
+    offset_secs = offset_hours * 3_600
+
+    local_date =
+      DateTime.utc_now()
+      |> DateTime.add(offset_secs, :second)
+      |> DateTime.to_date()
+
+    # Day of week: Monday = 1 … Sunday = 7
+    days_since_monday = Date.day_of_week(local_date) - 1
+    monday = Date.add(local_date, -days_since_monday)
+
+    start =
+      DateTime.new!(monday, ~T[00:00:00], "Etc/UTC")
+      |> DateTime.add(-offset_secs, :second)
+
     where(query, [o], o.inserted_at >= ^start)
   end
 
   defp filter_by_period(query, :month) do
-    start = DateTime.utc_now() |> DateTime.add(-30, :day)
+    offset_hours = Application.get_env(:crc, :utc_offset_hours, -6)
+    offset_secs = offset_hours * 3_600
+
+    local_date =
+      DateTime.utc_now()
+      |> DateTime.add(offset_secs, :second)
+      |> DateTime.to_date()
+
+    first_of_month = Date.beginning_of_month(local_date)
+
+    start =
+      DateTime.new!(first_of_month, ~T[00:00:00], "Etc/UTC")
+      |> DateTime.add(-offset_secs, :second)
+
     where(query, [o], o.inserted_at >= ^start)
   end
 

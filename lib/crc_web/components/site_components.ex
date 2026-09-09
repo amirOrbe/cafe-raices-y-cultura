@@ -649,9 +649,6 @@ defmodule CRCWeb.Components.SiteComponents do
     has_desc = is_binary(desc) && String.trim(desc) != ""
     image_url = Map.get(assigns.item, :image_url)
     has_image = is_binary(image_url) && image_url != ""
-    # The card only opens a detail modal when there is something extra to show
-    # (a photo or a description). Otherwise it stays a plain name + price card.
-    expandable = has_desc || has_image
 
     assigns =
       assigns
@@ -659,113 +656,116 @@ defmodule CRCWeb.Components.SiteComponents do
       |> assign(:has_desc, has_desc)
       |> assign(:image_url, image_url)
       |> assign(:has_image, has_image)
-      |> assign(:expandable, expandable)
       |> assign(:modal_id, "item-detail-#{assigns.item.id}")
 
     ~H"""
-    <%= if @expandable do %>
-      <button
-        type="button"
-        id={"menu-item-#{@item.id}"}
-        phx-click={
-          JS.show(to: "##{@modal_id}", display: "flex")
-          |> JS.add_class("overflow-hidden", to: "body")
-        }
-        class="group text-left w-full h-full bg-base-100 border border-base-300 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-primary/40 transition-all flex items-start justify-between gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-      >
-        <span class="min-w-0 flex flex-col gap-1">
-          <span class="text-sm sm:text-base font-bold text-base-content leading-snug group-hover:text-primary transition-colors">
-            {@item.name}
+    <button
+      type="button"
+      id={"menu-item-#{@item.id}"}
+      phx-click={
+        JS.show(to: "##{@modal_id}", display: "flex")
+        |> JS.add_class("overflow-hidden", to: "body")
+      }
+      class="group text-left w-full h-full bg-base-100 border border-base-300 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-primary/40 transition-all flex flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+    >
+      <%!-- Image slot — always present so every card is the same height --%>
+      <div class="relative aspect-[4/3] bg-base-200 shrink-0 overflow-hidden">
+        <%= if @has_image do %>
+          <img
+            src={@image_url}
+            alt={@item.name}
+            loading="lazy"
+            class="absolute inset-0 w-full h-full object-cover"
+          />
+        <% else %>
+          <span class="absolute inset-0 flex items-center justify-center">
+            <img
+              src="/images/brand/logo-color.png"
+              alt=""
+              class="h-10 sm:h-12 w-auto opacity-15"
+            />
           </span>
-          <span
-            :if={Map.get(@item, :featured)}
-            class="inline-flex w-fit items-center text-[11px] font-semibold text-accent-content bg-accent/20 border border-accent/40 px-2 py-0.5 rounded-full"
-          >
-            Recomendado
-          </span>
-          <span class="inline-flex items-center gap-1 text-xs text-base-content/40 group-hover:text-primary/70 transition-colors">
-            Ver detalle <.icon name="hero-chevron-right" class="size-3" />
-          </span>
-        </span>
-        <span class="text-sm sm:text-base font-bold text-primary whitespace-nowrap shrink-0">
+        <% end %>
+        <span class="absolute top-2 right-2 bg-primary text-primary-content text-xs sm:text-sm font-bold px-2.5 py-1 rounded-full shadow-sm">
           ${format_price(@item.price)}
         </span>
-      </button>
-
-      <%!-- ── Detail modal ── --%>
-      <div
-        id={@modal_id}
-        class="hidden fixed inset-0 z-50 items-center justify-center p-4"
-        phx-window-keydown={
-          JS.hide(to: "##{@modal_id}") |> JS.remove_class("overflow-hidden", to: "body")
-        }
-        phx-key="Escape"
-      >
-        <div
-          class="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          phx-click={JS.hide(to: "##{@modal_id}") |> JS.remove_class("overflow-hidden", to: "body")}
+        <span
+          :if={Map.get(@item, :featured)}
+          class="absolute top-2 left-2 bg-accent text-accent-content text-[11px] font-semibold px-2 py-0.5 rounded-full shadow-sm"
         >
+          Recomendado
+        </span>
+      </div>
+
+      <div class="p-3 sm:p-4 flex-1 flex flex-col gap-1">
+        <h3 class="text-sm sm:text-base font-bold text-base-content leading-snug group-hover:text-primary transition-colors">
+          {@item.name}
+        </h3>
+        <span class="inline-flex items-center gap-1 text-xs text-base-content/40 group-hover:text-primary/70 transition-colors">
+          Ver detalle <.icon name="hero-chevron-right" class="size-3" />
+        </span>
+      </div>
+    </button>
+
+    <%!-- ── Detail modal ── --%>
+    <div
+      id={@modal_id}
+      class="hidden fixed inset-0 z-50 items-center justify-center p-4"
+      phx-window-keydown={
+        JS.hide(to: "##{@modal_id}") |> JS.remove_class("overflow-hidden", to: "body")
+      }
+      phx-key="Escape"
+    >
+      <div
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        phx-click={JS.hide(to: "##{@modal_id}") |> JS.remove_class("overflow-hidden", to: "body")}
+      >
+      </div>
+
+      <div class="relative z-10 w-full max-w-sm bg-base-100 rounded-2xl shadow-2xl overflow-hidden mx-auto max-h-[85vh] flex flex-col">
+        <div class="relative aspect-[16/9] bg-base-200 shrink-0 overflow-hidden">
+          <%= if @has_image do %>
+            <img
+              src={@image_url}
+              alt={@item.name}
+              class="absolute inset-0 w-full h-full object-cover"
+            />
+          <% else %>
+            <span class="absolute inset-0 flex items-center justify-center">
+              <img src="/images/brand/logo-color.png" alt="" class="h-14 w-auto opacity-15" />
+            </span>
+          <% end %>
+          <button
+            type="button"
+            class="absolute top-2 right-2 btn btn-sm btn-circle bg-base-100/90 border-0 hover:bg-base-100"
+            phx-click={JS.hide(to: "##{@modal_id}") |> JS.remove_class("overflow-hidden", to: "body")}
+            aria-label="Cerrar"
+          >
+            <.icon name="hero-x-mark" class="size-4" />
+          </button>
         </div>
 
-        <div class="relative z-10 w-full max-w-sm bg-base-100 rounded-2xl shadow-2xl overflow-hidden mx-auto max-h-[85vh] flex flex-col">
-          <%= if @has_image do %>
-            <div class="aspect-[16/9] overflow-hidden shrink-0">
-              <img src={@image_url} alt={@item.name} class="w-full h-full object-cover" />
-            </div>
-          <% end %>
-
-          <div class="p-5 space-y-3 overflow-y-auto">
-            <%!-- Name + Price + Close button in one row — avoids any overlap --%>
-            <div class="flex items-start gap-2">
-              <h3 class="flex-1 text-lg font-bold text-base-content leading-snug">{@item.name}</h3>
-              <span class="text-xl font-bold text-primary whitespace-nowrap shrink-0">
-                ${format_price(@item.price)}
-              </span>
-              <button
-                type="button"
-                class="btn btn-sm btn-circle btn-ghost shrink-0 -mt-0.5"
-                phx-click={
-                  JS.hide(to: "##{@modal_id}")
-                  |> JS.remove_class("overflow-hidden", to: "body")
-                }
-                aria-label="Cerrar"
-              >
-                <.icon name="hero-x-mark" class="size-4" />
-              </button>
-            </div>
-            <p
-              :if={@has_desc}
-              class="text-sm text-base-content/70 leading-relaxed whitespace-pre-line"
-            >
-              {@desc}
-            </p>
-            <div :if={Map.get(@item, :featured)}>
-              <span class="inline-block bg-accent/20 text-accent-content border border-accent/40 text-xs font-semibold px-3 py-1 rounded-full">
-                Recomendado
-              </span>
-            </div>
+        <div class="p-5 space-y-3 overflow-y-auto">
+          <div class="flex items-start justify-between gap-3">
+            <h3 class="text-lg font-bold text-base-content leading-snug">{@item.name}</h3>
+            <span class="text-xl font-bold text-primary whitespace-nowrap shrink-0">
+              ${format_price(@item.price)}
+            </span>
+          </div>
+          <p
+            :if={@has_desc}
+            class="text-sm text-base-content/70 leading-relaxed whitespace-pre-line"
+          >
+            {@desc}
+          </p>
+          <div :if={Map.get(@item, :featured)}>
+            <span class="inline-block bg-accent/20 text-accent-content border border-accent/40 text-xs font-semibold px-3 py-1 rounded-full">
+              Recomendado
+            </span>
           </div>
         </div>
       </div>
-    <% else %>
-      <%!-- No image or description: nothing to expand, so a plain static card --%>
-      <div class="w-full h-full bg-base-100 border border-base-300 rounded-2xl p-4 sm:p-5 shadow-sm flex items-start justify-between gap-3">
-        <div class="min-w-0 flex flex-col gap-1">
-          <h3 class="text-sm sm:text-base font-bold text-base-content leading-snug">
-            {@item.name}
-          </h3>
-          <span
-            :if={Map.get(@item, :featured)}
-            class="inline-flex w-fit items-center text-[11px] font-semibold text-accent-content bg-accent/20 border border-accent/40 px-2 py-0.5 rounded-full"
-          >
-            Recomendado
-          </span>
-        </div>
-        <span class="text-sm sm:text-base font-bold text-primary whitespace-nowrap shrink-0">
-          ${format_price(@item.price)}
-        </span>
-      </div>
-    <% end %>
+    </div>
     """
   end
 

@@ -113,7 +113,7 @@ defmodule CRCWeb.MenuLive do
     <!-- Items grid -->
             <div
               :if={@active_category && length(@active_category.menu_items) > 0}
-              class="grid grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-3 sm:gap-4"
+              class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
             >
               <%= for item <- @active_category.menu_items do %>
                 <SiteComponents.menu_item_card item={item} />

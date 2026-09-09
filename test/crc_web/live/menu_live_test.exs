@@ -284,15 +284,17 @@ defmodule CRCWeb.MenuLiveTest do
       assert html =~ "latte.jpg"
     end
 
-    test "item without image or description renders a static (non-clickable) card", %{conn: conn} do
+    test "every item renders a clickable card with a detail modal, even without extras", %{
+      conn: conn
+    } do
       cat = insert_category(%{name: "Cafés Simples"})
       item = insert_menu_item(cat.id, %{name: "Americano Simple", price: "35.00"})
 
       {:ok, lv, html} = live(conn, ~p"/menu")
 
       assert html =~ "Americano Simple"
-      refute has_element?(lv, "#menu-item-#{item.id}")
-      refute has_element?(lv, "#item-detail-#{item.id}")
+      assert has_element?(lv, "#menu-item-#{item.id}")
+      assert has_element?(lv, "#item-detail-#{item.id}")
     end
   end
 

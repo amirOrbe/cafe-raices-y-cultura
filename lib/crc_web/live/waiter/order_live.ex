@@ -43,7 +43,9 @@ defmodule CRCWeb.Waiter.OrderLive do
       |> assign(:change_due, nil)
       |> assign(:split_count, nil)
       |> assign(:split_input, "")
-      |> assign(:discount_pct, nil)
+      # 0 = "Sin descuento" (pre-selected). A nil here would leave the
+      # "Confirmar cobro" button disabled with no visible reason.
+      |> assign(:discount_pct, 0)
       |> assign(:discounts, [])
       |> assign(:cancelling_item, nil)
       |> assign(:now, DateTime.utc_now())
@@ -659,7 +661,7 @@ defmodule CRCWeb.Waiter.OrderLive do
      socket
      |> assign(:payment_step, true)
      |> assign(:discounts, discounts)
-     |> assign(:discount_pct, nil)}
+     |> assign(:discount_pct, 0)}
   end
 
   def handle_event("cancel_payment", _params, socket) do
@@ -671,7 +673,7 @@ defmodule CRCWeb.Waiter.OrderLive do
      |> assign(:change_due, nil)
      |> assign(:split_count, nil)
      |> assign(:split_input, "")
-     |> assign(:discount_pct, nil)
+     |> assign(:discount_pct, 0)
      |> assign(:discounts, [])}
   end
 

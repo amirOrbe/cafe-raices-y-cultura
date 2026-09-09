@@ -332,8 +332,7 @@ defmodule CRCWeb.Admin.MermaLive do
   defp format_qty(v), do: to_string(v)
 
   defp format_dt(%DateTime{} = dt) do
-    # Display in UTC (tzdata not installed; no named-zone conversion available).
-    Calendar.strftime(dt, "%d/%m/%y %H:%M UTC")
+    dt |> CRC.Utils.to_local() |> Calendar.strftime("%d/%m/%y %H:%M")
   end
 
   defp format_dt(_), do: "—"

@@ -17,10 +17,11 @@ defmodule CRCWeb.Admin.VentaManualLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    # Format current UTC time for the datetime-local input.
-    # tzdata is not installed, so we work in UTC throughout.
-    now_utc = DateTime.utc_now()
-    default_dt = Calendar.strftime(now_utc, "%Y-%m-%dT%H:%M")
+    # The datetime-local input shows/accepts the café's local time.
+    default_dt =
+      DateTime.utc_now()
+      |> CRC.Utils.to_local()
+      |> Calendar.strftime("%Y-%m-%dT%H:%M")
 
     socket =
       socket
@@ -408,8 +409,8 @@ defmodule CRCWeb.Admin.VentaManualLive do
   defp parse_datetime(str) do
     case NaiveDateTime.from_iso8601(str <> ":00") do
       {:ok, ndt} ->
-        # Treat the value from the datetime-local input as UTC (tzdata not installed).
-        DateTime.from_naive!(ndt, "Etc/UTC") |> DateTime.truncate(:second)
+        # The input holds the café's local time — convert back to UTC for storage.
+        ndt |> CRC.Utils.from_local_naive() |> DateTime.truncate(:second)
 
       _ ->
         DateTime.utc_now() |> DateTime.truncate(:second)

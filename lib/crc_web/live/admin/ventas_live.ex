@@ -530,7 +530,7 @@ defmodule CRCWeb.Admin.VentasLive do
   defp format_price(value), do: CRC.Utils.format_money(value)
 
   defp format_datetime(%DateTime{} = dt) do
-    Calendar.strftime(dt, "%d/%m/%Y %H:%M")
+    dt |> CRC.Utils.to_local() |> Calendar.strftime("%d/%m/%Y %H:%M")
   end
 
   defp format_datetime(_), do: "—"

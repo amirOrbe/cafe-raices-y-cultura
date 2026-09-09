@@ -105,6 +105,24 @@ defmodule CRC.CoverageGapTest do
   end
 
   # ===========================================================================
+  # CRC.Utils.to_local/1 and from_local_naive/1
+  # ===========================================================================
+
+  describe "CRC.Utils local time helpers" do
+    test "to_local shifts a UTC datetime by the configured offset (-6)" do
+      assert Utils.to_local(~U[2026-09-09 18:54:00Z]) == ~U[2026-09-09 12:54:00Z]
+    end
+
+    test "to_local passes nil through" do
+      assert Utils.to_local(nil) == nil
+    end
+
+    test "from_local_naive is the inverse of to_local" do
+      assert Utils.from_local_naive(~N[2026-09-09 12:54:00]) == ~U[2026-09-09 18:54:00Z]
+    end
+  end
+
+  # ===========================================================================
   # CRC.Events.EventPhoto.changeset/2
   # ===========================================================================
 

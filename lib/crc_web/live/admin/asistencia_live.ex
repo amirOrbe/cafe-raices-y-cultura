@@ -491,13 +491,11 @@ defmodule CRCWeb.Admin.AsistenciaLive do
   end
 
   defp format_time_utc(%DateTime{} = dt) do
-    local = DateTime.add(dt, -6 * 3600, :second)
-    Calendar.strftime(local, "%H:%M")
+    dt |> CRC.Utils.to_local() |> Calendar.strftime("%H:%M")
   end
 
   defp format_now do
-    local = DateTime.add(DateTime.utc_now(), -6 * 3600, :second)
-    Calendar.strftime(local, "%H:%M")
+    DateTime.utc_now() |> CRC.Utils.to_local() |> Calendar.strftime("%H:%M")
   end
 
   defp months do

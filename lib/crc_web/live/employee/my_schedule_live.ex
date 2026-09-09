@@ -624,9 +624,7 @@ defmodule CRCWeb.Employee.MyScheduleLive do
   defp format_time(nil), do: "–"
 
   defp format_datetime(%DateTime{} = dt) do
-    # Display in Mexico City time (UTC-6); approximated as UTC-6 without DST here
-    local = DateTime.add(dt, -6 * 3600, :second)
-    Calendar.strftime(local, "%H:%M")
+    dt |> CRC.Utils.to_local() |> Calendar.strftime("%H:%M")
   end
 
   defp format_datetime(nil), do: "–"

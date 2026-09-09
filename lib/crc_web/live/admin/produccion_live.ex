@@ -726,7 +726,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
   defp format_qty(v), do: to_string(v)
 
   defp format_dt(%DateTime{} = dt),
-    do: Calendar.strftime(dt, "%d %b %H:%M")
+    do: dt |> CRC.Utils.to_local() |> Calendar.strftime("%d %b %H:%M")
 
   defp format_dt(_), do: "—"
 

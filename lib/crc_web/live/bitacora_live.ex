@@ -318,7 +318,7 @@ defmodule CRCWeb.BitacoraLive do
   defp category_placeholder(_), do: "Ej: Llega el proveedor de leche a las 10am mañana"
 
   defp format_dt(%DateTime{} = dt),
-    do: Calendar.strftime(dt, "%d/%m %H:%M")
+    do: dt |> CRC.Utils.to_local() |> Calendar.strftime("%d/%m %H:%M")
 
   defp format_dt(_), do: "—"
 end

@@ -355,9 +355,9 @@ defmodule CRCWeb.CuentaLive do
 
   defp format_price(nil), do: "0.00"
 
-  # Formats a UTC datetime as "DD/MM/YYYY HH:MM" in local display.
+  # Formats a UTC datetime as "DD/MM/YYYY HH:MM" in the café's local time.
   defp format_datetime(%DateTime{} = dt) do
-    Calendar.strftime(dt, "%d/%m/%Y %H:%M")
+    dt |> CRC.Utils.to_local() |> Calendar.strftime("%d/%m/%Y %H:%M")
   end
 
   defp format_datetime(nil), do: "—"

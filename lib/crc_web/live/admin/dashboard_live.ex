@@ -478,8 +478,8 @@ defmodule CRCWeb.Admin.DashboardLive do
       else: str
   end
 
-  defp format_date(dt), do: Calendar.strftime(dt, "%d/%m/%Y")
-  defp format_time(dt), do: Calendar.strftime(dt, "%H:%M")
+  defp format_date(dt), do: dt |> CRC.Utils.to_local() |> Calendar.strftime("%d/%m/%Y")
+  defp format_time(dt), do: dt |> CRC.Utils.to_local() |> Calendar.strftime("%H:%M")
 
   defp payment_icon("efectivo"), do: "hero-banknotes"
   defp payment_icon("tarjeta"), do: "hero-credit-card"

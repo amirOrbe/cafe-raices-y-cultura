@@ -445,8 +445,5 @@ defmodule CRCWeb.Admin.VentaManualLive do
     assign(socket, :errors, [msg | socket.assigns.errors])
   end
 
-  defp format_price(nil), do: "0.00"
-  defp format_price(%Decimal{} = d), do: Decimal.round(d, 2) |> Decimal.to_string()
-  defp format_price(n) when is_number(n), do: :erlang.float_to_binary(n / 1, decimals: 2)
-  defp format_price(other), do: to_string(other)
+  defp format_price(value), do: CRC.Utils.format_money(value)
 end

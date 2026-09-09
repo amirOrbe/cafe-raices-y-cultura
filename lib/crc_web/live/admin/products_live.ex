@@ -435,7 +435,9 @@ defmodule CRCWeb.Admin.ProductsLive do
               </div>
               <div class="flex items-center gap-2 mt-1 flex-wrap">
                 <%= if product.product_category do %>
-                  <span class="badge badge-xs badge-ghost">{product.product_category.name}</span>
+                  <span class="inline-block text-[11px] leading-tight px-1.5 py-0.5 rounded bg-base-200 text-base-content/70">
+                    {product.product_category.name}
+                  </span>
                 <% end %>
                 <span class={[
                   "text-xs font-medium",
@@ -498,13 +500,13 @@ defmodule CRCWeb.Admin.ProductsLive do
           <table class="table table-zebra table-fixed w-full">
             <thead>
               <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th class="w-[22%]">Nombre</th>
-                <th class="w-[12%]">Categoría</th>
+                <th class="w-[21%]">Nombre</th>
+                <th class="w-[15%]">Categoría</th>
                 <th class="w-[10%]">Stock</th>
                 <th class="w-[8%]">Mín.</th>
                 <th class="w-[10%]">Costo neto</th>
                 <th class="w-[10%]">Precio venta</th>
-                <th class="w-[14%]">Proveedor</th>
+                <th class="w-[12%]">Proveedor</th>
                 <th class="w-[8%]">Estado</th>
                 <th class="w-[6%] text-right">Acciones</th>
               </tr>
@@ -540,7 +542,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                     </div>
                   </td>
                   <td>
-                    <span class="badge badge-sm badge-ghost">
+                    <span class="text-xs leading-tight text-base-content/60">
                       {if product.product_category, do: product.product_category.name, else: "—"}
                     </span>
                   </td>
@@ -860,7 +862,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                           <.icon name="hero-check-circle" class="size-4 text-success shrink-0" />
                           <p class="text-xs text-success font-semibold">
                             Costo por {if unit_val != "", do: unit_label(unit_val), else: "unidad"}:
-                            <span class="text-base">${Decimal.to_string(unit_cost)}</span>
+                            <span class="text-base">${CRC.Utils.format_money(unit_cost)}</span>
                             → se aplicó en "Costo neto" abajo
                           </p>
                         </div>
@@ -1349,8 +1351,7 @@ defmodule CRCWeb.Admin.ProductsLive do
   defp unit_abbr(other), do: other
 
   defp format_price(nil), do: "—"
-  defp format_price(%Decimal{} = d), do: Decimal.to_string(d)
-  defp format_price(val), do: to_string(val)
+  defp format_price(value), do: CRC.Utils.format_money(value)
 
   defp format_quantity(nil), do: "0"
 

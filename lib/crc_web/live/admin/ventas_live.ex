@@ -527,12 +527,7 @@ defmodule CRCWeb.Admin.VentasLive do
     |> assign(:timing_stats, Orders.timing_stats(period))
   end
 
-  defp format_price(%Decimal{} = price) do
-    price |> Decimal.round(0) |> Decimal.to_string()
-  end
-
-  defp format_price(nil), do: "0"
-  defp format_price(other), do: "#{other}"
+  defp format_price(value), do: CRC.Utils.format_money(value)
 
   defp format_datetime(%DateTime{} = dt) do
     Calendar.strftime(dt, "%d/%m/%Y %H:%M")

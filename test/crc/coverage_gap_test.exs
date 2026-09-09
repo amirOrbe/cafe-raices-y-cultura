@@ -72,6 +72,39 @@ defmodule CRC.CoverageGapTest do
   end
 
   # ===========================================================================
+  # CRC.Utils.format_money/1
+  # ===========================================================================
+
+  describe "CRC.Utils.format_money/1" do
+    test "GIVEN nil THEN returns 0.00" do
+      assert Utils.format_money(nil) == "0.00"
+    end
+
+    test "GIVEN a large amount THEN groups thousands and keeps two decimals" do
+      assert Utils.format_money(Decimal.new("208171")) == "208,171.00"
+      assert Utils.format_money(Decimal.new("1000000")) == "1,000,000.00"
+    end
+
+    test "GIVEN more than two decimals THEN rounds to two" do
+      assert Utils.format_money(Decimal.new("11.665")) == "11.67"
+    end
+
+    test "GIVEN a small amount THEN no separator, two decimals" do
+      assert Utils.format_money(Decimal.new("163")) == "163.00"
+      assert Utils.format_money(Decimal.new("50.5")) == "50.50"
+    end
+
+    test "GIVEN a negative amount THEN keeps the sign" do
+      assert Utils.format_money(Decimal.new("-1234.5")) == "-1,234.50"
+    end
+
+    test "GIVEN an integer or float THEN formats it too" do
+      assert Utils.format_money(1234) == "1,234.00"
+      assert Utils.format_money(1234.5) == "1,234.50"
+    end
+  end
+
+  # ===========================================================================
   # CRC.Events.EventPhoto.changeset/2
   # ===========================================================================
 

@@ -377,9 +377,7 @@ defmodule CRCWeb.Admin.FinanzasLive do
     |> assign(:waste_items, Orders.top_wasted_items(period))
   end
 
-  defp fmt(%Decimal{} = d), do: d |> Decimal.round(0) |> Decimal.to_string()
-  defp fmt(nil), do: "0"
-  defp fmt(v), do: "#{v}"
+  defp fmt(v), do: CRC.Utils.format_money(v)
 
   defp fmt_pct(%Decimal{} = d), do: Decimal.to_string(d)
   defp fmt_pct(_), do: "0"

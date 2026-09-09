@@ -276,7 +276,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
                           <div class="flex items-center justify-between gap-1 mt-0.5">
                             <div class="flex items-center gap-1.5 min-w-0">
                               <p class="text-sm font-bold text-success shrink-0">
-                                ${Decimal.round(entry.revenue, 2)}
+                                ${CRC.Utils.format_money(entry.revenue)}
                               </p>
                               <p class="text-xs text-base-content/40 truncate">
                                 · {entry.order_count} comandas

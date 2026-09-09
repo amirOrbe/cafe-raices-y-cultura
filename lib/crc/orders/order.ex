@@ -16,6 +16,8 @@ defmodule CRC.Orders.Order do
     field :total, :decimal
     # Timing — set when the order is closed
     field :closed_at, :utc_datetime
+    # Set when the comanda is "parked" — left open for the customer to pay later.
+    field :parked_at, :utc_datetime
     # True for orders entered retroactively (e.g., paper tickets during power outage).
     # These count toward financial totals but are excluded from rendimiento metrics.
     field :manual_entry, :boolean, default: false
@@ -33,6 +35,8 @@ defmodule CRC.Orders.Order do
     belongs_to :user, User
     # Staff member who closed/charged this order
     belongs_to :closed_by, User, foreign_key: :closed_by_id
+    # Staff member who parked this order (left it open for later payment)
+    belongs_to :parked_by, User, foreign_key: :parked_by_id
     # Physical table this order belongs to (nullable for backward-compat)
     belongs_to :table, Table
     # Discount applied at close time (nullable — nil means no discount)

@@ -55,6 +55,7 @@ defmodule CRCWeb.Admin.DashboardLive do
     low_stock = Inventory.list_low_stock_products()
     sales = Orders.sales_summary(:today)
     open_orders = Orders.list_open_orders()
+    parked_orders = Orders.list_parked_orders()
     top_items = Orders.top_selling_items(:today, 5)
 
     pending_cocina = count_sent_by_dest(open_orders, "cocina")
@@ -63,6 +64,7 @@ defmodule CRCWeb.Admin.DashboardLive do
     socket
     |> assign(:sales, sales)
     |> assign(:open_orders, open_orders)
+    |> assign(:parked_orders, parked_orders)
     |> assign(:pending_cocina, pending_cocina)
     |> assign(:pending_barra, pending_barra)
     |> assign(:top_items, top_items)
@@ -274,6 +276,46 @@ defmodule CRCWeb.Admin.DashboardLive do
         </div>
       </div>
 
+      <%!-- ── Cuentas por cobrar (parked) ─────────────────────────────────────── --%>
+      <div
+        :if={@parked_orders != []}
+        class="bg-base-100 rounded-2xl border border-warning/40 shadow-sm overflow-hidden"
+      >
+        <div class="px-5 py-4 border-b border-base-300 flex items-center justify-between gap-2 bg-warning/5">
+          <div class="flex items-center gap-2">
+            <span class="hero-pause-circle size-5 text-warning" />
+            <h2 class="font-semibold text-base-content">Por cobrar</h2>
+          </div>
+          <span class="text-sm font-semibold text-base-content/70">
+            {length(@parked_orders)}
+            {if length(@parked_orders) == 1, do: "cuenta", else: "cuentas"} · ${CRC.Utils.format_money(
+              parked_total(@parked_orders)
+            )}
+          </span>
+        </div>
+        <div class="divide-y divide-base-200">
+          <%= for order <- @parked_orders do %>
+            <div class="px-5 py-3 flex items-center gap-3 flex-wrap">
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-base-content text-sm">{order.customer_name}</p>
+                <p class="text-xs text-base-content/40 mt-0.5">
+                  <%= if order.user do %>
+                    👤 {order.user.name} ·
+                  <% end %>
+                  {item_summary(order)} · abierta {format_elapsed(
+                    DateTime.diff(@now, order.parked_at, :minute)
+                  )}
+                </p>
+              </div>
+              <span class="text-sm font-bold text-primary">
+                ${CRC.Utils.format_money(Orders.calculate_order_total(order))}
+              </span>
+              <a href={"/mesa/#{order.id}"} class="btn btn-xs btn-outline btn-warning">Cobrar</a>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
       <%!-- ── Stock bajo + Usuarios ──────────────────────────────────────────── --%>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <%!-- Stock bajo --%>
@@ -464,6 +506,12 @@ defmodule CRCWeb.Admin.DashboardLive do
   end
 
   defp format_elapsed(mins), do: "#{div(mins, 24 * 60)}d"
+
+  defp parked_total(orders) do
+    Enum.reduce(orders, Decimal.new(0), fn o, acc ->
+      Decimal.add(acc, Orders.calculate_order_total(o))
+    end)
+  end
 
   defp item_summary(order) do
     total = length(order.order_items)

@@ -617,6 +617,40 @@ defmodule CRCWeb.Waiter.OrderLive do
     end
   end
 
+  def handle_event("park_order", _params, socket) do
+    order = socket.assigns.order
+
+    if order.status == "closed" or not is_nil(order.parked_at) do
+      {:noreply, socket}
+    else
+      case Orders.park_order(order, socket.assigns.current_user.id) do
+        {:ok, _parked} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Cuenta en pausa. El cliente puede pagar después.")
+           |> push_navigate(to: "/mesa")}
+
+        {:error, _} ->
+          {:noreply, assign(socket, :flash_msg, {:error, "No se pudo dejar la cuenta abierta"})}
+      end
+    end
+  end
+
+  def handle_event("unpark_order", _params, socket) do
+    order = socket.assigns.order
+
+    case Orders.unpark_order(order) do
+      {:ok, _updated} ->
+        {:noreply,
+         socket
+         |> assign(:order, Orders.get_order!(order.id))
+         |> assign(:flash_msg, {:success, "Cuenta reactivada"})}
+
+      {:error, _} ->
+        {:noreply, assign(socket, :flash_msg, {:error, "No se pudo reactivar la cuenta"})}
+    end
+  end
+
   def handle_event("set_order_type", %{"type" => type}, socket)
       when type in ["dine_in", "takeout"] do
     order = socket.assigns.order
@@ -1153,7 +1187,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                                   class="btn btn-xs btn-ghost btn-circle"
                                   phx-click="decrement_item"
                                   phx-value-id={item.id}
-                                  disabled={item.quantity <= 1 or @order.status == "closed"}
+                                  disabled={item.quantity <= 1 or locked?(@order)}
                                 >
                                   <.icon name="hero-minus" class="size-3.5" />
                                 </button>
@@ -1164,7 +1198,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                                   phx-click="increment_item"
                                   phx-value-id={item.id}
                                   disabled={
-                                    @order.status == "closed" or
+                                    locked?(@order) or
                                       (max_qty != nil and item.quantity >= max_qty)
                                   }
                                   title={
@@ -1379,45 +1413,76 @@ defmodule CRCWeb.Waiter.OrderLive do
                     </div>
                   <% end %>
                   <% pending = pending_items(@order) %>
-                  <%= if @order.status == "closed" do %>
-                    <div class="flex gap-2">
-                      <a href="/mesa" class="btn btn-ghost flex-1">
+                  <%= cond do %>
+                    <% @order.status == "closed" -> %>
+                      <div class="flex gap-2">
+                        <a href="/mesa" class="btn btn-ghost flex-1">
+                          <.icon name="hero-arrow-left" class="size-4" /> Volver
+                        </a>
+                        <%= if @order.order_items != [] do %>
+                          <button class="btn btn-accent flex-1" phx-click="generate_bill">
+                            <.icon name="hero-qr-code" class="size-4" /> Mostrar QR
+                          </button>
+                        <% end %>
+                      </div>
+                    <% parked?(@order) -> %>
+                      <div class="rounded-xl bg-warning/10 border border-warning/30 px-3 py-2 mb-2 text-xs text-warning-content">
+                        <.icon name="hero-pause-circle" class="size-4 inline align-text-bottom" />
+                        Cuenta en pausa — el cliente paga después.
+                      </div>
+                      <button class="btn btn-success w-full" phx-click="show_payment_step">
+                        <.icon name="hero-credit-card" class="size-4" /> Cobrar cuenta
+                      </button>
+                      <button
+                        class="btn btn-outline w-full"
+                        phx-click="unpark_order"
+                        data-confirm="Reactivar la cuenta para seguir agregando platillos?"
+                      >
+                        <.icon name="hero-arrow-path" class="size-4" /> Reactivar cuenta
+                      </button>
+                      <a href="/mesa" class="btn btn-ghost w-full">
                         <.icon name="hero-arrow-left" class="size-4" /> Volver
                       </a>
-                      <%= if @order.order_items != [] do %>
-                        <button class="btn btn-accent flex-1" phx-click="generate_bill">
-                          <.icon name="hero-qr-code" class="size-4" /> Mostrar QR
+                    <% true -> %>
+                      <button
+                        class="btn btn-primary w-full"
+                        phx-click="send_to_kitchen"
+                        disabled={pending == []}
+                      >
+                        <.icon name="hero-paper-airplane" class="size-4" />
+                        {if @order.status == "open",
+                          do: "Enviar a cocina y barra",
+                          else: "Enviar adicionales"}
+                        <%= if pending != [] do %>
+                          <span class="badge badge-sm badge-primary-content/30">
+                            {length(pending)}
+                          </span>
+                        <% end %>
+                      </button>
+                      <%= if @order.order_items == [] and @order.status == "open" do %>
+                        <button
+                          class="btn btn-outline btn-error w-full"
+                          phx-click="cancel_order"
+                          data-confirm="¿Cancelar esta comanda?"
+                        >
+                          <.icon name="hero-x-mark" class="size-4" /> Cancelar comanda
                         </button>
                       <% end %>
-                    </div>
-                  <% else %>
-                    <button
-                      class="btn btn-primary w-full"
-                      phx-click="send_to_kitchen"
-                      disabled={pending == []}
-                    >
-                      <.icon name="hero-paper-airplane" class="size-4" />
-                      {if @order.status == "open",
-                        do: "Enviar a cocina y barra",
-                        else: "Enviar adicionales"}
-                      <%= if pending != [] do %>
-                        <span class="badge badge-sm badge-primary-content/30">{length(pending)}</span>
+                      <%= if @order.order_items != [] do %>
+                        <button
+                          class="btn btn-outline btn-success w-full"
+                          phx-click="show_payment_step"
+                        >
+                          <.icon name="hero-credit-card" class="size-4" /> Cobrar y cerrar cuenta
+                        </button>
+                        <button
+                          class="btn btn-ghost btn-sm w-full text-base-content/60"
+                          phx-click="park_order"
+                          data-confirm="El cliente paga después. Se libera la mesa. ¿Dejar la cuenta abierta?"
+                        >
+                          <.icon name="hero-pause-circle" class="size-4" /> Dejar cuenta abierta
+                        </button>
                       <% end %>
-                    </button>
-                    <%= if @order.order_items == [] and @order.status == "open" do %>
-                      <button
-                        class="btn btn-outline btn-error w-full"
-                        phx-click="cancel_order"
-                        data-confirm="¿Cancelar esta comanda?"
-                      >
-                        <.icon name="hero-x-mark" class="size-4" /> Cancelar comanda
-                      </button>
-                    <% end %>
-                    <%= if @order.order_items != [] do %>
-                      <button class="btn btn-outline btn-success w-full" phx-click="show_payment_step">
-                        <.icon name="hero-credit-card" class="size-4" /> Cobrar y cerrar cuenta
-                      </button>
-                    <% end %>
                   <% end %>
                 </div>
               </div>
@@ -1471,7 +1536,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                         class="input input-sm input-bordered w-full pl-9 pr-8"
                         phx-debounce="200"
                         autocomplete="off"
-                        disabled={@order.status == "closed"}
+                        disabled={locked?(@order)}
                       />
                       <%= if @menu_search != "" do %>
                         <button
@@ -1485,9 +1550,11 @@ defmodule CRCWeb.Waiter.OrderLive do
                     </div>
                   </form>
 
-                  <%= if @order.status == "closed" do %>
+                  <%= if locked?(@order) do %>
                     <div class="py-14 text-center text-base-content/40 text-sm">
-                      Esta cuenta está cerrada.
+                      {if parked?(@order),
+                        do: "Cuenta en pausa. Reactívala para agregar platillos.",
+                        else: "Esta cuenta está cerrada."}
                     </div>
                   <% else %>
                     <%= if @search_results != nil do %>
@@ -1593,9 +1660,11 @@ defmodule CRCWeb.Waiter.OrderLive do
                 <% else %>
                   <%!-- Tab Paquetes --%>
                   <div class="p-4">
-                    <%= if @order.status == "closed" do %>
+                    <%= if locked?(@order) do %>
                       <p class="text-center py-12 text-base-content/40 text-sm">
-                        Esta cuenta está cerrada.
+                        {if parked?(@order),
+                          do: "Cuenta en pausa. Reactívala para agregar platillos.",
+                          else: "Esta cuenta está cerrada."}
                       </p>
                     <% else %>
                       <%= if @packages == [] do %>
@@ -1718,7 +1787,25 @@ defmodule CRCWeb.Waiter.OrderLive do
               </button>
             <% end %>
           </div>
-        <% else %>
+        <% end %>
+        <%= if parked?(@order) do %>
+          <div class="flex items-center gap-2">
+            <span class="flex-1 text-xs text-warning-content/80">
+              <.icon name="hero-pause-circle" class="size-4 inline align-text-bottom" /> En pausa
+            </span>
+            <button
+              class="btn btn-outline btn-sm"
+              phx-click="unpark_order"
+              data-confirm="Reactivar la cuenta?"
+            >
+              Reactivar
+            </button>
+            <button class="btn btn-success btn-sm" phx-click="show_payment_step">
+              <.icon name="hero-credit-card" class="size-4" /> Cobrar
+            </button>
+          </div>
+        <% end %>
+        <%= if @order.status != "closed" and not parked?(@order) do %>
           <div class="flex items-center gap-3">
             <% total = Orders.calculate_order_total(@order) %>
             <div class="flex-1 min-w-0">
@@ -2096,6 +2183,12 @@ defmodule CRCWeb.Waiter.OrderLive do
   end
 
   defp pending_items(order), do: Enum.filter(order.order_items, &(&1.status == "pending"))
+
+  # A comanda is read-only when it is closed or parked (waiting for the customer
+  # to come back and pay). Parked comandas must be reactivated before editing.
+  defp locked?(order), do: order.status == "closed" or not is_nil(order.parked_at)
+
+  defp parked?(order), do: order.status != "closed" and not is_nil(order.parked_at)
 
   # Active = not yet terminal; served and cancelled items are excluded from business logic.
   defp active_items(order),

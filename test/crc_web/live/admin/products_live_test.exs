@@ -277,6 +277,25 @@ defmodule CRCWeb.Admin.ProductsLiveTest do
       {:ok, _lv, html} = live(conn, ~p"/admin/insumos")
       assert html =~ "Insumo Sin Min"
     end
+
+    test "the 'con stock bajo' count ignores inactive products", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+
+      active_low = insert_product(%{name: "Activo Bajo", stock_quantity: "1.0", min_stock: "5.0"})
+
+      inactive_low =
+        insert_product(%{name: "Inactivo Bajo", stock_quantity: "1.0", min_stock: "5.0"})
+
+      {:ok, _} = Inventory.toggle_product_active(inactive_low)
+
+      {:ok, _lv, html} = live(conn, ~p"/admin/insumos")
+
+      # Only the active one is counted — matches CRC.Inventory.list_low_stock_products/0
+      assert html =~ "1 con stock bajo"
+      assert length(Inventory.list_low_stock_products()) == 1
+
+      _ = active_low
+    end
   end
 
   describe "unit variations" do

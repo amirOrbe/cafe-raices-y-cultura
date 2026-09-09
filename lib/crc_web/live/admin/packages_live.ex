@@ -216,9 +216,13 @@ defmodule CRCWeb.Admin.PackagesLive do
                   <div class="divider my-1 text-xs text-base-content/30">combo sugerido</div>
                   <div class="flex items-center justify-between">
                     <div>
-                      <p class="text-lg font-bold text-primary">${s.suggested_price}</p>
+                      <p class="text-lg font-bold text-primary">
+                        ${CRC.Utils.format_money(s.suggested_price)}
+                      </p>
                       <p class="text-xs text-base-content/50">
-                        valor normal ${s.normal_price} · ahorro ${s.savings}
+                        valor normal ${CRC.Utils.format_money(s.normal_price)} · ahorro ${CRC.Utils.format_money(
+                          s.savings
+                        )}
                       </p>
                       <p class="text-xs text-success font-medium">{s.package_margin}% de margen</p>
                     </div>
@@ -273,7 +277,7 @@ defmodule CRCWeb.Admin.PackagesLive do
                 </div>
 
                 <%!-- Price --%>
-                <p class="text-2xl font-bold text-primary">${pkg.price}</p>
+                <p class="text-2xl font-bold text-primary">${CRC.Utils.format_money(pkg.price)}</p>
 
                 <%!-- Items --%>
                 <ul class="space-y-1">
@@ -446,7 +450,9 @@ defmodule CRCWeb.Admin.PackagesLive do
                           />
                           <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-base-content truncate">{item.name}</p>
-                            <p class="text-xs text-base-content/50">${item.price} c/u</p>
+                            <p class="text-xs text-base-content/50">
+                              ${CRC.Utils.format_money(item.price)} c/u
+                            </p>
                           </div>
                           <span class={"badge badge-xs shrink-0 #{if item.destination == "barra", do: "badge-info", else: "badge-warning"}"}>
                             {if item.destination == "barra", do: "Barra", else: "Cocina"}
@@ -528,7 +534,7 @@ defmodule CRCWeb.Admin.PackagesLive do
                     end) %>
                   <div class="mt-2 rounded-lg bg-base-200 px-3 py-2 flex items-center justify-between text-xs text-base-content/60">
                     <span>Precio individual total:</span>
-                    <span class="font-semibold">${individual_total}</span>
+                    <span class="font-semibold">${CRC.Utils.format_money(individual_total)}</span>
                   </div>
                 <% end %>
               </div>

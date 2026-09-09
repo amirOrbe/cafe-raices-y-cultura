@@ -268,6 +268,27 @@ const DismissableTip = {
   }
 }
 
+/**
+ * AutoDismissFlash — hides a flash toast automatically after a few seconds.
+ * Reuses the flash element's own phx-click (clear-flash + hide) so the server
+ * flash is also cleared. Hovering keeps it on screen.
+ */
+const AutoDismissFlash = {
+  mounted() {
+    this._delay = 5000
+    this._arm()
+    this.el.addEventListener("mouseenter", () => clearTimeout(this._t))
+    this.el.addEventListener("mouseleave", () => this._arm())
+  },
+  _arm() {
+    clearTimeout(this._t)
+    this._t = setTimeout(() => this.el.click(), this._delay)
+  },
+  destroyed() {
+    clearTimeout(this._t)
+  }
+}
+
 // ---------------------------------------------------------------------------
 // LiveSocket setup
 // ---------------------------------------------------------------------------
@@ -278,6 +299,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
   params: {_csrf_token: csrfToken},
   hooks: {
     ...colocatedHooks,
+    AutoDismissFlash,
     CarouselAutoplay,
     DismissableTip,
     FloorMapEditor,

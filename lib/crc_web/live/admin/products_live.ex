@@ -1229,6 +1229,7 @@ defmodule CRCWeb.Admin.ProductsLive do
     Enum.filter(products, &(to_string(&1.product_category_id) == cat_id))
   end
 
+  defp low_stock?(%Product{active: false}), do: false
   defp low_stock?(%Product{min_stock: nil}), do: false
 
   defp low_stock?(%Product{stock_quantity: stock, min_stock: min}),

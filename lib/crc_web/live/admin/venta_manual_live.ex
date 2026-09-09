@@ -302,20 +302,36 @@ defmodule CRCWeb.Admin.VentaManualLive do
                 phx-value-pct="0"
               >
                 <span>Sin descuento</span>
-                <span class={["badge badge-sm", if(@discount_pct == 0, do: "badge-primary-content/30", else: "badge-ghost")]}>0%</span>
+                <span class={[
+                  "badge badge-sm",
+                  if(@discount_pct == 0, do: "badge-primary-content/30", else: "badge-ghost")
+                ]}>
+                  0%
+                </span>
               </button>
               <%= for d <- @discounts do %>
                 <button
                   type="button"
                   class={[
                     "btn btn-sm w-full justify-between",
-                    if(@discount_pct == d.percentage, do: "btn-primary", else: "btn-outline btn-ghost")
+                    if(@discount_pct == d.percentage,
+                      do: "btn-primary",
+                      else: "btn-outline btn-ghost"
+                    )
                   ]}
                   phx-click="set_discount_pct"
                   phx-value-pct={d.percentage}
                 >
                   <span class="truncate text-left">{d.name}</span>
-                  <span class={["badge badge-sm shrink-0", if(@discount_pct == d.percentage, do: "badge-primary-content/30", else: "badge-ghost")]}>{d.percentage}%</span>
+                  <span class={[
+                    "badge badge-sm shrink-0",
+                    if(@discount_pct == d.percentage,
+                      do: "badge-primary-content/30",
+                      else: "badge-ghost"
+                    )
+                  ]}>
+                    {d.percentage}%
+                  </span>
                 </button>
               <% end %>
             </div>

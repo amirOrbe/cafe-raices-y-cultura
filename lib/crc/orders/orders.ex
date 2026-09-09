@@ -82,11 +82,12 @@ defmodule CRC.Orders do
   @doc "Returns active takeout orders (order_type: takeout, not a group, no table), sorted oldest first."
   def list_active_takeout do
     Order
-    |> where([o],
+    |> where(
+      [o],
       o.status in ["open", "sent", "ready"] and
-      o.order_type == "takeout" and
-      o.is_group == false and
-      is_nil(o.table_id)
+        o.order_type == "takeout" and
+        o.is_group == false and
+        is_nil(o.table_id)
     )
     |> order_by([o], o.inserted_at)
     |> preload([

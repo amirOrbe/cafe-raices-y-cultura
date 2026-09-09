@@ -7,8 +7,10 @@ defmodule CRCWeb.Waiter.TableLive do
   alias CRCWeb.Components.SiteComponents
 
   @tick_interval 30_000
-  @overdue_seconds 15 * 60      # kitchen waiting too long
-  @unattended_seconds 10 * 60   # order open but nothing sent to kitchen
+  # kitchen waiting too long
+  @overdue_seconds 15 * 60
+  # order open but nothing sent to kitchen
+  @unattended_seconds 10 * 60
 
   @impl true
   def mount(_params, _session, socket) do
@@ -59,6 +61,7 @@ defmodule CRCWeb.Waiter.TableLive do
     orders_by_table = Orders.active_orders_by_table()
     groups = Orders.list_active_groups()
     takeout = Orders.list_active_takeout()
+
     tableless =
       Orders.list_active_orders()
       |> Enum.filter(&(is_nil(&1.table_id) and not &1.is_group and &1.order_type == "dine_in"))
@@ -280,24 +283,35 @@ defmodule CRCWeb.Waiter.TableLive do
           <div>
             <h1 class="text-2xl font-bold text-base-content">Mesas</h1>
             <p class="text-sm text-base-content/50 mt-0.5">
-              {map_size(@orders_by_table)} ocupada{if map_size(@orders_by_table) != 1, do: "s"} ·
-              {length(@tables) - map_size(@orders_by_table)} libre{if (length(@tables) - map_size(@orders_by_table)) != 1, do: "s"}
+              {map_size(@orders_by_table)} ocupada{if map_size(@orders_by_table) != 1, do: "s"} · {length(
+                @tables
+              ) - map_size(@orders_by_table)} libre{if length(@tables) - map_size(@orders_by_table) !=
+                                                         1,
+                                                       do: "s"}
             </p>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
             <%!-- View toggle --%>
             <div class="join">
               <button
-                class={["btn btn-sm join-item gap-1", if(@view_mode == :map, do: "btn-primary", else: "btn-ghost border border-base-300")]}
-                phx-click="set_view" phx-value-mode="map"
+                class={[
+                  "btn btn-sm join-item gap-1",
+                  if(@view_mode == :map, do: "btn-primary", else: "btn-ghost border border-base-300")
+                ]}
+                phx-click="set_view"
+                phx-value-mode="map"
                 title="Vista de mapa"
               >
                 <.icon name="hero-squares-2x2" class="size-4" />
                 <span class="hidden sm:inline">Mapa</span>
               </button>
               <button
-                class={["btn btn-sm join-item gap-1", if(@view_mode == :list, do: "btn-primary", else: "btn-ghost border border-base-300")]}
-                phx-click="set_view" phx-value-mode="list"
+                class={[
+                  "btn btn-sm join-item gap-1",
+                  if(@view_mode == :list, do: "btn-primary", else: "btn-ghost border border-base-300")
+                ]}
+                phx-click="set_view"
+                phx-value-mode="list"
                 title="Vista de lista"
               >
                 <.icon name="hero-list-bullet" class="size-4" />
@@ -334,166 +348,172 @@ defmodule CRCWeb.Waiter.TableLive do
             <.icon name="hero-table-cells" class="size-12 text-base-content/20 mx-auto" />
             <p class="text-base-content/50 text-sm font-medium">No hay mesas configuradas</p>
             <p class="text-base-content/40 text-xs">
-              Un administrador debe agregar las mesas desde
-              <a href="/admin/mesas" class="link">Admin → Mesas</a>.
+              Un administrador debe agregar las mesas desde <a href="/admin/mesas" class="link">Admin → Mesas</a>.
             </p>
           </div>
         <% else %>
           <%!-- MAP VIEW --%>
           <%= if @view_mode == :map do %>
-          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-            <div
-              class="relative w-full select-none"
-              style="height: calc(100svh - 220px); min-height: 320px; background-image: radial-gradient(circle, oklch(80% 0.02 78) 1px, transparent 1px); background-size: 32px 32px;"
-            >
-              <%= for table <- @tables do %>
-                <% order = Map.get(@orders_by_table, table.id) %>
-                <% {chip_class, chair_class, label_text} = table_chip_style(order, @now) %>
-                <button
-                  phx-click="select_table"
-                  phx-value-id={table.id}
-                  class="absolute -translate-x-1/2 -translate-y-1/2 focus:outline-none"
-                  style={"left: #{table.x_pct}%; top: #{table.y_pct}%"}
-                  title={label_text}
-                >
-                  <% {ch_top, ch_bot, ch_left, ch_right} = chair_distribution(table.capacity) %>
-                  <div class="relative w-20 h-20 hover:scale-110 active:scale-95 transition-transform">
-                    <%!-- Top chairs --%>
-                    <%= if ch_top > 0 do %>
-                      <div class="absolute top-0 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none">
-                        <%= for _ <- 1..ch_top do %>
-                          <div class={"w-5 h-3 rounded-t-xl #{chair_class}"} />
+            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+              <div
+                class="relative w-full select-none"
+                style="height: calc(100svh - 220px); min-height: 320px; background-image: radial-gradient(circle, oklch(80% 0.02 78) 1px, transparent 1px); background-size: 32px 32px;"
+              >
+                <%= for table <- @tables do %>
+                  <% order = Map.get(@orders_by_table, table.id) %>
+                  <% {chip_class, chair_class, label_text} = table_chip_style(order, @now) %>
+                  <button
+                    phx-click="select_table"
+                    phx-value-id={table.id}
+                    class="absolute -translate-x-1/2 -translate-y-1/2 focus:outline-none"
+                    style={"left: #{table.x_pct}%; top: #{table.y_pct}%"}
+                    title={label_text}
+                  >
+                    <% {ch_top, ch_bot, ch_left, ch_right} = chair_distribution(table.capacity) %>
+                    <div class="relative w-20 h-20 hover:scale-110 active:scale-95 transition-transform">
+                      <%!-- Top chairs --%>
+                      <%= if ch_top > 0 do %>
+                        <div class="absolute top-0 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none">
+                          <%= for _ <- 1..ch_top do %>
+                            <div class={"w-5 h-3 rounded-t-xl #{chair_class}"} />
+                          <% end %>
+                        </div>
+                      <% end %>
+                      <%!-- Bottom chairs --%>
+                      <%= if ch_bot > 0 do %>
+                        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none">
+                          <%= for _ <- 1..ch_bot do %>
+                            <div class={"w-5 h-3 rounded-b-xl #{chair_class}"} />
+                          <% end %>
+                        </div>
+                      <% end %>
+                      <%!-- Left chair --%>
+                      <%= if ch_left > 0 do %>
+                        <div class={"absolute left-0 top-1/2 -translate-y-1/2 w-3 h-9 rounded-l-xl pointer-events-none #{chair_class}"} />
+                      <% end %>
+                      <%!-- Right chair --%>
+                      <%= if ch_right > 0 do %>
+                        <div class={"absolute right-0 top-1/2 -translate-y-1/2 w-3 h-9 rounded-r-xl pointer-events-none #{chair_class}"} />
+                      <% end %>
+                      <%!-- Table chip --%>
+                      <div class={"absolute inset-3 rounded-2xl flex flex-col items-center justify-center shadow-md border-2 #{chip_class}"}>
+                        <span class="text-xl font-bold leading-none">{table.number}</span>
+                        <%= if table.label && table.label != "" do %>
+                          <span class="text-[9px] leading-tight truncate w-10 text-center px-0.5 mt-0.5 opacity-75">
+                            {table.label}
+                          </span>
                         <% end %>
                       </div>
-                    <% end %>
-                    <%!-- Bottom chairs --%>
-                    <%= if ch_bot > 0 do %>
-                      <div class="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none">
-                        <%= for _ <- 1..ch_bot do %>
-                          <div class={"w-5 h-3 rounded-b-xl #{chair_class}"} />
-                        <% end %>
-                      </div>
-                    <% end %>
-                    <%!-- Left chair --%>
-                    <%= if ch_left > 0 do %>
-                      <div class={"absolute left-0 top-1/2 -translate-y-1/2 w-3 h-9 rounded-l-xl pointer-events-none #{chair_class}"} />
-                    <% end %>
-                    <%!-- Right chair --%>
-                    <%= if ch_right > 0 do %>
-                      <div class={"absolute right-0 top-1/2 -translate-y-1/2 w-3 h-9 rounded-r-xl pointer-events-none #{chair_class}"} />
-                    <% end %>
-                    <%!-- Table chip --%>
-                    <div class={"absolute inset-3 rounded-2xl flex flex-col items-center justify-center shadow-md border-2 #{chip_class}"}>
-                      <span class="text-xl font-bold leading-none">{table.number}</span>
-                      <%= if table.label && table.label != "" do %>
-                        <span class="text-[9px] leading-tight truncate w-10 text-center px-0.5 mt-0.5 opacity-75">
-                          {table.label}
-                        </span>
+                      <%!-- Alert dot: overdue kitchen (red) or unattended (orange) --%>
+                      <%= if order && overdue?(order, @now) do %>
+                        <span class="absolute top-2 right-2 size-3 rounded-full bg-error border-2 border-base-100 animate-ping" />
+                        <span class="absolute top-2 right-2 size-3 rounded-full bg-error border-2 border-base-100" />
+                      <% end %>
+                      <%= if order && unattended?(order, @now) && not overdue?(order, @now) do %>
+                        <span class="absolute top-2 right-2 size-3 rounded-full bg-orange-400 border-2 border-base-100 animate-ping" />
+                        <span class="absolute top-2 right-2 size-3 rounded-full bg-orange-400 border-2 border-base-100" />
                       <% end %>
                     </div>
-                    <%!-- Alert dot: overdue kitchen (red) or unattended (orange) --%>
-                    <%= if order && overdue?(order, @now) do %>
-                      <span class="absolute top-2 right-2 size-3 rounded-full bg-error border-2 border-base-100 animate-ping" />
-                      <span class="absolute top-2 right-2 size-3 rounded-full bg-error border-2 border-base-100" />
-                    <% end %>
-                    <%= if order && unattended?(order, @now) && not overdue?(order, @now) do %>
-                      <span class="absolute top-2 right-2 size-3 rounded-full bg-orange-400 border-2 border-base-100 animate-ping" />
-                      <span class="absolute top-2 right-2 size-3 rounded-full bg-orange-400 border-2 border-base-100" />
-                    <% end %>
-                  </div>
-                </button>
-              <% end %>
-            </div>
+                  </button>
+                <% end %>
+              </div>
 
-            <%!-- Status legend --%>
-            <div class="px-5 py-3 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-base-content/60">
-              <span class="flex items-center gap-1.5">
-                <span class="size-3 rounded bg-base-200 border border-base-300 inline-block" /> Libre
-              </span>
-              <span class="flex items-center gap-1.5">
-                <span class="size-3 rounded bg-info inline-block" /> Abierta
-              </span>
-              <span class="flex items-center gap-1.5">
-                <span class="size-3 rounded bg-orange-500 inline-block animate-pulse" /> Sin atender
-              </span>
-              <span class="flex items-center gap-1.5">
-                <span class="size-3 rounded bg-warning inline-block" /> En cocina
-              </span>
-              <span class="flex items-center gap-1.5">
-                <span class="size-3 rounded bg-success inline-block" /> Lista
-              </span>
-              <span class="flex items-center gap-1.5">
-                <span class="size-3 rounded bg-error inline-block animate-pulse" /> +15 min
-              </span>
+              <%!-- Status legend --%>
+              <div class="px-5 py-3 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-base-content/60">
+                <span class="flex items-center gap-1.5">
+                  <span class="size-3 rounded bg-base-200 border border-base-300 inline-block" />
+                  Libre
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="size-3 rounded bg-info inline-block" /> Abierta
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="size-3 rounded bg-orange-500 inline-block animate-pulse" /> Sin atender
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="size-3 rounded bg-warning inline-block" /> En cocina
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="size-3 rounded bg-success inline-block" /> Lista
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="size-3 rounded bg-error inline-block animate-pulse" /> +15 min
+                </span>
+              </div>
             </div>
-          </div>
           <% end %>
 
           <%!-- LIST VIEW --%>
           <%= if @view_mode == :list do %>
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            <%= for table <- @tables do %>
-              <% order = Map.get(@orders_by_table, table.id) %>
-              <% {chip_class, _chair_class, label_text} = table_chip_style(order, @now) %>
-              <button
-                phx-click="select_table"
-                phx-value-id={table.id}
-                class="bg-base-100 rounded-2xl border-2 border-base-300 shadow-sm p-4 flex flex-col items-center gap-2 hover:shadow-md active:scale-95 transition-all focus:outline-none w-full"
-                title={label_text}
-              >
-                <%!-- Mini table visual --%>
-                <% {ch_top, ch_bot, _l, _r} = chair_distribution(table.capacity) %>
-                <div class="relative">
-                  <%= if ch_top > 0 do %>
-                    <div class="flex gap-0.5 justify-center mb-0.5">
-                      <%= for _ <- 1..ch_top do %>
-                        <div class={"w-3.5 h-2 rounded-t-lg #{list_chair_class(order, @now)}"} />
-                      <% end %>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <%= for table <- @tables do %>
+                <% order = Map.get(@orders_by_table, table.id) %>
+                <% {chip_class, _chair_class, label_text} = table_chip_style(order, @now) %>
+                <button
+                  phx-click="select_table"
+                  phx-value-id={table.id}
+                  class="bg-base-100 rounded-2xl border-2 border-base-300 shadow-sm p-4 flex flex-col items-center gap-2 hover:shadow-md active:scale-95 transition-all focus:outline-none w-full"
+                  title={label_text}
+                >
+                  <%!-- Mini table visual --%>
+                  <% {ch_top, ch_bot, _l, _r} = chair_distribution(table.capacity) %>
+                  <div class="relative">
+                    <%= if ch_top > 0 do %>
+                      <div class="flex gap-0.5 justify-center mb-0.5">
+                        <%= for _ <- 1..ch_top do %>
+                          <div class={"w-3.5 h-2 rounded-t-lg #{list_chair_class(order, @now)}"} />
+                        <% end %>
+                      </div>
+                    <% end %>
+                    <div class={"w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold shadow-sm border-2 #{chip_class}"}>
+                      {table.number}
                     </div>
-                  <% end %>
-                  <div class={"w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold shadow-sm border-2 #{chip_class}"}>
-                    {table.number}
+                    <%= if ch_bot > 0 do %>
+                      <div class="flex gap-0.5 justify-center mt-0.5">
+                        <%= for _ <- 1..ch_bot do %>
+                          <div class={"w-3.5 h-2 rounded-b-lg #{list_chair_class(order, @now)}"} />
+                        <% end %>
+                      </div>
+                    <% end %>
                   </div>
-                  <%= if ch_bot > 0 do %>
-                    <div class="flex gap-0.5 justify-center mt-0.5">
-                      <%= for _ <- 1..ch_bot do %>
-                        <div class={"w-3.5 h-2 rounded-b-lg #{list_chair_class(order, @now)}"} />
+                  <%!-- Table info --%>
+                  <div class="text-center">
+                    <p class="text-xs font-semibold text-base-content leading-tight">
+                      Mesa {table.number}
+                      <%= if table.label && table.label != "" do %>
+                        <span class="font-normal text-base-content/50"> ·  {table.label}</span>
                       <% end %>
-                    </div>
-                  <% end %>
-                </div>
-                <%!-- Table info --%>
-                <div class="text-center">
-                  <p class="text-xs font-semibold text-base-content leading-tight">
-                    Mesa {table.number}
-                    <%= if table.label && table.label != "" do %>
-                      <span class="font-normal text-base-content/50"> · {table.label}</span>
-                    <% end %>
-                  </p>
-                  <p class={[
-                    "text-[11px] mt-0.5 font-medium",
-                    cond do
-                      is_nil(order)                          -> "text-base-content/40"
-                      overdue?(order, @now)                  -> "text-error"
-                      all_active_items_ready?(order)         -> "text-success"
-                      order.status == "sent"                 -> "text-warning"
-                      unattended?(order, @now)               -> "text-orange-500"
-                      true                                   -> "text-info"
-                    end
-                  ]}>
-                    <%= cond do %>
-                      <% is_nil(order) -> %> Libre
-                      <% overdue?(order, @now) -> %> ⚠ +15 min en cocina
-                      <% all_active_items_ready?(order) -> %> Lista para servir ✓
-                      <% order.status == "sent" -> %> En cocina
-                      <% unattended?(order, @now) -> %> ⚠ Sin atender +10 min
-                      <% true -> %> Abierta
-                    <% end %>
-                  </p>
-                </div>
-              </button>
-            <% end %>
-          </div>
+                    </p>
+                    <p class={[
+                      "text-[11px] mt-0.5 font-medium",
+                      cond do
+                        is_nil(order) -> "text-base-content/40"
+                        overdue?(order, @now) -> "text-error"
+                        all_active_items_ready?(order) -> "text-success"
+                        order.status == "sent" -> "text-warning"
+                        unattended?(order, @now) -> "text-orange-500"
+                        true -> "text-info"
+                      end
+                    ]}>
+                      <%= cond do %>
+                        <% is_nil(order) -> %>
+                          Libre
+                        <% overdue?(order, @now) -> %>
+                          ⚠ +15 min en cocina
+                        <% all_active_items_ready?(order) -> %>
+                          Lista para servir ✓
+                        <% order.status == "sent" -> %>
+                          En cocina
+                        <% unattended?(order, @now) -> %>
+                          ⚠ Sin atender +10 min
+                        <% true -> %>
+                          Abierta
+                      <% end %>
+                    </p>
+                  </div>
+                </button>
+              <% end %>
+            </div>
           <% end %>
         <% end %>
 
@@ -567,14 +587,15 @@ defmodule CRCWeb.Waiter.TableLive do
                 <h2 class="text-lg font-bold text-base-content">
                   Mesa {@selected_table.number}
                   <%= if @selected_table.label && @selected_table.label != "" do %>
-                    <span class="text-base-content/50 font-normal text-base"> · {@selected_table.label}</span>
+                    <span class="text-base-content/50 font-normal text-base">
+                       ·  {@selected_table.label}
+                    </span>
                   <% end %>
                 </h2>
                 <p class="text-sm text-base-content/50">
                   {if @selected_table.capacity,
                     do: "Hasta #{@selected_table.capacity} personas · ",
-                    else: ""}
-                  Libre
+                    else: ""} Libre
                 </p>
               </div>
             </div>
@@ -727,15 +748,15 @@ defmodule CRCWeb.Waiter.TableLive do
 
   # {top, bottom, left, right} chair counts for a given capacity.
   defp chair_distribution(nil), do: {2, 2, 0, 0}
-  defp chair_distribution(1),   do: {1, 0, 0, 0}
-  defp chair_distribution(2),   do: {1, 1, 0, 0}
-  defp chair_distribution(3),   do: {2, 1, 0, 0}
-  defp chair_distribution(4),   do: {2, 2, 0, 0}
-  defp chair_distribution(5),   do: {2, 2, 1, 0}
-  defp chair_distribution(6),   do: {2, 2, 1, 1}
-  defp chair_distribution(7),   do: {3, 2, 1, 1}
-  defp chair_distribution(8),   do: {3, 3, 1, 1}
-  defp chair_distribution(_),   do: {3, 3, 1, 1}
+  defp chair_distribution(1), do: {1, 0, 0, 0}
+  defp chair_distribution(2), do: {1, 1, 0, 0}
+  defp chair_distribution(3), do: {2, 1, 0, 0}
+  defp chair_distribution(4), do: {2, 2, 0, 0}
+  defp chair_distribution(5), do: {2, 2, 1, 0}
+  defp chair_distribution(6), do: {2, 2, 1, 1}
+  defp chair_distribution(7), do: {3, 2, 1, 1}
+  defp chair_distribution(8), do: {3, 3, 1, 1}
+  defp chair_distribution(_), do: {3, 3, 1, 1}
 
   # Returns {chip_class, chair_class, label}
   defp table_chip_style(nil, _now) do
@@ -793,7 +814,9 @@ defmodule CRCWeb.Waiter.TableLive do
       ]}>
         <div class="card-body p-4 gap-2">
           <div class="flex items-center justify-between gap-2">
-            <span class="text-base font-bold text-base-content truncate min-w-0 flex-1">{@order.customer_name}</span>
+            <span class="text-base font-bold text-base-content truncate min-w-0 flex-1">
+              {@order.customer_name}
+            </span>
             <span class="shrink-0"><.status_badge status={@order.status} /></span>
           </div>
           <%!-- Order type / group badge --%>
@@ -811,7 +834,9 @@ defmodule CRCWeb.Waiter.TableLive do
           </div>
           <div class="flex items-center justify-between gap-2 text-sm text-base-content/60">
             <span>
-              {length(@order.order_items)} art{if length(@order.order_items) != 1, do: "ículos", else: "ículo"}
+              {length(@order.order_items)} art{if length(@order.order_items) != 1,
+                do: "ículos",
+                else: "ículo"}
             </span>
             <%= if @order.user do %>
               <span class="text-xs text-base-content/40 truncate max-w-[100px]">
@@ -869,13 +894,14 @@ defmodule CRCWeb.Waiter.TableLive do
 
   # Chair color for the compact list-view cards
   defp list_chair_class(nil, _now), do: "bg-base-300"
+
   defp list_chair_class(order, now) do
     cond do
-      overdue?(order, now)            -> "bg-error/60"
-      all_active_items_ready?(order)  -> "bg-success/60"
-      order.status == "sent"          -> "bg-warning/60"
-      unattended?(order, now)         -> "bg-orange-400/60"
-      true                            -> "bg-info/60"
+      overdue?(order, now) -> "bg-error/60"
+      all_active_items_ready?(order) -> "bg-success/60"
+      order.status == "sent" -> "bg-warning/60"
+      unattended?(order, now) -> "bg-orange-400/60"
+      true -> "bg-info/60"
     end
   end
 

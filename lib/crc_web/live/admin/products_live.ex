@@ -719,17 +719,23 @@ defmodule CRCWeb.Admin.ProductsLive do
           <%!-- Step flow indicator --%>
           <div class="flex items-center gap-2 text-xs text-base-content/50 flex-wrap">
             <span class="flex items-center gap-1 font-semibold text-primary">
-              <span class="size-5 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">1</span>
+              <span class="size-5 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">
+                1
+              </span>
               Elige la unidad
             </span>
             <span class="text-base-content/30">→</span>
             <span class="flex items-center gap-1">
-              <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">2</span>
+              <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
+                2
+              </span>
               Calcula el costo
             </span>
             <span class="text-base-content/30">→</span>
             <span class="flex items-center gap-1">
-              <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">3</span>
+              <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
+                3
+              </span>
               Registra el stock
             </span>
           </div>
@@ -761,7 +767,9 @@ defmodule CRCWeb.Admin.ProductsLive do
             <%!-- STEP 1 — Unit (prominent, with warning) --%>
             <div class="rounded-xl border-2 border-primary/25 bg-primary/4 p-4 space-y-2">
               <p class="text-xs font-bold text-primary flex items-center gap-1.5">
-                <span class="size-5 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">1</span>
+                <span class="size-5 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">
+                  1
+                </span>
                 Unidad de medida — elige primero
               </p>
               <.input
@@ -775,8 +783,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                 <p class="text-xs text-base-content/60 leading-relaxed">
                   <strong>Todo lo demás usa {unit_label(unit_val)}.</strong>
                   El stock, el stock mínimo, la calculadora y las recetas de tus platillos
-                  deben expresarse siempre en {unit_label(unit_val)}.
-                  {unit_example(unit_val)}
+                  deben expresarse siempre en {unit_label(unit_val)}. {unit_example(unit_val)}
                 </p>
               <% else %>
                 <p class="text-xs text-warning flex items-center gap-1">
@@ -790,7 +797,9 @@ defmodule CRCWeb.Admin.ProductsLive do
             <% unit_val = @form[:unit].value || "" %>
             <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
               <p class="text-xs font-bold text-base-content/70 flex items-center gap-1.5">
-                <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">2</span>
+                <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
+                  2
+                </span>
                 Costo del insumo
               </p>
 
@@ -802,7 +811,9 @@ defmodule CRCWeb.Admin.ProductsLive do
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div class="form-control">
                     <label class="label py-0.5">
-                      <span class="label-text text-xs font-medium">¿Cuánto pagaste en total? ($)</span>
+                      <span class="label-text text-xs font-medium">
+                        ¿Cuánto pagaste en total? ($)
+                      </span>
                     </label>
                     <input
                       type="number"
@@ -813,7 +824,9 @@ defmodule CRCWeb.Admin.ProductsLive do
                       placeholder="Ej: 100.00"
                       class="input input-bordered input-sm w-full"
                     />
-                    <p class="text-xs text-base-content/40 mt-0.5">El precio que pagaste por toda la compra</p>
+                    <p class="text-xs text-base-content/40 mt-0.5">
+                      El precio que pagaste por toda la compra
+                    </p>
                   </div>
                   <div class="form-control">
                     <label class="label py-0.5">
@@ -901,7 +914,9 @@ defmodule CRCWeb.Admin.ProductsLive do
             <%!-- STEP 3 — Stock --%>
             <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
               <p class="text-xs font-bold text-base-content/70 flex items-center gap-1.5">
-                <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">3</span>
+                <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
+                  3
+                </span>
                 Stock
               </p>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1247,24 +1262,19 @@ defmodule CRCWeb.Admin.ProductsLive do
 
   # Contextual example shown after choosing a unit
   defp unit_example("gramos"),
-    do:
-      "Ejemplo: si usas 18 gramos de café por espresso, en la receta del platillo pondrás 18."
+    do: "Ejemplo: si usas 18 gramos de café por espresso, en la receta del platillo pondrás 18."
 
   defp unit_example("kilogramos"),
-    do:
-      "Ejemplo: si usas 0.5 kg de harina por receta, en el platillo pondrás 0.500."
+    do: "Ejemplo: si usas 0.5 kg de harina por receta, en el platillo pondrás 0.500."
 
   defp unit_example("mililitros"),
-    do:
-      "Ejemplo: si una porción lleva 200 ml de leche, en el platillo pondrás 200."
+    do: "Ejemplo: si una porción lleva 200 ml de leche, en el platillo pondrás 200."
 
   defp unit_example("litros"),
-    do:
-      "Ejemplo: si usas 0.2 litros de crema por platillo, en la receta pondrás 0.200."
+    do: "Ejemplo: si usas 0.2 litros de crema por platillo, en la receta pondrás 0.200."
 
   defp unit_example("piezas"),
-    do:
-      "Ejemplo: si cada sope usa 3 tortillas, en la receta del platillo pondrás 3."
+    do: "Ejemplo: si cada sope usa 3 tortillas, en la receta del platillo pondrás 3."
 
   defp unit_example("onzas"),
     do: "Ejemplo: una porción de 2 oz → pondrás 2 en la receta del platillo."
@@ -1310,7 +1320,8 @@ defmodule CRCWeb.Admin.ProductsLive do
 
   # Hint for min_stock, unit-aware
   defp unit_min_stock_hint("gramos"),
-    do: "Recomendado: lo que necesitas para 2–3 días de operación. Ej: si usas 200 g/día → ponle 400–600."
+    do:
+      "Recomendado: lo que necesitas para 2–3 días de operación. Ej: si usas 200 g/día → ponle 400–600."
 
   defp unit_min_stock_hint("kilogramos"),
     do: "Ej: si consumes 0.5 kg al día → ponle 1.000 para que te avise cuando quede solo 1 kg."
@@ -1325,7 +1336,8 @@ defmodule CRCWeb.Admin.ProductsLive do
     do: "Ej: si vendes 20 piezas al día → ponle 40 para que te avise con 2 días de anticipación."
 
   defp unit_min_stock_hint(_),
-    do: "Cuando el stock baje de este número te avisamos en el panel. Ponlo en lo que necesitas para 2–3 días."
+    do:
+      "Cuando el stock baje de este número te avisamos en el panel. Ponlo en lo que necesitas para 2–3 días."
 
   defp unit_abbr("piezas"), do: "pza"
   defp unit_abbr("gramos"), do: "gr"

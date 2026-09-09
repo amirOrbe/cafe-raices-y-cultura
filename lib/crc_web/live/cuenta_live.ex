@@ -76,7 +76,6 @@ defmodule CRCWeb.CuentaLive do
     </style>
 
     <div class="min-h-screen bg-base-200 flex flex-col">
-
       <%!-- ── Header ──────────────────────────────────────────────────────────── --%>
       <div id="bill-header" class="bg-primary text-primary-content px-4 py-5 text-center shadow-md">
         <p class="text-xs font-semibold uppercase tracking-widest opacity-70">
@@ -91,22 +90,22 @@ defmodule CRCWeb.CuentaLive do
         <div class="bg-base-100 rounded-xl border border-base-300 px-4 py-3 print-card
                     grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-base-content/60">
           <div>
-            <span class="font-semibold text-base-content/80">Mesero</span><br />
+            <span class="font-semibold text-base-content/80">Mesero</span> <br />
             {if @order.user, do: @order.user.name, else: "—"}
           </div>
           <div>
-            <span class="font-semibold text-base-content/80">Fecha</span><br />
+            <span class="font-semibold text-base-content/80">Fecha</span> <br />
             {format_datetime(@order.inserted_at)}
           </div>
           <%= if @order.closed_at do %>
             <div>
-              <span class="font-semibold text-base-content/80">Hora de cierre</span><br />
+              <span class="font-semibold text-base-content/80">Hora de cierre</span> <br />
               {format_datetime(@order.closed_at)}
             </div>
           <% end %>
           <%= if @order.status == "closed" && @order.payment_method do %>
             <div>
-              <span class="font-semibold text-base-content/80">Pago</span><br />
+              <span class="font-semibold text-base-content/80">Pago</span> <br />
               {payment_label(@order.payment_method)}
             </div>
           <% end %>
@@ -216,7 +215,11 @@ defmodule CRCWeb.CuentaLive do
                 <span>${format_price(@subtotal)}</span>
               </div>
               <div class="px-4 py-2 flex items-center justify-between text-sm text-success font-medium">
-                <span>Descuento {if @order.discount, do: @order.discount.name, else: "#{@order.discount_percentage}%"} (-{@order.discount_percentage}%)</span>
+                <span>
+                  Descuento {if @order.discount,
+                    do: @order.discount.name,
+                    else: "#{@order.discount_percentage}%"} (-{@order.discount_percentage}%)
+                </span>
                 <span>-${format_price(Decimal.sub(@subtotal, @total))}</span>
               </div>
             <% end %>
@@ -236,8 +239,15 @@ defmodule CRCWeb.CuentaLive do
               </div>
               <%= if @order.amount_paid && @order.payment_method == "efectivo" do %>
                 <div class="mt-2 text-xs text-base-content/60 space-y-0.5 pl-6">
-                  <p>Entregado: <span class="font-semibold">${format_price(@order.amount_paid)}</span></p>
-                  <p>Cambio: <span class="font-semibold">${format_price(Decimal.sub(@order.amount_paid, @total))}</span></p>
+                  <p>
+                    Entregado: <span class="font-semibold">${format_price(@order.amount_paid)}</span>
+                  </p>
+                  <p>
+                    Cambio:
+                    <span class="font-semibold">
+                      ${format_price(Decimal.sub(@order.amount_paid, @total))}
+                    </span>
+                  </p>
                 </div>
               <% end %>
             </div>
@@ -250,8 +260,7 @@ defmodule CRCWeb.CuentaLive do
             onclick="window.print()"
             class="btn btn-outline w-full gap-2"
           >
-            <.icon name="hero-arrow-down-tray" class="size-4" />
-            Descargar PDF
+            <.icon name="hero-arrow-down-tray" class="size-4" /> Descargar PDF
           </button>
         </div>
       </div>
@@ -294,9 +303,9 @@ defmodule CRCWeb.CuentaLive do
     extras_map =
       items
       |> Enum.filter(fn oi ->
-        not is_nil(oi.product_id) and not is_nil(oi.for_menu_item_id) and
-          not is_nil(oi.product) and oi.status not in ["cancelled", "cancelled_waste"] and
-          oi.unit_price && Decimal.gt?(oi.unit_price, Decimal.new(0))
+        (not is_nil(oi.product_id) and not is_nil(oi.for_menu_item_id) and
+           not is_nil(oi.product) and oi.status not in ["cancelled", "cancelled_waste"] and
+           oi.unit_price) && Decimal.gt?(oi.unit_price, Decimal.new(0))
       end)
       |> Enum.group_by(& &1.for_menu_item_id, fn oi ->
         %{name: oi.product.name, quantity: oi.quantity, unit_price: oi.unit_price}
@@ -309,7 +318,10 @@ defmodule CRCWeb.CuentaLive do
     end)
     |> Enum.map(fn oi ->
       unit_price = oi.unit_price || oi.menu_item.price
-      exclusion_names = Enum.map(oi.exclusions, fn e -> e.product && e.product.name end) |> Enum.reject(&is_nil/1)
+
+      exclusion_names =
+        Enum.map(oi.exclusions, fn e -> e.product && e.product.name end) |> Enum.reject(&is_nil/1)
+
       variants = Map.get(variant_map, oi.menu_item_id, [])
       extras = Map.get(extras_map, oi.menu_item_id, [])
 

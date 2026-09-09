@@ -63,13 +63,15 @@ defmodule CRCWeb.E2E.WaiterAttributionTest do
   # ---------------------------------------------------------------------------
 
   defp run_full_waiter_lifecycle(conn, scenario) do
-    waiter = create_user(%{
-      name: scenario.waiter_name,
-      email: "#{System.unique_integer()}@e2e.test",
-      role: "empleado",
-      stations: ["sala"],
-      password: "pass123456"
-    })
+    waiter =
+      create_user(%{
+        name: scenario.waiter_name,
+        email: "#{System.unique_integer()}@e2e.test",
+        role: "empleado",
+        stations: ["sala"],
+        password: "pass123456"
+      })
+
     cocinero = create_cocinero()
 
     cat = create_category()
@@ -89,6 +91,7 @@ defmodule CRCWeb.E2E.WaiterAttributionTest do
 
     # The order belongs to this waiter
     order = CRC.Orders.get_order!(order_id)
+
     assert order.user_id == waiter.id,
            "expected user_id #{waiter.id} (#{scenario.waiter_name}), got #{order.user_id}"
 
@@ -134,6 +137,7 @@ defmodule CRCWeb.E2E.WaiterAttributionTest do
     for oi <- final_order.order_items do
       assert oi.served_by_id == waiter.id,
              "expected served_by_id #{waiter.id} on item #{oi.id}, got #{oi.served_by_id}"
+
       assert oi.status == "served"
     end
 
@@ -146,6 +150,7 @@ defmodule CRCWeb.E2E.WaiterAttributionTest do
     end
 
     render_click(lv_order, "confirm_close_order")
+
     assert {:error, {:redirect, %{to: "/mesa"}}} =
              render_click(lv_order, "close_bill_modal")
 
@@ -285,13 +290,14 @@ defmodule CRCWeb.E2E.WaiterAttributionTest do
       # Create all waiters and their orders
       waiter_orders =
         for s <- @concurrent_waiters do
-          waiter = create_user(%{
-            name: s.name,
-            email: "#{System.unique_integer()}@e2e.test",
-            role: "empleado",
-            stations: ["sala"],
-            password: "pass123456"
-          })
+          waiter =
+            create_user(%{
+              name: s.name,
+              email: "#{System.unique_integer()}@e2e.test",
+              role: "empleado",
+              stations: ["sala"],
+              password: "pass123456"
+            })
 
           order = create_order(%{customer_name: s.customer, user_id: waiter.id})
           {waiter, order}
@@ -324,13 +330,14 @@ defmodule CRCWeb.E2E.WaiterAttributionTest do
 
       closed_orders =
         for s <- @concurrent_waiters do
-          waiter = create_user(%{
-            name: s.name,
-            email: "#{System.unique_integer()}@e2e.test",
-            role: "empleado",
-            stations: ["sala"],
-            password: "pass123456"
-          })
+          waiter =
+            create_user(%{
+              name: s.name,
+              email: "#{System.unique_integer()}@e2e.test",
+              role: "empleado",
+              stations: ["sala"],
+              password: "pass123456"
+            })
 
           order = create_order(%{customer_name: s.customer, user_id: waiter.id})
           add_item(order.id, food.id)
@@ -352,6 +359,7 @@ defmodule CRCWeb.E2E.WaiterAttributionTest do
         # Opened AND closed by the same waiter
         assert closed.user_id == waiter.id,
                "expected user_id #{waiter.id}, got #{closed.user_id}"
+
         assert closed.closed_by_id == waiter.id,
                "expected closed_by_id #{waiter.id}, got #{closed.closed_by_id}"
       end
@@ -400,6 +408,7 @@ defmodule CRCWeb.E2E.WaiterAttributionTest do
       for oi <- served_order.order_items do
         assert oi.status == "served",
                "expected item #{oi.id} to be served, got #{oi.status}"
+
         assert oi.served_by_id == waiter.id,
                "expected served_by_id #{waiter.id} on item #{oi.id}, got #{oi.served_by_id}"
       end
@@ -431,13 +440,17 @@ defmodule CRCWeb.E2E.WaiterAttributionTest do
       conn_a = auth_conn(conn, waiter_a)
       {:ok, lv_a, _} = live(conn_a, "/mesa/#{order_a.id}")
       full_a = CRC.Orders.get_order!(order_a.id)
-      for oi <- full_a.order_items, do: render_click(lv_a, "mark_item_served", %{"id" => to_string(oi.id)})
+
+      for oi <- full_a.order_items,
+          do: render_click(lv_a, "mark_item_served", %{"id" => to_string(oi.id)})
 
       # Waiter B serves their table
       conn_b = auth_conn(build_conn(), waiter_b)
       {:ok, lv_b, _} = live(conn_b, "/mesa/#{order_b.id}")
       full_b = CRC.Orders.get_order!(order_b.id)
-      for oi <- full_b.order_items, do: render_click(lv_b, "mark_item_served", %{"id" => to_string(oi.id)})
+
+      for oi <- full_b.order_items,
+          do: render_click(lv_b, "mark_item_served", %{"id" => to_string(oi.id)})
 
       # Items from order A served by waiter A
       for oi <- CRC.Orders.get_order!(order_a.id).order_items do

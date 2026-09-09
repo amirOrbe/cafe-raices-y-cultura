@@ -101,7 +101,12 @@ defmodule CRCWeb.Admin.InventarioLive do
           {:noreply, socket}
 
         {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, "No se pudo actualizar el stock. Verifica el valor ingresado.")}
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             "No se pudo actualizar el stock. Verifica el valor ingresado."
+           )}
       end
     else
       nil ->
@@ -118,7 +123,8 @@ defmodule CRCWeb.Admin.InventarioLive do
           |> assign(:new_qty, "")
           |> assign(:notes, "")
 
-        {:noreply, put_flash(socket, :info, "El stock no cambió (el valor ingresado es igual al actual).")}
+        {:noreply,
+         put_flash(socket, :info, "El stock no cambió (el valor ingresado es igual al actual).")}
     end
   end
 
@@ -131,14 +137,12 @@ defmodule CRCWeb.Admin.InventarioLive do
     ~H"""
     <div class="min-h-screen bg-base-200 pb-10">
       <div class="max-w-5xl mx-auto px-4 py-8 space-y-6">
-
         <%!-- Header --%>
         <div class="flex items-start justify-between flex-wrap gap-3">
           <div>
             <h1 class="text-2xl font-bold text-base-content">📦 Inventario</h1>
             <p class="text-sm text-base-content/50 mt-0.5">
-              Stock actual de todos los insumos. Haz clic en
-              <strong>Actualizar</strong>
+              Stock actual de todos los insumos. Haz clic en <strong>Actualizar</strong>
               para corregir cualquier cantidad.
             </p>
           </div>
@@ -216,7 +220,8 @@ defmodule CRCWeb.Admin.InventarioLive do
               <%= for p <- visible do %>
                 <div class="px-4 py-4 space-y-2">
                   <div class="flex items-center gap-2">
-                    <span class={"inline-block w-2.5 h-2.5 rounded-full shrink-0 #{stock_dot_class(p)}"}></span>
+                    <span class={"inline-block w-2.5 h-2.5 rounded-full shrink-0 #{stock_dot_class(p)}"}>
+                    </span>
                     <span class="font-medium text-base-content text-sm">{p.name}</span>
                   </div>
                   <div class="flex items-center justify-between">
@@ -270,7 +275,8 @@ defmodule CRCWeb.Admin.InventarioLive do
                     <tr class="hover:bg-base-200/40 transition-colors border-b border-base-200 last:border-0">
                       <td>
                         <div class="flex items-center gap-2">
-                          <span class={"inline-block w-2.5 h-2.5 rounded-full shrink-0 #{stock_dot_class(p)}"}></span>
+                          <span class={"inline-block w-2.5 h-2.5 rounded-full shrink-0 #{stock_dot_class(p)}"}>
+                          </span>
                           <span class="text-sm font-medium text-base-content">{p.name}</span>
                           <%= if p.supplier do %>
                             <span class="badge badge-ghost badge-xs">{p.supplier.name}</span>
@@ -473,7 +479,7 @@ defmodule CRCWeb.Admin.InventarioLive do
   defp strip_plural(q) do
     cond do
       String.ends_with?(q, "es") and String.length(q) > 4 -> String.slice(q, 0..-3//1)
-      String.ends_with?(q, "s") and String.length(q) > 2  -> String.slice(q, 0..-2//1)
+      String.ends_with?(q, "s") and String.length(q) > 2 -> String.slice(q, 0..-2//1)
       true -> q
     end
   end

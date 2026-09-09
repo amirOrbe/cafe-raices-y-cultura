@@ -15,7 +15,11 @@ defmodule CRCWeb.ResetPasswordLive do
   end
 
   @impl true
-  def handle_event("submit", %{"password" => password, "password_confirmation" => confirmation}, socket) do
+  def handle_event(
+        "submit",
+        %{"password" => password, "password_confirmation" => confirmation},
+        socket
+      ) do
     if password != confirmation do
       {:noreply, assign(socket, error: :mismatch)}
     else
@@ -59,7 +63,6 @@ defmodule CRCWeb.ResetPasswordLive do
                   Solicitar nuevo enlace
                 </a>
               </div>
-
             <% @done -> %>
               <div class="text-center space-y-4">
                 <div class="w-14 h-14 bg-success/10 rounded-full flex items-center justify-center mx-auto">
@@ -73,10 +76,11 @@ defmodule CRCWeb.ResetPasswordLive do
                   Iniciar sesión
                 </a>
               </div>
-
             <% true -> %>
               <h1 class="text-xl font-bold text-base-content mb-1">Nueva contraseña</h1>
-              <p class="text-sm text-base-content/60 mb-6">Elige una contraseña segura de al menos 8 caracteres.</p>
+              <p class="text-sm text-base-content/60 mb-6">
+                Elige una contraseña segura de al menos 8 caracteres.
+              </p>
 
               <%= if @error == :mismatch do %>
                 <div class="alert alert-error mb-5 text-sm py-3">

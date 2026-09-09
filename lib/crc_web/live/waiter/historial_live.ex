@@ -302,7 +302,9 @@ defmodule CRCWeb.Waiter.HistorialLive do
                   <div class="pt-3 mt-2 border-t border-base-200 flex items-center justify-between gap-3">
                     <div>
                       <span class="text-sm text-base-content/50">Total cobrado</span>
-                      <span class="font-bold text-base-content ml-2">${format_total(order.total)}</span>
+                      <span class="font-bold text-base-content ml-2">
+                        ${format_total(order.total)}
+                      </span>
                     </div>
                     <button
                       class="btn btn-sm btn-outline btn-accent gap-1.5 shrink-0"
@@ -334,7 +336,10 @@ defmodule CRCWeb.Waiter.HistorialLive do
               <h2 class="font-bold text-lg">Cuenta</h2>
               <p class="text-sm opacity-80 truncate">{qr_order.customer_name}</p>
             </div>
-            <button phx-click="close_bill_qr" class="btn btn-sm btn-ghost text-primary-content shrink-0">
+            <button
+              phx-click="close_bill_qr"
+              class="btn btn-sm btn-ghost text-primary-content shrink-0"
+            >
               <.icon name="hero-x-mark" class="size-5" />
             </button>
           </div>

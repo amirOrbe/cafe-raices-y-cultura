@@ -198,9 +198,13 @@ defmodule CRCWeb.Admin.MesasLive do
 
               <%!-- Table + chairs --%>
               <% active = table.is_active
-                 chip_cls  = if active, do: "bg-primary text-primary-content border-primary/40", else: "bg-base-200 text-base-content/40 border-base-300"
-                 chair_cls = if active, do: "bg-primary/55", else: "bg-base-300"
-              %>
+
+              chip_cls =
+                if active,
+                  do: "bg-primary text-primary-content border-primary/40",
+                  else: "bg-base-200 text-base-content/40 border-base-300"
+
+              chair_cls = if active, do: "bg-primary/55", else: "bg-base-300" %>
               <% {ch_top, ch_bot, ch_left, ch_right} = chair_distribution(table.capacity) %>
               <div class="relative w-20 h-20">
                 <%!-- Top chairs --%>
@@ -284,7 +288,11 @@ defmodule CRCWeb.Admin.MesasLive do
                     <td class="text-base-content/70">{table.label || "—"}</td>
                     <td class="text-center text-base-content/60">{table.capacity || "—"}</td>
                     <td class="text-center">
-                      <span class={if table.is_active, do: "badge badge-sm badge-success", else: "badge badge-sm badge-ghost"}>
+                      <span class={
+                        if table.is_active,
+                          do: "badge badge-sm badge-success",
+                          else: "badge badge-sm badge-ghost"
+                      }>
                         {if table.is_active, do: "Activa", else: "Inactiva"}
                       </span>
                     </td>
@@ -403,14 +411,18 @@ defmodule CRCWeb.Admin.MesasLive do
                   type="checkbox"
                   class="toggle toggle-primary toggle-sm"
                 />
-                <label class="text-sm text-base-content cursor-pointer">Mesa activa (visible para meseros)</label>
+                <label class="text-sm text-base-content cursor-pointer">
+                  Mesa activa (visible para meseros)
+                </label>
               </div>
 
               <%!-- Delete confirmation (only in edit mode) --%>
               <%= if @editing_table do %>
                 <div class="pt-1 border-t border-base-200">
                   <%= if @confirm_delete_id == @editing_table.id do %>
-                    <p class="text-xs text-error mb-2">¿Confirmar eliminación? Esta acción no se puede deshacer.</p>
+                    <p class="text-xs text-error mb-2">
+                      ¿Confirmar eliminación? Esta acción no se puede deshacer.
+                    </p>
                     <div class="flex gap-2">
                       <button
                         type="button"
@@ -465,15 +477,15 @@ defmodule CRCWeb.Admin.MesasLive do
   # {top, bottom, left, right} chair counts for a given capacity.
   # nil capacity defaults to 4 chairs (2+2).
   defp chair_distribution(nil), do: {2, 2, 0, 0}
-  defp chair_distribution(1),   do: {1, 0, 0, 0}
-  defp chair_distribution(2),   do: {1, 1, 0, 0}
-  defp chair_distribution(3),   do: {2, 1, 0, 0}
-  defp chair_distribution(4),   do: {2, 2, 0, 0}
-  defp chair_distribution(5),   do: {2, 2, 1, 0}
-  defp chair_distribution(6),   do: {2, 2, 1, 1}
-  defp chair_distribution(7),   do: {3, 2, 1, 1}
-  defp chair_distribution(8),   do: {3, 3, 1, 1}
-  defp chair_distribution(_),   do: {3, 3, 1, 1}
+  defp chair_distribution(1), do: {1, 0, 0, 0}
+  defp chair_distribution(2), do: {1, 1, 0, 0}
+  defp chair_distribution(3), do: {2, 1, 0, 0}
+  defp chair_distribution(4), do: {2, 2, 0, 0}
+  defp chair_distribution(5), do: {2, 2, 1, 0}
+  defp chair_distribution(6), do: {2, 2, 1, 1}
+  defp chair_distribution(7), do: {3, 2, 1, 1}
+  defp chair_distribution(8), do: {3, 3, 1, 1}
+  defp chair_distribution(_), do: {3, 3, 1, 1}
 
   defp next_available_number(tables) do
     used = MapSet.new(tables, & &1.number)

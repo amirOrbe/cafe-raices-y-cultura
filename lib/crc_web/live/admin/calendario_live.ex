@@ -66,22 +66,26 @@ defmodule CRCWeb.Admin.CalendarioLive do
   def handle_event("assign_user", params, socket) do
     Logger.info("[CalendarioLive] assign_user params: #{inspect(params)}")
 
-    task_id  = Map.get(params, "task")
-    day      = Map.get(params, "day")
-    user_id  = Map.get(params, "user")
+    task_id = Map.get(params, "task")
+    day = Map.get(params, "day")
+    user_id = Map.get(params, "user")
 
     cond do
       is_nil(task_id) or is_nil(day) ->
-        Logger.warning("[CalendarioLive] assign_user: missing task or day — params: #{inspect(params)}")
+        Logger.warning(
+          "[CalendarioLive] assign_user: missing task or day — params: #{inspect(params)}"
+        )
+
         {:noreply, socket}
 
       true ->
-        result = Schedule.upsert_assignment(
-          String.to_integer(task_id),
-          String.to_integer(day),
-          socket.assigns.week_start,
-          user_id || ""
-        )
+        result =
+          Schedule.upsert_assignment(
+            String.to_integer(task_id),
+            String.to_integer(day),
+            socket.assigns.week_start,
+            user_id || ""
+          )
 
         Logger.info("[CalendarioLive] upsert_assignment result: #{inspect(result)}")
 
@@ -113,7 +117,8 @@ defmodule CRCWeb.Admin.CalendarioLive do
       nil ->
         case Schedule.create_area(params) do
           {:ok, _} ->
-            {:noreply, socket |> load_areas() |> assign(:area_form, nil) |> put_flash(:info, "Área creada.")}
+            {:noreply,
+             socket |> load_areas() |> assign(:area_form, nil) |> put_flash(:info, "Área creada.")}
 
           {:error, cs} ->
             {:noreply, assign(socket, :area_form, to_form(cs))}
@@ -174,7 +179,11 @@ defmodule CRCWeb.Admin.CalendarioLive do
       nil ->
         case Schedule.create_task(params) do
           {:ok, _} ->
-            {:noreply, socket |> load_areas() |> assign(:task_form, nil) |> put_flash(:info, "Tarea creada.")}
+            {:noreply,
+             socket
+             |> load_areas()
+             |> assign(:task_form, nil)
+             |> put_flash(:info, "Tarea creada.")}
 
           {:error, cs} ->
             {:noreply, assign(socket, :task_form, to_form(cs))}
@@ -259,23 +268,37 @@ defmodule CRCWeb.Admin.CalendarioLive do
           <ul class="space-y-1">
             <li>
               <span class="shrink-0 font-bold">1.</span>
-              <span>En la pestaña <strong>Áreas y tareas</strong> crea las secciones del café (Barra, Cocina, Limpieza…) y las actividades dentro de cada una.</span>
+              <span>
+                En la pestaña <strong>Áreas y tareas</strong>
+                crea las secciones del café (Barra, Cocina, Limpieza…) y las actividades dentro de cada una.
+              </span>
             </li>
             <li>
               <span class="shrink-0 font-bold">2.</span>
-              <span>En la pestaña <strong>Calendario</strong> elige un empleado en cada celda — los cambios se guardan al instante.</span>
+              <span>
+                En la pestaña <strong>Calendario</strong>
+                elige un empleado en cada celda — los cambios se guardan al instante.
+              </span>
             </li>
             <li>
               <span class="shrink-0 font-bold">3.</span>
-              <span>Usa <strong>Copiar semana anterior</strong> para reutilizar la misma distribución sin capturar todo de nuevo.</span>
+              <span>
+                Usa <strong>Copiar semana anterior</strong>
+                para reutilizar la misma distribución sin capturar todo de nuevo.
+              </span>
             </li>
             <li>
               <span class="shrink-0 font-bold">4.</span>
-              <span>Los empleados pueden consultar sus actividades asignadas desde su pantalla de <strong>Mi horario</strong>.</span>
+              <span>
+                Los empleados pueden consultar sus actividades asignadas desde su pantalla de <strong>Mi horario</strong>.
+              </span>
             </li>
           </ul>
         </div>
-        <button data-dismiss-tip class="btn btn-ghost btn-xs text-base-content/30 hover:text-base-content shrink-0 self-start">
+        <button
+          data-dismiss-tip
+          class="btn btn-ghost btn-xs text-base-content/30 hover:text-base-content shrink-0 self-start"
+        >
           <.icon name="hero-x-mark" class="size-3.5" />
         </button>
       </div>
@@ -321,7 +344,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
             <.icon name="hero-chevron-left" class="size-4" />
           </button>
           <span class="font-semibold text-base-content text-sm flex-1 text-center sm:min-w-52">
-            <%= format_week(@week_start) %>
+            {format_week(@week_start)}
           </span>
           <button class="btn btn-ghost btn-sm shrink-0" phx-click="next_week">
             <.icon name="hero-chevron-right" class="size-4" />
@@ -356,9 +379,9 @@ defmodule CRCWeb.Admin.CalendarioLive do
                 <th class="text-xs">Tarea</th>
                 <%= for day <- @days do %>
                   <th class={"text-center text-xs w-20 #{if Date.add(@week_start, day) == Date.utc_today(), do: "text-primary font-bold", else: ""}"}>
-                    <%= Schedule.day_name(day) %><br />
+                    {Schedule.day_name(day)}<br />
                     <span class="font-normal text-xs opacity-60">
-                      <%= format_day(Date.add(@week_start, day)) %>
+                      {format_day(Date.add(@week_start, day))}
                     </span>
                   </th>
                 <% end %>
@@ -392,7 +415,10 @@ defmodule CRCWeb.Admin.CalendarioLive do
                             <select
                               class={[
                                 "select select-xs w-full text-center font-semibold",
-                                if(user, do: "#{cell_select_class(user)}", else: "select-ghost text-base-content/30")
+                                if(user,
+                                  do: "#{cell_select_class(user)}",
+                                  else: "select-ghost text-base-content/30"
+                                )
                               ]}
                               name="user"
                             >
@@ -436,7 +462,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
                         <% is_today = Date.add(@week_start, day) == Date.utc_today() %>
                         <div class={"flex flex-col items-center gap-1 w-10 #{if is_today, do: "rounded-xl bg-primary/5 py-1 -my-1", else: ""}"}>
                           <span class={"text-xs font-bold #{if is_today, do: "text-primary", else: "text-base-content/40"}"}>
-                            <%= String.first(Schedule.day_name(day)) %>
+                            {String.first(Schedule.day_name(day))}
                           </span>
                           <form phx-change="assign_user">
                             <input type="hidden" name="task" value={task.id} />
@@ -444,7 +470,10 @@ defmodule CRCWeb.Admin.CalendarioLive do
                             <select
                               class={[
                                 "select select-xs w-full text-center px-0 font-semibold text-xs",
-                                if(user, do: cell_select_class(user), else: "select-ghost text-base-content/30")
+                                if(user,
+                                  do: cell_select_class(user),
+                                  else: "select-ghost text-base-content/30"
+                                )
                               ]}
                               name="user"
                             >
@@ -512,7 +541,12 @@ defmodule CRCWeb.Admin.CalendarioLive do
           <% preview_name = @area_form[:name].value || "" %>
           <% preview_color = @area_form[:color].value || "purple" %>
           <div class="bg-base-100 border border-primary/30 rounded-2xl p-4 shadow-sm space-y-4">
-            <.form for={@area_form} phx-submit="save_area" phx-change="validate_area" class="space-y-4">
+            <.form
+              for={@area_form}
+              phx-submit="save_area"
+              phx-change="validate_area"
+              class="space-y-4"
+            >
               <%!-- Name + live preview --%>
               <div class="flex items-end gap-3">
                 <div class="flex-1 min-w-0">
@@ -570,7 +604,9 @@ defmodule CRCWeb.Admin.CalendarioLive do
           <div class="bg-base-100 rounded-2xl border border-dashed border-base-300 p-8 text-center space-y-2">
             <.icon name="hero-squares-plus" class="size-10 text-base-content/20 mx-auto" />
             <p class="text-sm font-medium text-base-content/60">Aún no hay áreas</p>
-            <p class="text-xs text-base-content/40">Crea una área (Barra, Cocina…) y luego agrega las actividades dentro.</p>
+            <p class="text-xs text-base-content/40">
+              Crea una área (Barra, Cocina…) y luego agrega las actividades dentro.
+            </p>
           </div>
         <% end %>
 
@@ -608,16 +644,27 @@ defmodule CRCWeb.Admin.CalendarioLive do
             <%!-- Task form (shown per-area) --%>
             <%= if @task_form && to_string(@task_area_id) == to_string(area.id) do %>
               <div class="px-4 py-3 bg-base-200/60 border-b border-base-300">
-                <p class="text-xs font-semibold text-base-content/50 mb-2">Nueva actividad en <span class={"font-bold #{area_text_class(area.color)}"}>{area.name}</span></p>
+                <p class="text-xs font-semibold text-base-content/50 mb-2">
+                  Nueva actividad en
+                  <span class={"font-bold #{area_text_class(area.color)}"}>{area.name}</span>
+                </p>
                 <.form for={@task_form} phx-submit="save_task" class="flex items-center gap-2">
                   <input type="hidden" name="task[area_id]" value={area.id} />
                   <div class="flex-1">
-                    <.input field={@task_form[:name]} placeholder="Ej. Limpieza de mesas, Preparar jarabes…" class="input input-bordered w-full input-sm" />
+                    <.input
+                      field={@task_form[:name]}
+                      placeholder="Ej. Limpieza de mesas, Preparar jarabes…"
+                      class="input input-bordered w-full input-sm"
+                    />
                   </div>
                   <button type="submit" class="btn btn-primary btn-sm gap-1 shrink-0">
                     <.icon name="hero-plus" class="size-3.5" /> Agregar
                   </button>
-                  <button type="button" class="btn btn-ghost btn-sm shrink-0 text-base-content/40" phx-click="cancel_task_form">
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-sm shrink-0 text-base-content/40"
+                    phx-click="cancel_task_form"
+                  >
                     <.icon name="hero-x-mark" class="size-4" />
                   </button>
                 </.form>
@@ -653,12 +700,19 @@ defmodule CRCWeb.Admin.CalendarioLive do
                     <.form for={@task_form} phx-submit="save_task" class="flex items-center gap-2">
                       <input type="hidden" name="task[area_id]" value={task.area_id} />
                       <div class="flex-1">
-                        <.input field={@task_form[:name]} class="input input-bordered w-full input-sm" />
+                        <.input
+                          field={@task_form[:name]}
+                          class="input input-bordered w-full input-sm"
+                        />
                       </div>
                       <button type="submit" class="btn btn-primary btn-sm gap-1 shrink-0">
                         <.icon name="hero-check" class="size-3.5" /> Guardar
                       </button>
-                      <button type="button" class="btn btn-ghost btn-sm shrink-0 text-base-content/40" phx-click="cancel_task_form">
+                      <button
+                        type="button"
+                        class="btn btn-ghost btn-sm shrink-0 text-base-content/40"
+                        phx-click="cancel_task_form"
+                      >
                         <.icon name="hero-x-mark" class="size-4" />
                       </button>
                     </.form>
@@ -666,7 +720,9 @@ defmodule CRCWeb.Admin.CalendarioLive do
                 <% end %>
               <% end %>
               <%= if area.tasks == [] do %>
-                <div class="px-4 py-3 text-xs text-base-content/40 italic">Sin tareas — toca "+ Tarea" para agregar.</div>
+                <div class="px-4 py-3 text-xs text-base-content/40 italic">
+                  Sin tareas — toca "+ Tarea" para agregar.
+                </div>
               <% end %>
             </div>
           </div>
@@ -679,7 +735,9 @@ defmodule CRCWeb.Admin.CalendarioLive do
         <div class="flex flex-wrap gap-3">
           <%= for emp <- @employees do %>
             <div class="flex items-center gap-2">
-              <span class={"badge badge-md font-bold #{cell_select_class(emp)}"}>{Schedule.initials(emp)}</span>
+              <span class={"badge badge-md font-bold #{cell_select_class(emp)}"}>
+                {Schedule.initials(emp)}
+              </span>
               <span class="text-sm text-base-content/70">{emp.name}</span>
             </div>
           <% end %>

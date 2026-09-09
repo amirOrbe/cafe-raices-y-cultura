@@ -143,8 +143,8 @@ defmodule CRCWeb.ProduccionLive do
                       <span class="badge badge-xs badge-ghost">1 lote</span>
                       →
                       <span class="font-medium text-base-content/70">
-                        +{format_qty(recipe.yield_quantity)} {recipe.yield_unit}
-                        de {recipe.output_product && recipe.output_product.name}
+                        +{format_qty(recipe.yield_quantity)} {recipe.yield_unit} de {recipe.output_product &&
+                          recipe.output_product.name}
                       </span>
                     </p>
                     <%!-- Ingredients consumed --%>
@@ -174,8 +174,8 @@ defmodule CRCWeb.ProduccionLive do
                 <p class="text-lg font-bold text-base-content">{@selected_recipe.name}</p>
                 <p class="text-xs text-base-content/40 mt-0.5">
                   1 lote produce {format_qty(@selected_recipe.yield_quantity)}
-                  {@selected_recipe.yield_unit}
-                  de {@selected_recipe.output_product && @selected_recipe.output_product.name}
+                  {@selected_recipe.yield_unit} de {@selected_recipe.output_product &&
+                    @selected_recipe.output_product.name}
                 </p>
               </div>
               <button class="btn btn-ghost btn-sm btn-circle shrink-0" phx-click="clear_recipe">
@@ -205,8 +205,8 @@ defmodule CRCWeb.ProduccionLive do
               <%!-- Dynamic total produced --%>
               <p class="text-xs text-success font-medium mt-1.5 text-center">
                 = {format_qty(Decimal.mult(@selected_recipe.yield_quantity, batches_d))}
-                {@selected_recipe.yield_unit} de
-                {@selected_recipe.output_product && @selected_recipe.output_product.name} al stock
+                {@selected_recipe.yield_unit} de {@selected_recipe.output_product &&
+                  @selected_recipe.output_product.name} al stock
               </p>
             </div>
 

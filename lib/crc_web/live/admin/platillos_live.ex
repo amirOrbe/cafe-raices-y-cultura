@@ -438,9 +438,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
       </div>
 
       <%!-- Quick barra_type tagger — only shown when unclassified bar items exist --%>
-      <% unclassified = Enum.filter(@items, fn i ->
-        i.destination == "barra" and is_nil(i.barra_type) and i.available
-      end) %>
+      <% unclassified =
+        Enum.filter(@items, fn i ->
+          i.destination == "barra" and is_nil(i.barra_type) and i.available
+        end) %>
       <%= if unclassified != [] do %>
         <div class="rounded-xl border border-warning/50 bg-warning/5 p-4 space-y-3">
           <div class="flex items-center gap-2">
@@ -448,8 +449,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
             <p class="text-sm font-semibold text-base-content">
               {length(unclassified)} {if length(unclassified) == 1,
                 do: "bebida sin clasificar",
-                else: "bebidas sin clasificar"}
-              — etiquétalas para que aparezcan en la sección correcta de barra
+                else: "bebidas sin clasificar"} — etiquétalas para que aparezcan en la sección correcta de barra
             </p>
           </div>
           <div class="space-y-2">
@@ -632,8 +632,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   <% end %>
                   <%= if item.menu_item_ingredients == [] do %>
                     <span class="badge badge-xs badge-warning gap-0.5">
-                      <.icon name="hero-exclamation-triangle" class="size-2.5" />
-                      Sin receta
+                      <.icon name="hero-exclamation-triangle" class="size-2.5" /> Sin receta
                     </span>
                   <% end %>
                 </div>
@@ -713,7 +712,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
             <tbody>
               <%= for item <- visible do %>
                 <% expanded = MapSet.member?(@expanded_ids, item.id) %>
-                <tr class={["hover:bg-base-200/50 transition-colors", if(expanded, do: "bg-primary/5", else: "")]}>
+                <tr class={[
+                  "hover:bg-base-200/50 transition-colors",
+                  if(expanded, do: "bg-primary/5", else: "")
+                ]}>
                   <td class="max-w-0">
                     <div class="flex items-center gap-3">
                       <%= if item.image_url do %>
@@ -734,8 +736,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                         <% end %>
                         <%= if item.menu_item_ingredients == [] do %>
                           <span class="badge badge-xs badge-warning gap-0.5 mt-0.5 inline-flex">
-                            <.icon name="hero-exclamation-triangle" class="size-2.5" />
-                            Sin receta
+                            <.icon name="hero-exclamation-triangle" class="size-2.5" /> Sin receta
                           </span>
                         <% end %>
                       </div>
@@ -1257,7 +1258,8 @@ defmodule CRCWeb.Admin.PlatillosLive do
               <% end %>
 
               <%!-- Add ingredient picker — resolves selected product's unit dynamically --%>
-              <% selected_product = Enum.find(@available_products, &(to_string(&1.id) == @selected_product_id)) %>
+              <% selected_product =
+                Enum.find(@available_products, &(to_string(&1.id) == @selected_product_id)) %>
               <% selected_unit = if selected_product, do: unit_abbr(selected_product.unit), else: nil %>
 
               <div class="space-y-2">
@@ -1312,8 +1314,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
               <%= if @available_products == [] do %>
                 <p class="text-xs text-base-content/50">
-                  No hay insumos disponibles. Crea insumos en
-                  <a href="/admin/insumos" class="link link-primary">Inventario → Insumos</a>.
+                  No hay insumos disponibles. Crea insumos en <a
+                    href="/admin/insumos"
+                    class="link link-primary"
+                  >Inventario → Insumos</a>.
                 </p>
               <% end %>
             </div>
@@ -1347,7 +1351,9 @@ defmodule CRCWeb.Admin.PlatillosLive do
                           {format_qty(e.portion_quantity)} {unit_abbr(e.unit)}
                         </span>
                         <%= if e.sale_price && Decimal.compare(e.sale_price, Decimal.new(0)) == :gt do %>
-                          <span class="badge badge-xs badge-accent">+${format_qty(e.sale_price)}</span>
+                          <span class="badge badge-xs badge-accent">
+                            +${format_qty(e.sale_price)}
+                          </span>
                         <% else %>
                           <span class="badge badge-xs badge-ghost">Sin cargo</span>
                         <% end %>
@@ -1367,7 +1373,8 @@ defmodule CRCWeb.Admin.PlatillosLive do
               <% end %>
 
               <%!-- Add optional extra picker --%>
-              <% sel_opt_product = Enum.find(@available_products, &(to_string(&1.id) == @selected_optional_product_id)) %>
+              <% sel_opt_product =
+                Enum.find(@available_products, &(to_string(&1.id) == @selected_optional_product_id)) %>
               <% sel_opt_unit = if sel_opt_product, do: unit_abbr(sel_opt_product.unit), else: nil %>
 
               <div class="space-y-2">
@@ -1392,7 +1399,9 @@ defmodule CRCWeb.Admin.PlatillosLive do
                     <label class="label text-xs pb-0.5">
                       Cantidad por porción
                       <%= if sel_opt_unit do %>
-                        <span class="badge badge-xs badge-primary badge-outline ml-1">{sel_opt_unit}</span>
+                        <span class="badge badge-xs badge-primary badge-outline ml-1">
+                          {sel_opt_unit}
+                        </span>
                       <% end %>
                     </label>
                     <input
@@ -1523,8 +1532,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
             </strong>
           </span>
           <span class="text-base-content/50">
-            Venta:
-            <strong class="font-mono text-base-content">${format_price(@item.price)}</strong>
+            Venta: <strong class="font-mono text-base-content">${format_price(@item.price)}</strong>
           </span>
           <%= if @cost do %>
             <% profit = Decimal.sub(price_d, @cost) %>
@@ -1541,8 +1549,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 !(mii.product && mii.product.net_cost)
               end) do %>
             <span class="badge badge-warning badge-xs gap-0.5 ml-auto">
-              <.icon name="hero-exclamation-triangle" class="size-2.5" />
-              Ingredientes sin costo
+              <.icon name="hero-exclamation-triangle" class="size-2.5" /> Ingredientes sin costo
             </span>
           <% end %>
         </div>

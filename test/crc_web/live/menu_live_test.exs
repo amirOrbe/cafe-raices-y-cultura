@@ -4,7 +4,6 @@ defmodule CRCWeb.MenuLiveTest do
   import Phoenix.LiveViewTest
 
   alias CRC.Catalog
-  alias CRC.Inventory
   alias CRC.Accounts.User
 
   # ---------------------------------------------------------------------------
@@ -242,78 +241,73 @@ defmodule CRCWeb.MenuLiveTest do
     end
   end
 
-  describe "menu_item_card rendering — ingredients and variants" do
-    test "shows ingredient quantities when menu item has ingredients", %{conn: conn} do
-      cat = insert_category(%{name: "Cafés Con Ingredientes"})
-      item = insert_menu_item(cat.id, %{name: "Espresso Doble", price: "45.00"})
-
-      {:ok, product} =
-        Inventory.create_product(%{
-          name: "Café Molido Test",
-          unit: "gramos",
-          net_cost: "10.00",
-          stock_quantity: "500.0"
-        })
-
-      Catalog.set_menu_item_ingredients(item.id, [
-        %{product_id: product.id, quantity: Decimal.new("18.0")}
-      ])
+  describe "menu_item_card rendering — card and detail modal" do
+    test "card shows the item name and price", %{conn: conn} do
+      cat = insert_category(%{name: "Cafés Tarjeta"})
+      insert_menu_item(cat.id, %{name: "Espresso Doble", price: "45.00"})
 
       {:ok, _lv, html} = live(conn, ~p"/menu")
-      assert html =~ "Café Molido Test"
+      assert html =~ "Espresso Doble"
+      assert html =~ "$45"
     end
 
-    test "shows variant options with extra charge when product has active variants", %{conn: conn} do
-      cat = insert_category(%{name: "Cafés Con Variantes"})
-      item = insert_menu_item(cat.id, %{name: "Cortado Variante", price: "40.00"})
+    test "item with a description renders a clickable card that opens a detail modal", %{
+      conn: conn
+    } do
+      cat = insert_category(%{name: "Cafés Con Detalle"})
 
-      {:ok, product} =
-        Inventory.create_product(%{
-          name: "Leche Variante Extra",
-          unit: "mililitros",
-          net_cost: "5.00",
-          stock_quantity: "1000.0"
+      item =
+        insert_menu_item(cat.id, %{
+          name: "Capuchino Especial",
+          price: "50.00",
+          description: "Hecho con leche de avena y shot doble"
         })
 
-      Catalog.set_menu_item_ingredients(item.id, [
-        %{product_id: product.id, quantity: Decimal.new("100.0")}
-      ])
+      {:ok, lv, html} = live(conn, ~p"/menu")
 
-      {:ok, _variant} =
-        Inventory.create_variant(product.id, %{
-          "name" => "Avena Premium",
-          "extra_charge" => "5.00"
-        })
-
-      {:ok, _lv, html} = live(conn, ~p"/menu")
-      # The ingredient section should show the product name
-      assert html =~ "Leche Variante Extra" or html =~ "Cortado Variante"
+      assert has_element?(lv, "#menu-item-#{item.id}")
+      assert has_element?(lv, "#item-detail-#{item.id}")
+      # The description lives inside the (initially hidden) modal
+      assert html =~ "Hecho con leche de avena y shot doble"
     end
 
-    test "shows variant options without extra charge when extra_charge is zero", %{conn: conn} do
-      cat = insert_category(%{name: "Cafés Variante Sin Cargo"})
-      item = insert_menu_item(cat.id, %{name: "Americano Variante", price: "35.00"})
+    test "item with an image includes the image inside the detail modal", %{conn: conn} do
+      cat = insert_category(%{name: "Cafés Con Foto"})
 
-      {:ok, product} =
-        Inventory.create_product(%{
-          name: "Agua Test",
-          unit: "mililitros",
-          net_cost: "1.00",
-          stock_quantity: "5000.0"
-        })
-
-      Catalog.set_menu_item_ingredients(item.id, [
-        %{product_id: product.id, quantity: Decimal.new("200.0")}
-      ])
-
-      {:ok, _variant} =
-        Inventory.create_variant(product.id, %{
-          "name" => "Agua Mineral",
-          "extra_charge" => "0.00"
-        })
+      insert_menu_item(cat.id, %{
+        name: "Latte Con Imagen",
+        price: "55.00",
+        image_url: "https://example.com/latte.jpg"
+      })
 
       {:ok, _lv, html} = live(conn, ~p"/menu")
-      assert html =~ "Agua Mineral"
+      assert html =~ "latte.jpg"
+    end
+
+    test "every item renders a clickable card with a detail modal, even without extras", %{
+      conn: conn
+    } do
+      cat = insert_category(%{name: "Cafés Simples"})
+      item = insert_menu_item(cat.id, %{name: "Americano Simple", price: "35.00"})
+
+      {:ok, lv, html} = live(conn, ~p"/menu")
+
+      assert html =~ "Americano Simple"
+      assert has_element?(lv, "#menu-item-#{item.id}")
+      assert has_element?(lv, "#item-detail-#{item.id}")
+    end
+  end
+
+  describe "empty categories" do
+    test "a category with no available items is not shown as a tab", %{conn: conn} do
+      with_items = insert_category(%{name: "Con Platillos"})
+      insert_menu_item(with_items.id, %{name: "Filtrado"})
+      insert_category(%{name: "Categoría Vacía", slug: "categoria-vacia"})
+
+      {:ok, _lv, html} = live(conn, ~p"/menu")
+
+      assert html =~ "Con Platillos"
+      refute html =~ "Categoría Vacía"
     end
   end
 end

@@ -38,7 +38,8 @@ defmodule CRCWeb.Employee.MyScheduleLive do
         HR.list_attendance_for_user(user.id, today_date.year, today_date.month)
         |> Enum.reverse()
 
-      week_attendance = Enum.filter(month_attendance, &(Date.compare(&1.date, week_start) in [:gt, :eq]))
+      week_attendance =
+        Enum.filter(month_attendance, &(Date.compare(&1.date, week_start) in [:gt, :eq]))
 
       activity_week_start = Schedule.week_start(Date.utc_today())
 
@@ -56,7 +57,10 @@ defmodule CRCWeb.Employee.MyScheduleLive do
         |> assign(:clock_status, :idle)
         |> assign(:location_error, nil)
         |> assign(:activity_week_start, activity_week_start)
-        |> assign(:activity_assignments, Schedule.get_user_week_assignments(activity_week_start, user.id))
+        |> assign(
+          :activity_assignments,
+          Schedule.get_user_week_assignments(activity_week_start, user.id)
+        )
 
       {:ok, socket}
     end
@@ -72,7 +76,11 @@ defmodule CRCWeb.Employee.MyScheduleLive do
     week_start = socket.assigns.activity_week_start
 
     {:noreply,
-     assign(socket, :activity_assignments, Schedule.get_user_week_assignments(week_start, user.id))}
+     assign(
+       socket,
+       :activity_assignments,
+       Schedule.get_user_week_assignments(week_start, user.id)
+     )}
   end
 
   def handle_event("complete_activity", %{"id" => id_str}, socket) do
@@ -86,15 +94,20 @@ defmodule CRCWeb.Employee.MyScheduleLive do
     week_start = socket.assigns.activity_week_start
 
     {:noreply,
-     assign(socket, :activity_assignments, Schedule.get_user_week_assignments(week_start, user.id))}
+     assign(
+       socket,
+       :activity_assignments,
+       Schedule.get_user_week_assignments(week_start, user.id)
+     )}
   end
 
   def handle_event("set_attendance_filter", %{"filter" => filter}, socket) do
-    filter_atom = case filter do
-      "week" -> :week
-      "month" -> :month
-      _ -> :all
-    end
+    filter_atom =
+      case filter do
+        "week" -> :week
+        "month" -> :month
+        _ -> :all
+      end
 
     socket =
       if filter_atom == :all and is_nil(socket.assigns.all_attendance) do
@@ -274,7 +287,8 @@ defmodule CRCWeb.Employee.MyScheduleLive do
                           #{if a.completed, do: "bg-success/10 border border-success/30", else: activity_row_class(a.task.area.color)}"}>
                           <%!-- Color dot --%>
                           <span class={"size-2 rounded-full shrink-0
-                            #{if a.completed, do: "bg-success", else: activity_dot_class(a.task.area.color)}"}></span>
+                            #{if a.completed, do: "bg-success", else: activity_dot_class(a.task.area.color)}"}>
+                          </span>
 
                           <%!-- Task name --%>
                           <span class={"text-sm font-medium flex-1 min-w-0 truncate
@@ -291,7 +305,9 @@ defmodule CRCWeb.Employee.MyScheduleLive do
                                 #{if a.completed,
                                   do: "btn-success",
                                   else: "btn-ghost border border-base-300 hover:btn-success"}"}
-                              title={if a.completed, do: "Marcar como pendiente", else: "Marcar como hecha"}
+                              title={
+                                if a.completed, do: "Marcar como pendiente", else: "Marcar como hecha"
+                              }
                             >
                               <.icon name="hero-check" class="size-3.5" />
                               {if a.completed, do: "Hecha", else: "Listo"}
@@ -314,21 +330,39 @@ defmodule CRCWeb.Employee.MyScheduleLive do
               <h2 class="font-semibold text-base-content mb-2">Asistencia</h2>
               <div class="join">
                 <button
-                  class={["join-item btn btn-xs", if(@attendance_filter == :week, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                  class={[
+                    "join-item btn btn-xs",
+                    if(@attendance_filter == :week,
+                      do: "btn-primary",
+                      else: "btn-ghost border border-base-300"
+                    )
+                  ]}
                   phx-click="set_attendance_filter"
                   phx-value-filter="week"
                 >
                   Semana
                 </button>
                 <button
-                  class={["join-item btn btn-xs", if(@attendance_filter == :month, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                  class={[
+                    "join-item btn btn-xs",
+                    if(@attendance_filter == :month,
+                      do: "btn-primary",
+                      else: "btn-ghost border border-base-300"
+                    )
+                  ]}
                   phx-click="set_attendance_filter"
                   phx-value-filter="month"
                 >
                   Mes
                 </button>
                 <button
-                  class={["join-item btn btn-xs", if(@attendance_filter == :all, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                  class={[
+                    "join-item btn btn-xs",
+                    if(@attendance_filter == :all,
+                      do: "btn-primary",
+                      else: "btn-ghost border border-base-300"
+                    )
+                  ]}
                   phx-click="set_attendance_filter"
                   phx-value-filter="all"
                 >
@@ -336,11 +370,12 @@ defmodule CRCWeb.Employee.MyScheduleLive do
                 </button>
               </div>
             </div>
-            <% display_records = case @attendance_filter do
-              :week -> @week_attendance
-              :month -> @month_attendance
-              :all -> @all_attendance || []
-            end %>
+            <% display_records =
+              case @attendance_filter do
+                :week -> @week_attendance
+                :month -> @month_attendance
+                :all -> @all_attendance || []
+              end %>
             <%= if display_records == [] do %>
               <p class="px-5 py-8 text-center text-sm text-base-content/40">
                 Sin registros para este período.
@@ -597,18 +632,18 @@ defmodule CRCWeb.Employee.MyScheduleLive do
   defp format_datetime(nil), do: "–"
 
   # Activity row background + text per area color
-  defp activity_row_class("blue"),   do: "bg-blue-50 text-blue-700"
-  defp activity_row_class("green"),  do: "bg-emerald-50 text-emerald-700"
+  defp activity_row_class("blue"), do: "bg-blue-50 text-blue-700"
+  defp activity_row_class("green"), do: "bg-emerald-50 text-emerald-700"
   defp activity_row_class("orange"), do: "bg-orange-50 text-orange-700"
-  defp activity_row_class("pink"),   do: "bg-pink-50 text-pink-700"
-  defp activity_row_class(_),        do: "bg-violet-50 text-violet-700"
+  defp activity_row_class("pink"), do: "bg-pink-50 text-pink-700"
+  defp activity_row_class(_), do: "bg-violet-50 text-violet-700"
 
   # Dot color matching the area
-  defp activity_dot_class("blue"),   do: "bg-blue-400"
-  defp activity_dot_class("green"),  do: "bg-emerald-400"
+  defp activity_dot_class("blue"), do: "bg-blue-400"
+  defp activity_dot_class("green"), do: "bg-emerald-400"
   defp activity_dot_class("orange"), do: "bg-orange-400"
-  defp activity_dot_class("pink"),   do: "bg-pink-400"
-  defp activity_dot_class(_),        do: "bg-violet-400"
+  defp activity_dot_class("pink"), do: "bg-pink-400"
+  defp activity_dot_class(_), do: "bg-violet-400"
 
   defp load_all_attendance(user_id, today) do
     for offset <- 0..2 do

@@ -23,6 +23,7 @@ defmodule CRC.Orders.Order do
     field :bill_token, :string
     # Order type: "dine_in" (para comer aquí, default) or "takeout" (para llevar)
     field :order_type, :string, default: "dine_in"
+
     # True for grupo de comensales — an order not tied to a physical table, explicitly created as a group
     field :is_group, :boolean, default: false
     # Discount applied at close time (denormalized for historical accuracy)
@@ -48,7 +49,16 @@ defmodule CRC.Orders.Order do
   @doc false
   def changeset(order, attrs) do
     order
-    |> cast(attrs, [:customer_name, :status, :notes, :user_id, :table_id, :bill_token, :order_type, :is_group])
+    |> cast(attrs, [
+      :customer_name,
+      :status,
+      :notes,
+      :user_id,
+      :table_id,
+      :bill_token,
+      :order_type,
+      :is_group
+    ])
     |> validate_required([:customer_name, :status])
     |> validate_inclusion(:status, @valid_statuses)
     |> validate_inclusion(:order_type, @valid_order_types)

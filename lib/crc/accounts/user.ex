@@ -46,7 +46,17 @@ defmodule CRC.Accounts.User do
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:name, :email, :phone, :role, :stations, :is_active, :password, :avatar_url, :birthday])
+    |> cast(attrs, [
+      :name,
+      :email,
+      :phone,
+      :role,
+      :stations,
+      :is_active,
+      :password,
+      :avatar_url,
+      :birthday
+    ])
     |> normalize_stations()
     |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name, :email, :role], message: "no puede estar en blanco")

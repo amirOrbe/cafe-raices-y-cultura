@@ -202,17 +202,19 @@ defmodule CRCWeb.Admin.DashboardLive do
                     </p>
                   </div>
 
-                  <%!-- Elapsed time --%>
+                  <%!-- Elapsed time. A tab open for hours/days is usually a
+                       customer who left it running, not a delay — don't scream. --%>
                   <%= if mins do %>
                     <span class={[
                       "text-xs font-mono font-semibold tabular-nums",
                       cond do
-                        mins >= 30 -> "text-error animate-pulse"
-                        mins >= 15 -> "text-warning"
+                        mins >= 30 and mins < 180 -> "text-error animate-pulse"
+                        mins >= 15 and mins < 180 -> "text-warning"
+                        mins >= 180 -> "text-base-content/40"
                         true -> "text-base-content/50"
                       end
                     ]}>
-                      🕐 {mins}m
+                      🕐 {format_elapsed(mins)}
                     </span>
                   <% end %>
 
@@ -451,6 +453,17 @@ defmodule CRCWeb.Admin.DashboardLive do
   defp elapsed_minutes(order, now) do
     DateTime.diff(now, order.inserted_at, :minute)
   end
+
+  # Human-readable elapsed time: "45m", "3h", "2d".
+  defp format_elapsed(mins) when mins < 60, do: "#{mins}m"
+
+  defp format_elapsed(mins) when mins < 24 * 60 do
+    h = div(mins, 60)
+    rem_m = rem(mins, 60)
+    if rem_m == 0, do: "#{h}h", else: "#{h}h #{rem_m}m"
+  end
+
+  defp format_elapsed(mins), do: "#{div(mins, 24 * 60)}d"
 
   defp item_summary(order) do
     total = length(order.order_items)

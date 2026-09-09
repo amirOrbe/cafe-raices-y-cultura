@@ -1611,8 +1611,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
   defp upload_error_to_string(:too_many_files), do: "Solo se puede subir una foto a la vez."
   defp upload_error_to_string(_), do: "Error al subir el archivo."
 
-  defp format_price(%Decimal{} = d), do: Decimal.to_string(d)
-  defp format_price(val), do: to_string(val)
+  defp format_price(value), do: CRC.Utils.format_money(value)
 
   defp format_qty(nil), do: "0"
 

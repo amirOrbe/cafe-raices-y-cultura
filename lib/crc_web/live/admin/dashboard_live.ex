@@ -468,8 +468,7 @@ defmodule CRCWeb.Admin.DashboardLive do
     Enum.count(order.order_items, &(&1.status == "pending"))
   end
 
-  defp format_price(%Decimal{} = d), do: :erlang.float_to_binary(Decimal.to_float(d), decimals: 2)
-  defp format_price(nil), do: "0.00"
+  defp format_price(value), do: CRC.Utils.format_money(value)
 
   defp format_stock(%Decimal{} = d) do
     str = d |> Decimal.round(3) |> Decimal.to_string()

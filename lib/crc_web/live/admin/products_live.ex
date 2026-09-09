@@ -1349,8 +1349,7 @@ defmodule CRCWeb.Admin.ProductsLive do
   defp unit_abbr(other), do: other
 
   defp format_price(nil), do: "—"
-  defp format_price(%Decimal{} = d), do: Decimal.to_string(d)
-  defp format_price(val), do: to_string(val)
+  defp format_price(value), do: CRC.Utils.format_money(value)
 
   defp format_quantity(nil), do: "0"
 

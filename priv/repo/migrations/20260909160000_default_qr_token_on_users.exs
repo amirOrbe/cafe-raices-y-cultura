@@ -5,9 +5,13 @@ defmodule CRC.Repo.Migrations.DefaultQrTokenOnUsers do
   revirtió a nivel de código. El código actual (master) no conoce esa columna,
   así que crear un usuario nuevo fallaba con un not-null violation.
 
-  Le ponemos un default para que los INSERT que no mencionan la columna sigan
-  funcionando. Solo aplica si la columna existe (en test / bases nuevas no
-  existe, porque esa migración huérfana no está en el repo).
+  Quitamos el NOT NULL: los INSERT del código actual, que no mencionan la
+  columna, dejan qr_token en NULL (permitido, y el índice único acepta varios
+  NULL en Postgres). No se elimina la columna para no perder los tokens ya
+  generados.
+
+  Condicional: en test / bases nuevas la columna no existe (esa migración
+  huérfana no está en el repo), así que no se hace nada.
   """
   use Ecto.Migration
 
@@ -19,24 +23,14 @@ defmodule CRC.Repo.Migrations.DefaultQrTokenOnUsers do
         SELECT 1 FROM information_schema.columns
         WHERE table_name = 'users' AND column_name = 'qr_token'
       ) THEN
-        ALTER TABLE users ALTER COLUMN qr_token SET DEFAULT gen_random_uuid()::text;
-        UPDATE users SET qr_token = gen_random_uuid()::text WHERE qr_token IS NULL;
+        ALTER TABLE users ALTER COLUMN qr_token DROP NOT NULL;
+        ALTER TABLE users ALTER COLUMN qr_token DROP DEFAULT;
       END IF;
     END $$;
     """)
   end
 
   def down do
-    execute("""
-    DO $$
-    BEGIN
-      IF EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'users' AND column_name = 'qr_token'
-      ) THEN
-        ALTER TABLE users ALTER COLUMN qr_token DROP DEFAULT;
-      END IF;
-    END $$;
-    """)
+    :ok
   end
 end

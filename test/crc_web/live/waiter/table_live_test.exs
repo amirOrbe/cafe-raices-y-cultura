@@ -490,4 +490,23 @@ defmodule CRCWeb.Waiter.TableLiveTest do
       assert html =~ "2 artículos"
     end
   end
+
+  describe "parked comandas — Por cobrar view" do
+    test "parked comanda is not shown on the map/list but appears in Por cobrar", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      table = insert_table(%{number: 77})
+      order = insert_order(%{customer_name: "Cuenta Pausada", table_id: table.id})
+      {:ok, _} = Orders.park_order(order, nil)
+
+      {:ok, lv, html} = live(conn, "/mesa")
+
+      # Table is free again; the parked account is behind the "Por cobrar" toggle
+      refute html =~ "Cuenta Pausada"
+      assert html =~ ~s(phx-value-mode="parked")
+
+      html = render_click(lv, "set_view", %{"mode" => "parked"})
+      assert html =~ "Cuentas por cobrar"
+      assert html =~ "Cuenta Pausada"
+    end
+  end
 end

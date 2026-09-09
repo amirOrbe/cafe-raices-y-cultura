@@ -262,4 +262,73 @@ defmodule CRC.OrdersSupplementalTest do
       assert Map.has_key?(result, :waiter_stats)
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # Parked orders — park_order/2, unpark_order/1, list_parked_orders/0
+  # ---------------------------------------------------------------------------
+
+  describe "park_order/2 and unpark_order/1" do
+    test "GIVEN an open order at a table WHEN parking THEN it is flagged and the table is released" do
+      user = insert_user()
+      {:ok, table} = Orders.create_table(%{number: 90, label: "Test 90", capacity: 4})
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+      {:ok, order} = Orders.create_order(%{customer_name: "Mesa 90", table_id: table.id})
+      {:ok, _} = Orders.add_item(%{order_id: order.id, menu_item_id: item.id, quantity: 1})
+
+      assert {:ok, parked} = Orders.park_order(order, user.id)
+      assert parked.parked_at != nil
+      assert parked.parked_by_id == user.id
+      assert parked.table_id == nil
+      # status is unchanged — it is still an open, unpaid comanda
+      assert parked.status == "open"
+    end
+
+    test "GIVEN a parked order WHEN unparking THEN the flag is cleared" do
+      {:ok, order} = Orders.create_order(%{customer_name: "Mesa 91"})
+      {:ok, parked} = Orders.park_order(order, nil)
+      assert {:ok, reactivated} = Orders.unpark_order(parked)
+      assert reactivated.parked_at == nil
+      assert reactivated.parked_by_id == nil
+    end
+  end
+
+  describe "list_parked_orders/0 and active-board exclusion" do
+    setup do
+      cat = insert_category()
+      item = insert_menu_item(cat.id)
+      {:ok, active} = Orders.create_order(%{customer_name: "Activa"})
+      {:ok, _} = Orders.add_item(%{order_id: active.id, menu_item_id: item.id, quantity: 1})
+      {:ok, to_park} = Orders.create_order(%{customer_name: "En pausa"})
+      {:ok, _} = Orders.add_item(%{order_id: to_park.id, menu_item_id: item.id, quantity: 1})
+      {:ok, parked} = Orders.park_order(to_park, nil)
+      %{active: active, parked: parked}
+    end
+
+    test "list_parked_orders returns only parked, unpaid comandas", %{parked: parked} do
+      ids = Orders.list_parked_orders() |> Enum.map(& &1.id)
+      assert parked.id in ids
+    end
+
+    test "list_open_orders / list_active_orders exclude parked comandas", %{
+      active: active,
+      parked: parked
+    } do
+      open_ids = Orders.list_open_orders() |> Enum.map(& &1.id)
+      active_ids = Orders.list_active_orders() |> Enum.map(& &1.id)
+
+      assert active.id in open_ids
+      assert active.id in active_ids
+      refute parked.id in open_ids
+      refute parked.id in active_ids
+    end
+
+    test "a parked order that is later closed drops out of list_parked_orders", %{parked: parked} do
+      {:ok, _closed} =
+        Orders.close_order(Orders.get_order!(parked.id), %{payment_method: "tarjeta"}, nil)
+
+      ids = Orders.list_parked_orders() |> Enum.map(& &1.id)
+      refute parked.id in ids
+    end
+  end
 end

@@ -22,10 +22,10 @@ defmodule CRC.Orders do
   # Orders
   # ---------------------------------------------------------------------------
 
-  @doc "Returns all orders with status 'open', 'sent', or 'ready'. Preloads items with menu_item + category + product + exclusions, and the user who created the order."
+  @doc "Returns all orders with status 'open', 'sent', or 'ready' that are NOT parked. Preloads items with menu_item + category + product + exclusions, and the user who created the order."
   def list_open_orders do
     Order
-    |> where([o], o.status in ["open", "sent", "ready"])
+    |> where([o], o.status in ["open", "sent", "ready"] and is_nil(o.parked_at))
     |> order_by([o], o.inserted_at)
     |> preload([
       :user,
@@ -41,10 +41,10 @@ defmodule CRC.Orders do
     |> Repo.all()
   end
 
-  @doc "Returns active orders (open/sent/ready) for the waiter overview, sorted oldest first."
+  @doc "Returns active orders (open/sent/ready, not parked) for the waiter overview, sorted oldest first."
   def list_active_orders do
     Order
-    |> where([o], o.status in ["open", "sent", "ready"])
+    |> where([o], o.status in ["open", "sent", "ready"] and is_nil(o.parked_at))
     |> order_by([o], o.inserted_at)
     |> preload([
       :user,
@@ -60,10 +60,13 @@ defmodule CRC.Orders do
     |> Repo.all()
   end
 
-  @doc "Returns active group orders (is_group: true), sorted oldest first."
+  @doc "Returns active group orders (is_group: true, not parked), sorted oldest first."
   def list_active_groups do
     Order
-    |> where([o], o.status in ["open", "sent", "ready"] and o.is_group == true)
+    |> where(
+      [o],
+      o.status in ["open", "sent", "ready"] and o.is_group == true and is_nil(o.parked_at)
+    )
     |> order_by([o], o.inserted_at)
     |> preload([
       :user,
@@ -243,6 +246,73 @@ defmodule CRC.Orders do
       error ->
         error
     end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Parked orders — "cuenta abierta para pagar después"
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Parks a still-open comanda: the customer leaves without paying and will
+  settle later (possibly another day). The order keeps its items and status,
+  releases its table, and drops out of the active board. It shows up in
+  "Cuentas por cobrar" until it is charged (`close_order/3`) or reactivated
+  (`unpark_order/1`).
+  """
+  def park_order(%Order{} = order, parked_by_id \\ nil) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    result =
+      order
+      |> Ecto.Changeset.change(%{parked_at: now, parked_by_id: parked_by_id, table_id: nil})
+      |> Repo.update()
+
+    case result do
+      {:ok, updated} ->
+        broadcast({:order_updated, updated.id})
+        broadcast_tables_changed()
+        {:ok, updated}
+
+      error ->
+        error
+    end
+  end
+
+  @doc "Reactivates a parked comanda so items can be added again. It does NOT restore the table."
+  def unpark_order(%Order{} = order) do
+    result =
+      order
+      |> Ecto.Changeset.change(%{parked_at: nil, parked_by_id: nil})
+      |> Repo.update()
+
+    case result do
+      {:ok, updated} ->
+        broadcast({:order_updated, updated.id})
+        {:ok, updated}
+
+      error ->
+        error
+    end
+  end
+
+  @doc "Returns parked (still unpaid) comandas, oldest first, with items and staff preloaded."
+  def list_parked_orders do
+    Order
+    |> where([o], not is_nil(o.parked_at) and o.status != "closed")
+    |> order_by([o], asc: o.parked_at)
+    |> preload([
+      :user,
+      :parked_by,
+      order_items: [
+        :product,
+        :variant,
+        :for_menu_item,
+        exclusions: [:product],
+        menu_item: :category,
+        package: []
+      ]
+    ])
+    |> Repo.all()
   end
 
   # ---------------------------------------------------------------------------
@@ -1674,7 +1744,10 @@ defmodule CRC.Orders do
   """
   def active_orders_by_table do
     Order
-    |> where([o], o.status in ["open", "sent", "ready"] and not is_nil(o.table_id))
+    |> where(
+      [o],
+      o.status in ["open", "sent", "ready"] and not is_nil(o.table_id) and is_nil(o.parked_at)
+    )
     |> preload([
       :user,
       order_items: [

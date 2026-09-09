@@ -612,6 +612,59 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
   end
 
   # ---------------------------------------------------------------------------
+  # Parked comandas ("dejar cuenta abierta")
+  # ---------------------------------------------------------------------------
+
+  describe "park / unpark comanda" do
+    test "'Dejar cuenta abierta' parks the order and redirects to /mesa", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+
+      {:ok, lv, html} = live(conn, "/mesa/#{order.id}")
+      assert html =~ "Dejar cuenta abierta"
+
+      assert {:error, {:live_redirect, %{to: "/mesa"}}} =
+               render_click(lv, "park_order")
+
+      assert CRC.Orders.get_order!(order.id).parked_at != nil
+    end
+
+    test "a parked comanda shows the pause banner and Reactivar / Cobrar", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+      {:ok, parked} = CRC.Orders.park_order(CRC.Orders.get_order!(order.id), nil)
+
+      {:ok, _lv, html} = live(conn, "/mesa/#{parked.id}")
+
+      assert html =~ "Cuenta en pausa"
+      assert html =~ ~s(phx-click="unpark_order")
+      assert html =~ ~s(phx-click="show_payment_step")
+      refute html =~ "Dejar cuenta abierta"
+    end
+
+    test "unpark_order reactivates the comanda", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      insert_order_item(order.id, mi.id)
+      {:ok, parked} = CRC.Orders.park_order(CRC.Orders.get_order!(order.id), nil)
+
+      {:ok, lv, _html} = live(conn, "/mesa/#{parked.id}")
+      html = render_click(lv, "unpark_order")
+
+      assert html =~ "Cuenta reactivada"
+      assert CRC.Orders.get_order!(order.id).parked_at == nil
+    end
+  end
+
+  # ---------------------------------------------------------------------------
   # Cancel item flow
   # ---------------------------------------------------------------------------
 

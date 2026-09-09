@@ -114,16 +114,20 @@ defmodule CRCWeb.CuentaLive do
 
       <%!-- ── Status badge ──────────────────────────────────────────────────── --%>
       <div class="flex justify-center pt-3 px-4">
-        <%= case @order.status do %>
-          <% "closed" -> %>
+        <%= cond do %>
+          <% @order.status == "closed" -> %>
             <div class="badge badge-success badge-lg gap-1.5 py-3 px-4">
               <.icon name="hero-check-circle" class="size-4" /> Cuenta cerrada · Pagado
             </div>
-          <% "ready" -> %>
+          <% not is_nil(@order.parked_at) -> %>
+            <div class="badge badge-warning badge-lg gap-1.5 py-3 px-4">
+              <.icon name="hero-pause-circle" class="size-4" /> Cuenta abierta · pendiente de pago
+            </div>
+          <% @order.status == "ready" -> %>
             <div class="badge badge-success badge-outline badge-lg gap-1.5 py-3 px-4">
               <.icon name="hero-check" class="size-4" /> ¡Listo para servir!
             </div>
-          <% _ -> %>
+          <% true -> %>
             <div class="badge badge-warning badge-lg gap-1.5 py-3 px-4">
               <.icon name="hero-clock" class="size-4" /> En preparación
             </div>

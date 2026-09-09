@@ -37,6 +37,7 @@ defmodule CRCWeb.Waiter.TableLive do
       |> assign(:groups, groups)
       |> assign(:takeout, takeout)
       |> assign(:tableless, tableless)
+      |> assign(:parked_orders, Orders.list_parked_orders())
       |> assign(:now, DateTime.utc_now())
       |> assign(:selected_table, nil)
       |> assign(:show_new_modal, false)
@@ -75,6 +76,7 @@ defmodule CRCWeb.Waiter.TableLive do
       |> assign(:groups, groups)
       |> assign(:takeout, takeout)
       |> assign(:tableless, tableless)
+      |> assign(:parked_orders, Orders.list_parked_orders())
       |> assign(:now, DateTime.utc_now())
       |> assign(:seen_ready_ids, new_ids)
 
@@ -335,6 +337,25 @@ defmodule CRCWeb.Waiter.TableLive do
               <.icon name="hero-shopping-bag" class="size-4" />
               <span class="hidden sm:inline">Llevar</span>
             </button>
+            <button
+              class={[
+                "btn btn-sm gap-1",
+                if(@view_mode == :parked,
+                  do: "btn-warning",
+                  else: "btn-ghost border border-base-300"
+                ),
+                @parked_orders != [] && @view_mode != :parked && "border-warning text-warning"
+              ]}
+              phx-click="set_view"
+              phx-value-mode="parked"
+              title="Cuentas abiertas por cobrar"
+            >
+              <.icon name="hero-pause-circle" class="size-4" />
+              <span class="hidden sm:inline">Por cobrar</span>
+              <span :if={@parked_orders != []} class="badge badge-xs">
+                {length(@parked_orders)}
+              </span>
+            </button>
             <a href="/mesa/historial" class="btn btn-ghost btn-sm gap-1">
               <.icon name="hero-clock" class="size-4" />
               <span class="hidden sm:inline">Historial</span>
@@ -481,7 +502,7 @@ defmodule CRCWeb.Waiter.TableLive do
                     <p class="text-xs font-semibold text-base-content leading-tight">
                       Mesa {table.number}
                       <%= if table.label && table.label != "" do %>
-                        <span class="font-normal text-base-content/50"> ·  {table.label}</span>
+                        <span class="font-normal text-base-content/50"> ·   {table.label}</span>
                       <% end %>
                     </p>
                     <p class={[
@@ -517,8 +538,56 @@ defmodule CRCWeb.Waiter.TableLive do
           <% end %>
         <% end %>
 
+        <%!-- Cuentas por cobrar (parked) --%>
+        <%= if @view_mode == :parked do %>
+          <div class="bg-base-100 rounded-2xl border border-warning/40 shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between gap-2 bg-warning/5">
+              <div class="flex items-center gap-2">
+                <.icon name="hero-pause-circle" class="size-4 text-warning" />
+                <h3 class="font-semibold text-sm text-base-content">Cuentas por cobrar</h3>
+              </div>
+              <span class="badge badge-warning badge-sm">{length(@parked_orders)}</span>
+            </div>
+            <%= if @parked_orders == [] do %>
+              <div class="py-12 text-center text-base-content/40 text-sm">
+                No hay cuentas abiertas pendientes de pago.
+              </div>
+            <% else %>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-4">
+                <%= for order <- @parked_orders do %>
+                  <a href={"/mesa/#{order.id}"} class="block">
+                    <div class="card bg-base-100 border-2 border-warning/40 shadow-sm hover:shadow-md transition-all">
+                      <div class="card-body p-4 gap-2">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-base font-bold text-base-content truncate min-w-0 flex-1">
+                            {order.customer_name}
+                          </span>
+                          <span class="text-base font-bold text-primary shrink-0">
+                            ${CRC.Utils.format_money(Orders.calculate_order_total(order))}
+                          </span>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 text-xs text-base-content/50">
+                          <span>
+                            {length(order.order_items)} art{if length(order.order_items) != 1,
+                              do: "ículos",
+                              else: "ículo"}
+                          </span>
+                          <span>
+                            <.icon name="hero-clock" class="size-3 inline align-text-bottom" />
+                            {parked_age(order, @now)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
         <%!-- Grupos de comensales --%>
-        <%= if @groups != [] do %>
+        <%= if @groups != [] and @view_mode != :parked do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
             <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between gap-2">
               <div class="flex items-center gap-2">
@@ -536,7 +605,7 @@ defmodule CRCWeb.Waiter.TableLive do
         <% end %>
 
         <%!-- Para llevar --%>
-        <%= if @takeout != [] do %>
+        <%= if @takeout != [] and @view_mode != :parked do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
             <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between gap-2">
               <div class="flex items-center gap-2">
@@ -554,7 +623,7 @@ defmodule CRCWeb.Waiter.TableLive do
         <% end %>
 
         <%!-- Cuentas sin mesa (legacy backward compat) --%>
-        <%= if @tableless != [] do %>
+        <%= if @tableless != [] and @view_mode != :parked do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
             <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between gap-2">
               <div class="flex items-center gap-2">
@@ -588,7 +657,7 @@ defmodule CRCWeb.Waiter.TableLive do
                   Mesa {@selected_table.number}
                   <%= if @selected_table.label && @selected_table.label != "" do %>
                     <span class="text-base-content/50 font-normal text-base">
-                       ·  {@selected_table.label}
+                      · {@selected_table.label}
                     </span>
                   <% end %>
                 </h2>
@@ -784,6 +853,19 @@ defmodule CRCWeb.Waiter.TableLive do
       true ->
         {"bg-info text-info-content border-info", "bg-info/60",
          "Abierta — #{order.customer_name}"}
+    end
+  end
+
+  # Human "hace X" for a parked comanda.
+  defp parked_age(%{parked_at: nil}, _now), do: ""
+
+  defp parked_age(%{parked_at: parked_at}, now) do
+    mins = DateTime.diff(now, parked_at, :minute)
+
+    cond do
+      mins < 60 -> "hace #{mins}m"
+      mins < 24 * 60 -> "hace #{div(mins, 60)}h"
+      true -> "hace #{div(mins, 24 * 60)}d"
     end
   end
 

@@ -11,7 +11,12 @@ defmodule CRCWeb.MenuLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    categories = Catalog.list_categories()
+    # Only show categories that actually have available items — an empty tab is
+    # a dead end for the customer.
+    categories =
+      Catalog.list_categories()
+      |> Enum.filter(fn c -> c.menu_items != [] end)
+
     packages = Catalog.list_packages()
 
     socket =
@@ -108,7 +113,7 @@ defmodule CRCWeb.MenuLive do
     <!-- Items grid -->
             <div
               :if={@active_category && length(@active_category.menu_items) > 0}
-              class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5"
+              class="grid grid-cols-2 lg:grid-cols-3 auto-rows-fr gap-3 sm:gap-4"
             >
               <%= for item <- @active_category.menu_items do %>
                 <SiteComponents.menu_item_card item={item} />

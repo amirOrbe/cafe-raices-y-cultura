@@ -641,90 +641,76 @@ defmodule CRCWeb.Components.SiteComponents do
   def menu_item_card(assigns) do
     desc = Map.get(assigns.item, :description)
     has_desc = is_binary(desc) && String.trim(desc) != ""
-    # Only show "ver más" when the description is long enough to actually be
-    # clipped at 2 lines (~80 chars covers most card widths).
-    needs_expand = has_desc && String.length(String.trim(desc)) > 80
-    assigns = assign(assigns, :desc, desc)
-    assigns = assign(assigns, :has_desc, has_desc)
-    assigns = assign(assigns, :needs_expand, needs_expand)
+    image_url = Map.get(assigns.item, :image_url)
+    has_image = is_binary(image_url) && image_url != ""
+    # The card only opens a detail modal when there is something extra to show
+    # (a photo or a description). Otherwise it stays a plain name + price card.
+    expandable = has_desc || has_image
+
+    assigns =
+      assigns
+      |> assign(:desc, desc)
+      |> assign(:has_desc, has_desc)
+      |> assign(:image_url, image_url)
+      |> assign(:has_image, has_image)
+      |> assign(:expandable, expandable)
+      |> assign(:modal_id, "item-detail-#{assigns.item.id}")
 
     ~H"""
-    <div class="bg-base-100 border border-base-300 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
-      <%!-- Photo --%>
-      <%= if Map.get(@item, :image_url) do %>
-        <div class="aspect-[4/3] overflow-hidden">
-          <img
-            src={@item.image_url}
-            alt={@item.name}
-            class="w-full h-full object-cover"
-            loading="lazy"
-          />
-        </div>
-      <% end %>
-
-      <div class="p-5 sm:p-6 flex flex-col gap-3 flex-1">
-        <%!-- Name + Price --%>
-        <div class="flex items-start justify-between gap-4">
-          <h3 class="text-base sm:text-lg font-bold text-base-content leading-snug">
+    <%= if @expandable do %>
+      <button
+        type="button"
+        id={"menu-item-#{@item.id}"}
+        phx-click={
+          JS.show(to: "##{@modal_id}", display: "flex")
+          |> JS.add_class("overflow-hidden", to: "body")
+        }
+        class="group text-left w-full h-full bg-base-100 border border-base-300 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-primary/40 transition-all flex items-start justify-between gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+      >
+        <span class="min-w-0 flex flex-col gap-1">
+          <span class="text-sm sm:text-base font-bold text-base-content leading-snug group-hover:text-primary transition-colors">
             {@item.name}
-          </h3>
-          <span class="text-base sm:text-lg font-bold text-primary whitespace-nowrap flex-shrink-0">
-            ${format_price(@item.price)}
           </span>
-        </div>
-
-        <%!-- Description --%>
-        <%= if @has_desc do %>
-          <p class={"text-sm text-base-content/60 leading-relaxed #{if @needs_expand, do: "line-clamp-2", else: ""}"}>
-            {@desc}
-          </p>
-          <%= if @needs_expand do %>
-            <button
-              class="text-xs text-primary font-semibold -mt-1 self-start hover:underline focus:outline-none"
-              phx-click={JS.show(to: "#item-detail-#{@item.id}", display: "flex")}
-            >
-              ver más
-            </button>
-          <% end %>
-        <% end %>
-
-        <%!-- Featured badge --%>
-        <div :if={Map.get(@item, :featured)} class="mt-auto">
-          <span class="inline-block bg-accent/20 text-accent-content border border-accent/40 text-xs font-semibold px-3 py-1 rounded-full">
+          <span
+            :if={Map.get(@item, :featured)}
+            class="inline-flex w-fit items-center text-[11px] font-semibold text-accent-content bg-accent/20 border border-accent/40 px-2 py-0.5 rounded-full"
+          >
             Recomendado
           </span>
-        </div>
-      </div>
-    </div>
+          <span class="inline-flex items-center gap-1 text-xs text-base-content/40 group-hover:text-primary/70 transition-colors">
+            Ver detalle <.icon name="hero-chevron-right" class="size-3" />
+          </span>
+        </span>
+        <span class="text-sm sm:text-base font-bold text-primary whitespace-nowrap shrink-0">
+          ${format_price(@item.price)}
+        </span>
+      </button>
 
-    <%!-- ── Detail modal — only rendered when description is long enough ── --%>
-    <%= if @needs_expand do %>
+      <%!-- ── Detail modal ── --%>
       <div
-        id={"item-detail-#{@item.id}"}
+        id={@modal_id}
         class="hidden fixed inset-0 z-50 items-center justify-center p-4"
+        phx-window-keydown={
+          JS.hide(to: "##{@modal_id}") |> JS.remove_class("overflow-hidden", to: "body")
+        }
+        phx-key="Escape"
       >
-        <%!-- Backdrop — click to close --%>
         <div
           class="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          phx-click={JS.hide(to: "#item-detail-#{@item.id}")}
+          phx-click={
+            JS.hide(to: "##{@modal_id}") |> JS.remove_class("overflow-hidden", to: "body")
+          }
         >
         </div>
 
-        <%!-- Modal card — centrado, responsive. z-10 garantiza que quede sobre el backdrop --%>
-        <div class="relative z-10 w-full max-w-sm bg-base-100 rounded-2xl shadow-2xl overflow-hidden mx-auto">
-          <%!-- Photo header (if available) --%>
-          <%= if Map.get(@item, :image_url) do %>
-            <div class="aspect-[16/9] overflow-hidden">
-              <img
-                src={@item.image_url}
-                alt={@item.name}
-                class="w-full h-full object-cover"
-              />
+        <div class="relative z-10 w-full max-w-sm bg-base-100 rounded-2xl shadow-2xl overflow-hidden mx-auto max-h-[85vh] flex flex-col">
+          <%= if @has_image do %>
+            <div class="aspect-[16/9] overflow-hidden shrink-0">
+              <img src={@image_url} alt={@item.name} class="w-full h-full object-cover" />
             </div>
           <% end %>
 
-          <%!-- Content --%>
-          <div class="p-5 space-y-3">
+          <div class="p-5 space-y-3 overflow-y-auto">
             <%!-- Name + Price + Close button in one row — avoids any overlap --%>
             <div class="flex items-start gap-2">
               <h3 class="flex-1 text-lg font-bold text-base-content leading-snug">{@item.name}</h3>
@@ -732,14 +718,21 @@ defmodule CRCWeb.Components.SiteComponents do
                 ${format_price(@item.price)}
               </span>
               <button
+                type="button"
                 class="btn btn-sm btn-circle btn-ghost shrink-0 -mt-0.5"
-                phx-click={JS.hide(to: "#item-detail-#{@item.id}")}
+                phx-click={
+                  JS.hide(to: "##{@modal_id}")
+                  |> JS.remove_class("overflow-hidden", to: "body")
+                }
                 aria-label="Cerrar"
               >
                 <.icon name="hero-x-mark" class="size-4" />
               </button>
             </div>
-            <p class="text-sm text-base-content/70 leading-relaxed whitespace-pre-line">
+            <p
+              :if={@has_desc}
+              class="text-sm text-base-content/70 leading-relaxed whitespace-pre-line"
+            >
               {@desc}
             </p>
             <div :if={Map.get(@item, :featured)}>
@@ -749,6 +742,24 @@ defmodule CRCWeb.Components.SiteComponents do
             </div>
           </div>
         </div>
+      </div>
+    <% else %>
+      <%!-- No image or description: nothing to expand, so a plain static card --%>
+      <div class="w-full h-full bg-base-100 border border-base-300 rounded-2xl p-4 sm:p-5 shadow-sm flex items-start justify-between gap-3">
+        <div class="min-w-0 flex flex-col gap-1">
+          <h3 class="text-sm sm:text-base font-bold text-base-content leading-snug">
+            {@item.name}
+          </h3>
+          <span
+            :if={Map.get(@item, :featured)}
+            class="inline-flex w-fit items-center text-[11px] font-semibold text-accent-content bg-accent/20 border border-accent/40 px-2 py-0.5 rounded-full"
+          >
+            Recomendado
+          </span>
+        </div>
+        <span class="text-sm sm:text-base font-bold text-primary whitespace-nowrap shrink-0">
+          ${format_price(@item.price)}
+        </span>
       </div>
     <% end %>
     """

@@ -49,11 +49,18 @@ defmodule CRCWeb.FaltantesLive do
   end
 
   def handle_event("registrar", %{"id" => id}, socket) do
-    {:noreply, assign(socket, registrando: String.to_integer(id), qty_input: "", search: "", search_results: [])}
+    {:noreply,
+     assign(socket,
+       registrando: String.to_integer(id),
+       qty_input: "",
+       search: "",
+       search_results: []
+     )}
   end
 
   def handle_event("registrar_otro", _params, socket) do
-    {:noreply, assign(socket, registrando: :buscar, qty_input: "", search: "", search_results: [])}
+    {:noreply,
+     assign(socket, registrando: :buscar, qty_input: "", search: "", search_results: [])}
   end
 
   def handle_event("cancelar", _params, socket) do
@@ -64,6 +71,7 @@ defmodule CRCWeb.FaltantesLive do
     results =
       if String.length(String.trim(q)) >= 1 do
         q_down = String.downcase(q)
+
         Enum.filter(socket.assigns.all_products, fn p ->
           String.contains?(String.downcase(p.name), q_down)
         end)
@@ -94,11 +102,20 @@ defmodule CRCWeb.FaltantesLive do
             faltantes = Inventory.list_low_stock_products()
             compras_hoy = Inventory.list_todays_purchases()
 
-            Phoenix.PubSub.broadcast(CRC.PubSub, "admin:products", {:product_changed, %{id: product_id}})
+            Phoenix.PubSub.broadcast(
+              CRC.PubSub,
+              "admin:products",
+              {:product_changed, %{id: product_id}}
+            )
 
             {:noreply,
              socket
-             |> assign(faltantes: faltantes, compras_hoy: compras_hoy, registrando: nil, qty_input: "")
+             |> assign(
+               faltantes: faltantes,
+               compras_hoy: compras_hoy,
+               registrando: nil,
+               qty_input: ""
+             )
              |> put_flash(:info, "Compra registrada.")}
 
           {:error, _} ->
@@ -130,10 +147,11 @@ defmodule CRCWeb.FaltantesLive do
 
     <div class="min-h-screen bg-base-200 pt-20">
       <div class="max-w-lg mx-auto px-4 py-6 pb-24">
-
         <%!-- Header --%>
         <h1 class="text-2xl font-bold text-base-content mb-1">Faltantes</h1>
-        <p class="text-sm text-base-content/50 mb-6">Toca un insumo para registrar cuánto compraste</p>
+        <p class="text-sm text-base-content/50 mb-6">
+          Toca un insumo para registrar cuánto compraste
+        </p>
 
         <%!-- All good state --%>
         <div :if={@faltantes == []} class="bg-base-100 rounded-2xl p-12 text-center shadow-sm">
@@ -145,7 +163,9 @@ defmodule CRCWeb.FaltantesLive do
         <%!-- Faltantes: lista limpia --%>
         <div :if={@faltantes != []} class="bg-base-100 rounded-2xl shadow-sm overflow-hidden mb-4">
           <div class="px-4 py-3 border-b border-base-200 flex items-center justify-between">
-            <span class="text-xs font-semibold text-base-content/50 uppercase tracking-widest">Hay que comprar</span>
+            <span class="text-xs font-semibold text-base-content/50 uppercase tracking-widest">
+              Hay que comprar
+            </span>
             <span class="text-xs font-bold text-error">{length(@faltantes)} insumos</span>
           </div>
           <button
@@ -158,15 +178,25 @@ defmodule CRCWeb.FaltantesLive do
             <%!-- Indicador --%>
             <div class={[
               "size-2.5 rounded-full shrink-0",
-              if(Decimal.compare(product.stock_quantity, 0) == :eq, do: "bg-error", else: "bg-warning")
-            ]}></div>
+              if(Decimal.compare(product.stock_quantity, 0) == :eq,
+                do: "bg-error",
+                else: "bg-warning"
+              )
+            ]}>
+            </div>
 
             <%!-- Nombre --%>
             <div class="flex-1 min-w-0">
               <p class="font-medium text-base-content">{product.name}</p>
               <p class="text-xs text-base-content/40 mt-0.5">
-                Quedan <span class="font-semibold text-base-content/60">{format_qty(product.stock_quantity)} {product.unit}</span>
-                · necesitas mín. <span class="font-semibold text-base-content/60">{format_qty(product.min_stock)} {product.unit}</span>
+                Quedan
+                <span class="font-semibold text-base-content/60">
+                  {format_qty(product.stock_quantity)} {product.unit}
+                </span>
+                · necesitas mín.
+                <span class="font-semibold text-base-content/60">
+                  {format_qty(product.min_stock)} {product.unit}
+                </span>
               </p>
             </div>
 
@@ -181,7 +211,9 @@ defmodule CRCWeb.FaltantesLive do
           phx-click="registrar_otro"
           class="w-full flex items-center gap-3 px-4 py-4 bg-base-100 rounded-2xl shadow-sm border-2 border-dashed border-base-300 hover:border-primary/40 hover:bg-base-50 transition-colors text-left mb-8"
         >
-          <div class="size-8 rounded-full bg-base-200 flex items-center justify-center text-base-content/40 font-bold text-lg shrink-0">+</div>
+          <div class="size-8 rounded-full bg-base-200 flex items-center justify-center text-base-content/40 font-bold text-lg shrink-0">
+            +
+          </div>
           <div>
             <p class="font-medium text-base-content/70">Registrar otro insumo</p>
             <p class="text-xs text-base-content/40">Para algo que no está en la lista de arriba</p>
@@ -190,9 +222,14 @@ defmodule CRCWeb.FaltantesLive do
 
         <%!-- Registrado hoy --%>
         <div :if={@compras_hoy != []}>
-          <p class="text-xs font-semibold text-base-content/40 uppercase tracking-widest mb-3">Registrado hoy</p>
+          <p class="text-xs font-semibold text-base-content/40 uppercase tracking-widest mb-3">
+            Registrado hoy
+          </p>
           <div class="bg-base-100 rounded-2xl shadow-sm overflow-hidden">
-            <div :for={adj <- @compras_hoy} class="flex items-center gap-3 px-4 py-3 border-b border-base-200 last:border-0">
+            <div
+              :for={adj <- @compras_hoy}
+              class="flex items-center gap-3 px-4 py-3 border-b border-base-200 last:border-0"
+            >
               <div class="size-7 rounded-full bg-success/10 flex items-center justify-center shrink-0">
                 <span class="text-success text-sm font-bold">✓</span>
               </div>
@@ -211,7 +248,10 @@ defmodule CRCWeb.FaltantesLive do
       </div>
 
       <%!-- Modal --%>
-      <div :if={@registrando != nil} class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div
+        :if={@registrando != nil}
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      >
         <div class="absolute inset-0 bg-black/50" phx-click="cancelar"></div>
         <div class="relative w-full sm:max-w-sm bg-base-100 rounded-t-3xl sm:rounded-2xl shadow-2xl p-6 pb-10 sm:pb-6">
           <div class="w-10 h-1 bg-base-300 rounded-full mx-auto mb-6 sm:hidden"></div>
@@ -229,7 +269,10 @@ defmodule CRCWeb.FaltantesLive do
               class="input input-bordered w-full mb-2"
               autofocus
             />
-            <div :if={@search_results != []} class="mt-1 rounded-xl overflow-hidden border border-base-200">
+            <div
+              :if={@search_results != []}
+              class="mt-1 rounded-xl overflow-hidden border border-base-200"
+            >
               <button
                 :for={p <- @search_results}
                 type="button"
@@ -238,22 +281,30 @@ defmodule CRCWeb.FaltantesLive do
                 class="w-full flex items-center justify-between px-4 py-3 hover:bg-base-200 border-b border-base-200 last:border-0 transition-colors"
               >
                 <span class="font-medium text-base-content">{p.name}</span>
-                <span class="text-xs text-base-content/40">{format_qty(p.stock_quantity)} {p.unit}</span>
+                <span class="text-xs text-base-content/40">
+                  {format_qty(p.stock_quantity)} {p.unit}
+                </span>
               </button>
             </div>
-            <p :if={String.length(String.trim(@search)) >= 1 && @search_results == []}
-               class="text-sm text-base-content/40 text-center py-6">
+            <p
+              :if={String.length(String.trim(@search)) >= 1 && @search_results == []}
+              class="text-sm text-base-content/40 text-center py-6"
+            >
               No encontré ese insumo.
             </p>
           </div>
 
           <%!-- Formulario de cantidad --%>
           <div :if={@selected_product != nil && @registrando != :buscar}>
-            <p class="text-xs text-base-content/40 uppercase tracking-wide font-semibold mb-1">Registrar compra</p>
+            <p class="text-xs text-base-content/40 uppercase tracking-wide font-semibold mb-1">
+              Registrar compra
+            </p>
             <p class="text-xl font-bold text-base-content mb-1">{@selected_product.name}</p>
             <p class="text-sm text-base-content/50 mb-6">
-              Tienes <strong>{format_qty(@selected_product.stock_quantity)} {@selected_product.unit}</strong>
-              y necesitas al menos <strong>{format_qty(@selected_product.min_stock)} {@selected_product.unit}</strong>
+              Tienes
+              <strong>{format_qty(@selected_product.stock_quantity)} {@selected_product.unit}</strong>
+              y necesitas al menos
+              <strong>{format_qty(@selected_product.min_stock)} {@selected_product.unit}</strong>
             </p>
 
             <form phx-submit="confirmar_compra">
@@ -271,7 +322,11 @@ defmodule CRCWeb.FaltantesLive do
                 class="input input-bordered w-full text-2xl font-bold text-center h-16"
                 autofocus
               />
-              <button type="submit" phx-disable-with="Guardando..." class="btn btn-success w-full mt-4 text-base font-bold">
+              <button
+                type="submit"
+                phx-disable-with="Guardando..."
+                class="btn btn-success w-full mt-4 text-base font-bold"
+              >
                 ✓ Listo, lo registré
               </button>
             </form>
@@ -294,6 +349,7 @@ defmodule CRCWeb.FaltantesLive do
     case Decimal.parse(String.trim(str)) do
       {d, ""} ->
         if Decimal.gt?(d, 0), do: {:ok, d}, else: :error
+
       _ ->
         :error
     end

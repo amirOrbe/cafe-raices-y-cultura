@@ -45,9 +45,7 @@ defmodule CRC.Catalog.MenuItem do
     |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name, :price, :destination, :category_id])
     |> validate_inclusion(:destination, @destinations, message: "debe ser cocina o barra")
-    |> validate_inclusion(:barra_type, @barra_types ++ [nil],
-      message: "debe ser fria o caliente"
-    )
+    |> validate_inclusion(:barra_type, @barra_types ++ [nil], message: "debe ser fria o caliente")
     |> clear_barra_type_for_cocina()
     |> validate_number(:price, greater_than: 0)
     |> assoc_constraint(:category)

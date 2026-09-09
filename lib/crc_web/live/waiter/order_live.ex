@@ -331,10 +331,15 @@ defmodule CRCWeb.Waiter.OrderLive do
     # Customer-facing price for this extra: sale_price × portion_qty (nil or 0 = no charge)
     unit_price =
       case Map.get(params, "sale_price") do
-        nil -> nil
-        "0" -> nil
+        nil ->
+          nil
+
+        "0" ->
+          nil
+
         str ->
           d = Decimal.new(str)
+
           if Decimal.compare(d, Decimal.new(0)) == :gt,
             do: Decimal.mult(d, portion_qty) |> Decimal.round(2),
             else: nil
@@ -484,7 +489,9 @@ defmodule CRCWeb.Waiter.OrderLive do
 
       if max_qty != nil and item.quantity >= max_qty do
         {:noreply,
-         assign(socket, :flash_msg,
+         assign(
+           socket,
+           :flash_msg,
            {:error,
             "Sin stock suficiente para agregar más «#{item_display_name(item)}». Solo quedan #{max_qty} porciones."}
          )}
@@ -619,7 +626,8 @@ defmodule CRCWeb.Waiter.OrderLive do
         {:noreply, assign(socket, :order, updated)}
 
       {:error, _} ->
-        {:noreply, assign(socket, :flash_msg, {:error, "No se pudo actualizar el tipo de orden."})}
+        {:noreply,
+         assign(socket, :flash_msg, {:error, "No se pudo actualizar el tipo de orden."})}
     end
   end
 
@@ -634,7 +642,10 @@ defmodule CRCWeb.Waiter.OrderLive do
       {:error, {:insufficient_stock, name}} ->
         {:noreply,
          socket
-         |> assign(:flash_msg, {:error, "Sin stock suficiente de «#{name}». Otro mesero lo agotó al mismo tiempo."})}
+         |> assign(
+           :flash_msg,
+           {:error, "Sin stock suficiente de «#{name}». Otro mesero lo agotó al mismo tiempo."}
+         )}
 
       {:error, _} ->
         {:noreply, assign(socket, :flash_msg, {:error, "No se pudo enviar la comanda"})}
@@ -774,7 +785,10 @@ defmodule CRCWeb.Waiter.OrderLive do
          socket
          |> assign(:order, Orders.get_order!(closed_with_token.id))
          |> assign(:payment_step, false)
-         |> assign(:flash_msg, {:success, "Cuenta cerrada · usa «Mostrar QR» si el cliente lo pide"})}
+         |> assign(
+           :flash_msg,
+           {:success, "Cuenta cerrada · usa «Mostrar QR» si el cliente lo pide"}
+         )}
 
       {:error, changeset} ->
         msg =
@@ -815,26 +829,26 @@ defmodule CRCWeb.Waiter.OrderLive do
               "flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold border-b-2 transition-colors",
               if(@mobile_tab == :menu,
                 do: "border-primary text-primary",
-                else: "border-transparent text-base-content/50")
+                else: "border-transparent text-base-content/50"
+              )
             ]}
             phx-click="set_mobile_tab"
             phx-value-tab="menu"
           >
-            <.icon name="hero-book-open" class="size-4" />
-            Menú
+            <.icon name="hero-book-open" class="size-4" /> Menú
           </button>
           <button
             class={[
               "flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold border-b-2 transition-colors",
               if(@mobile_tab == :comanda,
                 do: "border-primary text-primary",
-                else: "border-transparent text-base-content/50")
+                else: "border-transparent text-base-content/50"
+              )
             ]}
             phx-click="set_mobile_tab"
             phx-value-tab="comanda"
           >
-            <.icon name="hero-clipboard-document-list" class="size-4" />
-            Comanda
+            <.icon name="hero-clipboard-document-list" class="size-4" /> Comanda
             <%= if pending_tab_count > 0 do %>
               <span class={[
                 "badge badge-xs",
@@ -850,7 +864,6 @@ defmodule CRCWeb.Waiter.OrderLive do
       <%!-- ── Contenido principal ─────────────────────────────────────────────── --%>
       <div class="pb-28 lg:pb-10">
         <div class="max-w-6xl mx-auto px-3 sm:px-4 pt-4 lg:pt-5 space-y-3">
-
           <%!-- Header de la orden --%>
           <div class="flex items-start gap-3 min-w-0">
             <a href="/mesa" class="btn btn-ghost btn-sm gap-1 shrink-0 mt-0.5">
@@ -867,14 +880,28 @@ defmodule CRCWeb.Waiter.OrderLive do
                 <%= if @order.status != "closed" do %>
                   <div class="join">
                     <button
-                      class={["btn btn-xs join-item gap-1", if(@order.order_type == "dine_in", do: "btn-primary", else: "btn-ghost border border-base-300")]}
-                      phx-click="set_order_type" phx-value-type="dine_in"
+                      class={[
+                        "btn btn-xs join-item gap-1",
+                        if(@order.order_type == "dine_in",
+                          do: "btn-primary",
+                          else: "btn-ghost border border-base-300"
+                        )
+                      ]}
+                      phx-click="set_order_type"
+                      phx-value-type="dine_in"
                     >
                       <.icon name="hero-building-storefront" class="size-3" /> En el lugar
                     </button>
                     <button
-                      class={["btn btn-xs join-item gap-1", if(@order.order_type == "takeout", do: "btn-accent", else: "btn-ghost border border-base-300")]}
-                      phx-click="set_order_type" phx-value-type="takeout"
+                      class={[
+                        "btn btn-xs join-item gap-1",
+                        if(@order.order_type == "takeout",
+                          do: "btn-accent",
+                          else: "btn-ghost border border-base-300"
+                        )
+                      ]}
+                      phx-click="set_order_type"
+                      phx-value-type="takeout"
                     >
                       <.icon name="hero-shopping-bag" class="size-3" /> Para llevar
                     </button>
@@ -898,7 +925,10 @@ defmodule CRCWeb.Waiter.OrderLive do
           <%!-- Flash — visible en ambos tabs --%>
           <%= if @flash_msg do %>
             <% {type, msg} = @flash_msg %>
-            <div class={["alert alert-sm", if(type == :success, do: "alert-success", else: "alert-error")]}>
+            <div class={[
+              "alert alert-sm",
+              if(type == :success, do: "alert-success", else: "alert-error")
+            ]}>
               <span class="text-sm">{msg}</span>
             </div>
           <% end %>
@@ -921,11 +951,9 @@ defmodule CRCWeb.Waiter.OrderLive do
 
           <%!-- ── Grid principal ──────────────────────────────────────────────── --%>
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
             <%!-- ── PANEL IZQUIERDO: Comanda ──────────────────────────────────── --%>
             <div class={if @mobile_tab == :menu, do: "hidden lg:block", else: ""}>
               <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-
                 <%!-- Encabezado de comanda --%>
                 <div class="px-4 py-3 border-b border-base-300 flex items-center justify-between gap-2">
                   <h2 class="font-semibold text-base-content">Comanda</h2>
@@ -934,13 +962,17 @@ defmodule CRCWeb.Waiter.OrderLive do
                     <% s_count = Enum.count(@order.order_items, &(&1.status == "sent")) %>
                     <% r_count = Enum.count(@order.order_items, &(&1.status == "ready")) %>
                     <%= if p_count > 0 do %>
-                      <span class="badge badge-xs badge-warning">{p_count} pendiente{if p_count > 1, do: "s"}</span>
+                      <span class="badge badge-xs badge-warning">
+                        {p_count} pendiente{if p_count > 1, do: "s"}
+                      </span>
                     <% end %>
                     <%= if s_count > 0 do %>
                       <span class="badge badge-xs badge-info">{s_count} en cocina</span>
                     <% end %>
                     <%= if r_count > 0 do %>
-                      <span class="badge badge-xs badge-success animate-pulse">{r_count} ✓ listo{if r_count > 1, do: "s"}</span>
+                      <span class="badge badge-xs badge-success animate-pulse">
+                        {r_count} ✓ listo{if r_count > 1, do: "s"}
+                      </span>
                     <% end %>
                   </div>
                 </div>
@@ -950,7 +982,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                   <% ci = @cancelling_item %>
                   <div class="mx-4 mt-3 mb-1 rounded-xl border border-error/40 bg-error/5 p-4 space-y-3">
                     <p class="text-sm font-semibold">
-                      Cancelar: {if ci.product_id, do: "Extra — #{ci.product.name}", else: ci.menu_item.name}
+                      Cancelar: {if ci.product_id,
+                        do: "Extra — #{ci.product.name}",
+                        else: ci.menu_item.name}
                     </p>
                     <p class="text-xs text-base-content/60">¿Este artículo ya fue preparado?</p>
                     <div class="flex flex-col gap-2">
@@ -960,7 +994,10 @@ defmodule CRCWeb.Waiter.OrderLive do
                       <button class="btn btn-sm btn-outline w-full" phx-click="cancel_with_restore">
                         <.icon name="hero-arrow-uturn-left" class="size-4" /> No — restaurar stock
                       </button>
-                      <button class="btn btn-sm btn-ghost w-full text-base-content/50" phx-click="dismiss_cancel">
+                      <button
+                        class="btn btn-sm btn-ghost w-full text-base-content/50"
+                        phx-click="dismiss_cancel"
+                      >
                         Mantener artículo
                       </button>
                     </div>
@@ -977,7 +1014,10 @@ defmodule CRCWeb.Waiter.OrderLive do
                 <div class="divide-y divide-base-200">
                   <%= if @order.order_items == [] do %>
                     <div class="py-14 text-center text-base-content/40">
-                      <.icon name="hero-clipboard-document-list" class="size-10 mx-auto mb-2 opacity-25" />
+                      <.icon
+                        name="hero-clipboard-document-list"
+                        class="size-10 mx-auto mb-2 opacity-25"
+                      />
                       <p class="text-sm font-medium">La comanda está vacía</p>
                       <p class="text-xs mt-1 opacity-70">Agrega artículos desde el menú</p>
                     </div>
@@ -1002,7 +1042,13 @@ defmodule CRCWeb.Waiter.OrderLive do
                         <div class="flex items-center gap-2">
                           <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-1.5 flex-wrap">
-                              <p class={["text-sm font-semibold leading-tight", if(cancelled?, do: "line-through text-base-content/50", else: "text-base-content")]}>
+                              <p class={[
+                                "text-sm font-semibold leading-tight",
+                                if(cancelled?,
+                                  do: "line-through text-base-content/50",
+                                  else: "text-base-content"
+                                )
+                              ]}>
                                 <%= if item.product_id do %>
                                   <span class="text-accent">+</span> {item.product.name}
                                 <% else %>
@@ -1018,7 +1064,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                                 <span class="badge badge-xs badge-error animate-pulse">+15 min</span>
                               <% end %>
                               <%= if item.status == "ready" and not cancelled? do %>
-                                <span class="badge badge-xs badge-success animate-pulse">¡Listo!</span>
+                                <span class="badge badge-xs badge-success animate-pulse">
+                                  ¡Listo!
+                                </span>
                               <% end %>
                               <%= if served? do %>
                                 <span class="badge badge-xs badge-ghost">Servido</span>
@@ -1027,7 +1075,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                             <p class="text-xs text-base-content/50 mt-0.5">
                               <%= if cancelled? do %>
                                 <span class="text-error font-medium">
-                                  {if item.status == "cancelled_waste", do: "Cancelado — desperdicio", else: "Cancelado"}
+                                  {if item.status == "cancelled_waste",
+                                    do: "Cancelado — desperdicio",
+                                    else: "Cancelado"}
                                 </span>
                               <% else %>
                                 <%= if item.product_id do %>
@@ -1043,7 +1093,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                             </p>
                             <%!-- "Para quién" badge (no pendiente) --%>
                             <%= if not is_nil(item.for_person) and item.for_person != "" and item.status != "pending" do %>
-                              <span class="badge badge-xs badge-ghost mt-0.5">👤 {item.for_person}</span>
+                              <span class="badge badge-xs badge-ghost mt-0.5">
+                                👤 {item.for_person}
+                              </span>
                             <% end %>
                           </div>
 
@@ -1063,7 +1115,15 @@ defmodule CRCWeb.Waiter.OrderLive do
                             <%!-- Extras (solo platillos pendientes sin paquete) --%>
                             <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and is_nil(item.package_id) and item.status == "pending" and @order.status != "closed" do %>
                               <button
-                                class={["btn btn-sm btn-ghost btn-circle", if(@selected_menu_item && @selected_menu_item.id == item.menu_item_id, do: "text-accent bg-accent/10", else: "text-base-content/30")]}
+                                class={[
+                                  "btn btn-sm btn-ghost btn-circle",
+                                  if(
+                                    @selected_menu_item &&
+                                      @selected_menu_item.id == item.menu_item_id,
+                                    do: "text-accent bg-accent/10",
+                                    else: "text-base-content/30"
+                                  )
+                                ]}
                                 phx-click="select_menu_item_extras"
                                 phx-value-id={item.menu_item_id}
                                 title="Agregar extras"
@@ -1101,8 +1161,15 @@ defmodule CRCWeb.Waiter.OrderLive do
                                   class="btn btn-xs btn-ghost btn-circle"
                                   phx-click="increment_item"
                                   phx-value-id={item.id}
-                                  disabled={@order.status == "closed" or (max_qty != nil and item.quantity >= max_qty)}
-                                  title={if max_qty != nil and item.quantity >= max_qty, do: "Sin stock suficiente", else: nil}
+                                  disabled={
+                                    @order.status == "closed" or
+                                      (max_qty != nil and item.quantity >= max_qty)
+                                  }
+                                  title={
+                                    if max_qty != nil and item.quantity >= max_qty,
+                                      do: "Sin stock suficiente",
+                                      else: nil
+                                  }
                                 >
                                   <.icon name="hero-plus" class="size-3.5" />
                                 </button>
@@ -1112,11 +1179,19 @@ defmodule CRCWeb.Waiter.OrderLive do
                             <%!-- Eliminar / cancelar --%>
                             <%= if not cancelled? and not served? and @order.status != "closed" do %>
                               <%= if item.status == "pending" do %>
-                                <button class="btn btn-xs btn-ghost btn-circle text-error" phx-click="remove_item" phx-value-id={item.id}>
+                                <button
+                                  class="btn btn-xs btn-ghost btn-circle text-error"
+                                  phx-click="remove_item"
+                                  phx-value-id={item.id}
+                                >
                                   <.icon name="hero-trash" class="size-3.5" />
                                 </button>
                               <% else %>
-                                <button class="btn btn-xs btn-ghost btn-circle text-error" phx-click="request_cancel_item" phx-value-id={item.id}>
+                                <button
+                                  class="btn btn-xs btn-ghost btn-circle text-error"
+                                  phx-click="request_cancel_item"
+                                  phx-value-id={item.id}
+                                >
                                   <.icon name="hero-x-circle" class="size-4" />
                                 </button>
                               <% end %>
@@ -1132,12 +1207,19 @@ defmodule CRCWeb.Waiter.OrderLive do
                               <div class="flex flex-wrap items-center gap-1">
                                 <span class="text-xs text-base-content/40 shrink-0">Sin:</span>
                                 <%= for mii <- item.menu_item.menu_item_ingredients do %>
-                                  <% excl? = Enum.any?(item.exclusions, &(&1.product_id == mii.product_id)) %>
+                                  <% excl? =
+                                    Enum.any?(item.exclusions, &(&1.product_id == mii.product_id)) %>
                                   <button
                                     phx-click="toggle_exclusion"
                                     phx-value-order_item_id={item.id}
                                     phx-value-product_id={mii.product_id}
-                                    class={["badge badge-sm cursor-pointer select-none transition-all", if(excl?, do: "badge-error line-through", else: "badge-ghost hover:badge-warning")]}
+                                    class={[
+                                      "badge badge-sm cursor-pointer select-none transition-all",
+                                      if(excl?,
+                                        do: "badge-error line-through",
+                                        else: "badge-ghost hover:badge-warning"
+                                      )
+                                    ]}
                                   >
                                     {mii.product.name}
                                   </button>
@@ -1149,9 +1231,16 @@ defmodule CRCWeb.Waiter.OrderLive do
                             <%= for mii <- item.menu_item.menu_item_ingredients do %>
                               <% active_variants = Enum.filter(mii.product.variants, & &1.active) %>
                               <%= if active_variants != [] do %>
-                                <% sel = find_selected_variant(@order.order_items, item.menu_item_id, mii.product_id) %>
+                                <% sel =
+                                  find_selected_variant(
+                                    @order.order_items,
+                                    item.menu_item_id,
+                                    mii.product_id
+                                  ) %>
                                 <div class="flex flex-wrap items-center gap-1">
-                                  <span class="text-xs text-base-content/40 shrink-0">{mii.product.name}:</span>
+                                  <span class="text-xs text-base-content/40 shrink-0">
+                                    {mii.product.name}:
+                                  </span>
                                   <%= for variant <- active_variants do %>
                                     <% selected? = sel != nil and sel.variant_id == variant.id %>
                                     <button
@@ -1159,11 +1248,19 @@ defmodule CRCWeb.Waiter.OrderLive do
                                       phx-value-menu_item_id={item.menu_item_id}
                                       phx-value-variant_id={variant.id}
                                       phx-value-product_id={mii.product_id}
-                                      class={["badge badge-sm cursor-pointer select-none transition-all", if(selected?, do: "badge-primary", else: "badge-ghost hover:badge-primary")]}
+                                      class={[
+                                        "badge badge-sm cursor-pointer select-none transition-all",
+                                        if(selected?,
+                                          do: "badge-primary",
+                                          else: "badge-ghost hover:badge-primary"
+                                        )
+                                      ]}
                                     >
                                       {variant.name}
                                       <%= if Decimal.compare(variant.extra_charge, Decimal.new(0)) == :gt do %>
-                                        <span class="opacity-60 ml-0.5">+${format_price(variant.extra_charge)}</span>
+                                        <span class="opacity-60 ml-0.5">
+                                          +${format_price(variant.extra_charge)}
+                                        </span>
                                       <% end %>
                                     </button>
                                   <% end %>
@@ -1177,7 +1274,13 @@ defmodule CRCWeb.Waiter.OrderLive do
                                 <%= for person <- used_persons do %>
                                   <button
                                     type="button"
-                                    class={["badge badge-xs cursor-pointer select-none transition-all", if(item.for_person == person, do: "badge-primary", else: "badge-ghost hover:badge-primary")]}
+                                    class={[
+                                      "badge badge-xs cursor-pointer select-none transition-all",
+                                      if(item.for_person == person,
+                                        do: "badge-primary",
+                                        else: "badge-ghost hover:badge-primary"
+                                      )
+                                    ]}
                                     phx-click="set_item_for_person"
                                     phx-value-item_id={item.id}
                                     phx-value-for_person={person}
@@ -1192,7 +1295,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                                     phx-click="set_item_for_person"
                                     phx-value-item_id={item.id}
                                     phx-value-for_person=""
-                                  >✕</button>
+                                  >
+                                    ✕
+                                  </button>
                                 <% end %>
                               <% end %>
                               <form phx-change="set_item_for_person" class="flex-1 min-w-[8rem]">
@@ -1237,7 +1342,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                             <%= for vi <- sent_variants do %>
                               <span class="badge badge-xs badge-primary">{vi.variant.name}</span>
                               <%= if vi.unit_price && Decimal.compare(vi.unit_price, Decimal.new(0)) == :gt do %>
-                                <span class="text-xs text-primary font-medium">+${format_price(vi.unit_price)}</span>
+                                <span class="text-xs text-primary font-medium">
+                                  +${format_price(vi.unit_price)}
+                                </span>
                               <% end %>
                             <% end %>
                           </div>
@@ -1288,13 +1395,19 @@ defmodule CRCWeb.Waiter.OrderLive do
                       disabled={pending == []}
                     >
                       <.icon name="hero-paper-airplane" class="size-4" />
-                      {if @order.status == "open", do: "Enviar a cocina y barra", else: "Enviar adicionales"}
+                      {if @order.status == "open",
+                        do: "Enviar a cocina y barra",
+                        else: "Enviar adicionales"}
                       <%= if pending != [] do %>
                         <span class="badge badge-sm badge-primary-content/30">{length(pending)}</span>
                       <% end %>
                     </button>
                     <%= if @order.order_items == [] and @order.status == "open" do %>
-                      <button class="btn btn-outline btn-error w-full" phx-click="cancel_order" data-confirm="¿Cancelar esta comanda?">
+                      <button
+                        class="btn btn-outline btn-error w-full"
+                        phx-click="cancel_order"
+                        data-confirm="¿Cancelar esta comanda?"
+                      >
                         <.icon name="hero-x-mark" class="size-4" /> Cancelar comanda
                       </button>
                     <% end %>
@@ -1311,19 +1424,24 @@ defmodule CRCWeb.Waiter.OrderLive do
             <%!-- ── PANEL DERECHO: Buscador de menú ───────────────────────────── --%>
             <div class={["space-y-3", if(@mobile_tab == :comanda, do: "hidden lg:block", else: "")]}>
               <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-
                 <%!-- Tabs: Menú / Paquetes --%>
                 <div class="px-4 pt-3 pb-0 border-b border-base-300">
                   <div class="flex gap-1">
                     <button
-                      class={["btn btn-sm", if(@menu_tab == :menu, do: "btn-primary", else: "btn-ghost")]}
+                      class={[
+                        "btn btn-sm",
+                        if(@menu_tab == :menu, do: "btn-primary", else: "btn-ghost")
+                      ]}
                       phx-click="select_menu_tab"
                       phx-value-tab="menu"
                     >
                       Menú
                     </button>
                     <button
-                      class={["btn btn-sm gap-1", if(@menu_tab == :packages, do: "btn-primary", else: "btn-ghost")]}
+                      class={[
+                        "btn btn-sm gap-1",
+                        if(@menu_tab == :packages, do: "btn-primary", else: "btn-ghost")
+                      ]}
                       phx-click="select_menu_tab"
                       phx-value-tab="packages"
                     >
@@ -1339,7 +1457,10 @@ defmodule CRCWeb.Waiter.OrderLive do
                   <%!-- Buscador --%>
                   <form phx-change="search_menu" class="px-4 py-2.5 border-b border-base-200">
                     <div class="relative">
-                      <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/30 pointer-events-none" />
+                      <.icon
+                        name="hero-magnifying-glass"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/30 pointer-events-none"
+                      />
                       <input
                         type="text"
                         name="query"
@@ -1351,7 +1472,11 @@ defmodule CRCWeb.Waiter.OrderLive do
                         disabled={@order.status == "closed"}
                       />
                       <%= if @menu_search != "" do %>
-                        <button type="button" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/30 hover:text-base-content" phx-click="clear_menu_search">
+                        <button
+                          type="button"
+                          class="absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/30 hover:text-base-content"
+                          phx-click="clear_menu_search"
+                        >
                           <.icon name="hero-x-mark" class="size-4" />
                         </button>
                       <% end %>
@@ -1359,7 +1484,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                   </form>
 
                   <%= if @order.status == "closed" do %>
-                    <div class="py-14 text-center text-base-content/40 text-sm">Esta cuenta está cerrada.</div>
+                    <div class="py-14 text-center text-base-content/40 text-sm">
+                      Esta cuenta está cerrada.
+                    </div>
                   <% else %>
                     <%= if @search_results != nil do %>
                       <%!-- Resultados de búsqueda --%>
@@ -1373,7 +1500,11 @@ defmodule CRCWeb.Waiter.OrderLive do
                         </p>
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2.5">
                           <%= for {menu_item, portions} <- @search_results do %>
-                            <.menu_item_card menu_item={menu_item} portions={portions} low_stock_threshold={@low_stock_threshold} />
+                            <.menu_item_card
+                              menu_item={menu_item}
+                              portions={portions}
+                              low_stock_threshold={@low_stock_threshold}
+                            />
                           <% end %>
                         </div>
                       </div>
@@ -1381,7 +1512,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                       <%= if @menu_step == :categories do %>
                         <%!-- Paso 1: grid de categorías --%>
                         <div class="p-3">
-                          <p class="text-xs text-base-content/50 font-medium px-1 mb-3">¿Qué sección?</p>
+                          <p class="text-xs text-base-content/50 font-medium px-1 mb-3">
+                            ¿Qué sección?
+                          </p>
                           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2.5">
                             <%= for category <- @categories do %>
                               <% has_items? = length(category.menu_items) > 0 %>
@@ -1389,15 +1522,25 @@ defmodule CRCWeb.Waiter.OrderLive do
                                 class={[
                                   "rounded-xl border-2 p-4 flex flex-col items-start gap-1 text-left transition-all active:scale-95",
                                   if(has_items?,
-                                    do: "bg-base-200/60 border-transparent hover:border-primary/40 hover:bg-primary/5 cursor-pointer",
-                                    else: "bg-base-200/30 border-transparent opacity-40 cursor-not-allowed")
+                                    do:
+                                      "bg-base-200/60 border-transparent hover:border-primary/40 hover:bg-primary/5 cursor-pointer",
+                                    else:
+                                      "bg-base-200/30 border-transparent opacity-40 cursor-not-allowed"
+                                  )
                                 ]}
                                 phx-click="select_category"
                                 phx-value-id={category.id}
                                 disabled={not has_items?}
                               >
-                                <span class="text-sm font-bold text-base-content leading-tight">{category.name}</span>
-                                <span class="text-xs text-base-content/50">{length(category.menu_items)} platillo{if length(category.menu_items) != 1, do: "s"}</span>
+                                <span class="text-sm font-bold text-base-content leading-tight">
+                                  {category.name}
+                                </span>
+                                <span class="text-xs text-base-content/50">
+                                  {length(category.menu_items)} platillo{if length(
+                                                                              category.menu_items
+                                                                            ) != 1,
+                                                                            do: "s"}
+                                </span>
                               </button>
                             <% end %>
                           </div>
@@ -1413,13 +1556,19 @@ defmodule CRCWeb.Waiter.OrderLive do
                             <.icon name="hero-arrow-left" class="size-3.5" /> Categorías
                           </button>
                           <%= if selected_cat do %>
-                            <span class="text-sm font-semibold text-base-content">{selected_cat.name}</span>
+                            <span class="text-sm font-semibold text-base-content">
+                              {selected_cat.name}
+                            </span>
                           <% end %>
                         </div>
                         <div class="p-3">
                           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2.5">
                             <%= for {menu_item, portions} <- @menu_items do %>
-                              <.menu_item_card menu_item={menu_item} portions={portions} low_stock_threshold={@low_stock_threshold} />
+                              <.menu_item_card
+                                menu_item={menu_item}
+                                portions={portions}
+                                low_stock_threshold={@low_stock_threshold}
+                              />
                             <% end %>
                             <%= if @menu_items == [] do %>
                               <p class="col-span-full text-center py-8 text-base-content/40 text-sm">
@@ -1443,10 +1592,14 @@ defmodule CRCWeb.Waiter.OrderLive do
                   <%!-- Tab Paquetes --%>
                   <div class="p-4">
                     <%= if @order.status == "closed" do %>
-                      <p class="text-center py-12 text-base-content/40 text-sm">Esta cuenta está cerrada.</p>
+                      <p class="text-center py-12 text-base-content/40 text-sm">
+                        Esta cuenta está cerrada.
+                      </p>
                     <% else %>
                       <%= if @packages == [] do %>
-                        <p class="text-center py-12 text-base-content/40 text-sm">No hay paquetes disponibles.</p>
+                        <p class="text-center py-12 text-base-content/40 text-sm">
+                          No hay paquetes disponibles.
+                        </p>
                       <% else %>
                         <div class="space-y-3">
                           <%= for package <- @packages do %>
@@ -1454,20 +1607,30 @@ defmodule CRCWeb.Waiter.OrderLive do
                               <div class="flex-1 min-w-0">
                                 <p class="text-sm font-semibold">{package.name}</p>
                                 <%= if package.description do %>
-                                  <p class="text-xs text-base-content/50 mt-0.5">{package.description}</p>
+                                  <p class="text-xs text-base-content/50 mt-0.5">
+                                    {package.description}
+                                  </p>
                                 <% end %>
                                 <div class="flex flex-wrap gap-1 mt-2">
                                   <%= for pi <- package.package_items do %>
                                     <span class="badge badge-xs badge-ghost">
-                                      <%= if pi.quantity > 1 do %>{pi.quantity}×<% end %>
+                                      <%= if pi.quantity > 1 do %>
+                                        {pi.quantity}×
+                                      <% end %>
                                       {pi.menu_item.name}
                                     </span>
                                   <% end %>
                                 </div>
                               </div>
                               <div class="flex flex-col items-end gap-2 shrink-0">
-                                <span class="text-base font-bold text-primary">${format_price(package.price)}</span>
-                                <button class="btn btn-xs btn-primary" phx-click="add_package" phx-value-package_id={package.id}>
+                                <span class="text-base font-bold text-primary">
+                                  ${format_price(package.price)}
+                                </span>
+                                <button
+                                  class="btn btn-xs btn-primary"
+                                  phx-click="add_package"
+                                  phx-value-package_id={package.id}
+                                >
                                   <.icon name="hero-plus" class="size-3" /> Agregar
                                 </button>
                               </div>
@@ -1487,7 +1650,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                     <div class="flex items-center gap-2 min-w-0">
                       <.icon name="hero-plus-circle" class="size-4 text-accent shrink-0" />
                       <div class="min-w-0">
-                        <p class="text-sm font-semibold text-base-content truncate">Extras — {@selected_menu_item.name}</p>
+                        <p class="text-sm font-semibold text-base-content truncate">
+                          Extras — {@selected_menu_item.name}
+                        </p>
                         <p class="text-xs text-base-content/50">Toca para agregar a la comanda</p>
                       </div>
                     </div>
@@ -1497,23 +1662,32 @@ defmodule CRCWeb.Waiter.OrderLive do
                   </div>
                   <div class="p-4">
                     <%= if @extras == [] do %>
-                      <p class="text-sm text-base-content/40 text-center py-2">Sin extras configurados para este platillo.</p>
+                      <p class="text-sm text-base-content/40 text-center py-2">
+                        Sin extras configurados para este platillo.
+                      </p>
                     <% else %>
                       <div class="flex flex-wrap gap-2">
                         <%= for {product, portion_qty, sale_price} <- @extras do %>
-                          <% extra_price = if sale_price && Decimal.compare(sale_price, Decimal.new(0)) == :gt, do: Decimal.round(sale_price, 2), else: nil %>
+                          <% extra_price =
+                            if sale_price && Decimal.compare(sale_price, Decimal.new(0)) == :gt,
+                              do: Decimal.round(sale_price, 2),
+                              else: nil %>
                           <button
                             class="btn btn-sm btn-outline btn-accent gap-1.5"
                             phx-click="add_extra"
                             phx-value-product_id={product.id}
                             phx-value-portion_qty={Decimal.to_string(portion_qty)}
-                            phx-value-sale_price={if sale_price, do: Decimal.to_string(sale_price), else: "0"}
+                            phx-value-sale_price={
+                              if sale_price, do: Decimal.to_string(sale_price), else: "0"
+                            }
                           >
                             <.icon name="hero-plus" class="size-3" />
                             {product.name}
                             <span class="text-xs opacity-70">
                               {format_qty(portion_qty)} {product.unit}
-                              <%= if extra_price do %>· +${format_price(extra_price)}<% end %>
+                              <%= if extra_price do %>
+                                · +${format_price(extra_price)}
+                              <% end %>
                             </span>
                           </button>
                         <% end %>
@@ -1523,7 +1697,6 @@ defmodule CRCWeb.Waiter.OrderLive do
                 </div>
               <% end %>
             </div>
-
           </div>
         </div>
       </div>
@@ -1553,14 +1726,19 @@ defmodule CRCWeb.Waiter.OrderLive do
             <% pending = pending_items(@order) %>
             <%= if pending != [] do %>
               <button class="btn btn-primary btn-sm gap-1.5" phx-click="send_to_kitchen">
-                <.icon name="hero-paper-airplane" class="size-4" />
-                Enviar
+                <.icon name="hero-paper-airplane" class="size-4" /> Enviar
                 <span class="badge badge-xs badge-primary-content/30">{length(pending)}</span>
               </button>
             <% end %>
             <%= if @order.order_items != [] do %>
               <button
-                class={["btn btn-sm gap-1", if(pending == [], do: "btn-success", else: "btn-ghost border border-success text-success")]}
+                class={[
+                  "btn btn-sm gap-1",
+                  if(pending == [],
+                    do: "btn-success",
+                    else: "btn-ghost border border-success text-success"
+                  )
+                ]}
                 phx-click="show_payment_step"
               >
                 <.icon name="hero-credit-card" class="size-4" />
@@ -1568,7 +1746,11 @@ defmodule CRCWeb.Waiter.OrderLive do
               </button>
             <% end %>
             <%= if @order.order_items == [] and @order.status == "open" do %>
-              <button class="btn btn-outline btn-error btn-sm" phx-click="cancel_order" data-confirm="¿Cancelar esta comanda?">
+              <button
+                class="btn btn-outline btn-error btn-sm"
+                phx-click="cancel_order"
+                data-confirm="¿Cancelar esta comanda?"
+              >
                 <.icon name="hero-x-mark" class="size-4" /> Cancelar
               </button>
             <% end %>
@@ -1596,10 +1778,18 @@ defmodule CRCWeb.Waiter.OrderLive do
           <div class="px-5 py-4 space-y-4 overflow-y-auto max-h-[80vh]">
             <%!-- Selector de descuento --%>
             <div class="space-y-2">
-              <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide">Descuento</p>
+              <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide">
+                Descuento
+              </p>
               <div class="flex flex-wrap gap-2">
                 <button
-                  class={["btn btn-sm rounded-full", if(@discount_pct == 0, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                  class={[
+                    "btn btn-sm rounded-full",
+                    if(@discount_pct == 0,
+                      do: "btn-primary",
+                      else: "btn-ghost border border-base-300"
+                    )
+                  ]}
                   phx-click="set_discount_pct"
                   phx-value-pct="0"
                 >
@@ -1607,7 +1797,13 @@ defmodule CRCWeb.Waiter.OrderLive do
                 </button>
                 <%= for d <- @discounts do %>
                   <button
-                    class={["btn btn-sm rounded-full", if(@discount_pct == d.percentage, do: "btn-primary", else: "btn-ghost border border-base-300")]}
+                    class={[
+                      "btn btn-sm rounded-full",
+                      if(@discount_pct == d.percentage,
+                        do: "btn-primary",
+                        else: "btn-ghost border border-base-300"
+                      )
+                    ]}
                     phx-click="set_discount_pct"
                     phx-value-pct={d.percentage}
                   >
@@ -1655,14 +1851,20 @@ defmodule CRCWeb.Waiter.OrderLive do
             <%= if @split_count do %>
               <div class="bg-primary/10 rounded-xl px-4 py-3 text-center">
                 <p class="text-xs text-base-content/60">Cada persona paga</p>
-                <p class="text-2xl font-bold text-primary">${format_price(Decimal.div(total, Decimal.new(@split_count)))}</p>
-                <p class="text-xs text-base-content/40">{@split_count} personas · total ${format_price(total)}</p>
+                <p class="text-2xl font-bold text-primary">
+                  ${format_price(Decimal.div(total, Decimal.new(@split_count)))}
+                </p>
+                <p class="text-xs text-base-content/40">
+                  {@split_count} personas · total ${format_price(total)}
+                </p>
               </div>
             <% end %>
 
             <%!-- Método de pago --%>
             <div class="space-y-2">
-              <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide">Método de pago</p>
+              <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide">
+                Método de pago
+              </p>
               <div class="grid grid-cols-3 gap-2">
                 <%= for {label, value, icon} <- [
                   {"Efectivo", "efectivo", "hero-banknotes"},
@@ -1674,7 +1876,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                       "btn flex-col h-auto py-3 gap-1.5 rounded-xl border-2 transition-all",
                       if(@payment_method == value,
                         do: "btn-primary border-primary",
-                        else: "btn-ghost border-base-300 hover:border-primary/40")
+                        else: "btn-ghost border-base-300 hover:border-primary/40"
+                      )
                     ]}
                     phx-click="set_payment_method"
                     phx-value-method={value}
@@ -1689,7 +1892,9 @@ defmodule CRCWeb.Waiter.OrderLive do
             <%!-- Monto en efectivo --%>
             <%= if @payment_method == "efectivo" do %>
               <div class="space-y-2">
-                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide">¿Con cuánto paga?</p>
+                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide">
+                  ¿Con cuánto paga?
+                </p>
                 <input
                   type="number"
                   inputmode="decimal"
@@ -1707,14 +1912,18 @@ defmodule CRCWeb.Waiter.OrderLive do
                     "flex items-center justify-between rounded-xl px-4 py-3",
                     if(Decimal.lt?(@change_due, Decimal.new(0)),
                       do: "bg-error/10 border-2 border-error/30",
-                      else: "bg-success/10 border-2 border-success/30")
+                      else: "bg-success/10 border-2 border-success/30"
+                    )
                   ]}>
                     <span class="font-semibold text-sm">
                       {if Decimal.lt?(@change_due, Decimal.new(0)), do: "Falta:", else: "Cambio:"}
                     </span>
                     <span class={[
                       "text-2xl font-bold",
-                      if(Decimal.lt?(@change_due, Decimal.new(0)), do: "text-error", else: "text-success")
+                      if(Decimal.lt?(@change_due, Decimal.new(0)),
+                        do: "text-error",
+                        else: "text-success"
+                      )
                     ]}>
                       ${@change_due |> Decimal.abs() |> format_price()}
                     </span>
@@ -1730,7 +1939,10 @@ defmodule CRCWeb.Waiter.OrderLive do
                 (@payment_method != "efectivo" or
                    (@change_due != nil and not Decimal.lt?(@change_due, Decimal.new(0)))) %>
             <button
-              class={["btn w-full btn-lg", if(can_confirm?, do: "btn-success", else: "btn-disabled opacity-40")]}
+              class={[
+                "btn w-full btn-lg",
+                if(can_confirm?, do: "btn-success", else: "btn-disabled opacity-40")
+              ]}
               phx-click="confirm_close_order"
               disabled={!can_confirm?}
             >
@@ -1751,7 +1963,10 @@ defmodule CRCWeb.Waiter.OrderLive do
               <h2 class="font-bold text-lg">Cuenta</h2>
               <p class="text-sm opacity-80 truncate">{@order.customer_name}</p>
             </div>
-            <button phx-click="close_bill_modal" class="btn btn-sm btn-ghost text-primary-content shrink-0">
+            <button
+              phx-click="close_bill_modal"
+              class="btn btn-sm btn-ghost text-primary-content shrink-0"
+            >
               <.icon name="hero-x-mark" class="size-5" />
             </button>
           </div>
@@ -1773,7 +1988,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                 <% end %>
               </div>
               <% bill_subtotal = Orders.calculate_order_total(@order) %>
-              <% bill_total = if @order.status == "closed" && @order.total, do: @order.total, else: bill_subtotal %>
+              <% bill_total =
+                if @order.status == "closed" && @order.total, do: @order.total, else: bill_subtotal %>
               <%= if @order.discount_percentage && @order.discount_percentage > 0 do %>
                 <div class="flex items-center justify-between border-t border-base-300 pt-3 text-sm text-base-content/60">
                   <span>Subtotal</span>
@@ -1802,7 +2018,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                     class="w-48 h-48 block"
                   />
                 </div>
-                <p class="text-xs text-base-content/40 font-mono text-center break-all">{cuenta_url}</p>
+                <p class="text-xs text-base-content/40 font-mono text-center break-all">
+                  {cuenta_url}
+                </p>
               </div>
             <% end %>
           </div>
@@ -1848,6 +2066,7 @@ defmodule CRCWeb.Waiter.OrderLive do
     end)
     |> Enum.map(fn oi ->
       unit_price = oi.unit_price || oi.menu_item.price
+
       %{
         name: oi.menu_item.name,
         for_person: oi.for_person,
@@ -1968,7 +2187,8 @@ defmodule CRCWeb.Waiter.OrderLive do
   # ingredient stock. Returns nil when there is no recipe (unlimited).
   # The menu_item must be preloaded with menu_item_ingredients + product.
   defp item_max_quantity(%{menu_item: %{menu_item_ingredients: [_ | _]} = mi}),
-    do: Catalog.available_portions(mi)  # still returns plain integer — used for +/- limit only
+    # still returns plain integer — used for +/- limit only
+    do: Catalog.available_portions(mi)
 
   defp item_max_quantity(_), do: nil
 
@@ -1998,7 +2218,10 @@ defmodule CRCWeb.Waiter.OrderLive do
       end
     ]}>
       <div class="flex items-start justify-between gap-1.5">
-        <p class={["text-sm font-semibold leading-snug", if(not available?, do: "text-base-content/50", else: "text-base-content")]}>
+        <p class={[
+          "text-sm font-semibold leading-snug",
+          if(not available?, do: "text-base-content/50", else: "text-base-content")
+        ]}>
           {@menu_item.name}
         </p>
         <span class="text-sm font-bold text-primary whitespace-nowrap shrink-0">

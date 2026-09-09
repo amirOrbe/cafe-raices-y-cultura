@@ -315,7 +315,8 @@ defmodule CRCWeb.Waiter.TableLiveTest do
     test "refreshes tables when tables_changed is broadcast", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       {:ok, lv, html_before} = live(conn, "/mesa")
-      refute html_before =~ "99"  # table number not yet present
+      # table number not yet present
+      refute html_before =~ "99"
 
       table = insert_table(%{number: 99})
       Phoenix.PubSub.broadcast(CRC.PubSub, "restaurant_tables", :tables_changed)

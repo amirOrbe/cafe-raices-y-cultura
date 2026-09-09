@@ -35,12 +35,7 @@ defmodule CRCWeb.E2E.MultiRoleRealtimeTest do
     cocinero = create_cocinero()
     barman = create_barman()
 
-    {:ok,
-     food: food,
-     drink: drink,
-     waiter: waiter,
-     cocinero: cocinero,
-     barman: barman}
+    {:ok, food: food, drink: drink, waiter: waiter, cocinero: cocinero, barman: barman}
   end
 
   # ---------------------------------------------------------------------------
@@ -153,7 +148,14 @@ defmodule CRCWeb.E2E.MultiRoleRealtimeTest do
     end
 
     test "todos los items listos + order ready → waiter ve 'Lista para servir' en vista lista",
-         %{conn: conn, food: food, drink: drink, waiter: waiter, cocinero: cocinero, barman: barman} do
+         %{
+           conn: conn,
+           food: food,
+           drink: drink,
+           waiter: waiter,
+           cocinero: cocinero,
+           barman: barman
+         } do
       # Use a real table so the list view renders it with "Lista para servir" text
       table = create_table()
       order = create_order(%{customer_name: "Todo Listo", table_id: table.id})
@@ -187,7 +189,14 @@ defmodule CRCWeb.E2E.MultiRoleRealtimeTest do
     end
 
     test "cocina y barra marcan simultáneamente → ambos items quedan 'ready' en DB",
-         %{conn: conn, food: food, drink: drink, cocinero: cocinero, barman: barman, waiter: waiter} do
+         %{
+           conn: conn,
+           food: food,
+           drink: drink,
+           cocinero: cocinero,
+           barman: barman,
+           waiter: waiter
+         } do
       order = create_order(%{customer_name: "Doble Display"})
       add_item(order.id, food.id)
       add_item(order.id, drink.id)
@@ -236,13 +245,14 @@ defmodule CRCWeb.E2E.MultiRoleRealtimeTest do
 
       label = "Mesa VIP #{System.unique_integer()}"
       # create_table broadcasts :tables_changed internally
-      {:ok, _} = CRC.Orders.create_table(%{
-        number: System.unique_integer([:positive]),
-        label: label,
-        capacity: 4,
-        x_pct: 30.0,
-        y_pct: 40.0
-      })
+      {:ok, _} =
+        CRC.Orders.create_table(%{
+          number: System.unique_integer([:positive]),
+          label: label,
+          capacity: 4,
+          x_pct: 30.0,
+          y_pct: 40.0
+        })
 
       assert render(lv_waiter) =~ label
       refute html_antes =~ label

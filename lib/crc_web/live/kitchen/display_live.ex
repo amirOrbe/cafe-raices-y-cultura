@@ -54,6 +54,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
         end)
         |> Enum.map(fn oi ->
           order = Enum.find(new_orders, &(&1.id == oi.order_id))
+
           %{
             id: oi.id,
             customer: order && order.customer_name,
@@ -185,24 +186,42 @@ defmodule CRCWeb.Kitchen.DisplayLive do
               <span>💡</span>
               <p class="font-semibold text-base-content text-sm">¿Primera vez en Cocina?</p>
             </div>
-            <button data-dismiss-tip class="btn btn-xs btn-ghost text-base-content/40 shrink-0">✕ Entendido</button>
+            <button data-dismiss-tip class="btn btn-xs btn-ghost text-base-content/40 shrink-0">
+              ✕ Entendido
+            </button>
           </div>
           <ul class="space-y-2 text-sm text-base-content/70">
             <li class="flex items-start gap-2">
-              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">1</span>
+              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">
+                1
+              </span>
               <span>Los platillos llegan solos cuando el mesero envía una comanda.</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">2</span>
-              <span>El reloj 🕐 muestra el tiempo de espera: 🟢 &lt;7 min · 🟡 7-12 min · 🔴 +12 min.</span>
+              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">
+                2
+              </span>
+              <span>
+                El reloj 🕐 muestra el tiempo de espera: 🟢 &lt;7 min · 🟡 7-12 min · 🔴 +12 min.
+              </span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">3</span>
-              <span><strong>Agrupado</strong>: junta el mismo platillo de varias mesas para prepararlo todo de un golpe.</span>
+              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">
+                3
+              </span>
+              <span>
+                <strong>Agrupado</strong>: junta el mismo platillo de varias mesas para prepararlo todo de un golpe.
+              </span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">4</span>
-              <span>Toca <strong>Listo</strong> en cada platillo, o <strong>Todo listo</strong> para cerrar toda la mesa de una vez.</span>
+              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center font-bold">
+                4
+              </span>
+              <span>
+                Toca <strong>Listo</strong>
+                en cada platillo, o <strong>Todo listo</strong>
+                para cerrar toda la mesa de una vez.
+              </span>
             </li>
           </ul>
         </div>
@@ -212,8 +231,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
           <div class="alert alert-error py-2 flex items-center gap-3 shadow-sm">
             <.icon name="hero-x-circle" class="size-5 shrink-0" />
             <span class="text-sm font-semibold flex-1">
-              ⚠ Cancelado:
-              <span class="font-bold">{alert.customer}</span>
+              ⚠ Cancelado: <span class="font-bold">{alert.customer}</span>
               — {alert.quantity}× {alert.item_name}
             </span>
             <button
@@ -230,14 +248,20 @@ defmodule CRCWeb.Kitchen.DisplayLive do
         <%= if pending_orders(@orders) != [] do %>
           <div class="flex gap-1 bg-base-200 rounded-xl p-1 w-fit">
             <button
-              class={["btn btn-xs gap-1.5", if(@view_mode == :by_order, do: "btn-primary", else: "btn-ghost")]}
+              class={[
+                "btn btn-xs gap-1.5",
+                if(@view_mode == :by_order, do: "btn-primary", else: "btn-ghost")
+              ]}
               phx-click="set_view_mode"
               phx-value-mode="by_order"
             >
               <.icon name="hero-squares-2x2" class="size-3" /> Por mesa
             </button>
             <button
-              class={["btn btn-xs gap-1.5", if(@view_mode == :grouped, do: "btn-primary", else: "btn-ghost")]}
+              class={[
+                "btn btn-xs gap-1.5",
+                if(@view_mode == :grouped, do: "btn-primary", else: "btn-ghost")
+              ]}
               phx-click="set_view_mode"
               phx-value-mode="grouped"
             >
@@ -289,14 +313,22 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                 <div class="flex-1 divide-y divide-base-200">
                   <%= for entry <- group.entries do %>
                     <% item = entry.item %>
-                    <% display_name = if item.for_person && item.for_person != "", do: item.for_person, else: entry.order.customer_name %>
-                    <% item_variants = Enum.filter(entry.order.order_items, fn oi -> not is_nil(oi.variant_id) and oi.for_menu_item_id == item.menu_item_id end) %>
+                    <% display_name =
+                      if item.for_person && item.for_person != "",
+                        do: item.for_person,
+                        else: entry.order.customer_name %>
+                    <% item_variants =
+                      Enum.filter(entry.order.order_items, fn oi ->
+                        not is_nil(oi.variant_id) and oi.for_menu_item_id == item.menu_item_id
+                      end) %>
                     <div class="flex items-start gap-3 px-4 py-3">
                       <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-base-content">
                           {display_name}
                           <%= if item.quantity > 1 do %>
-                            <span class="text-xs text-base-content/50 font-normal ml-1">×{item.quantity}</span>
+                            <span class="text-xs text-base-content/50 font-normal ml-1">
+                              ×{item.quantity}
+                            </span>
                           <% end %>
                         </p>
                         <%= if item_variants != [] do %>
@@ -349,141 +381,143 @@ defmodule CRCWeb.Kitchen.DisplayLive do
             <% end %>
           </div>
         <% else %>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <%= for order <- pending_orders(@orders) do %>
-            <% food_items = food_items(order) %>
-            <% mins = elapsed_minutes(order, @now, &kitchen_item?/1) %>
-            <%= if food_items != [] do %>
-              <div class="bg-base-100 rounded-2xl border border-warning shadow-sm flex flex-col">
-                <%!-- Order header --%>
-                <div class="px-4 py-3 bg-warning/10 rounded-t-2xl border-b border-warning/30 flex items-center gap-2">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <h2 class="font-bold text-base-content truncate">{order.customer_name}</h2>
-                      <%= if order.order_type == "takeout" do %>
-                        <span class="badge badge-xs badge-accent shrink-0">🛍 Para llevar</span>
-                      <% end %>
-                      <%= if order.is_group do %>
-                        <span class="badge badge-xs badge-ghost shrink-0">👥 Grupo</span>
-                      <% end %>
-                    </div>
-                    <p class="text-xs text-base-content/50">
-                      {length(food_items)} {if length(food_items) == 1,
-                        do: "platillo",
-                        else: "platillos"}
-                    </p>
-                  </div>
-                  <div class="flex items-center gap-2 shrink-0">
-                    <%= if mins do %>
-                      <span class={[
-                        "text-xs font-mono font-semibold tabular-nums",
-                        cond do
-                          mins >= 12 -> "text-error animate-pulse"
-                          mins >= 7 -> "text-warning"
-                          true -> "text-success"
-                        end
-                      ]}>
-                        🕐 {mins}m
-                      </span>
-                    <% end %>
-                    <span class="badge badge-warning badge-sm">Enviado</span>
-                  </div>
-                </div>
-
-                <%!-- Food items list --%>
-                <div class="flex-1 divide-y divide-base-200">
-                  <%= for item <- food_items do %>
-                    <div class="flex items-center gap-3 px-4 py-3">
-                      <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-base-content">
-                          <span class="font-bold text-primary">{item.quantity}×</span>
-                          <%= if item.product_id do %>
-                            <span class="text-accent">Extra:</span> {item.product.name}
-                            <%= if item.portion_quantity do %>
-                              <span class="text-xs text-base-content/50 font-normal">
-                                ({format_qty(item.portion_quantity)} {item.product.unit})
-                              </span>
-                            <% end %>
-                          <% else %>
-                            {item.menu_item.name}
-                          <% end %>
-                          <%= if item.package_id do %>
-                            <span class="badge badge-xs badge-primary ml-1">Paquete</span>
-                          <% end %>
-                        </p>
-                        <%!-- Show which dish this extra belongs to --%>
-                        <%= if item.product_id && item.for_menu_item do %>
-                          <p class="text-xs text-accent/70 mt-0.5 flex items-center gap-1">
-                            <span>↳ para</span>
-                            <span class="font-semibold">{item.for_menu_item.name}</span>
-                          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <%= for order <- pending_orders(@orders) do %>
+              <% food_items = food_items(order) %>
+              <% mins = elapsed_minutes(order, @now, &kitchen_item?/1) %>
+              <%= if food_items != [] do %>
+                <div class="bg-base-100 rounded-2xl border border-warning shadow-sm flex flex-col">
+                  <%!-- Order header --%>
+                  <div class="px-4 py-3 bg-warning/10 rounded-t-2xl border-b border-warning/30 flex items-center gap-2">
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <h2 class="font-bold text-base-content truncate">{order.customer_name}</h2>
+                        <%= if order.order_type == "takeout" do %>
+                          <span class="badge badge-xs badge-accent shrink-0">🛍 Para llevar</span>
                         <% end %>
-                        <%!-- Variant selections (e.g. leche de avena) --%>
-                        <% item_variants =
-                          Enum.filter(order.order_items, fn oi ->
-                            not is_nil(oi.variant_id) and oi.for_menu_item_id == item.menu_item_id
-                          end) %>
-                        <%= if item_variants != [] do %>
-                          <div class="flex flex-wrap items-center gap-1 mt-1">
-                            <%= for vi <- item_variants do %>
-                              <span class="badge badge-xs badge-primary">{vi.variant.name}</span>
-                            <% end %>
-                          </div>
-                        <% end %>
-                        <%!-- Ingredient exclusions requested by customer --%>
-                        <%= if item.exclusions != [] do %>
-                          <div class="flex flex-wrap items-center gap-1 mt-1">
-                            <span class="text-xs font-bold text-error shrink-0">⚠ Sin:</span>
-                            <%= for excl <- item.exclusions do %>
-                              <span class="badge badge-xs badge-error">{excl.product.name}</span>
-                            <% end %>
-                          </div>
-                        <% end %>
-                        <%!-- Who at the table ordered this item --%>
-                        <%= if item.for_person && item.for_person != "" do %>
-                          <div class="flex items-center gap-1 mt-1">
-                            <span class="text-xs shrink-0 select-none">👤</span>
-                            <p class="text-xs font-semibold text-base-content/70">{item.for_person}</p>
-                          </div>
-                        <% end %>
-                        <%= if item.notes && item.notes != "" do %>
-                          <div class="flex items-center gap-1 mt-1 bg-warning/15 rounded px-1.5 py-0.5">
-                            <span class="text-xs shrink-0 select-none">📝</span>
-                            <p class="text-xs font-semibold text-warning">{item.notes}</p>
-                          </div>
+                        <%= if order.is_group do %>
+                          <span class="badge badge-xs badge-ghost shrink-0">👥 Grupo</span>
                         <% end %>
                       </div>
-
-                      <%= if item.status == "ready" do %>
-                        <span class="badge badge-xs badge-success">Listo</span>
-                      <% else %>
-                        <button
-                          class="btn btn-xs btn-outline btn-success"
-                          phx-click="mark_item_ready"
-                          phx-value-id={item.id}
-                        >
-                          Listo
-                        </button>
-                      <% end %>
+                      <p class="text-xs text-base-content/50">
+                        {length(food_items)} {if length(food_items) == 1,
+                          do: "platillo",
+                          else: "platillos"}
+                      </p>
                     </div>
-                  <% end %>
-                </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <%= if mins do %>
+                        <span class={[
+                          "text-xs font-mono font-semibold tabular-nums",
+                          cond do
+                            mins >= 12 -> "text-error animate-pulse"
+                            mins >= 7 -> "text-warning"
+                            true -> "text-success"
+                          end
+                        ]}>
+                          🕐 {mins}m
+                        </span>
+                      <% end %>
+                      <span class="badge badge-warning badge-sm">Enviado</span>
+                    </div>
+                  </div>
 
-                <%!-- Mark all food ready --%>
-                <div class="px-4 py-3 border-t border-base-300">
-                  <button
-                    class="btn btn-success w-full btn-sm overflow-hidden"
-                    phx-click="mark_order_ready"
-                    phx-value-id={order.id}
-                  >
-                    <.icon name="hero-check" class="size-4 shrink-0" />
-                    <span class="truncate">Todo listo — {order.customer_name}</span>
-                  </button>
+                  <%!-- Food items list --%>
+                  <div class="flex-1 divide-y divide-base-200">
+                    <%= for item <- food_items do %>
+                      <div class="flex items-center gap-3 px-4 py-3">
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-base-content">
+                            <span class="font-bold text-primary">{item.quantity}×</span>
+                            <%= if item.product_id do %>
+                              <span class="text-accent">Extra:</span> {item.product.name}
+                              <%= if item.portion_quantity do %>
+                                <span class="text-xs text-base-content/50 font-normal">
+                                  ({format_qty(item.portion_quantity)} {item.product.unit})
+                                </span>
+                              <% end %>
+                            <% else %>
+                              {item.menu_item.name}
+                            <% end %>
+                            <%= if item.package_id do %>
+                              <span class="badge badge-xs badge-primary ml-1">Paquete</span>
+                            <% end %>
+                          </p>
+                          <%!-- Show which dish this extra belongs to --%>
+                          <%= if item.product_id && item.for_menu_item do %>
+                            <p class="text-xs text-accent/70 mt-0.5 flex items-center gap-1">
+                              <span>↳ para</span>
+                              <span class="font-semibold">{item.for_menu_item.name}</span>
+                            </p>
+                          <% end %>
+                          <%!-- Variant selections (e.g. leche de avena) --%>
+                          <% item_variants =
+                            Enum.filter(order.order_items, fn oi ->
+                              not is_nil(oi.variant_id) and oi.for_menu_item_id == item.menu_item_id
+                            end) %>
+                          <%= if item_variants != [] do %>
+                            <div class="flex flex-wrap items-center gap-1 mt-1">
+                              <%= for vi <- item_variants do %>
+                                <span class="badge badge-xs badge-primary">{vi.variant.name}</span>
+                              <% end %>
+                            </div>
+                          <% end %>
+                          <%!-- Ingredient exclusions requested by customer --%>
+                          <%= if item.exclusions != [] do %>
+                            <div class="flex flex-wrap items-center gap-1 mt-1">
+                              <span class="text-xs font-bold text-error shrink-0">⚠ Sin:</span>
+                              <%= for excl <- item.exclusions do %>
+                                <span class="badge badge-xs badge-error">{excl.product.name}</span>
+                              <% end %>
+                            </div>
+                          <% end %>
+                          <%!-- Who at the table ordered this item --%>
+                          <%= if item.for_person && item.for_person != "" do %>
+                            <div class="flex items-center gap-1 mt-1">
+                              <span class="text-xs shrink-0 select-none">👤</span>
+                              <p class="text-xs font-semibold text-base-content/70">
+                                {item.for_person}
+                              </p>
+                            </div>
+                          <% end %>
+                          <%= if item.notes && item.notes != "" do %>
+                            <div class="flex items-center gap-1 mt-1 bg-warning/15 rounded px-1.5 py-0.5">
+                              <span class="text-xs shrink-0 select-none">📝</span>
+                              <p class="text-xs font-semibold text-warning">{item.notes}</p>
+                            </div>
+                          <% end %>
+                        </div>
+
+                        <%= if item.status == "ready" do %>
+                          <span class="badge badge-xs badge-success">Listo</span>
+                        <% else %>
+                          <button
+                            class="btn btn-xs btn-outline btn-success"
+                            phx-click="mark_item_ready"
+                            phx-value-id={item.id}
+                          >
+                            Listo
+                          </button>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+
+                  <%!-- Mark all food ready --%>
+                  <div class="px-4 py-3 border-t border-base-300">
+                    <button
+                      class="btn btn-success w-full btn-sm overflow-hidden"
+                      phx-click="mark_order_ready"
+                      phx-value-id={order.id}
+                    >
+                      <.icon name="hero-check" class="size-4 shrink-0" />
+                      <span class="truncate">Todo listo — {order.customer_name}</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              <% end %>
             <% end %>
-          <% end %>
-        </div>
+          </div>
         <% end %>
 
         <%!-- Ready orders --%>
@@ -601,7 +635,9 @@ defmodule CRCWeb.Kitchen.DisplayLive do
     orders
     |> Enum.flat_map(fn order ->
       order.order_items
-      |> Enum.filter(fn oi -> oi.status == "sent" and kitchen_item?(oi) and not is_nil(oi.menu_item_id) end)
+      |> Enum.filter(fn oi ->
+        oi.status == "sent" and kitchen_item?(oi) and not is_nil(oi.menu_item_id)
+      end)
       |> Enum.map(fn oi -> {order, oi} end)
     end)
     |> Enum.group_by(fn {_order, oi} -> oi.menu_item_id end)

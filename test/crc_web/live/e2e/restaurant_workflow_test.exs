@@ -119,6 +119,7 @@ defmodule CRCWeb.E2E.RestaurantWorkflowTest do
     render_click(lv_waiter, "set_payment_method", %{"method" => "tarjeta"})
 
     render_click(lv_waiter, "confirm_close_order")
+
     assert {:error, {:redirect, %{to: "/mesa"}}} =
              render_click(lv_waiter, "close_bill_modal")
 

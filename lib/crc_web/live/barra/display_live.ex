@@ -53,6 +53,7 @@ defmodule CRCWeb.Barra.DisplayLive do
         end)
         |> Enum.map(fn oi ->
           order = Enum.find(new_orders, &(&1.id == oi.order_id))
+
           %{
             id: oi.id,
             customer: order && order.customer_name,
@@ -188,24 +189,42 @@ defmodule CRCWeb.Barra.DisplayLive do
               <span>💡</span>
               <p class="font-semibold text-base-content text-sm">¿Primera vez en Barra?</p>
             </div>
-            <button data-dismiss-tip class="btn btn-xs btn-ghost text-base-content/40 shrink-0">✕ Entendido</button>
+            <button data-dismiss-tip class="btn btn-xs btn-ghost text-base-content/40 shrink-0">
+              ✕ Entendido
+            </button>
           </div>
           <ul class="space-y-2 text-sm text-base-content/70">
             <li class="flex items-start gap-2">
-              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-info/15 text-info text-xs flex items-center justify-center font-bold">1</span>
+              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-info/15 text-info text-xs flex items-center justify-center font-bold">
+                1
+              </span>
               <span>Las bebidas llegan solas cuando el mesero envía una comanda.</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-info/15 text-info text-xs flex items-center justify-center font-bold">2</span>
-              <span>Las bebidas se dividen en ☕ Calientes y ❄️ Frías para facilitar la preparación.</span>
+              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-info/15 text-info text-xs flex items-center justify-center font-bold">
+                2
+              </span>
+              <span>
+                Las bebidas se dividen en ☕ Calientes y ❄️ Frías para facilitar la preparación.
+              </span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-info/15 text-info text-xs flex items-center justify-center font-bold">3</span>
-              <span><strong>Agrupado</strong>: junta la misma bebida de varias mesas — ideal para preparar varios cafés de una vez.</span>
+              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-info/15 text-info text-xs flex items-center justify-center font-bold">
+                3
+              </span>
+              <span>
+                <strong>Agrupado</strong>: junta la misma bebida de varias mesas — ideal para preparar varios cafés de una vez.
+              </span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-info/15 text-info text-xs flex items-center justify-center font-bold">4</span>
-              <span>Toca <strong>Listo</strong> en cada bebida, o <strong>Todo listo</strong> para avisar al mesero que puede servir.</span>
+              <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-info/15 text-info text-xs flex items-center justify-center font-bold">
+                4
+              </span>
+              <span>
+                Toca <strong>Listo</strong>
+                en cada bebida, o <strong>Todo listo</strong>
+                para avisar al mesero que puede servir.
+              </span>
             </li>
           </ul>
         </div>
@@ -215,8 +234,7 @@ defmodule CRCWeb.Barra.DisplayLive do
           <div class="alert alert-error py-2 flex items-center gap-3 shadow-sm">
             <.icon name="hero-x-circle" class="size-5 shrink-0" />
             <span class="text-sm font-semibold flex-1">
-              ⚠ Cancelado:
-              <span class="font-bold">{alert.customer}</span>
+              ⚠ Cancelado: <span class="font-bold">{alert.customer}</span>
               — {alert.quantity}× {alert.item_name}
             </span>
             <button
@@ -241,14 +259,20 @@ defmodule CRCWeb.Barra.DisplayLive do
         <%= if pending_orders(@orders) != [] do %>
           <div class="flex gap-1 bg-base-200 rounded-xl p-1 w-fit">
             <button
-              class={["btn btn-xs gap-1.5", if(@view_mode == :by_order, do: "btn-primary", else: "btn-ghost")]}
+              class={[
+                "btn btn-xs gap-1.5",
+                if(@view_mode == :by_order, do: "btn-primary", else: "btn-ghost")
+              ]}
               phx-click="set_view_mode"
               phx-value-mode="by_order"
             >
               <.icon name="hero-squares-2x2" class="size-3" /> Por mesa
             </button>
             <button
-              class={["btn btn-xs gap-1.5", if(@view_mode == :grouped, do: "btn-primary", else: "btn-ghost")]}
+              class={[
+                "btn btn-xs gap-1.5",
+                if(@view_mode == :grouped, do: "btn-primary", else: "btn-ghost")
+              ]}
               phx-click="set_view_mode"
               phx-value-mode="grouped"
             >
@@ -263,13 +287,18 @@ defmodule CRCWeb.Barra.DisplayLive do
           <%= if grouped_caliente != [] do %>
             <div class="space-y-3">
               <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 uppercase tracking-wider">
-                <span>☕</span> Calientes
-                <span class="badge badge-sm badge-error">{length(grouped_caliente)}</span>
+                <span>☕</span>
+                Calientes <span class="badge badge-sm badge-error">{length(grouped_caliente)}</span>
               </h2>
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <%= for group <- grouped_caliente do %>
                   <% gmins = group_elapsed_minutes(group.oldest_sent_at, @now) %>
-                  <.grouped_drink_card group={group} gmins={gmins} border_class="border-error" header_class="bg-error/10 border-error/30" />
+                  <.grouped_drink_card
+                    group={group}
+                    gmins={gmins}
+                    border_class="border-error"
+                    header_class="bg-error/10 border-error/30"
+                  />
                 <% end %>
               </div>
             </div>
@@ -279,13 +308,18 @@ defmodule CRCWeb.Barra.DisplayLive do
           <%= if grouped_fria != [] do %>
             <div class="space-y-3">
               <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 uppercase tracking-wider">
-                <span>❄️</span> Frías
-                <span class="badge badge-sm badge-info">{length(grouped_fria)}</span>
+                <span>❄️</span>
+                Frías <span class="badge badge-sm badge-info">{length(grouped_fria)}</span>
               </h2>
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <%= for group <- grouped_fria do %>
                   <% gmins = group_elapsed_minutes(group.oldest_sent_at, @now) %>
-                  <.grouped_drink_card group={group} gmins={gmins} border_class="border-info" header_class="bg-info/10 border-info/30" />
+                  <.grouped_drink_card
+                    group={group}
+                    gmins={gmins}
+                    border_class="border-info"
+                    header_class="bg-info/10 border-info/30"
+                  />
                 <% end %>
               </div>
             </div>
@@ -295,13 +329,18 @@ defmodule CRCWeb.Barra.DisplayLive do
           <%= if grouped_other != [] do %>
             <div class="space-y-3">
               <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/60 uppercase tracking-wider">
-                <span>🍹</span> Bebidas
-                <span class="badge badge-sm badge-ghost">{length(grouped_other)}</span>
+                <span>🍹</span>
+                Bebidas <span class="badge badge-sm badge-ghost">{length(grouped_other)}</span>
               </h2>
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <%= for group <- grouped_other do %>
                   <% gmins = group_elapsed_minutes(group.oldest_sent_at, @now) %>
-                  <.grouped_drink_card group={group} gmins={gmins} border_class="border-info" header_class="bg-info/10 border-info/30" />
+                  <.grouped_drink_card
+                    group={group}
+                    gmins={gmins}
+                    border_class="border-info"
+                    header_class="bg-info/10 border-info/30"
+                  />
                 <% end %>
               </div>
             </div>
@@ -314,8 +353,8 @@ defmodule CRCWeb.Barra.DisplayLive do
           <%= if caliente_orders != [] do %>
             <div class="space-y-3">
               <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 uppercase tracking-wider">
-                <span>☕</span> Calientes
-                <span class="badge badge-sm badge-error">{length(caliente_orders)}</span>
+                <span>☕</span>
+                Calientes <span class="badge badge-sm badge-error">{length(caliente_orders)}</span>
               </h2>
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <%= for order <- caliente_orders do %>
@@ -338,8 +377,8 @@ defmodule CRCWeb.Barra.DisplayLive do
           <%= if fria_orders != [] do %>
             <div class="space-y-3">
               <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 uppercase tracking-wider">
-                <span>❄️</span> Frías
-                <span class="badge badge-sm badge-info">{length(fria_orders)}</span>
+                <span>❄️</span>
+                Frías <span class="badge badge-sm badge-info">{length(fria_orders)}</span>
               </h2>
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <%= for order <- fria_orders do %>
@@ -362,8 +401,8 @@ defmodule CRCWeb.Barra.DisplayLive do
           <%= if other_orders != [] do %>
             <div class="space-y-3">
               <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/60 uppercase tracking-wider">
-                <span>🍹</span> Bebidas
-                <span class="badge badge-sm badge-ghost">{length(other_orders)}</span>
+                <span>🍹</span>
+                Bebidas <span class="badge badge-sm badge-ghost">{length(other_orders)}</span>
               </h2>
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <%= for order <- other_orders do %>
@@ -455,8 +494,14 @@ defmodule CRCWeb.Barra.DisplayLive do
       <div class="flex-1 divide-y divide-base-200">
         <%= for entry <- @group.entries do %>
           <% item = entry.item %>
-          <% display_name = if item.for_person && item.for_person != "", do: item.for_person, else: entry.order.customer_name %>
-          <% item_variants = Enum.filter(entry.order.order_items, fn oi -> not is_nil(oi.variant_id) and oi.for_menu_item_id == item.menu_item_id end) %>
+          <% display_name =
+            if item.for_person && item.for_person != "",
+              do: item.for_person,
+              else: entry.order.customer_name %>
+          <% item_variants =
+            Enum.filter(entry.order.order_items, fn oi ->
+              not is_nil(oi.variant_id) and oi.for_menu_item_id == item.menu_item_id
+            end) %>
           <div class="flex items-start gap-3 px-4 py-3">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-base-content">

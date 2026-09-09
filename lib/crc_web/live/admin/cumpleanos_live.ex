@@ -99,8 +99,12 @@ defmodule CRCWeb.Admin.CumpleanosLive do
       <%= if @month_groups == [] and @today_bdays == [] and @no_bdays == [] do %>
         <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-16 text-center">
           <.icon name="hero-cake" class="size-12 text-base-content/20 mx-auto mb-3" />
-          <p class="text-base-content/50 text-sm">No hay empleados con fecha de nacimiento registrada.</p>
-          <p class="text-base-content/40 text-xs mt-1">Agrégalas desde <a href="/admin/usuarios" class="link">Usuarios</a>.</p>
+          <p class="text-base-content/50 text-sm">
+            No hay empleados con fecha de nacimiento registrada.
+          </p>
+          <p class="text-base-content/40 text-xs mt-1">
+            Agrégalas desde <a href="/admin/usuarios" class="link">Usuarios</a>.
+          </p>
         </div>
       <% end %>
 
@@ -223,8 +227,14 @@ defmodule CRCWeb.Admin.CumpleanosLive do
   defp role_badge_class(_), do: "text-base-content/60"
 
   defp initials(name) when is_binary(name) do
-    name |> String.split() |> Enum.take(2) |> Enum.map(&String.first/1) |> Enum.join() |> String.upcase()
+    name
+    |> String.split()
+    |> Enum.take(2)
+    |> Enum.map(&String.first/1)
+    |> Enum.join()
+    |> String.upcase()
   end
+
   defp initials(_), do: "?"
 
   @avatar_colors ~w(bg-violet-500 bg-blue-500 bg-emerald-500 bg-orange-500 bg-pink-500 bg-teal-500 bg-rose-500 bg-indigo-500)
@@ -245,8 +255,12 @@ defmodule CRCWeb.Admin.CumpleanosLive do
 
   defp format_date(%Date{} = date) do
     days = ~w(lunes martes miércoles jueves viernes sábado domingo)
-    months = ~w(enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre)
+
+    months =
+      ~w(enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre)
+
     day_name = Enum.at(days, Date.day_of_week(date) - 1)
+
     "#{String.capitalize(day_name)}, #{date.day} de #{Enum.at(months, date.month - 1)} #{date.year}"
   end
 

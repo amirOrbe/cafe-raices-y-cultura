@@ -5,7 +5,16 @@ defmodule CRC.Catalog do
 
   import Ecto.Query, warn: false
   alias CRC.Repo
-  alias CRC.Catalog.{Category, MenuItem, MenuItemIngredient, MenuItemOptionalExtra, Package, PackageItem}
+
+  alias CRC.Catalog.{
+    Category,
+    MenuItem,
+    MenuItemIngredient,
+    MenuItemOptionalExtra,
+    Package,
+    PackageItem
+  }
+
   alias CRC.Inventory.Product
 
   # ---------------------------------------------------------------------------
@@ -165,9 +174,7 @@ defmodule CRC.Catalog do
   """
   def set_menu_item_optional_extras(menu_item_id, extras) when is_list(extras) do
     Repo.transaction(fn ->
-      Repo.delete_all(
-        from(e in MenuItemOptionalExtra, where: e.menu_item_id == ^menu_item_id)
-      )
+      Repo.delete_all(from(e in MenuItemOptionalExtra, where: e.menu_item_id == ^menu_item_id))
 
       Enum.each(extras, fn entry ->
         %MenuItemOptionalExtra{}

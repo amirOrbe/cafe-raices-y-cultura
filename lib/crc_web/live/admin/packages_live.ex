@@ -463,7 +463,9 @@ defmodule CRCWeb.Admin.PackagesLive do
                               >
                                 −
                               </button>
-                              <span class="text-sm font-mono w-5 text-center">{selected.quantity}</span>
+                              <span class="text-sm font-mono w-5 text-center">
+                                {selected.quantity}
+                              </span>
                               <button
                                 type="button"
                                 class="btn btn-xs btn-ghost px-1"
@@ -508,16 +510,22 @@ defmodule CRCWeb.Admin.PackagesLive do
 
                 <%!-- Price comparison (shown when items selected) --%>
                 <%= if @selected_items != [] do %>
-                  <% individual_total = Enum.reduce(@selected_items, Decimal.new(0), fn si, acc ->
-                    case Enum.find(@all_menu_items, &(&1.id == si.menu_item_id)) do
-                      nil  -> acc
-                      item ->
-                        Decimal.add(acc, Decimal.mult(
-                          Decimal.new(to_string(item.price)),
-                          Decimal.new(si.quantity)
-                        ))
-                    end
-                  end) %>
+                  <% individual_total =
+                    Enum.reduce(@selected_items, Decimal.new(0), fn si, acc ->
+                      case Enum.find(@all_menu_items, &(&1.id == si.menu_item_id)) do
+                        nil ->
+                          acc
+
+                        item ->
+                          Decimal.add(
+                            acc,
+                            Decimal.mult(
+                              Decimal.new(to_string(item.price)),
+                              Decimal.new(si.quantity)
+                            )
+                          )
+                      end
+                    end) %>
                   <div class="mt-2 rounded-lg bg-base-200 px-3 py-2 flex items-center justify-between text-xs text-base-content/60">
                     <span>Precio individual total:</span>
                     <span class="font-semibold">${individual_total}</span>

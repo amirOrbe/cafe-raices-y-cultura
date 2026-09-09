@@ -85,7 +85,7 @@ defmodule CRCWeb.Employee.CalendarioLive do
               <.icon name="hero-chevron-left" class="size-4" />
             </button>
             <span class="font-semibold text-base-content text-sm flex-1 text-center sm:min-w-52">
-              <%= format_week(@week_start) %>
+              {format_week(@week_start)}
             </span>
             <button class="btn btn-ghost btn-sm shrink-0" phx-click="next_week">
               <.icon name="hero-chevron-right" class="size-4" />
@@ -112,9 +112,9 @@ defmodule CRCWeb.Employee.CalendarioLive do
                   <th class="text-xs">Tarea</th>
                   <%= for day <- @days do %>
                     <th class={"text-center text-xs w-20 #{if Date.add(@week_start, day) == Date.utc_today(), do: "text-primary font-bold", else: ""}"}>
-                      <%= Schedule.day_name(day) %><br />
+                      {Schedule.day_name(day)}<br />
                       <span class="font-normal text-xs opacity-60">
-                        <%= format_day(Date.add(@week_start, day)) %>
+                        {format_day(Date.add(@week_start, day))}
                       </span>
                     </th>
                   <% end %>
@@ -177,7 +177,7 @@ defmodule CRCWeb.Employee.CalendarioLive do
                           <% is_me = user && user.id == @current_user.id %>
                           <div class={"flex flex-col items-center gap-1 w-10 #{if is_today, do: "rounded-xl bg-primary/5 py-1 -my-1", else: ""}"}>
                             <span class={"text-xs font-bold #{if is_today, do: "text-primary", else: "text-base-content/40"}"}>
-                              <%= String.first(Schedule.day_name(day)) %>
+                              {String.first(Schedule.day_name(day))}
                             </span>
                             <%= if user do %>
                               <span class={"badge badge-xs font-semibold #{if is_me, do: "badge-primary", else: employee_badge_class(user)}"}>

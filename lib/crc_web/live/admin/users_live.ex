@@ -537,7 +537,9 @@ defmodule CRCWeb.Admin.UsersLive do
             <%= if @modal == :new_guest do %>
               <div class="alert alert-info text-sm mb-2 py-2 px-3">
                 <.icon name="hero-bolt" class="size-4 shrink-0" />
-                <span>Crea un acceso temporal de empleado de sala con nombre, correo y contraseña.</span>
+                <span>
+                  Crea un acceso temporal de empleado de sala con nombre, correo y contraseña.
+                </span>
               </div>
             <% end %>
 

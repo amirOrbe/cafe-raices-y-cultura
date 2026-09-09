@@ -581,7 +581,8 @@ defmodule CRCWeb.Admin.ProduccionLive do
 
                 <div class="space-y-2">
                   <%= for {row, idx} <- Enum.with_index(@ingredient_rows) do %>
-                    <% row_product = Enum.find(@products, &(to_string(&1.id) == to_string(row.product_id))) %>
+                    <% row_product =
+                      Enum.find(@products, &(to_string(&1.id) == to_string(row.product_id))) %>
                     <%!-- Stack on mobile: select full-width, then qty + unit + delete in a row below --%>
                     <div class="rounded-lg border border-base-300 bg-base-100 p-2 space-y-1.5 sm:space-y-0 sm:bg-transparent sm:border-0 sm:p-0 sm:flex sm:items-center sm:gap-2">
                       <select

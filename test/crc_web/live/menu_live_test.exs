@@ -251,7 +251,9 @@ defmodule CRCWeb.MenuLiveTest do
       assert html =~ "$45"
     end
 
-    test "item with a description renders a clickable card that opens a detail modal", %{conn: conn} do
+    test "item with a description renders a clickable card that opens a detail modal", %{
+      conn: conn
+    } do
       cat = insert_category(%{name: "Cafés Con Detalle"})
 
       item =

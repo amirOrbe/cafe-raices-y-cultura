@@ -14,8 +14,10 @@ defmodule CRC.Settings.Discount do
     discount
     |> cast(attrs, [:name, :percentage, :active])
     |> validate_required([:name, :percentage])
-    |> validate_number(:percentage, greater_than: 0, less_than_or_equal_to: 100,
-        message: "debe ser entre 1 y 100"
-      )
+    |> validate_number(:percentage,
+      greater_than: 0,
+      less_than_or_equal_to: 100,
+      message: "debe ser entre 1 y 100"
+    )
   end
 end

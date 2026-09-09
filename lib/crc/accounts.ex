@@ -54,6 +54,7 @@ defmodule CRC.Accounts do
         {:ok, d} ->
           diff = Date.diff(d, today)
           if diff >= 0, do: diff
+
         {:error, _} ->
           nil
       end
@@ -350,7 +351,10 @@ defmodule CRC.Accounts do
 
       {:error, reason} ->
         require Logger
-        Logger.error("Failed to deliver password reset email to #{user.email}: #{inspect(reason)}")
+
+        Logger.error(
+          "Failed to deliver password reset email to #{user.email}: #{inspect(reason)}"
+        )
     end
   end
 

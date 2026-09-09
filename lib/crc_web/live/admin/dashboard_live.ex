@@ -172,7 +172,6 @@ defmodule CRCWeb.Admin.DashboardLive do
 
       <%!-- ── Órdenes activas ────────────────────────────────────────────────── --%>
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
         <%!-- Active orders list (takes 2/3 of the grid) --%>
         <div class="lg:col-span-2 bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
           <div class="px-5 py-4 border-b border-base-300 flex items-center justify-between">
@@ -230,7 +229,9 @@ defmodule CRCWeb.Admin.DashboardLive do
                     <span class="badge badge-info badge-sm">🍹 {sent_barra}</span>
                   <% end %>
                   <%= if count_pending_items(order) > 0 do %>
-                    <span class="badge badge-ghost badge-sm">⏳ {count_pending_items(order)} pendiente</span>
+                    <span class="badge badge-ghost badge-sm">
+                      ⏳ {count_pending_items(order)} pendiente
+                    </span>
                   <% end %>
                 </div>
               <% end %>
@@ -273,7 +274,6 @@ defmodule CRCWeb.Admin.DashboardLive do
 
       <%!-- ── Stock bajo + Usuarios ──────────────────────────────────────────── --%>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
         <%!-- Stock bajo --%>
         <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
           <div class="px-5 py-4 border-b border-base-300 flex items-center justify-between">
@@ -331,10 +331,30 @@ defmodule CRCWeb.Admin.DashboardLive do
             <a href="/admin/usuarios" class="btn btn-xs btn-ghost text-primary">Ver todos</a>
           </div>
           <div class="px-5 py-4 grid grid-cols-2 gap-3">
-            <.mini_stat label="Total" value={@user_stats.total} icon="hero-users" color="text-primary" />
-            <.mini_stat label="Activos" value={@user_stats.active} icon="hero-check-circle" color="text-success" />
-            <.mini_stat label="Empleados" value={@user_stats.employees} icon="hero-briefcase" color="text-secondary" />
-            <.mini_stat label="Admins" value={@user_stats.admins} icon="hero-shield-check" color="text-accent" />
+            <.mini_stat
+              label="Total"
+              value={@user_stats.total}
+              icon="hero-users"
+              color="text-primary"
+            />
+            <.mini_stat
+              label="Activos"
+              value={@user_stats.active}
+              icon="hero-check-circle"
+              color="text-success"
+            />
+            <.mini_stat
+              label="Empleados"
+              value={@user_stats.employees}
+              icon="hero-briefcase"
+              color="text-secondary"
+            />
+            <.mini_stat
+              label="Admins"
+              value={@user_stats.admins}
+              icon="hero-shield-check"
+              color="text-accent"
+            />
           </div>
         </div>
       </div>
@@ -453,6 +473,7 @@ defmodule CRCWeb.Admin.DashboardLive do
 
   defp format_stock(%Decimal{} = d) do
     str = d |> Decimal.round(3) |> Decimal.to_string()
+
     if String.contains?(str, "."),
       do: str |> String.trim_trailing("0") |> String.trim_trailing("."),
       else: str

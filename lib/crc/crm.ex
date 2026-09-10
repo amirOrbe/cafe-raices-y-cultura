@@ -1,0 +1,294 @@
+defmodule CRC.CRM do
+  @moduledoc """
+  Contexto de Clientes + Lealtad (CRM).
+
+  Registra clientes frecuentes del café (sin autenticación — los da de alta el
+  personal), acumula visitas al cerrar comandas asociadas, y otorga recompensas
+  configurables (tarjeta perforada por visitas + beneficio de cumpleaños).
+
+  Ver el plan en `.claude/plans/` para el diseño completo.
+  """
+
+  import Ecto.Query, warn: false
+
+  alias CRC.Accounts
+  alias CRC.CRM.Customer
+  alias CRC.Repo
+
+  @pubsub CRC.PubSub
+  @customers_topic "admin:customers"
+
+  # ---------------------------------------------------------------------------
+  # PubSub
+  # ---------------------------------------------------------------------------
+
+  @doc "Suscribe al proceso llamante a los cambios de clientes."
+  def subscribe_customers do
+    Phoenix.PubSub.subscribe(@pubsub, @customers_topic)
+  end
+
+  defp broadcast_customer_change({:ok, %Customer{} = customer} = result) do
+    Phoenix.PubSub.broadcast(@pubsub, @customers_topic, {:customer_changed, customer})
+    result
+  end
+
+  defp broadcast_customer_change(other), do: other
+
+  # ---------------------------------------------------------------------------
+  # Clientes — consultas
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Lista clientes ordenados por nombre.
+
+  Opciones:
+    * `:status` — `:active` (default), `:inactive` o `:all`
+    * `:query`  — filtra por nombre o teléfono (ILIKE)
+  """
+  def list_customers(opts \\ []) do
+    status = Keyword.get(opts, :status, :active)
+    query = opts |> Keyword.get(:query) |> normalize_query()
+
+    Customer
+    |> filter_by_status(status)
+    |> filter_by_query(query)
+    |> order_by([c], asc: c.name)
+    |> Repo.all()
+  end
+
+  @doc """
+  Busca clientes activos por nombre o teléfono (ILIKE), para el autocomplete del
+  mostrador. Devuelve como máximo `:limit` resultados (default 10).
+  """
+  def search_customers(query, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 10)
+
+    case normalize_query(query) do
+      nil ->
+        []
+
+      q ->
+        Customer
+        |> where([c], c.active == true)
+        |> filter_by_query(q)
+        |> order_by([c], asc: c.name)
+        |> limit(^limit)
+        |> Repo.all()
+    end
+  end
+
+  @doc "Obtiene un cliente por id. `nil` si no existe."
+  def get_customer(id), do: Repo.get(Customer, id)
+
+  @doc "Obtiene un cliente por id. Levanta `Ecto.NoResultsError` si no existe."
+  def get_customer!(id), do: Repo.get!(Customer, id)
+
+  @doc """
+  Otros clientes activos con el mismo teléfono (posibles duplicados).
+  El teléfono duplicado está permitido (familias comparten número); esto solo
+  alimenta el aviso de la UI.
+  """
+  def possible_duplicates(phone, exclude_id \\ nil)
+  def possible_duplicates(nil, _exclude_id), do: []
+  def possible_duplicates("", _exclude_id), do: []
+
+  def possible_duplicates(phone, exclude_id) do
+    Customer
+    |> where([c], c.phone == ^phone and c.active == true)
+    |> maybe_exclude_id(exclude_id)
+    |> order_by([c], asc: c.name)
+    |> Repo.all()
+  end
+
+  # ---------------------------------------------------------------------------
+  # Clientes — comandos
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Crea un cliente. Cualquier empleado autenticado puede hacerlo (no admin-gated).
+  `staff` (opcional) queda registrado como quién lo dio de alta.
+  """
+  def create_customer(attrs, staff \\ nil) do
+    attrs = maybe_put_created_by(attrs, staff)
+
+    %Customer{}
+    |> Customer.changeset(attrs)
+    |> Repo.insert()
+    |> broadcast_customer_change()
+  end
+
+  @doc "Actualiza los datos de un cliente."
+  def update_customer(%Customer{} = customer, attrs) do
+    customer
+    |> Customer.changeset(attrs)
+    |> Repo.update()
+    |> broadcast_customer_change()
+  end
+
+  @doc "Desactiva un cliente (no borra — conserva historial)."
+  def deactivate_customer(%Customer{} = customer) do
+    customer
+    |> Customer.changeset(%{active: false})
+    |> Repo.update()
+    |> broadcast_customer_change()
+  end
+
+  @doc "Reactiva un cliente previamente desactivado."
+  def reactivate_customer(%Customer{} = customer) do
+    customer
+    |> Customer.changeset(%{active: true})
+    |> Repo.update()
+    |> broadcast_customer_change()
+  end
+
+  @doc """
+  Borra un cliente permanentemente.
+
+  Devuelve `{:error, :has_records}` si tiene visitas, órdenes o redenciones
+  asociadas — en ese caso solo se puede desactivar.
+  """
+  def delete_customer(%Customer{} = customer) do
+    if has_records?(customer) do
+      {:error, :has_records}
+    else
+      case Repo.delete(customer) do
+        {:ok, deleted} ->
+          Phoenix.PubSub.broadcast(@pubsub, @customers_topic, {:customer_changed, deleted})
+          {:ok, deleted}
+
+        {:error, changeset} ->
+          if foreign_key_error?(changeset),
+            do: {:error, :has_records},
+            else: {:error, changeset}
+      end
+    end
+  end
+
+  # Las FKs de órdenes son `nilify_all` y las de visitas/redenciones `delete_all`,
+  # así que un `Repo.delete` no fallaría: hay que chequear explícitamente.
+  defp has_records?(%Customer{id: id}) do
+    Repo.exists?(from o in CRC.Orders.Order, where: o.customer_id == ^id) or
+      Repo.exists?(from v in CRC.CRM.CustomerVisit, where: v.customer_id == ^id) or
+      Repo.exists?(from r in CRC.CRM.LoyaltyRedemption, where: r.customer_id == ^id)
+  end
+
+  @doc "Changeset para formularios de cliente."
+  def change_customer(%Customer{} = customer, attrs \\ %{}) do
+    Customer.changeset(customer, attrs)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Cumpleaños
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Clientes activos con fecha de cumpleaños, ordenados por días hasta el próximo.
+  Espeja `Accounts.list_staff_with_birthdays/0`.
+  """
+  def list_customers_with_birthdays do
+    today = Date.utc_today()
+
+    Customer
+    |> where([c], c.active == true and not is_nil(c.birthday))
+    |> order_by([c], asc: c.name)
+    |> Repo.all()
+    |> Enum.map(fn customer ->
+      Map.put(
+        customer,
+        :days_until_birthday,
+        Accounts.days_until_birthday(customer.birthday, today)
+      )
+    end)
+    |> Enum.sort_by(fn customer -> customer.days_until_birthday || 999 end)
+  end
+
+  @doc """
+  `true` si hoy es el cumpleaños del cliente (o cae dentro de `window_days`).
+
+  Maneja el 29 de febrero: en años no bisiestos cuenta como el 28 de febrero,
+  a diferencia de `Accounts.days_until_birthday/2` que devuelve `nil` ahí.
+  """
+  def birthday_today?(customer_or_date, today \\ Date.utc_today(), window_days \\ 0)
+
+  def birthday_today?(%Customer{birthday: birthday}, today, window_days),
+    do: birthday_today?(birthday, today, window_days)
+
+  def birthday_today?(nil, _today, _window_days), do: false
+
+  def birthday_today?(%Date{} = birthday, %Date{} = today, window_days) do
+    case anniversary_in_year(birthday, today.year) do
+      %Date{} = anniversary ->
+        diff = Date.diff(today, anniversary)
+        diff >= 0 and diff <= window_days
+
+      nil ->
+        false
+    end
+  end
+
+  @doc false
+  # Fecha del aniversario del cumpleaños en `year`. El 29 de febrero en un año no
+  # bisiesto se ancla al 28 de febrero.
+  def anniversary_in_year(%Date{month: month, day: day}, year) do
+    case Date.new(year, month, day) do
+      {:ok, date} ->
+        date
+
+      {:error, _} when month == 2 and day == 29 ->
+        Date.new!(year, 2, 28)
+
+      {:error, _} ->
+        nil
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Helpers
+  # ---------------------------------------------------------------------------
+
+  defp normalize_query(nil), do: nil
+
+  defp normalize_query(query) when is_binary(query) do
+    case String.trim(query) do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp filter_by_status(query, :all), do: query
+  defp filter_by_status(query, :inactive), do: where(query, [c], c.active == false)
+  defp filter_by_status(query, _active), do: where(query, [c], c.active == true)
+
+  defp filter_by_query(query, nil), do: query
+
+  defp filter_by_query(query, text) do
+    pattern = "%#{escape_like(text)}%"
+    where(query, [c], ilike(c.name, ^pattern) or ilike(c.phone, ^pattern))
+  end
+
+  defp escape_like(text) do
+    text
+    |> String.replace("\\", "\\\\")
+    |> String.replace("%", "\\%")
+    |> String.replace("_", "\\_")
+  end
+
+  defp maybe_exclude_id(query, nil), do: query
+  defp maybe_exclude_id(query, id), do: where(query, [c], c.id != ^id)
+
+  defp maybe_put_created_by(attrs, nil), do: attrs
+
+  defp maybe_put_created_by(attrs, %{id: id}) do
+    string_keyed? = Enum.any?(Map.keys(attrs), &is_binary/1)
+
+    if string_keyed?,
+      do: Map.put(attrs, "created_by_id", id),
+      else: Map.put(attrs, :created_by_id, id)
+  end
+
+  defp foreign_key_error?(%Ecto.Changeset{errors: errors}) do
+    Enum.any?(errors, fn {_field, {_msg, opts}} ->
+      Keyword.get(opts, :constraint) == :foreign
+    end)
+  end
+end

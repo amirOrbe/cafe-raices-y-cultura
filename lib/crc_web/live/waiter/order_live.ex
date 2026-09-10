@@ -24,7 +24,7 @@ defmodule CRCWeb.Waiter.OrderLive do
 
     order = Orders.get_order!(order_id)
     categories = Catalog.list_categories()
-    packages = Catalog.list_packages()
+    packages = Catalog.list_packages_for_order(order)
 
     socket =
       socket
@@ -87,6 +87,7 @@ defmodule CRCWeb.Waiter.OrderLive do
          socket
          |> assign(:order, order)
          |> assign(:customer_summary, load_customer_summary(order))
+         |> assign(:packages, Catalog.list_packages_for_order(order))
          |> assign(:customer_panel, false)
          |> assign(:flash_msg, {:success, "Cliente asociado: #{customer.name}"})}
 
@@ -173,6 +174,7 @@ defmodule CRCWeb.Waiter.OrderLive do
          socket
          |> assign(:order, order)
          |> assign(:customer_summary, nil)
+         |> assign(:packages, Catalog.list_packages_for_order(order))
          |> assign(:flash_msg, {:success, "Cliente quitado de la comanda."})}
 
       {:error, _} ->
@@ -305,22 +307,30 @@ defmodule CRCWeb.Waiter.OrderLive do
   def handle_event("add_package", %{"package_id" => package_id_str}, socket) do
     package_id = String.to_integer(package_id_str)
     order = socket.assigns.order
+    package = Enum.find(socket.assigns.packages, &(&1.id == package_id))
 
-    case Orders.add_package(%{order_id: order.id, package_id: package_id}) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(:order, Orders.get_order!(order.id))
-         |> assign(:flash_msg, {:success, "Paquete agregado"})}
+    wrong_customer? =
+      package && personal_package?(package) && package.customer_id != order.customer_id
 
-      {:error, :package_not_found} ->
-        {:noreply, assign(socket, :flash_msg, {:error, "Paquete no encontrado"})}
+    if wrong_customer? do
+      {:noreply, assign(socket, :flash_msg, {:error, "Ese paquete es personal de otro cliente."})}
+    else
+      case Orders.add_package(%{order_id: order.id, package_id: package_id}) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> assign(:order, Orders.get_order!(order.id))
+           |> assign(:flash_msg, {:success, "Paquete agregado"})}
 
-      {:error, :package_inactive} ->
-        {:noreply, assign(socket, :flash_msg, {:error, "Paquete no disponible"})}
+        {:error, :package_not_found} ->
+          {:noreply, assign(socket, :flash_msg, {:error, "Paquete no encontrado"})}
 
-      {:error, _} ->
-        {:noreply, assign(socket, :flash_msg, {:error, "No se pudo agregar el paquete"})}
+        {:error, :package_inactive} ->
+          {:noreply, assign(socket, :flash_msg, {:error, "Paquete no disponible"})}
+
+        {:error, _} ->
+          {:noreply, assign(socket, :flash_msg, {:error, "No se pudo agregar el paquete"})}
+      end
     end
   end
 
@@ -1799,7 +1809,15 @@ defmodule CRCWeb.Waiter.OrderLive do
                           <%= for package <- @packages do %>
                             <div class="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-start gap-3">
                               <div class="flex-1 min-w-0">
-                                <p class="text-sm font-semibold">{package.name}</p>
+                                <p class="text-sm font-semibold">
+                                  {package.name}
+                                  <span
+                                    :if={personal_package?(package)}
+                                    class="badge badge-xs badge-accent ml-1"
+                                  >
+                                    ★ Personal
+                                  </span>
+                                </p>
                                 <%= if package.description do %>
                                   <p class="text-xs text-base-content/50 mt-0.5">
                                     {package.description}
@@ -2522,6 +2540,9 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   defp base_close_message(_assigns),
     do: "Cuenta cerrada · usa «Mostrar QR» si el cliente lo pide"
+
+  defp personal_package?(%{customer_id: cid}), do: not is_nil(cid)
+  defp personal_package?(_), do: false
 
   defp applied_reward_items(order) do
     Enum.filter(order.order_items, fn i ->

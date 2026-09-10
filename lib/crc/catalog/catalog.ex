@@ -410,10 +410,36 @@ defmodule CRC.Catalog do
   # Packages
   # ---------------------------------------------------------------------------
 
-  @doc "Returns all active packages, preloading items and menu_items."
+  @doc """
+  Returns all active *public* packages (no customer), preloading items.
+  Personal packages (`customer_id` set) are excluded from the menu.
+  """
   def list_packages do
     Package
-    |> where(active: true)
+    |> where([p], p.active == true and is_nil(p.customer_id))
+    |> order_by(:name)
+    |> preload(package_items: :menu_item)
+    |> Repo.all()
+  end
+
+  @doc """
+  Packages offered on a given order: the public ones, plus the personal packages
+  of the order's associated customer (if any).
+  """
+  def list_packages_for_order(%CRC.Orders.Order{customer_id: nil}), do: list_packages()
+
+  def list_packages_for_order(%CRC.Orders.Order{customer_id: customer_id}) do
+    Package
+    |> where([p], p.active == true and (is_nil(p.customer_id) or p.customer_id == ^customer_id))
+    |> order_by([p], desc: is_nil(p.customer_id), asc: p.name)
+    |> preload([:customer, package_items: :menu_item])
+    |> Repo.all()
+  end
+
+  @doc "Active personal packages for a customer."
+  def list_personal_packages(customer_id) do
+    Package
+    |> where([p], p.active == true and p.customer_id == ^customer_id)
     |> order_by(:name)
     |> preload(package_items: :menu_item)
     |> Repo.all()

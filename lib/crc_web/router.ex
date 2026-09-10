@@ -121,6 +121,7 @@ defmodule CRCWeb.Router do
       live "/usuarios", UsersLive
       live "/clientes", ClientesLive
       live "/clientes/:id", ClienteLive
+      live "/lealtad", LealtadLive
       live "/platillos", PlatillosLive
       live "/platillos/categorias", CategoriesLive
       live "/paquetes", PackagesLive

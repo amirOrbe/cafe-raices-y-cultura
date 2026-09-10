@@ -213,8 +213,8 @@ defmodule CRC.E2EFixtures do
   end
 
   @doc """
-  Closes an order for a customer, recording the loyalty visit + evaluating
-  rewards (mirrors what the close_order hook does in production).
+  Closes an order. `Orders.close_order/3` runs the loyalty hook itself
+  (records the visit + evaluates rewards when the order has a customer).
   """
   def close_order_for(order, staff) do
     {:ok, closed} =
@@ -223,11 +223,6 @@ defmodule CRC.E2EFixtures do
         %{payment_method: "efectivo", amount_paid: Decimal.new(500)},
         staff && staff.id
       )
-
-    if closed.customer_id do
-      {:ok, _} = CRC.CRM.record_visit(closed)
-      CRC.CRM.evaluate_rewards_after_visit(closed.customer_id)
-    end
 
     closed
   end

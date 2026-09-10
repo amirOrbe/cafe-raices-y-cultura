@@ -8,57 +8,51 @@ defmodule CRC.CRMLoyaltyTest do
   alias CRC.Orders
   alias CRC.Repo
 
-  # A closed order tied to a customer, without going through the fixture helper
-  # (so tests can assert the pieces individually).
-  defp closed_order(customer, staff) do
-    order = create_order()
-    associate_customer(order, customer)
-
-    {:ok, closed} =
-      Orders.close_order(
-        Orders.get_order!(order.id),
-        %{payment_method: "efectivo", amount_paid: Decimal.new(200)},
-        staff.id
-      )
-
+  # Closes a fresh order for the customer. `Orders.close_order/3` runs the
+  # loyalty hook itself (records the visit + evaluates rewards), so this is all
+  # a test needs to accrue a visit.
+  defp visit(customer, staff) do
+    order = create_order() |> associate_customer(customer)
+    {:ok, closed} = close(order, staff)
     closed
   end
+
+  defp visit_n(customer, staff, n), do: Enum.each(1..n, fn _ -> visit(customer, staff) end)
+
+  defp close(order, staff) do
+    Orders.close_order(
+      Orders.get_order!(order.id),
+      %{payment_method: "efectivo", amount_paid: Decimal.new(200)},
+      staff && staff.id
+    )
+  end
+
+  defp reward_ids(customer),
+    do: CRM.pending_rewards_for(customer.id) |> Enum.map(& &1.loyalty_reward_id)
 
   describe "record_visit/1" do
     setup do
       %{staff: create_waiter(), customer: create_customer()}
     end
 
-    test "records one visit per closed order", %{customer: customer, staff: staff} do
-      closed = closed_order(customer, staff)
-
-      assert {:ok, visit} = CRM.record_visit(closed)
-      assert visit.customer_id == customer.id
-      assert visit.recorded_at == closed.closed_at
+    test "one visit per closed order", %{customer: customer, staff: staff} do
+      closed = visit(customer, staff)
       assert CRM.visit_count(customer.id) == 1
+      assert [%{recorded_at: recorded}] = CRM.list_visits_for_customer(customer.id)
+      assert recorded == closed.closed_at
     end
 
     test "is idempotent — re-recording the same order does nothing", %{
       customer: customer,
       staff: staff
     } do
-      closed = closed_order(customer, staff)
-
-      assert {:ok, _} = CRM.record_visit(closed)
+      closed = visit(customer, staff)
       assert {:ok, :already_recorded} = CRM.record_visit(closed)
       assert CRM.visit_count(customer.id) == 1
     end
 
     test "refuses an order with no customer", %{staff: staff} do
-      order = create_order()
-
-      {:ok, closed} =
-        Orders.close_order(
-          Orders.get_order!(order.id),
-          %{payment_method: "efectivo", amount_paid: Decimal.new(1)},
-          staff.id
-        )
-
+      {:ok, closed} = close(create_order(), staff)
       assert {:error, :no_customer} = CRM.record_visit(closed)
     end
 
@@ -68,22 +62,34 @@ defmodule CRC.CRMLoyaltyTest do
     end
   end
 
-  describe "evaluate_rewards_after_visit/1 — visit tiers" do
+  describe "Orders.close_order/3 loyalty hook" do
     setup do
       %{staff: create_waiter(), customer: create_customer()}
     end
 
-    defp reward_ids(customer) do
-      CRM.pending_rewards_for(customer.id) |> Enum.map(& &1.loyalty_reward_id)
+    test "closing without a customer records no visit", %{staff: staff} do
+      {:ok, _} = close(create_order(), staff)
+      assert Repo.aggregate(CRC.CRM.CustomerVisit, :count) == 0
     end
 
-    defp record_n_visits(customer, staff, n) do
-      for _ <- 1..n do
-        closed = closed_order(customer, staff)
-        {:ok, _} = CRM.record_visit(closed)
-      end
+    test "re-closing the same order does not double-count", %{customer: customer, staff: staff} do
+      closed = visit(customer, staff)
+      {:ok, _} = Orders.close_order(closed, %{payment_method: "tarjeta"}, staff.id)
+      assert CRM.visit_count(customer.id) == 1
+    end
 
-      CRM.evaluate_rewards_after_visit(customer.id)
+    test "awards a reward when the visit crosses a tier", %{customer: customer, staff: staff} do
+      create_reward_tier(%{visits_required: 1, benefit: "Café gratis"})
+      visit(customer, staff)
+
+      assert [%LoyaltyRedemption{benefit_snapshot: "Café gratis"}] =
+               CRM.pending_rewards_for(customer.id)
+    end
+  end
+
+  describe "reward engine — visit tiers" do
+    setup do
+      %{staff: create_waiter(), customer: create_customer()}
     end
 
     test "non-repeatable tier fires once at the threshold and never again", %{
@@ -92,15 +98,15 @@ defmodule CRC.CRMLoyaltyTest do
     } do
       create_reward_tier(%{visits_required: 3, repeatable: false, benefit: "Galleta"})
 
-      record_n_visits(customer, staff, 2)
+      visit_n(customer, staff, 2)
       assert CRM.pending_rewards_for(customer.id) == []
 
-      record_n_visits(customer, staff, 1)
+      visit(customer, staff)
 
       assert [%LoyaltyRedemption{cycle: 1, benefit_snapshot: "Galleta"}] =
                CRM.pending_rewards_for(customer.id)
 
-      record_n_visits(customer, staff, 3)
+      visit_n(customer, staff, 3)
       assert length(CRM.pending_rewards_for(customer.id)) == 1
     end
 
@@ -109,8 +115,7 @@ defmodule CRC.CRMLoyaltyTest do
       staff: staff
     } do
       create_reward_tier(%{visits_required: 3, repeatable: true, benefit: "Café"})
-
-      record_n_visits(customer, staff, 9)
+      visit_n(customer, staff, 9)
 
       cycles =
         CRM.list_redemptions_for_customer(customer.id)
@@ -128,11 +133,10 @@ defmodule CRC.CRMLoyaltyTest do
       a = create_reward_tier(%{visits_required: 3, name: "A", benefit: "Galleta"})
       b = create_reward_tier(%{visits_required: 6, name: "B", benefit: "Café"})
 
-      record_n_visits(customer, staff, 3)
+      visit_n(customer, staff, 3)
       assert reward_ids(customer) == [a.id]
 
-      record_n_visits(customer, staff, 3)
-      # tier A fired a 2nd cycle (6/3) and tier B fired its 1st (6/6)
+      visit_n(customer, staff, 3)
       assert Enum.sort(reward_ids(customer)) == Enum.sort([a.id, a.id, b.id])
     end
 
@@ -140,18 +144,12 @@ defmodule CRC.CRMLoyaltyTest do
       customer: customer,
       staff: staff
     } do
-      for _ <- 1..10 do
-        closed = closed_order(customer, staff)
-        {:ok, _} = CRM.record_visit(closed)
-      end
-
-      # No tier existed while the visits accumulated
+      visit_n(customer, staff, 10)
       assert CRM.pending_rewards_for(customer.id) == []
 
       create_reward_tier(%{visits_required: 3, repeatable: true, benefit: "Café"})
       {:ok, granted} = CRM.evaluate_rewards_after_visit(customer.id)
 
-      # 10 visits / 3 = 3 completed cycles
       assert length(granted) == 3
     end
 
@@ -161,11 +159,11 @@ defmodule CRC.CRMLoyaltyTest do
     } do
       tier = create_reward_tier(%{visits_required: 2, repeatable: true, benefit: "Café"})
 
-      record_n_visits(customer, staff, 2)
+      visit_n(customer, staff, 2)
       assert length(CRM.pending_rewards_for(customer.id)) == 1
 
       {:ok, _} = CRM.update_reward(tier, %{active: false})
-      record_n_visits(customer, staff, 4)
+      visit_n(customer, staff, 4)
 
       assert length(CRM.pending_rewards_for(customer.id)) == 1
     end
@@ -175,10 +173,9 @@ defmodule CRC.CRMLoyaltyTest do
       staff: staff
     } do
       tier = create_reward_tier(%{visits_required: 2, benefit: "Café chico"})
-      record_n_visits(customer, staff, 2)
+      visit_n(customer, staff, 2)
 
       {:ok, _} = CRM.update_reward(tier, %{benefit: "Café grande"})
-
       assert [%{benefit_snapshot: "Café chico"}] = CRM.pending_rewards_for(customer.id)
     end
   end
@@ -200,9 +197,8 @@ defmodule CRC.CRMLoyaltyTest do
         benefit_menu_item_id: dish.id
       })
 
-      closed = closed_order(customer, staff)
-      {:ok, _} = CRM.record_visit(closed)
-      {:ok, [redemption]} = CRM.evaluate_rewards_after_visit(customer.id)
+      visit(customer, staff)
+      redemption = CRM.pending_reward_for(customer.id)
 
       order = create_order() |> associate_customer(customer)
       assert {:ok, updated} = CRM.redeem_reward(redemption, order, staff.id)
@@ -219,9 +215,8 @@ defmodule CRC.CRMLoyaltyTest do
 
     test "without an order just marks it delivered", %{staff: staff, customer: customer} do
       create_reward_tier(%{visits_required: 1, benefit: "Café gratis"})
-      closed = closed_order(customer, staff)
-      {:ok, _} = CRM.record_visit(closed)
-      {:ok, [redemption]} = CRM.evaluate_rewards_after_visit(customer.id)
+      visit(customer, staff)
+      redemption = CRM.pending_reward_for(customer.id)
 
       assert {:ok, updated} = CRM.redeem_reward(redemption, nil, staff.id)
       assert updated.status == "redeemed"
@@ -230,9 +225,8 @@ defmodule CRC.CRMLoyaltyTest do
 
     test "refuses to redeem twice", %{staff: staff, customer: customer} do
       create_reward_tier(%{visits_required: 1, benefit: "Café gratis"})
-      closed = closed_order(customer, staff)
-      {:ok, _} = CRM.record_visit(closed)
-      {:ok, [redemption]} = CRM.evaluate_rewards_after_visit(customer.id)
+      visit(customer, staff)
+      redemption = CRM.pending_reward_for(customer.id)
 
       {:ok, redeemed} = CRM.redeem_reward(redemption, nil, staff.id)
       assert {:error, :not_pending} = CRM.redeem_reward(redeemed, nil, staff.id)
@@ -249,9 +243,8 @@ defmodule CRC.CRMLoyaltyTest do
         benefit_menu_item_id: dish.id
       })
 
-      closed = closed_order(customer, staff)
-      {:ok, _} = CRM.record_visit(closed)
-      {:ok, [redemption]} = CRM.evaluate_rewards_after_visit(customer.id)
+      visit(customer, staff)
+      redemption = CRM.pending_reward_for(customer.id)
 
       order = create_order() |> associate_customer(customer)
       {:ok, redeemed} = CRM.redeem_reward(redemption, order, staff.id)
@@ -305,14 +298,7 @@ defmodule CRC.CRMLoyaltyTest do
       customer = create_customer()
       create_reward_tier(%{visits_required: 3, repeatable: true, benefit: "Café"})
 
-      orders =
-        for _ <- 1..3 do
-          closed = closed_order(customer, staff)
-          {:ok, _} = CRM.record_visit(closed)
-          closed
-        end
-
-      {:ok, _} = CRM.evaluate_rewards_after_visit(customer.id)
+      orders = Enum.map(1..3, fn _ -> visit(customer, staff) end)
       assert length(CRM.pending_rewards_for(customer.id)) == 1
 
       {:ok, _} = CRM.void_visit_for_order(List.first(orders).id)

@@ -241,11 +241,29 @@ defmodule CRC.Orders do
     case result do
       {:ok, updated} ->
         broadcast({:order_updated, updated.id})
+        record_loyalty_visit(updated)
         {:ok, updated}
 
       error ->
         error
     end
+  end
+
+  # Loyalty hook — isolated on purpose: a bug in the CRM layer must never roll
+  # back a payment that already went through. Synchronous (two fast queries) and
+  # idempotent (unique index on customer_visits.order_id).
+  defp record_loyalty_visit(%Order{customer_id: nil}), do: :ok
+
+  defp record_loyalty_visit(%Order{} = order) do
+    case CRC.CRM.record_visit(order) do
+      {:ok, _} -> CRC.CRM.evaluate_rewards_after_visit(order.customer_id)
+      _ -> :ok
+    end
+  rescue
+    e ->
+      require Logger
+      Logger.error("loyalty hook failed for order #{order.id}: #{Exception.message(e)}")
+      :ok
   end
 
   # ---------------------------------------------------------------------------

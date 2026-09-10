@@ -82,4 +82,55 @@ defmodule CRCWeb.Waiter.OrderLiveCustomerTest do
       assert Orders.get_order!(order.id).customer_id == nil
     end
   end
+
+  describe "redeem reward at checkout" do
+    setup %{conn: conn} do
+      {conn, user} = waiter_conn(conn)
+      dish = create_food_item(create_category().id, "Café de olla")
+      customer = create_customer(%{name: "Leal"})
+      create_reward_tier(%{visits_required: 1, benefit: "Café gratis", benefit_menu_item_id: dish.id})
+
+      # earn a reward from a prior closed visit
+      prev = create_order(%{customer_name: "x", user_id: user.id}) |> associate_customer(customer)
+      close_order_for(prev, user)
+
+      order = create_order(%{customer_name: "Mesa 5", user_id: user.id}) |> associate_customer(customer)
+      %{conn: conn, order: order, customer: customer, dish: dish, user: user}
+    end
+
+    test "apply reward adds a $0 comp line without changing the total", %{
+      conn: conn,
+      order: order,
+      dish: dish,
+      user: user
+    } do
+      # a paid item so the order has a real total
+      add_item(order.id, dish.id, 1)
+      subtotal_before = Orders.calculate_order_total(Orders.get_order!(order.id))
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      html = lv |> element("button", "Aplicar: Café gratis") |> render_click()
+
+      assert html =~ "Recompensa aplicada"
+      assert html =~ "Recompensa"
+
+      reloaded = Orders.get_order!(order.id)
+      comp = Enum.find(reloaded.order_items, &(not is_nil(&1.loyalty_redemption_id)))
+      assert comp && Decimal.equal?(comp.unit_price, Decimal.new(0))
+      assert Decimal.equal?(Orders.calculate_order_total(reloaded), subtotal_before)
+
+      _ = user
+    end
+
+    test "remove reward deletes the comp line", %{conn: conn, order: order} do
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+      lv |> element("button", "Aplicar: Café gratis") |> render_click()
+
+      html = lv |> element("button[phx-click='remove_reward']") |> render_click()
+      assert html =~ "Recompensa quitada"
+
+      reloaded = Orders.get_order!(order.id)
+      refute Enum.any?(reloaded.order_items, &(not is_nil(&1.loyalty_redemption_id)))
+    end
+  end
 end

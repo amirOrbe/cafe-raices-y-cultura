@@ -151,6 +151,31 @@ defmodule CRC.E2EFixtures do
   end
 
   # ---------------------------------------------------------------------------
+  # CRM factories
+  # ---------------------------------------------------------------------------
+
+  @doc "Creates a loyalty customer with the given attrs merged over safe defaults."
+  def create_customer(overrides \\ %{}) do
+    attrs =
+      Map.merge(
+        %{
+          name: "Cliente Lealtad",
+          phone: "55#{System.unique_integer([:positive])}"
+        },
+        Map.new(overrides)
+      )
+
+    {:ok, customer} = CRC.CRM.create_customer(attrs)
+    customer
+  end
+
+  @doc "Associates a customer to an order."
+  def associate_customer(order, customer) do
+    {:ok, updated} = CRC.Orders.update_order(order, %{customer_id: customer.id})
+    updated
+  end
+
+  # ---------------------------------------------------------------------------
   # Auth helpers
   # ---------------------------------------------------------------------------
 

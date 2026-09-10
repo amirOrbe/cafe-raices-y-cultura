@@ -113,6 +113,7 @@ defmodule CRC.Orders do
     |> Repo.get!(id)
     |> Repo.preload([
       :user,
+      :customer,
       order_items: [
         :product,
         :variant,
@@ -622,6 +623,30 @@ defmodule CRC.Orders do
     from(oi in OrderItem,
       join: mi in assoc(oi, :menu_item),
       where: oi.order_id in subquery(closed_ids) and not is_nil(oi.menu_item_id),
+      group_by: [oi.menu_item_id, mi.name],
+      order_by: [desc: sum(oi.quantity)],
+      limit: ^limit,
+      select: {mi.name, sum(oi.quantity)}
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Top N menu items a specific customer orders most, across their closed orders.
+  Returns `[{name, total_qty}]` descending. Loyalty comp lines ($0) count too —
+  they still reflect what the customer consumes.
+  """
+  def customer_top_items(customer_id, limit \\ 10) do
+    closed_ids =
+      Order
+      |> where([o], o.status == "closed" and o.customer_id == ^customer_id)
+      |> select([o], o.id)
+
+    from(oi in OrderItem,
+      join: mi in assoc(oi, :menu_item),
+      where:
+        oi.order_id in subquery(closed_ids) and not is_nil(oi.menu_item_id) and
+          oi.status not in ["cancelled", "cancelled_waste"],
       group_by: [oi.menu_item_id, mi.name],
       order_by: [desc: sum(oi.quantity)],
       limit: ^limit,

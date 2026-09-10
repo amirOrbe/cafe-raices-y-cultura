@@ -964,6 +964,15 @@ defmodule CRC.Orders do
     end
   end
 
+  @doc """
+  Notifies subscribers that an order changed. Public so other contexts that
+  legitimately modify an order (e.g. `CRC.CRM` inserting a loyalty comp line)
+  can trigger the same LiveView refresh as the internal writers.
+  """
+  def broadcast_order_updated(order_id) do
+    broadcast({:order_updated, order_id})
+  end
+
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------

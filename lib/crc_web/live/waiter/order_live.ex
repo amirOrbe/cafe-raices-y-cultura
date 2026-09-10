@@ -180,6 +180,54 @@ defmodule CRCWeb.Waiter.OrderLive do
     end
   end
 
+  def handle_event("apply_reward", %{"redemption_id" => id}, socket) do
+    redemption = CRM.get_redemption!(id)
+
+    case CRM.redeem_reward(redemption, socket.assigns.order, socket.assigns.current_user.id) do
+      {:ok, _} ->
+        {:noreply,
+         reload_order_and_summary(socket, {:success, "Recompensa aplicada a la comanda."})}
+
+      {:error, :not_pending} ->
+        {:noreply, assign(socket, :flash_msg, {:error, "Esa recompensa ya fue usada."})}
+
+      {:error, _} ->
+        {:noreply, assign(socket, :flash_msg, {:error, "No se pudo aplicar la recompensa."})}
+    end
+  end
+
+  def handle_event("grant_birthday", _params, socket) do
+    summary = socket.assigns.customer_summary
+
+    with %{customer: customer} <- summary,
+         {:ok, %{} = redemption} <- CRM.grant_birthday_reward(customer),
+         {:ok, _} <-
+           CRM.redeem_reward(redemption, socket.assigns.order, socket.assigns.current_user.id) do
+      {:noreply,
+       reload_order_and_summary(socket, {:success, "Beneficio de cumpleaños aplicado."})}
+    else
+      {:ok, :already_granted} ->
+        {:noreply,
+         assign(socket, :flash_msg, {:error, "El beneficio de cumpleaños ya se otorgó este año."})}
+
+      _ ->
+        {:noreply,
+         assign(socket, :flash_msg, {:error, "No se pudo dar el beneficio de cumpleaños."})}
+    end
+  end
+
+  def handle_event("remove_reward", %{"redemption_id" => id}, socket) do
+    redemption = CRM.get_redemption!(id)
+
+    case CRM.unredeem_reward(redemption) do
+      {:ok, _} ->
+        {:noreply, reload_order_and_summary(socket, {:success, "Recompensa quitada."})}
+
+      _ ->
+        {:noreply, assign(socket, :flash_msg, {:error, "No se pudo quitar la recompensa."})}
+    end
+  end
+
   def handle_event("close_nav", _params, socket) do
     {:noreply, assign(socket, :nav_open, false)}
   end
@@ -534,7 +582,7 @@ defmodule CRCWeb.Waiter.OrderLive do
   def handle_event("increment_item", %{"id" => id}, socket) do
     item = Enum.find(socket.assigns.order.order_items, &(to_string(&1.id) == id))
 
-    if item do
+    if item && is_nil(item.loyalty_redemption_id) do
       # Check available stock before incrementing so the waiter gets immediate
       # feedback instead of a confusing error at send-to-kitchen time.
       max_qty = item_max_quantity(item)
@@ -564,7 +612,7 @@ defmodule CRCWeb.Waiter.OrderLive do
   def handle_event("decrement_item", %{"id" => id}, socket) do
     item = Enum.find(socket.assigns.order.order_items, &(to_string(&1.id) == id))
 
-    if item && item.quantity > 1 do
+    if item && item.quantity > 1 && is_nil(item.loyalty_redemption_id) do
       case Orders.update_item(item, %{quantity: item.quantity - 1}) do
         {:ok, _} ->
           {:noreply, assign(socket, :order, Orders.get_order!(socket.assigns.order.id))}
@@ -578,14 +626,24 @@ defmodule CRCWeb.Waiter.OrderLive do
   end
 
   def handle_event("remove_item", %{"id" => id}, socket) do
-    case Orders.remove_item(String.to_integer(id)) do
-      {:ok, _} ->
+    item = Enum.find(socket.assigns.order.order_items, &(to_string(&1.id) == id))
+
+    cond do
+      item && item.loyalty_redemption_id ->
+        {:noreply,
+         assign(
+           socket,
+           :flash_msg,
+           {:error, "Usa «Quitar recompensa» en el recuadro del cliente."}
+         )}
+
+      match?({:ok, _}, Orders.remove_item(String.to_integer(id))) ->
         {:noreply,
          socket
          |> assign(:order, Orders.get_order!(socket.assigns.order.id))
          |> assign(:flash_msg, {:success, "Artículo eliminado"})}
 
-      {:error, _} ->
+      true ->
         {:noreply, assign(socket, :flash_msg, {:error, "No se pudo eliminar el artículo"})}
     end
   end
@@ -867,14 +925,14 @@ defmodule CRCWeb.Waiter.OrderLive do
             _ -> closed_order
           end
 
+        reloaded = Orders.get_order!(closed_with_token.id)
+
         {:noreply,
          socket
-         |> assign(:order, Orders.get_order!(closed_with_token.id))
+         |> assign(:order, reloaded)
+         |> assign(:customer_summary, load_customer_summary(reloaded))
          |> assign(:payment_step, false)
-         |> assign(
-           :flash_msg,
-           {:success, "Cuenta cerrada · usa «Mostrar QR» si el cliente lo pide"}
-         )}
+         |> assign(:flash_msg, {:success, close_flash_message(socket.assigns, reloaded)})}
 
       {:error, changeset} ->
         msg =
@@ -1154,6 +1212,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                                   <.icon name="hero-gift" class="size-2.5" /> Paquete
                                 </span>
                               <% end %>
+                              <%= if item.loyalty_redemption_id do %>
+                                <span class="badge badge-xs badge-success gap-0.5">🎁 Recompensa</span>
+                              <% end %>
                               <%= if overdue? do %>
                                 <span class="badge badge-xs badge-error animate-pulse">+15 min</span>
                               <% end %>
@@ -1178,7 +1239,11 @@ defmodule CRCWeb.Waiter.OrderLive do
                                   {format_qty(item.portion_quantity)} {item.product.unit} ·
                                   <span class="text-warning font-medium">Cocina</span>
                                 <% else %>
-                                  ${format_price(item.unit_price || item.menu_item.price)} c/u ·
+                                  <%= if item.loyalty_redemption_id do %>
+                                    <span class="text-success font-medium">Cortesía · $0</span> ·
+                                  <% else %>
+                                    ${format_price(item.unit_price || item.menu_item.price)} c/u ·
+                                  <% end %>
                                   <span class={station_text_class(item.menu_item.destination)}>
                                     {station_label(item.menu_item.destination)}
                                   </span>
@@ -1206,8 +1271,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                               </button>
                             <% end %>
 
-                            <%!-- Extras (solo platillos pendientes sin paquete) --%>
-                            <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and is_nil(item.package_id) and item.status == "pending" and @order.status != "closed" do %>
+                            <%!-- Extras (solo platillos pendientes sin paquete ni recompensa) --%>
+                            <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and is_nil(item.package_id) and is_nil(item.loyalty_redemption_id) and item.status == "pending" and @order.status != "closed" do %>
                               <button
                                 class={[
                                   "btn btn-sm btn-ghost btn-circle",
@@ -1238,8 +1303,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                               </button>
                             <% end %>
 
-                            <%!-- Cantidad --%>
-                            <%= if not cancelled? and not served? do %>
+                            <%!-- Cantidad (fija en las líneas de recompensa) --%>
+                            <%= if not cancelled? and not served? and is_nil(item.loyalty_redemption_id) do %>
                               <div class="flex items-center">
                                 <button
                                   class="btn btn-xs btn-ghost btn-circle"
@@ -1270,8 +1335,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                               </div>
                             <% end %>
 
-                            <%!-- Eliminar / cancelar --%>
-                            <%= if not cancelled? and not served? and @order.status != "closed" do %>
+                            <%!-- Eliminar / cancelar (las líneas de recompensa se quitan desde el banner) --%>
+                            <%= if not cancelled? and not served? and is_nil(item.loyalty_redemption_id) and @order.status != "closed" do %>
                               <%= if item.status == "pending" do %>
                                 <button
                                   class="btn btn-xs btn-ghost btn-circle text-error"
@@ -1293,8 +1358,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                           </div>
                         </div>
 
-                        <%!-- Modificadores (solo pendientes) --%>
-                        <%= if item.status == "pending" and not is_nil(item.menu_item_id) do %>
+                        <%!-- Modificadores (solo pendientes, no recompensas) --%>
+                        <%= if item.status == "pending" and not is_nil(item.menu_item_id) and is_nil(item.loyalty_redemption_id) do %>
                           <div class="mt-2 space-y-1.5 pl-0">
                             <%!-- Exclusiones --%>
                             <%= if item.menu_item.menu_item_ingredients != [] do %>
@@ -2432,6 +2497,39 @@ defmodule CRCWeb.Waiter.OrderLive do
   end
 
   # ── Loyalty customer row + banner ─────────────────────────────────────────
+  defp reload_order_and_summary(socket, flash) do
+    order = Orders.get_order!(socket.assigns.order.id)
+
+    socket
+    |> assign(:order, order)
+    |> assign(:customer_summary, load_customer_summary(order))
+    |> assign(:flash_msg, flash)
+  end
+
+  # If the close-order hook just pushed the customer over a loyalty tier, tell
+  # the waiter so they can mention it to the customer.
+  defp close_flash_message(%{customer_summary: %{pending_reward: nil}} = assigns, reloaded) do
+    case load_customer_summary(reloaded) do
+      %{pending_reward: %{benefit_snapshot: benefit}} ->
+        "Cuenta cerrada · 🎁 #{reloaded.customer.name} ganó una recompensa: #{benefit}"
+
+      _ ->
+        base_close_message(assigns)
+    end
+  end
+
+  defp close_flash_message(assigns, _reloaded), do: base_close_message(assigns)
+
+  defp base_close_message(_assigns),
+    do: "Cuenta cerrada · usa «Mostrar QR» si el cliente lo pide"
+
+  defp applied_reward_items(order) do
+    Enum.filter(order.order_items, fn i ->
+      not is_nil(i.loyalty_redemption_id) and i.status not in ["cancelled", "cancelled_waste"] and
+        not is_nil(i.menu_item)
+    end)
+  end
+
   attr :order, :map, required: true
   attr :summary, :any, required: true
   attr :panel_open, :boolean, required: true
@@ -2466,6 +2564,38 @@ defmodule CRCWeb.Waiter.OrderLive do
                 |> Enum.map(fn {n, q} -> "#{n} (#{q})" end)
                 |> Enum.join(" · ")}
               </p>
+            <% end %>
+
+            <%= if @order.status != "closed" and @summary do %>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <button
+                  :if={@summary.pending_reward}
+                  type="button"
+                  class="btn btn-success btn-xs gap-1"
+                  phx-click="apply_reward"
+                  phx-value-redemption_id={@summary.pending_reward.id}
+                >
+                  🎁 Aplicar: {@summary.pending_reward.benefit_snapshot}
+                </button>
+                <button
+                  :if={@summary.birthday_grantable?}
+                  type="button"
+                  class="btn btn-accent btn-xs gap-1"
+                  phx-click="grant_birthday"
+                >
+                  🎂 Dar beneficio de cumpleaños
+                </button>
+                <%= for it <- applied_reward_items(@order) do %>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-xs gap-1 text-error"
+                    phx-click="remove_reward"
+                    phx-value-redemption_id={it.loyalty_redemption_id}
+                  >
+                    <.icon name="hero-x-mark" class="size-3" /> Quitar {it.menu_item.name}
+                  </button>
+                <% end %>
+              </div>
             <% end %>
           </div>
           <%= if @order.status != "closed" do %>

@@ -1476,7 +1476,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                           <.icon name="hero-credit-card" class="size-4" /> Cobrar y cerrar cuenta
                         </button>
                         <button
-                          class="btn btn-ghost btn-sm w-full text-base-content/60"
+                          class="btn btn-outline w-full"
                           phx-click="park_order"
                           data-confirm="El cliente paga después. Se libera la mesa. ¿Dejar la cuenta abierta?"
                         >
@@ -1820,6 +1820,15 @@ defmodule CRCWeb.Waiter.OrderLive do
               </button>
             <% end %>
             <%= if @order.order_items != [] do %>
+              <button
+                class="btn btn-sm btn-square btn-ghost border border-base-300"
+                phx-click="park_order"
+                data-confirm="El cliente paga después. Se libera la mesa. ¿Dejar la cuenta abierta?"
+                aria-label="Dejar cuenta abierta"
+                title="Dejar cuenta abierta"
+              >
+                <.icon name="hero-pause-circle" class="size-5" />
+              </button>
               <button
                 class={[
                   "btn btn-sm gap-1",

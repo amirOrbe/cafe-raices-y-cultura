@@ -289,12 +289,18 @@ defmodule CRCWeb.Admin.ClienteLive do
             <%= for r <- @profile.pending_rewards do %>
               <li class="flex items-center justify-between gap-3 rounded-xl bg-success/5 border border-success/20 px-3 py-2">
                 <div class="min-w-0">
-                  <p class="text-sm font-medium text-base-content">🎁 {r.benefit_snapshot}</p>
+                  <p class="text-sm font-medium text-base-content truncate">
+                    🎁 {r.benefit_snapshot}
+                  </p>
                   <p class="text-xs text-base-content/50">
                     {reward_kind_label(r)} · ganada {format_date(r.earned_at)}
                   </p>
                 </div>
-                <button class="btn btn-success btn-xs" phx-click="deliver_reward" phx-value-id={r.id}>
+                <button
+                  class="btn btn-success btn-xs shrink-0"
+                  phx-click="deliver_reward"
+                  phx-value-id={r.id}
+                >
                   Marcar entregada
                 </button>
               </li>
@@ -354,7 +360,7 @@ defmodule CRCWeb.Admin.ClienteLive do
             <%= for o <- @profile.orders do %>
               <li class="py-2.5 flex items-center justify-between gap-3">
                 <div class="min-w-0">
-                  <p class="text-sm font-medium text-base-content">
+                  <p class="text-sm font-medium text-base-content truncate">
                     {format_date(o.closed_at)} · {o.customer_name}
                   </p>
                   <p class="text-xs text-base-content/50">
@@ -389,9 +395,11 @@ defmodule CRCWeb.Admin.ClienteLive do
           <ul class="space-y-2">
             <%= for p <- @packages do %>
               <li class="rounded-xl border border-accent/20 bg-accent/5 px-3 py-2">
-                <div class="flex items-center justify-between">
-                  <p class="text-sm font-semibold text-base-content">★ {p.name}</p>
-                  <span class="text-sm font-bold text-primary">${Utils.format_money(p.price)}</span>
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-sm font-semibold text-base-content truncate min-w-0">★ {p.name}</p>
+                  <span class="text-sm font-bold text-primary shrink-0">
+                    ${Utils.format_money(p.price)}
+                  </span>
                 </div>
                 <div class="flex flex-wrap gap-1 mt-1.5">
                   <%= for pi <- p.package_items do %>
@@ -554,9 +562,9 @@ defmodule CRCWeb.Admin.ClienteLive do
 
   defp stat(assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm px-4 py-3">
-      <p class="text-xs text-base-content/50 uppercase tracking-wider">{@label}</p>
-      <p class="text-xl font-bold text-base-content mt-1">{@value}</p>
+    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm px-4 py-3 min-w-0">
+      <p class="text-xs text-base-content/50 uppercase tracking-wider truncate">{@label}</p>
+      <p class="text-lg sm:text-xl font-bold text-base-content mt-1 truncate">{@value}</p>
     </div>
     """
   end

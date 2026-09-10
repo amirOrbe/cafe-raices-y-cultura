@@ -4,6 +4,7 @@ defmodule CRC.Orders.Order do
 
   alias CRC.Orders.{OrderItem, Table}
   alias CRC.Accounts.User
+  alias CRC.CRM.Customer
   alias CRC.Settings.Discount
 
   schema "orders" do
@@ -41,6 +42,8 @@ defmodule CRC.Orders.Order do
     belongs_to :table, Table
     # Discount applied at close time (nullable — nil means no discount)
     belongs_to :discount, Discount
+    # Loyalty customer this order is associated to (nullable — most orders have none)
+    belongs_to :customer, Customer
     has_many :order_items, OrderItem
 
     timestamps(type: :utc_datetime)
@@ -61,7 +64,8 @@ defmodule CRC.Orders.Order do
       :table_id,
       :bill_token,
       :order_type,
-      :is_group
+      :is_group,
+      :customer_id
     ])
     |> validate_required([:customer_name, :status])
     |> validate_inclusion(:status, @valid_statuses)

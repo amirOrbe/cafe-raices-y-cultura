@@ -4,19 +4,26 @@ defmodule CRCWeb.Admin.CumpleanosLive do
   use CRCWeb, :live_view
 
   alias CRC.Accounts
+  alias CRC.CRM
 
   @impl true
   def mount(_params, _session, socket) do
     today = Date.utc_today()
-    staff = Accounts.list_staff_with_birthdays()
 
     socket =
       socket
-      |> assign(:page_title, "Cumpleaños del equipo")
+      |> assign(:page_title, "Cumpleaños")
       |> assign(:today, today)
-      |> assign(:staff, staff)
+      |> assign(:tab, :team)
+      |> assign(:staff, Accounts.list_staff_with_birthdays())
+      |> assign(:customers, CRM.list_customers_with_birthdays())
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("set_tab", %{"tab" => tab}, socket) do
+    {:noreply, assign(socket, :tab, String.to_existing_atom(tab))}
   end
 
   # ---------------------------------------------------------------------------
@@ -26,27 +33,25 @@ defmodule CRCWeb.Admin.CumpleanosLive do
   @impl true
   def render(assigns) do
     today = assigns.today
+    people = if assigns.tab == :team, do: assigns.staff, else: assigns.customers
 
-    today_bdays = Enum.filter(assigns.staff, &(&1.days_until_birthday == 0))
-    no_bdays = Enum.filter(assigns.staff, &is_nil(&1.days_until_birthday))
+    today_bdays = Enum.filter(people, &(&1.days_until_birthday == 0))
+    no_bdays = Enum.filter(people, &is_nil(&1.days_until_birthday))
 
-    # Group remaining staff (excluding today) by the calendar month of their next birthday
+    # Group remaining people (excluding today) by the calendar month of their next birthday
     month_groups =
-      assigns.staff
+      people
       |> Enum.filter(&(not is_nil(&1.days_until_birthday) and &1.days_until_birthday > 0))
-      |> Enum.map(fn user ->
-        next_date = Date.add(today, user.days_until_birthday)
-        Map.put(user, :next_birthday_date, next_date)
+      |> Enum.map(fn p ->
+        Map.put(p, :next_birthday_date, Date.add(today, p.days_until_birthday))
       end)
-      |> Enum.group_by(fn user ->
-        {user.next_birthday_date.year, user.next_birthday_date.month}
-      end)
+      |> Enum.group_by(fn p -> {p.next_birthday_date.year, p.next_birthday_date.month} end)
       |> Enum.sort_by(fn {{year, month}, _} -> {year, month} end)
-      |> Enum.map(fn {{_year, month}, users} ->
+      |> Enum.map(fn {{_year, month}, ppl} ->
         %{
           month: month,
           label: month_name(month),
-          users: Enum.sort_by(users, & &1.next_birthday_date.day)
+          users: Enum.sort_by(ppl, & &1.next_birthday_date.day)
         }
       end)
 
@@ -60,14 +65,31 @@ defmodule CRCWeb.Admin.CumpleanosLive do
     <div class="space-y-6">
       <%!-- Header --%>
       <div>
-        <h1 class="text-2xl font-bold text-base-content">Cumpleaños del equipo</h1>
-        <p class="text-sm text-base-content/50 mt-0.5">
-          {format_date(@today)} · {length(@staff)} empleado{if length(@staff) != 1, do: "s"}
-        </p>
+        <h1 class="text-2xl font-bold text-base-content">Cumpleaños</h1>
+        <p class="text-sm text-base-content/50 mt-0.5">{format_date(@today)}</p>
       </div>
 
-      <%!-- TODAY banner --%>
-      <%= if @today_bdays != [] do %>
+      <div class="flex gap-2">
+        <button
+          class={["btn btn-sm gap-1.5", if(@tab == :team, do: "btn-primary", else: "btn-ghost")]}
+          phx-click="set_tab"
+          phx-value-tab="team"
+        >
+          <.icon name="hero-users" class="size-3.5" /> Equipo
+          <span class="badge badge-xs badge-ghost">{length(@staff)}</span>
+        </button>
+        <button
+          class={["btn btn-sm gap-1.5", if(@tab == :customers, do: "btn-primary", else: "btn-ghost")]}
+          phx-click="set_tab"
+          phx-value-tab="customers"
+        >
+          <.icon name="hero-identification" class="size-3.5" /> Clientes
+          <span class="badge badge-xs badge-ghost">{length(@customers)}</span>
+        </button>
+      </div>
+
+      <%!-- TODAY banner (equipo) --%>
+      <%= if @tab == :team and @today_bdays != [] do %>
         <div class="bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 rounded-2xl p-5">
           <div class="flex items-center gap-2 mb-3">
             <span class="text-2xl">🎂</span>
@@ -99,12 +121,21 @@ defmodule CRCWeb.Admin.CumpleanosLive do
       <%= if @month_groups == [] and @today_bdays == [] and @no_bdays == [] do %>
         <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-16 text-center">
           <.icon name="hero-cake" class="size-12 text-base-content/20 mx-auto mb-3" />
-          <p class="text-base-content/50 text-sm">
-            No hay empleados con fecha de nacimiento registrada.
-          </p>
-          <p class="text-base-content/40 text-xs mt-1">
-            Agrégalas desde <a href="/admin/usuarios" class="link">Usuarios</a>.
-          </p>
+          <%= if @tab == :team do %>
+            <p class="text-base-content/50 text-sm">
+              No hay empleados con fecha de nacimiento registrada.
+            </p>
+            <p class="text-base-content/40 text-xs mt-1">
+              Agrégalas desde <a href="/admin/usuarios" class="link">Usuarios</a>.
+            </p>
+          <% else %>
+            <p class="text-base-content/50 text-sm">
+              No hay clientes con fecha de cumpleaños registrada.
+            </p>
+            <p class="text-base-content/40 text-xs mt-1">
+              Agrégalas al registrar o editar un <a href="/admin/clientes" class="link">cliente</a>.
+            </p>
+          <% end %>
         </div>
       <% end %>
 
@@ -118,8 +149,8 @@ defmodule CRCWeb.Admin.CumpleanosLive do
             <span class="badge badge-ghost badge-sm">{length(group.users)}</span>
           </div>
           <div class="divide-y divide-base-200">
-            <%= for user <- group.users do %>
-              <.user_row user={user} today={@today} />
+            <%= for person <- group.users do %>
+              <.person_row person={person} today={@today} tab={@tab} />
             <% end %>
           </div>
         </div>
@@ -133,12 +164,58 @@ defmodule CRCWeb.Admin.CumpleanosLive do
             <h3 class="font-semibold text-sm text-base-content/40">Sin fecha registrada</h3>
           </div>
           <div class="divide-y divide-base-200">
-            <%= for user <- @no_bdays do %>
-              <.user_row user={user} today={@today} />
+            <%= for person <- @no_bdays do %>
+              <.person_row person={person} today={@today} tab={@tab} />
             <% end %>
           </div>
         </div>
       <% end %>
+    </div>
+    """
+  end
+
+  attr :person, :map, required: true
+  attr :today, :any, required: true
+  attr :tab, :atom, required: true
+
+  defp person_row(%{tab: :team} = assigns), do: user_row(Map.put(assigns, :user, assigns.person))
+
+  defp person_row(assigns) do
+    ~H"""
+    <div class="flex items-center gap-3 px-5 py-3">
+      <div class="size-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-base-300">
+        <span class="text-primary text-xs font-bold">
+          {@person.name |> String.first() |> String.upcase()}
+        </span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <.link
+          navigate={~p"/admin/clientes/#{@person.id}"}
+          class="text-sm font-semibold text-base-content truncate hover:text-primary transition-colors"
+        >
+          {@person.name}
+        </.link>
+        <p class="text-xs text-base-content/50 mt-0.5">
+          Cliente
+          <%= if @person.birthday do %>
+            · {format_birthday(@person.birthday)}
+          <% end %>
+        </p>
+      </div>
+      <div class="shrink-0 text-right">
+        <%= cond do %>
+          <% @person.days_until_birthday == 0 -> %>
+            <span class="badge badge-primary badge-sm font-semibold">¡Hoy! 🎂</span>
+          <% @person.days_until_birthday in 1..7 -> %>
+            <span class="badge badge-warning badge-sm">
+              En {@person.days_until_birthday} día{if @person.days_until_birthday != 1, do: "s"}
+            </span>
+          <% not is_nil(@person.days_until_birthday) -> %>
+            <span class="text-xs text-base-content/40">En {@person.days_until_birthday} días</span>
+          <% true -> %>
+            <span class="text-xs text-base-content/30 italic">Sin fecha</span>
+        <% end %>
+      </div>
     </div>
     """
   end

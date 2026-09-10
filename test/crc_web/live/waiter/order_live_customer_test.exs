@@ -88,13 +88,20 @@ defmodule CRCWeb.Waiter.OrderLiveCustomerTest do
       {conn, user} = waiter_conn(conn)
       dish = create_food_item(create_category().id, "Café de olla")
       customer = create_customer(%{name: "Leal"})
-      create_reward_tier(%{visits_required: 1, benefit: "Café gratis", benefit_menu_item_id: dish.id})
+
+      create_reward_tier(%{
+        visits_required: 1,
+        benefit: "Café gratis",
+        benefit_menu_item_id: dish.id
+      })
 
       # earn a reward from a prior closed visit
       prev = create_order(%{customer_name: "x", user_id: user.id}) |> associate_customer(customer)
       close_order_for(prev, user)
 
-      order = create_order(%{customer_name: "Mesa 5", user_id: user.id}) |> associate_customer(customer)
+      order =
+        create_order(%{customer_name: "Mesa 5", user_id: user.id}) |> associate_customer(customer)
+
       %{conn: conn, order: order, customer: customer, dish: dish, user: user}
     end
 

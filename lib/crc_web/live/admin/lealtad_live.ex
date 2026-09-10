@@ -157,6 +157,9 @@ defmodule CRCWeb.Admin.LealtadLive do
       Enum.map(Catalog.list_menu_items(), &{&1.name, &1.id})
   end
 
+  defp cycle_label(1), do: "cada visita"
+  defp cycle_label(n), do: "cada #{n} visitas"
+
   # ---------------------------------------------------------------------------
   # Render
   # ---------------------------------------------------------------------------
@@ -208,7 +211,7 @@ defmodule CRCWeb.Admin.LealtadLive do
                     <p class="text-xs text-base-content/60 mt-0.5">🎁 {t.benefit}</p>
                     <p class="text-[11px] text-base-content/40 mt-0.5">
                       {if t.repeatable,
-                        do: "Se repite cada #{t.visits_required} visitas",
+                        do: "Se repite #{cycle_label(t.visits_required)}",
                         else: "Una sola vez"}
                     </p>
                   </div>
@@ -221,39 +224,43 @@ defmodule CRCWeb.Admin.LealtadLive do
           </div>
 
           <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-            <table class="table table-zebra table-fixed w-full">
-              <thead>
-                <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                  <th class="w-[14%] text-center">Visitas</th>
-                  <th class="w-[24%]">Nombre</th>
-                  <th class="w-[28%]">Beneficio</th>
-                  <th class="w-[18%]">Repetición</th>
-                  <th class="w-[16%] text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <%= for t <- @tiers do %>
-                  <tr class="hover:bg-base-200/50 transition-colors">
-                    <td class="text-center">
-                      <span class="badge badge-primary badge-sm">{t.visits_required}</span>
-                    </td>
-                    <td class="font-medium text-sm text-base-content">
-                      {t.name}
-                      <.active_badge :if={not t.active} active={t.active} />
-                    </td>
-                    <td class="text-sm text-base-content/70">🎁 {t.benefit}</td>
-                    <td class="text-sm text-base-content/60">
-                      {if t.repeatable, do: "Cada #{t.visits_required} visitas", else: "Una sola vez"}
-                    </td>
-                    <td>
-                      <div class="flex items-center justify-end gap-1">
-                        <.row_actions id={t.id} active={t.active} target="tier" scope="d" />
-                      </div>
-                    </td>
+            <div class="overflow-x-auto">
+              <table class="table table-zebra table-fixed w-full">
+                <thead>
+                  <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
+                    <th class="w-[14%] text-center">Visitas</th>
+                    <th class="w-[24%]">Nombre</th>
+                    <th class="w-[28%]">Beneficio</th>
+                    <th class="w-[18%]">Repetición</th>
+                    <th class="w-[16%] text-right">Acciones</th>
                   </tr>
-                <% end %>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  <%= for t <- @tiers do %>
+                    <tr class="hover:bg-base-200/50 transition-colors">
+                      <td class="text-center">
+                        <span class="badge badge-primary badge-sm">{t.visits_required}</span>
+                      </td>
+                      <td class="font-medium text-sm text-base-content">
+                        {t.name}
+                        <.active_badge :if={not t.active} active={t.active} />
+                      </td>
+                      <td class="text-sm text-base-content/70">🎁 {t.benefit}</td>
+                      <td class="text-sm text-base-content/60">
+                        {if t.repeatable,
+                          do: String.capitalize(cycle_label(t.visits_required)),
+                          else: "Una sola vez"}
+                      </td>
+                      <td>
+                        <div class="flex items-center justify-end gap-1">
+                          <.row_actions id={t.id} active={t.active} target="tier" scope="d" />
+                        </div>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
           </div>
         <% end %>
       </section>

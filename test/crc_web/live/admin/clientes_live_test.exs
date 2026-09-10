@@ -153,5 +153,25 @@ defmodule CRCWeb.Admin.ClientesLiveTest do
       assert {:error, {:live_redirect, %{to: "/admin/clientes"}}} =
                live(conn, ~p"/admin/clientes/999999")
     end
+
+    test "shows visits, spend and a pending reward that can be delivered", %{conn: conn} do
+      staff = create_waiter()
+      customer = create_customer(%{name: "Frecuente"})
+      create_reward_tier(%{visits_required: 1, benefit: "Café gratis"})
+
+      order =
+        create_order(%{customer_name: "c", user_id: staff.id}) |> associate_customer(customer)
+
+      close_order_for(order, staff)
+
+      {:ok, lv, html} = live(conn, ~p"/admin/clientes/#{customer.id}")
+      assert html =~ "Visitas"
+      assert html =~ "Gasto total"
+      assert html =~ "Café gratis"
+
+      html = lv |> element("button", "Marcar entregada") |> render_click()
+      assert html =~ "marcada como entregada"
+      assert [%{status: "redeemed"}] = CRC.CRM.list_redemptions_for_customer(customer.id)
+    end
   end
 end

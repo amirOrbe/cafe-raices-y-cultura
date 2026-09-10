@@ -404,11 +404,13 @@ defmodule CRC.Orders do
   """
   def list_orders_history(period \\ :all, opts \\ []) do
     user_id = Keyword.get(opts, :user_id)
+    customer_id = Keyword.get(opts, :customer_id)
 
     Order
     |> where([o], o.status == "closed")
     |> filter_by_period(period)
     |> maybe_filter_user(user_id)
+    |> maybe_filter_customer(customer_id)
     |> order_by([o], desc: o.closed_at)
     |> preload([
       :user,
@@ -435,6 +437,66 @@ defmodule CRC.Orders do
 
   defp maybe_filter_user(query, nil), do: query
   defp maybe_filter_user(query, user_id), do: where(query, [o], o.user_id == ^user_id)
+
+  defp maybe_filter_customer(query, nil), do: query
+
+  defp maybe_filter_customer(query, customer_id),
+    do: where(query, [o], o.customer_id == ^customer_id)
+
+  @doc "Customers who have at least one closed order, for admin filters."
+  def list_customers_with_history do
+    from(c in CRC.CRM.Customer,
+      join: o in Order,
+      on: o.customer_id == c.id and o.status == "closed",
+      distinct: c.id,
+      order_by: c.name
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Spend summary for one customer across their closed orders:
+  `%{total_spend, order_count, avg_ticket, first_order_at, last_order_at, by_method}`.
+  """
+  def customer_spend_summary(customer_id) do
+    orders =
+      from(o in Order,
+        where: o.status == "closed" and o.customer_id == ^customer_id,
+        order_by: [asc: o.closed_at]
+      )
+      |> Repo.all()
+
+    total =
+      Enum.reduce(orders, Decimal.new(0), fn o, acc ->
+        Decimal.add(acc, o.total || Decimal.new(0))
+      end)
+
+    count = length(orders)
+
+    avg =
+      if count > 0,
+        do: total |> Decimal.div(Decimal.new(count)) |> Decimal.round(2),
+        else: Decimal.new(0)
+
+    by_method =
+      orders
+      |> Enum.group_by(&(&1.payment_method || "desconocido"))
+      |> Map.new(fn {m, group} ->
+        {m,
+         Enum.reduce(group, Decimal.new(0), fn o, acc ->
+           Decimal.add(acc, o.total || Decimal.new(0))
+         end)}
+      end)
+
+    %{
+      total_spend: total,
+      order_count: count,
+      avg_ticket: avg,
+      first_order_at: orders |> List.first() |> then(&(&1 && &1.closed_at)),
+      last_order_at: orders |> List.last() |> then(&(&1 && &1.closed_at)),
+      by_method: by_method
+    }
+  end
 
   @doc """
   Returns a summary map for the given period:

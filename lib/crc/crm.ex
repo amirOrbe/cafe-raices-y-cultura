@@ -573,6 +573,31 @@ defmodule CRC.CRM do
     end
   end
 
+  @doc """
+  Todo lo que necesita la ficha del cliente en el admin, en una llamada:
+  `%{customer, visit_count, pending_rewards, redemptions, spend, top_items,
+     orders, birthday_today?, birthday_reward}`.
+  """
+  def customer_profile(customer_id) do
+    case get_customer(customer_id) do
+      nil ->
+        nil
+
+      customer ->
+        %{
+          customer: customer,
+          visit_count: visit_count(customer_id),
+          pending_rewards: pending_rewards_for(customer_id),
+          redemptions: list_redemptions_for_customer(customer_id),
+          spend: Orders.customer_spend_summary(customer_id),
+          top_items: Orders.customer_top_items(customer_id, 10),
+          orders: Orders.list_orders_history(:all, customer_id: customer_id),
+          birthday_today?: birthday_today?(customer),
+          birthday_reward: get_birthday_reward()
+        }
+    end
+  end
+
   defp birthday_granted_this_year?(customer_id, year) do
     Repo.exists?(
       from r in LoyaltyRedemption,

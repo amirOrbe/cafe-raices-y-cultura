@@ -173,5 +173,28 @@ defmodule CRCWeb.Admin.ClientesLiveTest do
       assert html =~ "marcada como entregada"
       assert [%{status: "redeemed"}] = CRC.CRM.list_redemptions_for_customer(customer.id)
     end
+
+    test "creates a personal package for the customer", %{conn: conn} do
+      customer = create_customer(%{name: "VIP Cliente"})
+      dish = create_food_item(create_category().id, "Latte")
+
+      {:ok, lv, _} = live(conn, ~p"/admin/clientes/#{customer.id}")
+      lv |> element("button", "Crear paquete") |> render_click()
+
+      html =
+        lv
+        |> form("#package-modal form",
+          package: %{name: "El combo VIP", price: "120"},
+          items: %{"0" => %{menu_item_id: to_string(dish.id), quantity: "2"}}
+        )
+        |> render_submit()
+
+      assert html =~ "Paquete personal creado"
+
+      assert [%{name: "El Combo Vip", customer_id: cid}] =
+               CRC.CRM.list_personal_packages(customer.id)
+
+      assert cid == customer.id
+    end
   end
 end

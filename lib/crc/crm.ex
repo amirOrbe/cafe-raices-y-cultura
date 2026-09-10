@@ -598,6 +598,56 @@ defmodule CRC.CRM do
     end
   end
 
+  # ---------------------------------------------------------------------------
+  # Paquetes personalizados
+  # ---------------------------------------------------------------------------
+
+  @doc "Paquetes personales de un cliente."
+  def list_personal_packages(customer_id), do: CRC.Catalog.list_personal_packages(customer_id)
+
+  @doc """
+  Crea un paquete personal para un cliente.
+
+  `attrs` = %{name, description, price}; `items` = lista de
+  `%{menu_item_id, quantity}`.
+  """
+  def create_personal_package(%Customer{id: customer_id}, attrs, items) do
+    attrs =
+      attrs
+      |> Map.new(fn {k, v} -> {to_string(k), v} end)
+      |> Map.put("customer_id", customer_id)
+
+    with {:ok, package} <- CRC.Catalog.create_package(attrs),
+         {:ok, _} <- CRC.Catalog.set_package_items(package, normalize_items(items)) do
+      {:ok, CRC.Catalog.get_package!(package.id)}
+    end
+  end
+
+  defp normalize_items(items) do
+    items
+    |> Enum.map(fn item ->
+      m = Map.new(item)
+
+      %{
+        menu_item_id: to_int(m[:menu_item_id] || m["menu_item_id"]),
+        quantity: to_int(m[:quantity] || m["quantity"] || 1)
+      }
+    end)
+    |> Enum.filter(&(&1.menu_item_id && &1.quantity > 0))
+  end
+
+  defp to_int(nil), do: nil
+  defp to_int(n) when is_integer(n), do: n
+
+  defp to_int(s) when is_binary(s),
+    do:
+      case(Integer.parse(s),
+        do: (
+          {n, _} -> n
+          _ -> nil
+        )
+      )
+
   defp birthday_granted_this_year?(customer_id, year) do
     Repo.exists?(
       from r in LoyaltyRedemption,

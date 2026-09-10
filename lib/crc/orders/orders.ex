@@ -717,6 +717,26 @@ defmodule CRC.Orders do
     |> Repo.all()
   end
 
+  @doc "Same ranking as `customer_top_items/2` but with the menu_item_id, for building package suggestions."
+  def customer_top_menu_items(customer_id, limit \\ 10) do
+    closed_ids =
+      Order
+      |> where([o], o.status == "closed" and o.customer_id == ^customer_id)
+      |> select([o], o.id)
+
+    from(oi in OrderItem,
+      join: mi in assoc(oi, :menu_item),
+      where:
+        oi.order_id in subquery(closed_ids) and not is_nil(oi.menu_item_id) and
+          oi.status not in ["cancelled", "cancelled_waste"],
+      group_by: [oi.menu_item_id, mi.name],
+      order_by: [desc: sum(oi.quantity)],
+      limit: ^limit,
+      select: %{menu_item_id: oi.menu_item_id, name: mi.name, quantity: sum(oi.quantity)}
+    )
+    |> Repo.all()
+  end
+
   # ---------------------------------------------------------------------------
   # Order Items
   # ---------------------------------------------------------------------------

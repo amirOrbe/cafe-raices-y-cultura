@@ -3,7 +3,9 @@ defmodule CRCWeb.Admin.ClienteLive do
 
   use CRCWeb, :live_view
 
+  alias CRC.Catalog
   alias CRC.CRM
+  alias CRC.Orders
   alias CRC.Utils
 
   @impl true
@@ -22,8 +24,13 @@ defmodule CRCWeb.Admin.ClienteLive do
          socket
          |> assign(:page_title, "#{profile.customer.name} · Clientes")
          |> assign(:profile, profile)
+         |> assign(:packages, CRM.list_personal_packages(profile.customer.id))
          |> assign(:editing, false)
-         |> assign(:form, nil)}
+         |> assign(:form, nil)
+         |> assign(:pkg_modal, false)
+         |> assign(:pkg_attrs, %{"name" => "", "description" => "", "price" => ""})
+         |> assign(:pkg_items, [])
+         |> assign(:menu_item_options, menu_item_options())}
     end
   end
 
@@ -116,6 +123,90 @@ defmodule CRCWeb.Admin.ClienteLive do
         {:noreply, put_flash(socket, :error, "Hoy no es el cumpleaños del cliente.")}
     end
   end
+
+  def handle_event("new_package", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:pkg_modal, true)
+     |> assign(:pkg_attrs, %{"name" => "", "description" => "", "price" => ""})
+     |> assign(:pkg_items, [%{"menu_item_id" => "", "quantity" => "1"}])}
+  end
+
+  def handle_event("close_package_modal", _params, socket) do
+    {:noreply, assign(socket, :pkg_modal, false)}
+  end
+
+  def handle_event("suggest_package", _params, socket) do
+    items =
+      Orders.customer_top_menu_items(socket.assigns.profile.customer.id, 4)
+      |> Enum.map(&%{"menu_item_id" => to_string(&1.menu_item_id), "quantity" => "1"})
+
+    items = if items == [], do: [%{"menu_item_id" => "", "quantity" => "1"}], else: items
+    {:noreply, assign(socket, :pkg_items, items)}
+  end
+
+  def handle_event("add_pkg_row", _params, socket) do
+    {:noreply,
+     assign(
+       socket,
+       :pkg_items,
+       socket.assigns.pkg_items ++ [%{"menu_item_id" => "", "quantity" => "1"}]
+     )}
+  end
+
+  def handle_event("remove_pkg_row", %{"idx" => idx}, socket) do
+    {:noreply,
+     assign(socket, :pkg_items, List.delete_at(socket.assigns.pkg_items, String.to_integer(idx)))}
+  end
+
+  def handle_event("pkg_change", %{"package" => attrs} = params, socket) do
+    {:noreply,
+     socket
+     |> assign(:pkg_attrs, Map.take(attrs, ["name", "description", "price"]))
+     |> assign(:pkg_items, ordered_items(params))}
+  end
+
+  def handle_event("save_package", %{"package" => attrs} = params, socket) do
+    customer = socket.assigns.profile.customer
+    item_list = ordered_items(params)
+
+    case CRM.create_personal_package(
+           customer,
+           Map.take(attrs, ["name", "description", "price"]),
+           item_list
+         ) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(:pkg_modal, false)
+         |> assign(:packages, CRM.list_personal_packages(customer.id))
+         |> put_flash(:info, "Paquete personal creado.")}
+
+      {:error, %Ecto.Changeset{} = cs} ->
+        msg =
+          cs.errors
+          |> Enum.map(fn {f, {m, _}} -> "#{f}: #{m}" end)
+          |> Enum.join(", ")
+
+        {:noreply, put_flash(socket, :error, "No se pudo crear el paquete — #{msg}")}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "No se pudo crear el paquete.")}
+    end
+  end
+
+  defp menu_item_options do
+    Enum.map(Catalog.list_menu_items(), &{&1.name, &1.id})
+  end
+
+  # Form serializes item rows as items[0][...], items[1][...] — keep them in index order.
+  defp ordered_items(%{"items" => items}) when is_map(items) do
+    items
+    |> Enum.sort_by(fn {k, _} -> String.to_integer(k) end)
+    |> Enum.map(fn {_, v} -> v end)
+  end
+
+  defp ordered_items(_), do: []
 
   defp reload(socket) do
     assign(socket, :profile, CRM.customer_profile(socket.assigns.profile.customer.id))
@@ -279,6 +370,42 @@ defmodule CRCWeb.Admin.ClienteLive do
         <% end %>
       </section>
 
+      <%!-- Paquetes personalizados --%>
+      <section class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider">
+            Paquetes personalizados
+          </h2>
+          <button class="btn btn-primary btn-xs gap-1" phx-click="new_package">
+            <.icon name="hero-plus" class="size-3.5" /> Crear paquete
+          </button>
+        </div>
+        <p class="text-xs text-base-content/40">
+          Solo aparecen en la pestaña de Paquetes cuando este cliente está asociado a la comanda.
+        </p>
+        <%= if @packages == [] do %>
+          <p class="text-sm text-base-content/50">Sin paquetes personalizados.</p>
+        <% else %>
+          <ul class="space-y-2">
+            <%= for p <- @packages do %>
+              <li class="rounded-xl border border-accent/20 bg-accent/5 px-3 py-2">
+                <div class="flex items-center justify-between">
+                  <p class="text-sm font-semibold text-base-content">★ {p.name}</p>
+                  <span class="text-sm font-bold text-primary">${Utils.format_money(p.price)}</span>
+                </div>
+                <div class="flex flex-wrap gap-1 mt-1.5">
+                  <%= for pi <- p.package_items do %>
+                    <span class="badge badge-xs badge-ghost">
+                      {if pi.quantity > 1, do: "#{pi.quantity}× "}{pi.menu_item.name}
+                    </span>
+                  <% end %>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        <% end %>
+      </section>
+
       <%!-- Datos --%>
       <section class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5">
         <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-4">
@@ -299,6 +426,126 @@ defmodule CRCWeb.Admin.ClienteLive do
     <%= if @editing do %>
       <.edit_modal form={@form} />
     <% end %>
+
+    <%= if @pkg_modal do %>
+      <.package_modal
+        attrs={@pkg_attrs}
+        items={@pkg_items}
+        menu_item_options={@menu_item_options}
+      />
+    <% end %>
+    """
+  end
+
+  attr :attrs, :map, required: true
+  attr :items, :list, required: true
+  attr :menu_item_options, :list, required: true
+
+  defp package_modal(assigns) do
+    ~H"""
+    <div
+      id="package-modal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      phx-window-keydown="close_package_modal"
+      phx-key="Escape"
+    >
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_package_modal">
+      </div>
+
+      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
+        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-base-content">Nuevo paquete personal</h2>
+          <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_package_modal">
+            <.icon name="hero-x-mark" class="size-5" />
+          </button>
+        </div>
+
+        <form phx-change="pkg_change" phx-submit="save_package" class="px-6 py-5 space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="form-control">
+              <span class="label-text text-sm font-medium mb-1">Nombre</span>
+              <input
+                type="text"
+                name="package[name]"
+                value={@attrs["name"]}
+                class="input input-bordered input-sm"
+                placeholder="El combo de Ana"
+              />
+            </label>
+            <label class="form-control">
+              <span class="label-text text-sm font-medium mb-1">Precio</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                name="package[price]"
+                value={@attrs["price"]}
+                class="input input-bordered input-sm"
+              />
+            </label>
+          </div>
+          <label class="form-control">
+            <span class="label-text text-sm font-medium mb-1">Descripción (opcional)</span>
+            <input
+              type="text"
+              name="package[description]"
+              value={@attrs["description"]}
+              class="input input-bordered input-sm"
+            />
+          </label>
+
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-base-content">Artículos</span>
+            <button type="button" class="btn btn-ghost btn-xs" phx-click="suggest_package">
+              ✨ Sugerir desde consumo
+            </button>
+          </div>
+
+          <div class="space-y-2">
+            <%= for {item, idx} <- Enum.with_index(@items) do %>
+              <div class="flex gap-2 items-center">
+                <select
+                  name={"items[#{idx}][menu_item_id]"}
+                  class="select select-bordered select-sm flex-1"
+                >
+                  <option value="">— Elige un platillo —</option>
+                  <%= for {name, id} <- @menu_item_options do %>
+                    <option value={id} selected={to_string(id) == item["menu_item_id"]}>
+                      {name}
+                    </option>
+                  <% end %>
+                </select>
+                <input
+                  type="number"
+                  min="1"
+                  name={"items[#{idx}][quantity]"}
+                  value={item["quantity"] || "1"}
+                  class="input input-bordered input-sm w-16"
+                />
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-xs btn-circle text-error"
+                  phx-click="remove_pkg_row"
+                  phx-value-idx={idx}
+                >
+                  <.icon name="hero-x-mark" class="size-4" />
+                </button>
+              </div>
+            <% end %>
+            <button type="button" class="btn btn-ghost btn-xs gap-1" phx-click="add_pkg_row">
+              <.icon name="hero-plus" class="size-3.5" /> Agregar artículo
+            </button>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" class="btn btn-ghost" phx-click="close_package_modal">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">Crear paquete</button>
+          </div>
+        </form>
+      </div>
+    </div>
     """
   end
 

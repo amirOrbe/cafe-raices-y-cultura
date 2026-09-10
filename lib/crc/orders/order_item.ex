@@ -39,6 +39,8 @@ defmodule CRC.Orders.OrderItem do
 
     # Nullable: set when this item represents a variant selection (e.g. "Leche de Avena" for a Matcha)
     belongs_to :variant, ProductVariant
+    # Nullable: set on the $0 comp line inserted when a loyalty reward is redeemed
+    belongs_to :loyalty_redemption, CRC.CRM.LoyaltyRedemption
     # Ingredients explicitly excluded by the customer (e.g. "sin jitomate")
     has_many :exclusions, OrderItemExclusion
 
@@ -73,7 +75,8 @@ defmodule CRC.Orders.OrderItem do
       :marked_ready_by_id,
       :served_by_id,
       :for_menu_item_id,
-      :variant_id
+      :variant_id,
+      :loyalty_redemption_id
     ])
     |> validate_required([:quantity, :status, :order_id])
     |> validate_item_source()

@@ -12,7 +12,9 @@ defmodule CRC.CRM do
   import Ecto.Query, warn: false
 
   alias CRC.Accounts
-  alias CRC.CRM.Customer
+  alias CRC.CRM.{Customer, CustomerVisit, LoyaltyRedemption, LoyaltyReward}
+  alias CRC.Orders
+  alias CRC.Orders.{Order, OrderItem}
   alias CRC.Repo
 
   @pubsub CRC.PubSub
@@ -243,6 +245,391 @@ defmodule CRC.CRM do
   end
 
   # ---------------------------------------------------------------------------
+  # Visitas
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Registra una visita para la comanda dada. Precondición: la comanda debe estar
+  cerrada y tener `customer_id`.
+
+  Idempotente — el índice único en `customer_visits.order_id` garantiza una sola
+  visita por comanda aunque se cierre/reabra varias veces.
+
+  Devuelve `{:ok, visit}`, `{:ok, :already_recorded}`, `{:error, :not_closed}`,
+  `{:error, :no_customer}` o `{:error, changeset}`.
+  """
+  def record_visit(%Order{status: "closed", customer_id: customer_id} = order)
+      when not is_nil(customer_id) do
+    recorded_at = order.closed_at || DateTime.utc_now() |> DateTime.truncate(:second)
+
+    %CustomerVisit{}
+    |> CustomerVisit.changeset(%{
+      customer_id: customer_id,
+      order_id: order.id,
+      recorded_at: recorded_at,
+      recorded_by_id: order.closed_by_id
+    })
+    |> Repo.insert()
+    |> case do
+      {:ok, visit} ->
+        {:ok, visit}
+
+      {:error, changeset} ->
+        if unique_error?(changeset), do: {:ok, :already_recorded}, else: {:error, changeset}
+    end
+  end
+
+  def record_visit(%Order{status: "closed"}), do: {:error, :no_customer}
+  def record_visit(%Order{}), do: {:error, :not_closed}
+
+  @doc "Número de visitas acumuladas por un cliente."
+  def visit_count(customer_id) do
+    Repo.aggregate(from(v in CustomerVisit, where: v.customer_id == ^customer_id), :count)
+  end
+
+  @doc "Lista las visitas de un cliente, más recientes primero (con la comanda precargada)."
+  def list_visits_for_customer(customer_id) do
+    from(v in CustomerVisit,
+      where: v.customer_id == ^customer_id,
+      order_by: [desc: v.recorded_at],
+      preload: [:order]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Herramienta de corrección: elimina la visita asociada a una comanda y rescinde
+  (marca como `void`) las recompensas por visitas aún no redimidas que ya no
+  correspondan al nuevo conteo.
+  """
+  def void_visit_for_order(order_id) do
+    case Repo.get_by(CustomerVisit, order_id: order_id) do
+      nil ->
+        {:ok, :no_visit}
+
+      %CustomerVisit{customer_id: customer_id} = visit ->
+        Repo.transaction(fn ->
+          Repo.delete!(visit)
+          rescind_excess_visit_rewards(customer_id)
+          :ok
+        end)
+    end
+  end
+
+  defp rescind_excess_visit_rewards(customer_id) do
+    count = visit_count(customer_id)
+
+    for tier <- all_visit_tiers() do
+      entitled = entitled_cycles(count, tier)
+
+      from(r in LoyaltyRedemption,
+        where:
+          r.customer_id == ^customer_id and r.loyalty_reward_id == ^tier.id and
+            r.kind == "visits" and r.status == "earned" and r.cycle > ^entitled
+      )
+      |> Repo.update_all(set: [status: "void", updated_at: DateTime.utc_now()])
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Configuración de recompensas
+  # ---------------------------------------------------------------------------
+
+  @doc "Lista los niveles/configs de recompensa. Opción `:kind` para filtrar."
+  def list_reward_tiers(opts \\ []) do
+    LoyaltyReward
+    |> maybe_filter_kind(Keyword.get(opts, :kind))
+    |> order_by([r], asc: r.kind, asc: r.visits_required, asc: r.name)
+    |> Repo.all()
+  end
+
+  @doc "Niveles por visitas activos, del menor al mayor número de visitas."
+  def list_active_visit_tiers do
+    all_visit_tiers()
+  end
+
+  defp all_visit_tiers do
+    from(r in LoyaltyReward,
+      where: r.kind == "visits" and r.active == true,
+      order_by: [asc: r.visits_required]
+    )
+    |> Repo.all()
+  end
+
+  @doc "Config de cumpleaños activa, o `nil`."
+  def get_birthday_reward do
+    Repo.one(from r in LoyaltyReward, where: r.kind == "birthday" and r.active == true, limit: 1)
+  end
+
+  def get_reward!(id), do: Repo.get!(LoyaltyReward, id)
+
+  def create_reward(attrs) do
+    %LoyaltyReward{}
+    |> LoyaltyReward.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def update_reward(%LoyaltyReward{} = reward, attrs) do
+    reward
+    |> LoyaltyReward.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def delete_reward(%LoyaltyReward{} = reward), do: Repo.delete(reward)
+
+  def change_reward(%LoyaltyReward{} = reward, attrs \\ %{}) do
+    LoyaltyReward.changeset(reward, attrs)
+  end
+
+  defp maybe_filter_kind(query, nil), do: query
+  defp maybe_filter_kind(query, kind), do: where(query, [r], r.kind == ^kind)
+
+  # ---------------------------------------------------------------------------
+  # Motor de recompensas
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Evalúa todos los niveles de visitas activos para un cliente y otorga las
+  redenciones que le correspondan según su conteo actual de visitas.
+
+  Retro-otorga: si se crea un nivel de 6 visitas cuando el cliente ya tiene 20,
+  en la siguiente evaluación se le otorgan los 3 ciclos. El índice único
+  `(customer_id, loyalty_reward_id, cycle)` hace la operación segura ante
+  concurrencia.
+
+  Devuelve `{:ok, [redenciones_nuevas]}`.
+  """
+  def evaluate_rewards_after_visit(%Customer{id: id}), do: evaluate_rewards_after_visit(id)
+
+  def evaluate_rewards_after_visit(customer_id) when is_integer(customer_id) do
+    count = visit_count(customer_id)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    new_redemptions =
+      for tier <- all_visit_tiers(),
+          entitled = entitled_cycles(count, tier),
+          existing = earned_cycle_count(customer_id, tier.id),
+          entitled > existing,
+          cycle <- (existing + 1)..entitled,
+          redemption = insert_visit_redemption(customer_id, tier, cycle, count, now),
+          not is_nil(redemption) do
+        redemption
+      end
+
+    {:ok, new_redemptions}
+  end
+
+  # Cuántos ciclos completos ha ganado el cliente para este nivel.
+  defp entitled_cycles(_count, %LoyaltyReward{visits_required: req}) when is_nil(req) or req <= 0,
+    do: 0
+
+  defp entitled_cycles(count, %LoyaltyReward{visits_required: req, repeatable: true}),
+    do: div(count, req)
+
+  defp entitled_cycles(count, %LoyaltyReward{visits_required: req, repeatable: false}),
+    do: if(count >= req, do: 1, else: 0)
+
+  defp earned_cycle_count(customer_id, reward_id) do
+    Repo.aggregate(
+      from(r in LoyaltyRedemption,
+        where:
+          r.customer_id == ^customer_id and r.loyalty_reward_id == ^reward_id and
+            r.kind == "visits" and r.status != "void"
+      ),
+      :count
+    )
+  end
+
+  defp insert_visit_redemption(customer_id, %LoyaltyReward{} = tier, cycle, count, now) do
+    %LoyaltyRedemption{}
+    |> LoyaltyRedemption.changeset(%{
+      customer_id: customer_id,
+      loyalty_reward_id: tier.id,
+      kind: "visits",
+      benefit_snapshot: tier.benefit,
+      visits_required_snapshot: tier.visits_required,
+      cycle: cycle,
+      earned_at: now,
+      earned_at_visit_count: count,
+      status: "earned"
+    })
+    |> Repo.insert()
+    |> case do
+      {:ok, redemption} -> redemption
+      {:error, _} -> nil
+    end
+  end
+
+  @doc """
+  Otorga el beneficio de cumpleaños al cliente si hoy (± ventana configurada) es
+  su cumpleaños y hay una config activa. Una sola vez por año.
+
+  Devuelve `{:ok, redemption}`, `{:ok, :already_granted}`,
+  `{:error, :no_birthday_config}` o `{:error, :not_birthday}`.
+  """
+  def grant_birthday_reward(%Customer{} = customer, today \\ Date.utc_today()) do
+    case get_birthday_reward() do
+      nil ->
+        {:error, :no_birthday_config}
+
+      %LoyaltyReward{} = reward ->
+        if birthday_today?(customer, today, reward.birthday_window_days) do
+          now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+          %LoyaltyRedemption{}
+          |> LoyaltyRedemption.changeset(%{
+            customer_id: customer.id,
+            loyalty_reward_id: reward.id,
+            kind: "birthday",
+            benefit_snapshot: reward.benefit,
+            cycle: 1,
+            earned_at: now,
+            status: "earned",
+            birthday_year: today.year
+          })
+          |> Repo.insert()
+          |> case do
+            {:ok, redemption} ->
+              {:ok, redemption}
+
+            {:error, changeset} ->
+              if unique_error?(changeset), do: {:ok, :already_granted}, else: {:error, changeset}
+          end
+        else
+          {:error, :not_birthday}
+        end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Recompensas pendientes / redención
+  # ---------------------------------------------------------------------------
+
+  @doc "Recompensas ganadas y sin redimir de un cliente, más antiguas primero."
+  def pending_rewards_for(customer_id) do
+    from(r in LoyaltyRedemption,
+      where: r.customer_id == ^customer_id and r.status == "earned",
+      order_by: [asc: r.earned_at, asc: r.id],
+      preload: [:loyalty_reward]
+    )
+    |> Repo.all()
+  end
+
+  @doc "La recompensa pendiente más antigua de un cliente, o `nil`."
+  def pending_reward_for(customer_id) do
+    customer_id |> pending_rewards_for() |> List.first()
+  end
+
+  def has_pending_reward?(customer_id) do
+    Repo.exists?(
+      from r in LoyaltyRedemption,
+        where: r.customer_id == ^customer_id and r.status == "earned"
+    )
+  end
+
+  @doc "Historial de recompensas (ganadas/redimidas/anuladas) de un cliente."
+  def list_redemptions_for_customer(customer_id) do
+    from(r in LoyaltyRedemption,
+      where: r.customer_id == ^customer_id,
+      order_by: [desc: r.earned_at, desc: r.id],
+      preload: [:loyalty_reward, :order, :redeemed_by]
+    )
+    |> Repo.all()
+  end
+
+  def get_redemption!(id), do: Repo.get!(LoyaltyRedemption, id)
+
+  @doc """
+  Redime una recompensa ganada.
+
+  Con una comanda: la marca como redimida y, si el nivel tiene
+  `benefit_menu_item_id`, inserta una línea de cortesía a $0 en la comanda
+  (marcada con `loyalty_redemption_id`). Sin comanda (`nil`): solo la marca como
+  entregada (uso desde el panel admin).
+
+  Devuelve `{:ok, redemption}` o `{:error, :not_pending | changeset}`.
+  """
+  def redeem_reward(%LoyaltyRedemption{status: "earned"} = redemption, order, staff_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    reward = redemption.loyalty_reward_id && Repo.get(LoyaltyReward, redemption.loyalty_reward_id)
+
+    result =
+      Repo.transaction(fn ->
+        {:ok, updated} =
+          redemption
+          |> LoyaltyRedemption.redeem_changeset(%{
+            status: "redeemed",
+            redeemed_at: now,
+            redeemed_by_id: staff_id,
+            order_id: order && order.id
+          })
+          |> Repo.update()
+
+        if order && reward && reward.benefit_menu_item_id do
+          {:ok, _item} =
+            %OrderItem{}
+            |> OrderItem.changeset(%{
+              order_id: order.id,
+              menu_item_id: reward.benefit_menu_item_id,
+              quantity: 1,
+              unit_price: Decimal.new(0),
+              status: "pending",
+              loyalty_redemption_id: updated.id,
+              notes: "🎁 Recompensa de lealtad: #{redemption.benefit_snapshot}"
+            })
+            |> Repo.insert()
+        end
+
+        updated
+      end)
+
+    case result do
+      {:ok, updated} ->
+        if order, do: Orders.broadcast_order_updated(order.id)
+        {:ok, updated}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  def redeem_reward(%LoyaltyRedemption{}, _order, _staff_id), do: {:error, :not_pending}
+
+  @doc "Revierte una redención: vuelve a `earned` y elimina la línea de cortesía."
+  def unredeem_reward(%LoyaltyRedemption{status: "redeemed"} = redemption) do
+    order_id = redemption.order_id
+
+    result =
+      Repo.transaction(fn ->
+        from(oi in OrderItem, where: oi.loyalty_redemption_id == ^redemption.id)
+        |> Repo.delete_all()
+
+        {:ok, updated} =
+          redemption
+          |> LoyaltyRedemption.redeem_changeset(%{
+            status: "earned",
+            redeemed_at: nil,
+            redeemed_by_id: nil,
+            order_id: nil
+          })
+          |> Repo.update()
+
+        updated
+      end)
+
+    case result do
+      {:ok, updated} ->
+        if order_id, do: Orders.broadcast_order_updated(order_id)
+        {:ok, updated}
+
+      other ->
+        other
+    end
+  end
+
+  def unredeem_reward(%LoyaltyRedemption{}), do: {:error, :not_redeemed}
+
+  # ---------------------------------------------------------------------------
   # Helpers
   # ---------------------------------------------------------------------------
 
@@ -289,6 +676,12 @@ defmodule CRC.CRM do
   defp foreign_key_error?(%Ecto.Changeset{errors: errors}) do
     Enum.any?(errors, fn {_field, {_msg, opts}} ->
       Keyword.get(opts, :constraint) == :foreign
+    end)
+  end
+
+  defp unique_error?(%Ecto.Changeset{errors: errors}) do
+    Enum.any?(errors, fn {_field, {_msg, opts}} ->
+      Keyword.get(opts, :constraint) == :unique
     end)
   end
 end

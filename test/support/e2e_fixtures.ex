@@ -169,10 +169,67 @@ defmodule CRC.E2EFixtures do
     customer
   end
 
+  @doc "Creates a repeatable visits reward tier (default: 6 visits → free coffee)."
+  def create_reward_tier(overrides \\ %{}) do
+    attrs =
+      Map.merge(
+        %{
+          kind: "visits",
+          name: "Tarjeta de lealtad",
+          visits_required: 6,
+          benefit: "Café gratis",
+          repeatable: true,
+          active: true
+        },
+        Map.new(overrides)
+      )
+
+    {:ok, reward} = CRC.CRM.create_reward(attrs)
+    reward
+  end
+
+  @doc "Creates the active birthday reward config."
+  def create_birthday_reward(overrides \\ %{}) do
+    attrs =
+      Map.merge(
+        %{
+          kind: "birthday",
+          name: "Cumpleaños",
+          benefit: "Postre gratis",
+          birthday_window_days: 0,
+          active: true
+        },
+        Map.new(overrides)
+      )
+
+    {:ok, reward} = CRC.CRM.create_reward(attrs)
+    reward
+  end
+
   @doc "Associates a customer to an order."
   def associate_customer(order, customer) do
     {:ok, updated} = CRC.Orders.update_order(order, %{customer_id: customer.id})
     updated
+  end
+
+  @doc """
+  Closes an order for a customer, recording the loyalty visit + evaluating
+  rewards (mirrors what the close_order hook does in production).
+  """
+  def close_order_for(order, staff) do
+    {:ok, closed} =
+      CRC.Orders.close_order(
+        CRC.Orders.get_order!(order.id),
+        %{payment_method: "efectivo", amount_paid: Decimal.new(500)},
+        staff && staff.id
+      )
+
+    if closed.customer_id do
+      {:ok, _} = CRC.CRM.record_visit(closed)
+      CRC.CRM.evaluate_rewards_after_visit(closed.customer_id)
+    end
+
+    closed
   end
 
   # ---------------------------------------------------------------------------

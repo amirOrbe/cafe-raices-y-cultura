@@ -540,6 +540,49 @@ defmodule CRC.CRM do
   def get_redemption!(id), do: Repo.get!(LoyaltyRedemption, id)
 
   @doc """
+  Resumen ligero de lealtad de un cliente, para el banner del mostrador.
+
+  `%{customer, visit_count, pending_reward, pending_count, birthday_today?,
+     birthday_reward, birthday_grantable?, top_items}`.
+  """
+  def customer_counter_summary(customer_id) do
+    customer = get_customer(customer_id)
+
+    if is_nil(customer) do
+      nil
+    else
+      today = Date.utc_today()
+      birthday_reward = get_birthday_reward()
+      pending = pending_rewards_for(customer_id)
+
+      bday_today? =
+        (birthday_reward &&
+           birthday_today?(customer, today, birthday_reward.birthday_window_days)) || false
+
+      %{
+        customer: customer,
+        visit_count: visit_count(customer_id),
+        pending_reward: List.first(pending),
+        pending_count: length(pending),
+        birthday_today?: bday_today?,
+        birthday_reward: birthday_reward,
+        birthday_grantable?:
+          bday_today? && not birthday_granted_this_year?(customer_id, today.year),
+        top_items: Orders.customer_top_items(customer_id, 3)
+      }
+    end
+  end
+
+  defp birthday_granted_this_year?(customer_id, year) do
+    Repo.exists?(
+      from r in LoyaltyRedemption,
+        where:
+          r.customer_id == ^customer_id and r.kind == "birthday" and
+            r.birthday_year == ^year
+    )
+  end
+
+  @doc """
   Redime una recompensa ganada.
 
   Con una comanda: la marca como redimida y, si el nivel tiene

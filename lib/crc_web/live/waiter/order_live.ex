@@ -5,7 +5,9 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   alias CRC.Orders
   alias CRC.Catalog
+  alias CRC.CRM
   alias CRCWeb.Components.SiteComponents
+  alias CRCWeb.Waiter.CustomerSearchComponent
 
   @tick_interval 30_000
   # Items with this many or fewer portions remaining show a low-stock warning badge
@@ -56,6 +58,8 @@ defmodule CRCWeb.Waiter.OrderLive do
       |> assign(:search_results, nil)
       |> assign(:mobile_tab, :menu)
       |> assign(:menu_step, :categories)
+      |> assign(:customer_panel, false)
+      |> assign(:customer_summary, load_customer_summary(order))
 
     {:ok, socket}
   rescue
@@ -64,6 +68,31 @@ defmodule CRCWeb.Waiter.OrderLive do
        socket
        |> put_flash(:error, "Cuenta no encontrada.")
        |> redirect(to: "/mesa")}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Loyalty customer association
+  # ---------------------------------------------------------------------------
+
+  defp load_customer_summary(%{customer_id: nil}), do: nil
+  defp load_customer_summary(%{customer_id: id}), do: CRM.customer_counter_summary(id)
+
+  @impl true
+  def handle_info({:customer_selected, customer}, socket) do
+    case Orders.update_order(socket.assigns.order, %{customer_id: customer.id}) do
+      {:ok, _} ->
+        order = Orders.get_order!(socket.assigns.order.id)
+
+        {:noreply,
+         socket
+         |> assign(:order, order)
+         |> assign(:customer_summary, load_customer_summary(order))
+         |> assign(:customer_panel, false)
+         |> assign(:flash_msg, {:success, "Cliente asociado: #{customer.name}"})}
+
+      {:error, _} ->
+        {:noreply, assign(socket, :flash_msg, {:error, "No se pudo asociar el cliente."})}
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -80,6 +109,7 @@ defmodule CRCWeb.Waiter.OrderLive do
       socket =
         socket
         |> assign(:order, new_order)
+        |> assign(:customer_summary, load_customer_summary(new_order))
         |> assign(:seen_ready_ids, new_ids)
 
       socket =
@@ -128,6 +158,26 @@ defmodule CRCWeb.Waiter.OrderLive do
   @impl true
   def handle_event("toggle_nav", _params, socket) do
     {:noreply, assign(socket, :nav_open, !socket.assigns.nav_open)}
+  end
+
+  def handle_event("toggle_customer_panel", _params, socket) do
+    {:noreply, assign(socket, :customer_panel, !socket.assigns.customer_panel)}
+  end
+
+  def handle_event("remove_customer", _params, socket) do
+    case Orders.update_order(socket.assigns.order, %{customer_id: nil}) do
+      {:ok, _} ->
+        order = Orders.get_order!(socket.assigns.order.id)
+
+        {:noreply,
+         socket
+         |> assign(:order, order)
+         |> assign(:customer_summary, nil)
+         |> assign(:flash_msg, {:success, "Cliente quitado de la comanda."})}
+
+      {:error, _} ->
+        {:noreply, assign(socket, :flash_msg, {:error, "No se pudo quitar el cliente."})}
+    end
   end
 
   def handle_event("close_nav", _params, socket) do
@@ -957,6 +1007,14 @@ defmodule CRCWeb.Waiter.OrderLive do
               </div>
             </div>
           </div>
+
+          <%!-- ── Cliente de lealtad ──────────────────────────────────────────── --%>
+          <.customer_row
+            order={@order}
+            summary={@customer_summary}
+            panel_open={@customer_panel}
+            current_user={@current_user}
+          />
 
           <%!-- Flash — visible en ambos tabs --%>
           <%= if @flash_msg do %>
@@ -2369,6 +2427,78 @@ defmodule CRCWeb.Waiter.OrderLive do
           <.icon name="hero-plus" class="size-3" /> Agregar
         <% end %>
       </button>
+    </div>
+    """
+  end
+
+  # ── Loyalty customer row + banner ─────────────────────────────────────────
+  attr :order, :map, required: true
+  attr :summary, :any, required: true
+  attr :panel_open, :boolean, required: true
+  attr :current_user, :map, required: true
+
+  defp customer_row(assigns) do
+    ~H"""
+    <div class="space-y-2">
+      <%= if @order.customer do %>
+        <div class="flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+          <.icon name="hero-identification" class="size-4 text-primary shrink-0 mt-0.5" />
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-sm font-semibold text-base-content">{@order.customer.name}</span>
+              <%= if @summary do %>
+                <span class="badge badge-xs badge-primary">
+                  {@summary.visit_count} {if @summary.visit_count == 1, do: "visita", else: "visitas"}
+                </span>
+                <%= if @summary.pending_reward do %>
+                  <span class="badge badge-xs badge-success gap-1">
+                    🎁 {@summary.pending_reward.benefit_snapshot}
+                  </span>
+                <% end %>
+                <%= if @summary.birthday_today? do %>
+                  <span class="badge badge-xs badge-accent gap-1">🎂 ¡Hoy cumple!</span>
+                <% end %>
+              <% end %>
+            </div>
+            <%= if @summary && @summary.top_items != [] do %>
+              <p class="text-xs text-base-content/50 mt-0.5">
+                Suele pedir: {@summary.top_items
+                |> Enum.map(fn {n, q} -> "#{n} (#{q})" end)
+                |> Enum.join(" · ")}
+              </p>
+            <% end %>
+          </div>
+          <%= if @order.status != "closed" do %>
+            <button
+              type="button"
+              class="btn btn-ghost btn-xs shrink-0"
+              phx-click="remove_customer"
+              data-confirm="¿Quitar el cliente de esta comanda?"
+            >
+              Quitar
+            </button>
+          <% end %>
+        </div>
+      <% else %>
+        <%= if @order.status != "closed" do %>
+          <button
+            type="button"
+            class="btn btn-ghost btn-xs gap-1.5 text-base-content/60"
+            phx-click="toggle_customer_panel"
+          >
+            <.icon name="hero-identification" class="size-4" />
+            {if @panel_open, do: "Cancelar", else: "Asociar cliente de lealtad"}
+          </button>
+        <% end %>
+      <% end %>
+
+      <%= if @panel_open and is_nil(@order.customer) do %>
+        <.live_component
+          module={CustomerSearchComponent}
+          id="customer-search"
+          current_user={@current_user}
+        />
+      <% end %>
     </div>
     """
   end

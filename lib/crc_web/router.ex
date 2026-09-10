@@ -119,6 +119,8 @@ defmodule CRCWeb.Router do
       layout: {CRCWeb.Layouts, :admin} do
       live "/", DashboardLive
       live "/usuarios", UsersLive
+      live "/clientes", ClientesLive
+      live "/clientes/:id", ClienteLive
       live "/platillos", PlatillosLive
       live "/platillos/categorias", CategoriesLive
       live "/paquetes", PackagesLive

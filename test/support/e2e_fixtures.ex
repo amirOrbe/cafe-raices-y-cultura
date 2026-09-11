@@ -151,6 +151,83 @@ defmodule CRC.E2EFixtures do
   end
 
   # ---------------------------------------------------------------------------
+  # CRM factories
+  # ---------------------------------------------------------------------------
+
+  @doc "Creates a loyalty customer with the given attrs merged over safe defaults."
+  def create_customer(overrides \\ %{}) do
+    attrs =
+      Map.merge(
+        %{
+          name: "Cliente Lealtad",
+          phone: "55#{System.unique_integer([:positive])}"
+        },
+        Map.new(overrides)
+      )
+
+    {:ok, customer} = CRC.CRM.create_customer(attrs)
+    customer
+  end
+
+  @doc "Creates a repeatable visits reward tier (default: 6 visits → free coffee)."
+  def create_reward_tier(overrides \\ %{}) do
+    attrs =
+      Map.merge(
+        %{
+          kind: "visits",
+          name: "Tarjeta de lealtad",
+          visits_required: 6,
+          benefit: "Café gratis",
+          repeatable: true,
+          active: true
+        },
+        Map.new(overrides)
+      )
+
+    {:ok, reward} = CRC.CRM.create_reward(attrs)
+    reward
+  end
+
+  @doc "Creates the active birthday reward config."
+  def create_birthday_reward(overrides \\ %{}) do
+    attrs =
+      Map.merge(
+        %{
+          kind: "birthday",
+          name: "Cumpleaños",
+          benefit: "Postre gratis",
+          birthday_window_days: 0,
+          active: true
+        },
+        Map.new(overrides)
+      )
+
+    {:ok, reward} = CRC.CRM.create_reward(attrs)
+    reward
+  end
+
+  @doc "Associates a customer to an order."
+  def associate_customer(order, customer) do
+    {:ok, updated} = CRC.Orders.update_order(order, %{customer_id: customer.id})
+    updated
+  end
+
+  @doc """
+  Closes an order. `Orders.close_order/3` runs the loyalty hook itself
+  (records the visit + evaluates rewards when the order has a customer).
+  """
+  def close_order_for(order, staff) do
+    {:ok, closed} =
+      CRC.Orders.close_order(
+        CRC.Orders.get_order!(order.id),
+        %{payment_method: "efectivo", amount_paid: Decimal.new(500)},
+        staff && staff.id
+      )
+
+    closed
+  end
+
+  # ---------------------------------------------------------------------------
   # Auth helpers
   # ---------------------------------------------------------------------------
 

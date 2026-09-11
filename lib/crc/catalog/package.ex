@@ -12,12 +12,15 @@ defmodule CRC.Catalog.Package do
     has_many :package_items, CRC.Catalog.PackageItem, on_delete: :delete_all
     has_many :menu_items, through: [:package_items, :menu_item]
 
+    # Nullable: nil = paquete público (menú); con valor = paquete personal de un cliente
+    belongs_to :customer, CRC.CRM.Customer
+
     timestamps(type: :utc_datetime)
   end
 
   def changeset(package, attrs) do
     package
-    |> cast(attrs, [:name, :description, :price, :active, :featured])
+    |> cast(attrs, [:name, :description, :price, :active, :featured, :customer_id])
     |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name, :price])
     |> validate_number(:price, greater_than: 0)

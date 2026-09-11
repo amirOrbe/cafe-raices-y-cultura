@@ -38,3 +38,9 @@ npm-debug.log
 # Local secrets (never commit API keys)
 config/dev.secret.exs
 
+# Claude Code local state (may contain credentials in settings.local.json)
+/.claude/
+
+# Local test screenshots (browser-automation artifacts)
+/test/screenshots/
+

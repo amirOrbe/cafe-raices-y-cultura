@@ -113,6 +113,7 @@ defmodule CRC.Orders do
     |> Repo.get!(id)
     |> Repo.preload([
       :user,
+      :customer,
       order_items: [
         :product,
         :variant,
@@ -241,11 +242,29 @@ defmodule CRC.Orders do
     case result do
       {:ok, updated} ->
         broadcast({:order_updated, updated.id})
+        record_loyalty_visit(updated)
         {:ok, updated}
 
       error ->
         error
     end
+  end
+
+  # Loyalty hook — isolated on purpose: a bug in the CRM layer must never roll
+  # back a payment that already went through. Synchronous (two fast queries) and
+  # idempotent (unique index on customer_visits.order_id).
+  defp record_loyalty_visit(%Order{customer_id: nil}), do: :ok
+
+  defp record_loyalty_visit(%Order{} = order) do
+    case CRC.CRM.record_visit(order) do
+      {:ok, _} -> CRC.CRM.evaluate_rewards_after_visit(order.customer_id)
+      _ -> :ok
+    end
+  rescue
+    e ->
+      require Logger
+      Logger.error("loyalty hook failed for order #{order.id}: #{Exception.message(e)}")
+      :ok
   end
 
   # ---------------------------------------------------------------------------
@@ -385,11 +404,13 @@ defmodule CRC.Orders do
   """
   def list_orders_history(period \\ :all, opts \\ []) do
     user_id = Keyword.get(opts, :user_id)
+    customer_id = Keyword.get(opts, :customer_id)
 
     Order
     |> where([o], o.status == "closed")
     |> filter_by_period(period)
     |> maybe_filter_user(user_id)
+    |> maybe_filter_customer(customer_id)
     |> order_by([o], desc: o.closed_at)
     |> preload([
       :user,
@@ -416,6 +437,66 @@ defmodule CRC.Orders do
 
   defp maybe_filter_user(query, nil), do: query
   defp maybe_filter_user(query, user_id), do: where(query, [o], o.user_id == ^user_id)
+
+  defp maybe_filter_customer(query, nil), do: query
+
+  defp maybe_filter_customer(query, customer_id),
+    do: where(query, [o], o.customer_id == ^customer_id)
+
+  @doc "Customers who have at least one closed order, for admin filters."
+  def list_customers_with_history do
+    from(c in CRC.CRM.Customer,
+      join: o in Order,
+      on: o.customer_id == c.id and o.status == "closed",
+      distinct: c.id,
+      order_by: c.name
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Spend summary for one customer across their closed orders:
+  `%{total_spend, order_count, avg_ticket, first_order_at, last_order_at, by_method}`.
+  """
+  def customer_spend_summary(customer_id) do
+    orders =
+      from(o in Order,
+        where: o.status == "closed" and o.customer_id == ^customer_id,
+        order_by: [asc: o.closed_at]
+      )
+      |> Repo.all()
+
+    total =
+      Enum.reduce(orders, Decimal.new(0), fn o, acc ->
+        Decimal.add(acc, o.total || Decimal.new(0))
+      end)
+
+    count = length(orders)
+
+    avg =
+      if count > 0,
+        do: total |> Decimal.div(Decimal.new(count)) |> Decimal.round(2),
+        else: Decimal.new(0)
+
+    by_method =
+      orders
+      |> Enum.group_by(&(&1.payment_method || "desconocido"))
+      |> Map.new(fn {m, group} ->
+        {m,
+         Enum.reduce(group, Decimal.new(0), fn o, acc ->
+           Decimal.add(acc, o.total || Decimal.new(0))
+         end)}
+      end)
+
+    %{
+      total_spend: total,
+      order_count: count,
+      avg_ticket: avg,
+      first_order_at: orders |> List.first() |> then(&(&1 && &1.closed_at)),
+      last_order_at: orders |> List.last() |> then(&(&1 && &1.closed_at)),
+      by_method: by_method
+    }
+  end
 
   @doc """
   Returns a summary map for the given period:
@@ -608,6 +689,50 @@ defmodule CRC.Orders do
       order_by: [desc: sum(oi.quantity)],
       limit: ^limit,
       select: {mi.name, sum(oi.quantity)}
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Top N menu items a specific customer orders most, across their closed orders.
+  Returns `[{name, total_qty}]` descending. Loyalty comp lines ($0) count too —
+  they still reflect what the customer consumes.
+  """
+  def customer_top_items(customer_id, limit \\ 10) do
+    closed_ids =
+      Order
+      |> where([o], o.status == "closed" and o.customer_id == ^customer_id)
+      |> select([o], o.id)
+
+    from(oi in OrderItem,
+      join: mi in assoc(oi, :menu_item),
+      where:
+        oi.order_id in subquery(closed_ids) and not is_nil(oi.menu_item_id) and
+          oi.status not in ["cancelled", "cancelled_waste"],
+      group_by: [oi.menu_item_id, mi.name],
+      order_by: [desc: sum(oi.quantity)],
+      limit: ^limit,
+      select: {mi.name, sum(oi.quantity)}
+    )
+    |> Repo.all()
+  end
+
+  @doc "Same ranking as `customer_top_items/2` but with the menu_item_id, for building package suggestions."
+  def customer_top_menu_items(customer_id, limit \\ 10) do
+    closed_ids =
+      Order
+      |> where([o], o.status == "closed" and o.customer_id == ^customer_id)
+      |> select([o], o.id)
+
+    from(oi in OrderItem,
+      join: mi in assoc(oi, :menu_item),
+      where:
+        oi.order_id in subquery(closed_ids) and not is_nil(oi.menu_item_id) and
+          oi.status not in ["cancelled", "cancelled_waste"],
+      group_by: [oi.menu_item_id, mi.name],
+      order_by: [desc: sum(oi.quantity)],
+      limit: ^limit,
+      select: %{menu_item_id: oi.menu_item_id, name: mi.name, quantity: sum(oi.quantity)}
     )
     |> Repo.all()
   end
@@ -962,6 +1087,15 @@ defmodule CRC.Orders do
       error ->
         error
     end
+  end
+
+  @doc """
+  Notifies subscribers that an order changed. Public so other contexts that
+  legitimately modify an order (e.g. `CRC.CRM` inserting a loyalty comp line)
+  can trigger the same LiveView refresh as the internal writers.
+  """
+  def broadcast_order_updated(order_id) do
+    broadcast({:order_updated, order_id})
   end
 
   # ---------------------------------------------------------------------------

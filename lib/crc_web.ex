@@ -86,6 +86,8 @@ defmodule CRCWeb do
       import Phoenix.HTML
       # Core UI components
       import CRCWeb.CoreComponents
+      # Shared /admin panel components (cards, stat cards, modals, tables, filters)
+      import CRCWeb.AdminComponents
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

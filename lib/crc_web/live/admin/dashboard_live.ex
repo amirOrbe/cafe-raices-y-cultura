@@ -410,65 +410,9 @@ defmodule CRCWeb.Admin.DashboardLive do
   # Private components
   # ---------------------------------------------------------------------------
 
-  attr :label, :string, required: true
-  attr :value, :any, required: true
-  attr :icon, :string, required: true
-  attr :variant, :atom, default: :primary
-
-  defp stat_card(assigns) do
-    bg_class =
-      case assigns.variant do
-        :primary -> "bg-primary/10"
-        :secondary -> "bg-secondary/10"
-        :accent -> "bg-accent/10"
-        :success -> "bg-success/10"
-        :error -> "bg-error/10"
-        :warning -> "bg-warning/10"
-        :info -> "bg-info/10"
-      end
-
-    text_class =
-      case assigns.variant do
-        :primary -> "text-primary"
-        :secondary -> "text-secondary"
-        :accent -> "text-accent"
-        :success -> "text-success"
-        :error -> "text-error"
-        :warning -> "text-warning"
-        :info -> "text-info"
-      end
-
-    assigns = assigns |> assign(:bg_class, bg_class) |> assign(:text_class, text_class)
-
-    ~H"""
-    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 sm:p-4 flex items-center gap-3">
-      <div class={["size-10 rounded-xl flex items-center justify-center shrink-0", @bg_class]}>
-        <.icon name={@icon} class={"size-5 #{@text_class}"} />
-      </div>
-      <div class="min-w-0">
-        <p class="text-lg sm:text-xl font-bold text-base-content leading-none truncate">{@value}</p>
-        <p class="text-xs text-base-content/50 mt-0.5 leading-tight">{@label}</p>
-      </div>
-    </div>
-    """
-  end
-
-  attr :label, :string, required: true
-  attr :value, :integer, required: true
-  attr :icon, :string, required: true
-  attr :color, :string, required: true
-
-  defp mini_stat(assigns) do
-    ~H"""
-    <div class="flex items-center gap-2">
-      <.icon name={@icon} class={"size-4 shrink-0 #{@color}"} />
-      <div>
-        <p class="text-base font-bold text-base-content leading-none">{@value}</p>
-        <p class="text-xs text-base-content/40">{@label}</p>
-      </div>
-    </div>
-    """
-  end
+  # stat_card/1 and mini_stat/1 now come from CRCWeb.AdminComponents (imported
+  # via CRCWeb.html_helpers/0) — this file's copies were byte-for-byte
+  # identical and have been removed in favor of the shared version.
 
   attr :status, :string, required: true
 

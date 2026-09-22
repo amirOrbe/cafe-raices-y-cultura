@@ -205,21 +205,21 @@ defmodule CRCWeb.Admin.VentasLive do
 
       <%!-- Summary cards --%>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <.stat_card
+        <.legacy_stat_card
           label="Total ingresos"
           value={"$#{format_price(@summary.total_revenue)}"}
           icon="hero-banknotes"
           color="text-success"
           bg="bg-success/10"
         />
-        <.stat_card
+        <.legacy_stat_card
           label="Comandas cerradas"
           value={"#{@summary.order_count}"}
           icon="hero-clipboard-document-check"
           color="text-primary"
           bg="bg-primary/10"
         />
-        <.stat_card
+        <.legacy_stat_card
           label="Ticket promedio"
           value={"$#{format_price(@summary.avg_ticket)}"}
           icon="hero-calculator"
@@ -458,13 +458,18 @@ defmodule CRCWeb.Admin.VentasLive do
     """
   end
 
+  # Renamed from stat_card/1 — collided with CRCWeb.AdminComponents.stat_card/1
+  # once that shared component was imported everywhere. This page's version
+  # has a different API (color/bg instead of variant) and is slated to
+  # migrate to <.stat_card> in the Ventas+Rendimiento rollout PR; renaming
+  # here just unblocks compilation without changing anything visually yet.
   attr :label, :string, required: true
   attr :value, :string, required: true
   attr :icon, :string, required: true
   attr :color, :string, required: true
   attr :bg, :string, required: true
 
-  defp stat_card(assigns) do
+  defp legacy_stat_card(assigns) do
     ~H"""
     <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 flex items-center gap-4">
       <div class={["size-12 rounded-xl flex items-center justify-center shrink-0", @bg]}>

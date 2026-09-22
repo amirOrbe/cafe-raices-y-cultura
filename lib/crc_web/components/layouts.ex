@@ -79,6 +79,10 @@ defmodule CRCWeb.Layouts do
   attr :current_scope, :map, default: nil
   attr :inner_content, :any, default: nil
 
+  attr :current_path, :string,
+    default: nil,
+    doc: "set by CRCWeb.UserAuth's :require_admin on_mount hook"
+
   def admin(assigns) do
     ~H"""
     <div class="min-h-screen bg-base-200">
@@ -122,203 +126,14 @@ defmodule CRCWeb.Layouts do
 
         <%!-- Navegación --%>
         <nav class="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
-          <a
-            href="/admin"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-home" class="size-5 shrink-0" /> Dashboard
-          </a>
-          <a
-            href="/bitacora"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-clipboard-document-check" class="size-5 shrink-0" /> Bitácora de Turno
-          </a>
-          <a
-            href="/admin/usuarios"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-users" class="size-5 shrink-0" /> Usuarios
-          </a>
-          <a
-            href="/admin/clientes"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-identification" class="size-5 shrink-0" /> Clientes
-          </a>
-
-          <%!-- Menu section --%>
-          <div class="pt-3 pb-1">
-            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
-              Carta
-            </p>
-          </div>
-          <a
-            href="/admin/platillos"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-clipboard-document-list" class="size-5 shrink-0" /> Platillos
-          </a>
-          <a
-            href="/admin/platillos/categorias"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-squares-2x2" class="size-5 shrink-0" /> Categorías de platillos
-          </a>
-          <a
-            href="/admin/paquetes"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-gift" class="size-5 shrink-0" /> Paquetes
-          </a>
-
-          <%!-- Inventory section --%>
-          <div class="pt-3 pb-1">
-            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
-              Inventario
-            </p>
-          </div>
-          <a
-            href="/admin/inventario"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-clipboard-document-list" class="size-5 shrink-0" /> Inventario (stock)
-          </a>
-          <a
-            href="/admin/proveedores"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-truck" class="size-5 shrink-0" /> Proveedores
-          </a>
-          <a
-            href="/admin/insumos"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-archive-box" class="size-5 shrink-0" /> Insumos
-          </a>
-          <a
-            href="/admin/insumos/categorias"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-tag" class="size-5 shrink-0" /> Categorías de insumos
-          </a>
-          <a
-            href="/admin/produccion"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-beaker" class="size-5 shrink-0" /> Producción Interna
-          </a>
-
-          <%!-- Colaboraciones section --%>
-          <div class="pt-3 pb-1">
-            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
-              Colaboraciones
-            </p>
-          </div>
-          <a
-            href="/admin/eventos"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-calendar" class="size-5 shrink-0" /> Eventos
-          </a>
-          <a
-            href="/admin/colaboradores"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-user-group" class="size-5 shrink-0" /> Colaboradores
-          </a>
-          <a
-            href="/admin/eventos/tipos"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-tag" class="size-5 shrink-0" /> Tipos de evento
-          </a>
-          <%!-- Operaciones --%>
-          <div class="pt-3 pb-1">
-            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
-              Operaciones
-            </p>
-          </div>
-          <a
-            href="/admin/mesas"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-table-cells" class="size-5 shrink-0" /> Mesas
-          </a>
-          <a
-            href="/admin/descuentos"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-tag" class="size-5 shrink-0" /> Descuentos
-          </a>
-          <a
-            href="/admin/lealtad"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-ticket" class="size-5 shrink-0" /> Lealtad
-          </a>
-
-          <%!-- Reportes section --%>
-          <div class="pt-3 pb-1">
-            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
-              Reportes
-            </p>
-          </div>
-          <a
-            href="/admin/ventas"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-chart-bar" class="size-5 shrink-0" /> Ventas
-          </a>
-          <a
-            href="/admin/rendimiento"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-clock" class="size-5 shrink-0" /> Rendimiento
-          </a>
-          <a
-            href="/admin/finanzas"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-scale" class="size-5 shrink-0" /> Finanzas
-          </a>
-
-          <%!-- Personal --%>
-          <div class="pt-3 pb-1">
-            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
-              Personal
-            </p>
-          </div>
-          <a
-            href="/admin/horarios"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-calendar-days" class="size-5 shrink-0" /> Horarios
-          </a>
-          <a
-            href="/admin/asistencia"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-finger-print" class="size-5 shrink-0" /> Asistencia
-          </a>
-          <a
-            href="/admin/calendario"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-calendar" class="size-5 shrink-0" /> Calendario de actividades
-          </a>
-          <a
-            href="/admin/cumpleanos"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-cake" class="size-5 shrink-0" /> Cumpleaños
-          </a>
-          <a
-            href="/admin/configuracion"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-cog-6-tooth" class="size-5 shrink-0" /> Configuración
-          </a>
+          <%= for section <- nav_sections() do %>
+            <div :if={section[:label]} class="pt-3 pb-1">
+              <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
+                {section.label}
+              </p>
+            </div>
+            <.nav_link :for={item <- section.items} item={item} current_path={assigns[:current_path]} />
+          <% end %>
         </nav>
 
         <%!-- Usuario y logout --%>
@@ -370,6 +185,128 @@ defmodule CRCWeb.Layouts do
         </main>
       </div>
     </div>
+    """
+  end
+
+  # ---------------------------------------------------------------------------
+  # Admin sidebar navigation
+  # ---------------------------------------------------------------------------
+
+  # Grouped as data (rather than ~25 hand-copied <a> tags) so adding, moving,
+  # or renaming a link is a one-line change instead of a copy/paste edit, and
+  # so nav_link/1 can highlight the active page in one place.
+  defp nav_sections do
+    [
+      %{
+        items: [
+          %{path: "/admin", label: "Dashboard", icon: "hero-home"},
+          %{path: "/bitacora", label: "Bitácora de Turno", icon: "hero-clipboard-document-check"}
+        ]
+      },
+      %{
+        label: "Clientes",
+        items: [
+          %{path: "/admin/clientes", label: "Clientes", icon: "hero-identification"},
+          %{path: "/admin/lealtad", label: "Lealtad", icon: "hero-ticket"}
+        ]
+      },
+      %{
+        label: "Carta y Menú",
+        items: [
+          %{path: "/admin/platillos", label: "Platillos", icon: "hero-clipboard-document-list"},
+          %{
+            path: "/admin/platillos/categorias",
+            label: "Categorías de platillos",
+            icon: "hero-squares-2x2"
+          },
+          %{path: "/admin/paquetes", label: "Paquetes", icon: "hero-gift"}
+        ]
+      },
+      %{
+        label: "Inventario",
+        items: [
+          %{
+            path: "/admin/inventario",
+            label: "Inventario (stock)",
+            icon: "hero-clipboard-document-list"
+          },
+          %{path: "/admin/proveedores", label: "Proveedores", icon: "hero-truck"},
+          %{path: "/admin/insumos", label: "Insumos", icon: "hero-archive-box"},
+          %{
+            path: "/admin/insumos/categorias",
+            label: "Categorías de insumos",
+            icon: "hero-tag"
+          },
+          %{path: "/admin/produccion", label: "Producción Interna", icon: "hero-beaker"}
+        ]
+      },
+      %{
+        label: "Operaciones del local",
+        items: [
+          %{path: "/admin/mesas", label: "Mesas", icon: "hero-table-cells"},
+          %{path: "/admin/descuentos", label: "Descuentos", icon: "hero-tag"}
+        ]
+      },
+      %{
+        label: "Eventos y Colaboraciones",
+        items: [
+          %{path: "/admin/eventos", label: "Eventos", icon: "hero-calendar"},
+          %{path: "/admin/colaboradores", label: "Colaboradores", icon: "hero-user-group"},
+          %{path: "/admin/eventos/tipos", label: "Tipos de evento", icon: "hero-tag"}
+        ]
+      },
+      %{
+        label: "Reportes y Finanzas",
+        items: [
+          %{path: "/admin/finanzas", label: "Finanzas", icon: "hero-scale"},
+          %{path: "/admin/ventas", label: "Ventas", icon: "hero-chart-bar"},
+          %{path: "/admin/rendimiento", label: "Rendimiento", icon: "hero-clock"}
+        ]
+      },
+      %{
+        label: "Personal",
+        items: [
+          %{path: "/admin/usuarios", label: "Usuarios", icon: "hero-users"},
+          %{path: "/admin/horarios", label: "Horarios", icon: "hero-calendar-days"},
+          %{path: "/admin/asistencia", label: "Asistencia", icon: "hero-finger-print"},
+          %{
+            path: "/admin/calendario",
+            label: "Calendario de actividades",
+            icon: "hero-calendar"
+          },
+          %{path: "/admin/cumpleanos", label: "Cumpleaños", icon: "hero-cake"}
+        ]
+      },
+      %{
+        label: "Sistema",
+        items: [
+          %{path: "/admin/configuracion", label: "Configuración", icon: "hero-cog-6-tooth"}
+        ]
+      }
+    ]
+  end
+
+  attr :item, :map, required: true
+  attr :current_path, :string, default: nil
+
+  defp nav_link(assigns) do
+    active? = assigns.current_path == assigns.item.path
+    assigns = assign(assigns, :active?, active?)
+
+    ~H"""
+    <a
+      href={@item.path}
+      class={[
+        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium",
+        if(@active?,
+          do: "bg-primary-content/15 font-semibold",
+          else: "hover:bg-primary-content/15"
+        )
+      ]}
+      aria-current={@active? && "page"}
+    >
+      <.icon name={@item.icon} class="size-5 shrink-0" /> {@item.label}
+    </a>
     """
   end
 

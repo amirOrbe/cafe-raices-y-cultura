@@ -232,8 +232,8 @@ defmodule CRCWeb.AdminComponents do
 
   def period_filter(assigns) do
     ~H"""
-    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-      <div class="join">
+    <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+      <div class="join flex-wrap">
         <button
           :for={
             {label, value} <- [
@@ -254,8 +254,8 @@ defmodule CRCWeb.AdminComponents do
         </button>
       </div>
 
-      <form phx-change={@on_range} class="flex items-center gap-2">
-        <label class="text-xs text-base-content/50 uppercase tracking-wider">
+      <form phx-change={@on_range} class="flex flex-wrap items-center gap-2">
+        <label class="text-xs text-base-content/50 uppercase tracking-wider whitespace-nowrap">
           Rango personalizado
         </label>
         <input

@@ -306,14 +306,16 @@ defmodule CRCWeb.Admin.UsersLive do
       <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
       <div class="md:hidden flex flex-col gap-2">
         <%= if visible == [] do %>
-          <div class="text-center py-12 text-base-content/40 text-sm bg-base-100 rounded-2xl border border-base-300">
-            {if @status_filter == :active,
-              do: "No hay usuarios activos.",
-              else: "No hay usuarios inactivos."}
-          </div>
+          <.panel class="text-center py-12">
+            <p class="text-base-content/40 text-sm">
+              {if @status_filter == :active,
+                do: "No hay usuarios activos.",
+                else: "No hay usuarios inactivos."}
+            </p>
+          </.panel>
         <% end %>
         <%= for user <- visible do %>
-          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-center gap-3">
+          <.panel class="p-3 flex items-center gap-3">
             <%!-- Avatar --%>
             <div class="size-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden border border-base-300">
               <%= if user.avatar_url do %>
@@ -365,24 +367,22 @@ defmodule CRCWeb.Admin.UsersLive do
                 />
               </button>
             </div>
-          </div>
+          </.panel>
         <% end %>
       </div>
 
       <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
-      <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <.panel class="hidden md:block overflow-hidden">
         <div class="overflow-x-auto">
           <table class="table table-zebra table-fixed w-full">
-            <thead>
-              <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th class="w-[25%]">Nombre</th>
-                <th class="w-[28%]">Correo</th>
-                <th class="w-[12%]">Rol</th>
-                <th class="w-[18%]">Estación</th>
-                <th class="w-[10%]">Estado</th>
-                <th class="w-[7%] text-right">Acciones</th>
-              </tr>
-            </thead>
+            <.admin_table_head>
+              <:col class="w-[25%]">Nombre</:col>
+              <:col class="w-[28%]">Correo</:col>
+              <:col class="w-[12%]">Rol</:col>
+              <:col class="w-[18%]">Estación</:col>
+              <:col class="w-[10%]">Estado</:col>
+              <:col class="w-[7%] text-right">Acciones</:col>
+            </.admin_table_head>
             <tbody>
               <%= for user <- visible do %>
                 <tr class="hover:bg-base-200/50 transition-colors">
@@ -460,7 +460,7 @@ defmodule CRCWeb.Admin.UsersLive do
             </tbody>
           </table>
         </div>
-      </div>
+      </.panel>
     </div>
 
     <%!-- Modal: new / edit user --%>
@@ -505,239 +505,210 @@ defmodule CRCWeb.Admin.UsersLive do
     assigns = assigns |> assign(:title, title) |> assign(:current_avatar, current_avatar)
 
     ~H"""
-    <div
-      id="user-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      phx-window-keydown="close_modal"
-      phx-key="Escape"
-    >
-      <%!-- Overlay --%>
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
+    <.admin_modal id="user-modal" size="lg" on_close="close_modal">
+      <:title>{@title}</:title>
+      <.form
+        id="user-form"
+        for={@form}
+        phx-submit="save_user"
+        phx-change="validate_upload"
+        class="space-y-1"
+      >
+        <%!-- Acceso rápido hint --%>
+        <%= if @modal == :new_guest do %>
+          <div class="alert alert-info text-sm mb-2 py-2 px-3">
+            <.icon name="hero-bolt" class="size-4 shrink-0" />
+            <span>
+              Crea un acceso temporal de empleado de sala con nombre, correo y contraseña.
+            </span>
+          </div>
+        <% end %>
 
-      <%!-- Panel --%>
-      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
-        <%!-- Header --%>
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
-          <button id="btn-close-modal" class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
-            <.icon name="hero-x-mark" class="size-5" />
-          </button>
-        </div>
+        <%!-- ── Avatar ──────────────────────────────────────────────────────── --%>
+        <div class={"pb-2 #{if @modal == :new_guest, do: "hidden"}"}>
+          <p class="text-sm font-medium text-base-content mb-2">
+            Foto de perfil <span class="text-base-content/40 font-normal">(opcional)</span>
+          </p>
 
-        <%!-- Form --%>
-        <div class="px-6 py-5">
-          <.form
-            id="user-form"
-            for={@form}
-            phx-submit="save_user"
-            phx-change="validate_upload"
-            class="space-y-1"
-          >
-            <%!-- Acceso rápido hint --%>
-            <%= if @modal == :new_guest do %>
-              <div class="alert alert-info text-sm mb-2 py-2 px-3">
-                <.icon name="hero-bolt" class="size-4 shrink-0" />
-                <span>
-                  Crea un acceso temporal de empleado de sala con nombre, correo y contraseña.
-                </span>
-              </div>
-            <% end %>
-
-            <%!-- ── Avatar ──────────────────────────────────────────────────────── --%>
-            <div class={"pb-2 #{if @modal == :new_guest, do: "hidden"}"}>
-              <p class="text-sm font-medium text-base-content mb-2">
-                Foto de perfil <span class="text-base-content/40 font-normal">(opcional)</span>
-              </p>
-
-              <%= if @current_avatar && !@remove_avatar do %>
-                <div class="flex items-center gap-3 p-3 bg-base-200 rounded-xl mb-2">
-                  <img
-                    src={@current_avatar}
-                    class="size-14 rounded-full object-cover border border-base-300 shrink-0"
-                  />
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-base-content">Foto actual</p>
-                    <button
-                      type="button"
-                      class="btn btn-xs btn-error btn-outline gap-1 mt-1"
-                      phx-click="remove_avatar"
-                    >
-                      <.icon name="hero-trash" class="size-3" /> Eliminar foto
-                    </button>
-                  </div>
-                </div>
-              <% end %>
-
-              <%= if !@current_avatar || @remove_avatar do %>
-                <label
-                  for={@uploads.avatar.ref}
-                  class="flex flex-col items-center justify-center gap-2 w-full py-5 px-4 rounded-2xl border-2 border-dashed border-base-300 hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all duration-200"
-                >
-                  <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-                    <.icon name="hero-user-circle" class="size-5 text-primary" />
-                  </div>
-                  <div class="text-center">
-                    <p class="text-sm font-medium text-base-content">Selecciona una foto de perfil</p>
-                    <p class="text-xs text-base-content/40 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
-                  </div>
-                  <.live_file_input upload={@uploads.avatar} class="sr-only" />
-                </label>
-              <% end %>
-
-              <%= for entry <- @uploads.avatar.entries do %>
-                <div class="flex items-center gap-3 mt-2 p-2.5 bg-base-200 rounded-xl">
-                  <.live_img_preview entry={entry} class="size-10 object-cover rounded-full shrink-0" />
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium truncate">{entry.client_name}</p>
-                    <div class="w-full bg-base-300 rounded-full h-1.5 mt-1.5">
-                      <div
-                        class="bg-primary h-1.5 rounded-full transition-all duration-300"
-                        style={"width: #{entry.progress}%"}
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
-                    phx-click="cancel_upload"
-                    phx-value-ref={entry.ref}
-                  >
-                    <.icon name="hero-x-mark" class="size-3.5" />
-                  </button>
-                </div>
-              <% end %>
-            </div>
-            <%!-- ── End Avatar ───────────────────────────────────────────────────── --%>
-
-            <.input
-              field={@form[:name]}
-              type="text"
-              label="Nombre completo"
-              placeholder="Ej. Ana García López"
-            />
-            <.input
-              field={@form[:email]}
-              type="email"
-              label="Correo electrónico"
-              placeholder="correo@ejemplo.com"
-            />
-            <%= if @modal != :new_guest do %>
-              <.input
-                field={@form[:phone]}
-                type="text"
-                label="Teléfono (opcional)"
-                placeholder="55 1234 5678"
+          <%= if @current_avatar && !@remove_avatar do %>
+            <div class="flex items-center gap-3 p-3 bg-base-200 rounded-xl mb-2">
+              <img
+                src={@current_avatar}
+                class="size-14 rounded-full object-cover border border-base-300 shrink-0"
               />
-              <.input
-                field={@form[:birthday]}
-                type="date"
-                label="Fecha de nacimiento (opcional)"
-              />
-              <.input
-                field={@form[:role]}
-                type="select"
-                label="Rol"
-                options={[
-                  {"Administrador", "admin"},
-                  {"Empleado", "empleado"},
-                  {"Cliente", "cliente"}
-                ]}
-                phx-change="role_changed"
-              />
-            <% else %>
-              <input type="hidden" name="user[role]" value="empleado" />
-            <% end %>
-            <%!-- Station checkboxes — shown when role is "empleado" or guest mode --%>
-            <%= if @form_role == "empleado" or @modal == :new_guest do %>
-              <div class="form-control">
-                <label class="label pb-1">
-                  <span class="label-text text-sm font-medium">Estaciones</span>
-                </label>
-                <%!-- Hidden sentinel so the key is always present even if nothing is checked --%>
-                <input type="hidden" name="user[stations][]" value="" />
-                <div class="flex flex-wrap gap-x-5 gap-y-2 px-1">
-                  <%= for {label, value} <- [{"Cocina", "cocina"}, {"Barra", "barra"}, {"Sala (mesero/a)", "sala"}] do %>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        name="user[stations][]"
-                        value={value}
-                        checked={value in (Phoenix.HTML.Form.input_value(@form, :stations) || [])}
-                        class="checkbox checkbox-sm checkbox-primary"
-                      />
-                      <span class="text-sm label-text">{label}</span>
-                    </label>
-                  <% end %>
-                </div>
-                <%= if msg = @form[:stations].errors |> List.first() do %>
-                  <p class="text-error text-xs mt-1">{elem(msg, 0)}</p>
-                <% end %>
-              </div>
-            <% end %>
-            <.input
-              field={@form[:password]}
-              type="password"
-              label={
-                if @modal in [:new, :new_guest],
-                  do: "Contraseña",
-                  else: "Contraseña (dejar en blanco para no cambiar)"
-              }
-              placeholder={
-                if @modal in [:new, :new_guest],
-                  do: "Mínimo 8 caracteres",
-                  else: "Nueva contraseña (opcional)"
-              }
-            />
-
-            <div class="flex justify-end gap-3 pt-4">
-              <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary">
-                {case @modal do
-                  :new -> "Crear usuario"
-                  :new_guest -> "Crear acceso"
-                  _ -> "Guardar cambios"
-                end}
-              </button>
-            </div>
-          </.form>
-
-          <%!-- Danger zone — only in edit mode --%>
-          <%= if @modal not in [:new, :new_guest] do %>
-            <div class="px-6 pb-5 pt-1 border-t border-base-200 mt-2">
-              <%= if @confirm_delete_user do %>
-                <p class="text-xs text-error mb-3 font-medium">
-                  ¿Seguro que deseas eliminar este usuario permanentemente? Esta acción no se puede deshacer.
-                </p>
-                <div class="flex gap-2">
-                  <button
-                    type="button"
-                    class="btn btn-error btn-sm flex-1"
-                    phx-click="delete_user"
-                  >
-                    Sí, eliminar permanentemente
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-ghost btn-sm flex-1"
-                    phx-click="close_modal"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              <% else %>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-base-content">Foto actual</p>
                 <button
                   type="button"
-                  class="btn btn-ghost btn-sm text-error gap-1.5 w-full sm:w-auto"
-                  phx-click="confirm_delete_user"
+                  class="btn btn-xs btn-error btn-outline gap-1 mt-1"
+                  phx-click="remove_avatar"
                 >
-                  <.icon name="hero-trash" class="size-4" /> Eliminar usuario
+                  <.icon name="hero-trash" class="size-3" /> Eliminar foto
                 </button>
-              <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%= if !@current_avatar || @remove_avatar do %>
+            <label
+              for={@uploads.avatar.ref}
+              class="flex flex-col items-center justify-center gap-2 w-full py-5 px-4 rounded-2xl border-2 border-dashed border-base-300 hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all duration-200"
+            >
+              <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                <.icon name="hero-user-circle" class="size-5 text-primary" />
+              </div>
+              <div class="text-center">
+                <p class="text-sm font-medium text-base-content">Selecciona una foto de perfil</p>
+                <p class="text-xs text-base-content/40 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
+              </div>
+              <.live_file_input upload={@uploads.avatar} class="sr-only" />
+            </label>
+          <% end %>
+
+          <%= for entry <- @uploads.avatar.entries do %>
+            <div class="flex items-center gap-3 mt-2 p-2.5 bg-base-200 rounded-xl">
+              <.live_img_preview entry={entry} class="size-10 object-cover rounded-full shrink-0" />
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">{entry.client_name}</p>
+                <div class="w-full bg-base-300 rounded-full h-1.5 mt-1.5">
+                  <div
+                    class="bg-primary h-1.5 rounded-full transition-all duration-300"
+                    style={"width: #{entry.progress}%"}
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
+                phx-click="cancel_upload"
+                phx-value-ref={entry.ref}
+              >
+                <.icon name="hero-x-mark" class="size-3.5" />
+              </button>
             </div>
           <% end %>
         </div>
-      </div>
-    </div>
+        <%!-- ── End Avatar ───────────────────────────────────────────────────── --%>
+
+        <.input
+          field={@form[:name]}
+          type="text"
+          label="Nombre completo"
+          placeholder="Ej. Ana García López"
+        />
+        <.input
+          field={@form[:email]}
+          type="email"
+          label="Correo electrónico"
+          placeholder="correo@ejemplo.com"
+        />
+        <%= if @modal != :new_guest do %>
+          <.input
+            field={@form[:phone]}
+            type="text"
+            label="Teléfono (opcional)"
+            placeholder="55 1234 5678"
+          />
+          <.input
+            field={@form[:birthday]}
+            type="date"
+            label="Fecha de nacimiento (opcional)"
+          />
+          <.input
+            field={@form[:role]}
+            type="select"
+            label="Rol"
+            options={[
+              {"Administrador", "admin"},
+              {"Empleado", "empleado"},
+              {"Cliente", "cliente"}
+            ]}
+            phx-change="role_changed"
+          />
+        <% else %>
+          <input type="hidden" name="user[role]" value="empleado" />
+        <% end %>
+        <%!-- Station checkboxes — shown when role is "empleado" or guest mode --%>
+        <%= if @form_role == "empleado" or @modal == :new_guest do %>
+          <div class="form-control">
+            <label class="label pb-1">
+              <span class="label-text text-sm font-medium">Estaciones</span>
+            </label>
+            <%!-- Hidden sentinel so the key is always present even if nothing is checked --%>
+            <input type="hidden" name="user[stations][]" value="" />
+            <div class="flex flex-wrap gap-x-5 gap-y-2 px-1">
+              <%= for {label, value} <- [{"Cocina", "cocina"}, {"Barra", "barra"}, {"Sala (mesero/a)", "sala"}] do %>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="user[stations][]"
+                    value={value}
+                    checked={value in (Phoenix.HTML.Form.input_value(@form, :stations) || [])}
+                    class="checkbox checkbox-sm checkbox-primary"
+                  />
+                  <span class="text-sm label-text">{label}</span>
+                </label>
+              <% end %>
+            </div>
+            <%= if msg = @form[:stations].errors |> List.first() do %>
+              <p class="text-error text-xs mt-1">{elem(msg, 0)}</p>
+            <% end %>
+          </div>
+        <% end %>
+        <.input
+          field={@form[:password]}
+          type="password"
+          label={
+            if @modal in [:new, :new_guest],
+              do: "Contraseña",
+              else: "Contraseña (dejar en blanco para no cambiar)"
+          }
+          placeholder={
+            if @modal in [:new, :new_guest],
+              do: "Mínimo 8 caracteres",
+              else: "Nueva contraseña (opcional)"
+          }
+        />
+
+        <div class="flex justify-end gap-3 pt-4">
+          <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            {case @modal do
+              :new -> "Crear usuario"
+              :new_guest -> "Crear acceso"
+              _ -> "Guardar cambios"
+            end}
+          </button>
+        </div>
+      </.form>
+
+      <%!-- Danger zone — only in edit mode --%>
+      <%= if @modal not in [:new, :new_guest] do %>
+        <div class="pt-3 mt-2 border-t border-base-200">
+          <%= if @confirm_delete_user do %>
+            <p class="text-xs text-error mb-3 font-medium">
+              ¿Seguro que deseas eliminar este usuario permanentemente? Esta acción no se puede deshacer.
+            </p>
+            <div class="flex gap-2">
+              <button type="button" class="btn btn-error btn-sm flex-1" phx-click="delete_user">
+                Sí, eliminar permanentemente
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm flex-1" phx-click="close_modal">
+                Cancelar
+              </button>
+            </div>
+          <% else %>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm text-error gap-1.5 w-full sm:w-auto"
+              phx-click="confirm_delete_user"
+            >
+              <.icon name="hero-trash" class="size-4" /> Eliminar usuario
+            </button>
+          <% end %>
+        </div>
+      <% end %>
+    </.admin_modal>
     """
   end
 
@@ -746,27 +717,25 @@ defmodule CRCWeb.Admin.UsersLive do
   # ---------------------------------------------------------------------------
 
   defp role_badge(assigns) do
-    {text, cls} =
+    {text, variant} =
       case assigns.role do
-        "admin" -> {"Admin", "badge-primary"}
-        "empleado" -> {"Empleado", "badge-secondary"}
-        _ -> {"Cliente", "badge-ghost"}
+        "admin" -> {"Admin", :primary}
+        "empleado" -> {"Empleado", :secondary}
+        _ -> {"Cliente", :ghost}
       end
 
-    assigns = assign(assigns, text: text, cls: cls)
+    assigns = assign(assigns, text: text, variant: variant)
 
     ~H"""
-    <span class={["badge badge-sm", @cls]}>{@text}</span>
+    <.admin_badge variant={@variant}>{@text}</.admin_badge>
     """
   end
 
   defp status_badge(assigns) do
     ~H"""
-    <%= if @is_active do %>
-      <span class="badge badge-sm badge-success">Activo</span>
-    <% else %>
-      <span class="badge badge-sm badge-error">Inactivo</span>
-    <% end %>
+    <.admin_badge variant={if @is_active, do: :success, else: :error}>
+      {if @is_active, do: "Activo", else: "Inactivo"}
+    </.admin_badge>
     """
   end
 

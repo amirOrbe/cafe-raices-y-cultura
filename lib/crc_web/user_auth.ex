@@ -124,6 +124,17 @@ defmodule CRCWeb.UserAuth do
 
     case socket.assigns.current_user do
       %{role: "admin"} ->
+        # Tracks the current request path in @current_path so the admin
+        # sidebar (lib/crc_web/components/layouts.ex, def admin/1) can
+        # highlight the active nav link. handle_params runs on mount (both
+        # disconnected and connected) and on every subsequent navigation, so
+        # this stays accurate without touching any individual admin LiveView.
+        socket =
+          Phoenix.LiveView.attach_hook(socket, :admin_current_path, :handle_params, fn
+            _params, uri, socket ->
+              {:cont, Phoenix.Component.assign(socket, :current_path, URI.parse(uri).path)}
+          end)
+
         {:cont, socket}
 
       _ ->

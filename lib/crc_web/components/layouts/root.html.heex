@@ -31,7 +31,11 @@
           }
         };
         const stored = localStorage.getItem("phx:theme");
-        if (stored) setTheme(stored);
+        if (stored) {
+          setTheme(stored);
+        } else {
+          document.documentElement.setAttribute("data-theme", systemTheme());
+        }
         media.addEventListener("change", () => {
           if (!localStorage.getItem("phx:theme")) setTheme("system");
         });

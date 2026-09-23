@@ -106,9 +106,9 @@ defmodule CRCWeb.Layouts do
         <%!-- Logo --%>
         <div class="px-6 py-5 border-b border-primary-content/20 flex items-center justify-between">
           <div>
-            <a href="/admin" class="flex items-center gap-2">
+            <.link navigate="/admin" class="flex items-center gap-2">
               <span class="text-lg font-bold tracking-tight">CRC Admin</span>
-            </a>
+            </.link>
             <p class="text-xs text-primary-content/50 mt-0.5">Panel de Administración</p>
           </div>
           <%!-- Cerrar sidebar en móvil --%>
@@ -142,12 +142,12 @@ defmodule CRCWeb.Layouts do
             <span class="text-xs text-primary-content/50">Apariencia</span>
             <.theme_toggle />
           </div>
-          <a
-            href="/"
+          <.link
+            navigate="/"
             class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm text-primary-content/80"
           >
             <.icon name="hero-arrow-left" class="size-4 shrink-0" /> Ver sitio
-          </a>
+          </.link>
           <form action="/cerrar-sesion" method="post">
             <input type="hidden" name="_method" value="delete" />
             <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
@@ -294,8 +294,8 @@ defmodule CRCWeb.Layouts do
     assigns = assign(assigns, :active?, active?)
 
     ~H"""
-    <a
-      href={@item.path}
+    <.link
+      navigate={@item.path}
       class={[
         "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium",
         if(@active?,
@@ -306,7 +306,7 @@ defmodule CRCWeb.Layouts do
       aria-current={@active? && "page"}
     >
       <.icon name={@item.icon} class="size-5 shrink-0" /> {@item.label}
-    </a>
+    </.link>
     """
   end
 

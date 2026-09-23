@@ -360,19 +360,19 @@ defmodule CRCWeb.Admin.CalendarioLive do
 
       <%!-- Empty state --%>
       <%= if @areas == [] do %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-20 text-center">
+        <.panel class="py-20 text-center">
           <.icon name="hero-calendar-days" class="size-12 text-base-content/20 mx-auto mb-3" />
           <p class="text-base-content/50 text-sm">No hay áreas ni tareas configuradas.</p>
           <button class="btn btn-primary btn-sm mt-4" phx-click="set_tab" phx-value-tab="manage">
             Agregar áreas y tareas
           </button>
-        </div>
+        </.panel>
       <% end %>
 
       <%!-- Desktop table (hidden on mobile) --%>
       <%= if @areas != [] do %>
-        <div class="hidden md:block overflow-x-auto">
-          <table class="table table-fixed w-full text-sm bg-base-100 rounded-2xl shadow-sm border border-base-300">
+        <.panel class="hidden md:block overflow-x-auto">
+          <table class="table table-fixed w-full text-sm">
             <thead>
               <tr class="bg-base-200 text-base-content/70">
                 <th class="w-32 text-xs">Área</th>
@@ -441,12 +441,12 @@ defmodule CRCWeb.Admin.CalendarioLive do
               <% end %>
             </tbody>
           </table>
-        </div>
+        </.panel>
 
         <%!-- Mobile cards --%>
         <div class="md:hidden space-y-4">
           <%= for area <- @areas do %>
-            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+            <.panel class="overflow-hidden">
               <div class={"px-4 py-2.5 font-bold text-sm text-white #{area_bg_class(area.color)}"}>
                 {area.name}
               </div>
@@ -494,7 +494,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
                   </div>
                 </div>
               <% end %>
-            </div>
+            </.panel>
           <% end %>
         </div>
 
@@ -611,7 +611,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
         <% end %>
 
         <%= for area <- @areas do %>
-          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+          <.panel class="overflow-hidden">
             <%!-- Area header --%>
             <div class={"flex items-center gap-2 px-4 py-3 #{area_bg_class(area.color)}"}>
               <span class="font-bold text-white text-sm flex-1 min-w-0 truncate">{area.name}</span>
@@ -725,12 +725,12 @@ defmodule CRCWeb.Admin.CalendarioLive do
                 </div>
               <% end %>
             </div>
-          </div>
+          </.panel>
         <% end %>
       </div>
 
       <%!-- Employees legend --%>
-      <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-4 space-y-3">
+      <.panel class="p-4 space-y-3">
         <h2 class="font-semibold text-base-content text-sm">Empleados activos</h2>
         <div class="flex flex-wrap gap-3">
           <%= for emp <- @employees do %>
@@ -745,7 +745,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
         <p class="text-xs text-base-content/40">
           Los empleados se gestionan en <a href="/admin/usuarios" class="link">Usuarios</a>.
         </p>
-      </div>
+      </.panel>
     </div>
     """
   end

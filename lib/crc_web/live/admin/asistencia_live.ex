@@ -211,7 +211,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
     ~H"""
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <%= for {user, record} <- @staff_today do %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 flex flex-col gap-3">
+        <.panel class="p-5 flex flex-col gap-3">
           <%!-- User info --%>
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
@@ -267,7 +267,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
               </button>
             <% end %>
           </div>
-        </div>
+        </.panel>
       <% end %>
     </div>
     """
@@ -301,12 +301,12 @@ defmodule CRCWeb.Admin.AsistenciaLive do
 
       <%!-- Summary table --%>
       <%= if @summary == [] do %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 p-12 text-center text-base-content/40">
+        <.panel class="p-12 text-center text-base-content/40">
           <.icon name="hero-chart-bar" class="size-12 mx-auto mb-3 opacity-30" />
           <p>Sin datos de asistencia para este período.</p>
-        </div>
+        </.panel>
       <% else %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-x-auto">
+        <.panel class="overflow-x-auto">
           <table class="table table-zebra w-full text-sm min-w-[640px]">
             <thead>
               <tr>
@@ -357,7 +357,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
               <% end %>
             </tbody>
           </table>
-        </div>
+        </.panel>
       <% end %>
     </div>
     """
@@ -369,16 +369,12 @@ defmodule CRCWeb.Admin.AsistenciaLive do
     assigns = assign(assigns, action_label: action_label, employee: employee)
 
     ~H"""
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-5">
-        <div>
-          <h3 class="text-lg font-bold text-base-content">
-            Registrar {@action_label}
-          </h3>
-          <p class="text-sm text-base-content/60 mt-1">
-            Empleado: <strong>{@employee.name}</strong>
-          </p>
-        </div>
+    <.admin_modal id="manual-attendance-modal" size="sm" on_close="close_modal">
+      <:title>Registrar {@action_label}</:title>
+      <div class="space-y-5">
+        <p class="text-sm text-base-content/60 -mt-2">
+          Empleado: <strong>{@employee.name}</strong>
+        </p>
 
         <%!-- Time option --%>
         <div class="space-y-3">
@@ -438,7 +434,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
           </button>
         </div>
       </div>
-    </div>
+    </.admin_modal>
     """
   end
 

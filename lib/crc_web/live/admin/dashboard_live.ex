@@ -22,7 +22,11 @@ defmodule CRCWeb.Admin.DashboardLive do
       socket
       |> assign(:page_title, "Dashboard · Admin")
       |> assign(:now, DateTime.utc_now())
+      |> assign(:period, :all)
+      |> assign(:date_from, "")
+      |> assign(:date_to, "")
       |> load_all()
+      |> load_report_data()
 
     {:ok, socket}
   end
@@ -33,7 +37,7 @@ defmodule CRCWeb.Admin.DashboardLive do
 
   @impl true
   def handle_info({:order_updated, _order_id}, socket) do
-    {:noreply, load_all(socket)}
+    {:noreply, socket |> load_all() |> load_report_data()}
   end
 
   def handle_info({event, _payload}, socket)
@@ -44,6 +48,39 @@ defmodule CRCWeb.Admin.DashboardLive do
   def handle_info(:tick, socket) do
     schedule_tick()
     {:noreply, socket |> assign(:now, DateTime.utc_now()) |> load_all()}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Events — period filter for the chart reports section
+  # ---------------------------------------------------------------------------
+
+  @impl true
+  def handle_event("set_period", %{"period" => period}, socket) do
+    socket =
+      socket
+      |> assign(:period, String.to_existing_atom(period))
+      |> assign(:date_from, "")
+      |> assign(:date_to, "")
+      |> load_report_data()
+
+    {:noreply, socket}
+  end
+
+  def handle_event("set_date_range", %{"date_from" => from, "date_to" => to}, socket) do
+    with {:ok, d_from} <- Date.from_iso8601(from),
+         {:ok, d_to} <- Date.from_iso8601(to),
+         true <- Date.compare(d_from, d_to) != :gt do
+      socket =
+        socket
+        |> assign(:period, {:range, d_from, d_to})
+        |> assign(:date_from, from)
+        |> assign(:date_to, to)
+        |> load_report_data()
+
+      {:noreply, socket}
+    else
+      _ -> {:noreply, socket}
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -71,6 +108,99 @@ defmodule CRCWeb.Admin.DashboardLive do
     |> assign(:low_stock, low_stock)
     |> assign(:user_stats, build_user_stats(users))
   end
+
+  # Palette shared by the 4 pie charts — warm tones matching the café brand,
+  # with a neutral gray reserved for "Otros" buckets.
+  @chart_colors ~w(#6b4226 #b5651d #d4a373 #8a9b6e #4a7c7c #c1666b #e0b354 #7d8597)
+
+  defp load_report_data(socket) do
+    period = socket.assigns.period
+
+    sales = Orders.sales_summary(period)
+    financial = Orders.financial_summary(period)
+    top_items = Orders.top_selling_items(period, 5)
+    %{revenue_ranking: revenue_ranking} = Orders.employee_rankings(period)
+
+    socket
+    |> assign(:payment_method_chart, payment_method_chart_data(sales.by_method))
+    |> assign(:revenue_composition_chart, revenue_composition_chart_data(financial))
+    |> assign(:top_items_chart, top_items_chart_data(top_items))
+    |> assign(:employee_revenue_chart, employee_revenue_chart_data(revenue_ranking))
+  end
+
+  defp payment_method_chart_data(by_method) when map_size(by_method) == 0 do
+    empty_chart()
+  end
+
+  defp payment_method_chart_data(by_method) do
+    {labels, values} =
+      by_method
+      |> Enum.sort_by(fn {_method, amount} -> amount end, {:desc, Decimal})
+      |> Enum.map(fn {method, amount} ->
+        {String.capitalize(method || "Desconocido"), Decimal.to_float(amount)}
+      end)
+      |> Enum.unzip()
+
+    to_chart(labels, values)
+  end
+
+  defp revenue_composition_chart_data(%{revenue: revenue} = financial) do
+    if Decimal.compare(revenue, Decimal.new(0)) == :eq do
+      empty_chart()
+    else
+      net_profit = Decimal.sub(financial.gross_profit, financial.waste_cost)
+
+      to_chart(
+        ["Costo de insumos", "Ganancia neta", "Desperdicio"],
+        [
+          Decimal.to_float(financial.cogs),
+          Decimal.to_float(net_profit),
+          Decimal.to_float(financial.waste_cost)
+        ]
+      )
+    end
+  end
+
+  defp top_items_chart_data([]), do: empty_chart()
+
+  defp top_items_chart_data(top_items) do
+    {labels, values} = top_items |> Enum.map(fn {name, qty} -> {name, qty} end) |> Enum.unzip()
+    to_chart(labels, values)
+  end
+
+  defp employee_revenue_chart_data([]), do: empty_chart()
+
+  defp employee_revenue_chart_data(revenue_ranking) do
+    {top5, rest} = Enum.split(revenue_ranking, 5)
+
+    entries =
+      case rest do
+        [] ->
+          top5
+
+        rest ->
+          otros_revenue = Enum.reduce(rest, Decimal.new(0), &Decimal.add(&2, &1.revenue))
+          top5 ++ [%{name: "Otros", revenue: otros_revenue}]
+      end
+
+    {labels, values} =
+      entries
+      |> Enum.map(fn entry -> {entry.name, Decimal.to_float(entry.revenue)} end)
+      |> Enum.unzip()
+
+    to_chart(labels, values)
+  end
+
+  defp to_chart(labels, values) do
+    %{
+      labels: labels,
+      datasets: [
+        %{data: values, backgroundColor: Enum.take(Stream.cycle(@chart_colors), length(values))}
+      ]
+    }
+  end
+
+  defp empty_chart, do: %{labels: [], datasets: [%{data: [], backgroundColor: []}]}
 
   defp count_sent_by_dest(orders, dest) do
     orders
@@ -400,6 +530,62 @@ defmodule CRCWeb.Admin.DashboardLive do
               color="text-accent"
             />
           </div>
+        </div>
+      </div>
+
+      <%!-- ── Reportes con gráficas ──────────────────────────────────────────── --%>
+      <div class="space-y-4 pt-2">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <h2 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">
+            Reportes
+          </h2>
+          <.period_filter period={@period} date_from={@date_from} date_to={@date_to} />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <.panel class="p-5">
+            <h3 class="text-sm font-semibold text-base-content mb-3">Ventas por método de pago</h3>
+            <div class="h-64 relative">
+              <canvas
+                id="chart-payment-method"
+                phx-hook="PieChart"
+                data-chart={Jason.encode!(@payment_method_chart)}
+              />
+            </div>
+          </.panel>
+
+          <.panel class="p-5">
+            <h3 class="text-sm font-semibold text-base-content mb-3">Composición del ingreso</h3>
+            <div class="h-64 relative">
+              <canvas
+                id="chart-revenue-composition"
+                phx-hook="PieChart"
+                data-chart={Jason.encode!(@revenue_composition_chart)}
+              />
+            </div>
+          </.panel>
+
+          <.panel class="p-5">
+            <h3 class="text-sm font-semibold text-base-content mb-3">Platillos más vendidos</h3>
+            <div class="h-64 relative">
+              <canvas
+                id="chart-top-items"
+                phx-hook="PieChart"
+                data-chart={Jason.encode!(@top_items_chart)}
+              />
+            </div>
+          </.panel>
+
+          <.panel class="p-5">
+            <h3 class="text-sm font-semibold text-base-content mb-3">Ventas por empleado</h3>
+            <div class="h-64 relative">
+              <canvas
+                id="chart-employee-revenue"
+                phx-hook="PieChart"
+                data-chart={Jason.encode!(@employee_revenue_chart)}
+              />
+            </div>
+          </.panel>
         </div>
       </div>
 

@@ -145,7 +145,7 @@ defmodule CRCWeb.AdminComponents do
       </.admin_modal>
   """
   attr :id, :string, required: true
-  attr :size, :string, default: "md", values: ~w(sm md lg xl)
+  attr :size, :string, default: "md", values: ~w(sm md lg xl 2xl)
   attr :on_close, :string, required: true
 
   slot :title, required: true
@@ -155,7 +155,7 @@ defmodule CRCWeb.AdminComponents do
     ~H"""
     <div
       id={@id}
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
       phx-window-keydown={@on_close}
       phx-key="Escape"
     >
@@ -165,7 +165,7 @@ defmodule CRCWeb.AdminComponents do
         "relative bg-base-100 rounded-2xl shadow-2xl w-full overflow-y-auto max-h-[90vh]",
         modal_max_width(@size)
       ]}>
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
+        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between sticky top-0 bg-base-100 z-10">
           <h2 class="text-lg font-semibold text-base-content">{render_slot(@title)}</h2>
           <button class="btn btn-ghost btn-sm btn-circle" phx-click={@on_close}>
             <.icon name="hero-x-mark" class="size-5" />
@@ -284,6 +284,7 @@ defmodule CRCWeb.AdminComponents do
   defp modal_max_width("md"), do: "max-w-md"
   defp modal_max_width("lg"), do: "max-w-lg"
   defp modal_max_width("xl"), do: "max-w-xl"
+  defp modal_max_width("2xl"), do: "max-w-2xl"
 
   defp bg_class(:primary), do: "bg-primary/10"
   defp bg_class(:secondary), do: "bg-secondary/10"

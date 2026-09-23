@@ -245,80 +245,66 @@ defmodule CRCWeb.Admin.PackagesLive do
 
       <%!-- Package list --%>
       <%= if @packages == [] do %>
-        <div class="card bg-base-100">
-          <div class="card-body items-center py-16 text-center">
-            <.icon name="hero-gift" class="size-12 text-base-content/20 mb-2" />
-            <p class="text-base-content/50">No hay paquetes registrados.</p>
-            <p class="text-sm text-base-content/40">Crea el primero con el botón de arriba.</p>
-          </div>
-        </div>
+        <.panel class="flex flex-col items-center py-16 text-center">
+          <.icon name="hero-gift" class="size-12 text-base-content/20 mb-2" />
+          <p class="text-base-content/50">No hay paquetes registrados.</p>
+          <p class="text-sm text-base-content/40">Crea el primero con el botón de arriba.</p>
+        </.panel>
       <% else %>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <%= for pkg <- @packages do %>
-            <div class={"card bg-base-100 shadow-sm border #{if pkg.active, do: "border-base-200", else: "border-base-200 opacity-60"}"}>
-              <div class="card-body p-4 sm:p-5 space-y-3">
-                <%!-- Name + badges --%>
-                <div class="flex items-start justify-between gap-2">
-                  <div class="min-w-0">
-                    <h3 class="font-semibold text-base-content truncate">{pkg.name}</h3>
-                    <%= if pkg.description do %>
-                      <p class="text-xs text-base-content/50 mt-0.5 line-clamp-2">
-                        {pkg.description}
-                      </p>
-                    <% end %>
-                  </div>
-                  <div class="flex flex-col items-end gap-1 shrink-0">
-                    <%= if pkg.active do %>
-                      <span class="badge badge-success badge-sm">Activo</span>
-                    <% else %>
-                      <span class="badge badge-ghost badge-sm">Inactivo</span>
-                    <% end %>
-                  </div>
-                </div>
-
-                <%!-- Price --%>
-                <p class="text-2xl font-bold text-primary">${CRC.Utils.format_money(pkg.price)}</p>
-
-                <%!-- Items --%>
-                <ul class="space-y-1">
-                  <%= for pi <- pkg.package_items do %>
-                    <li class="flex items-center gap-2 text-sm text-base-content/70">
-                      <span class="badge badge-outline badge-xs">{pi.quantity}x</span>
-                      {pi.menu_item.name}
-                      <span class={"ml-auto badge badge-xs #{if pi.menu_item.destination == "barra", do: "badge-info", else: "badge-warning"}"}>
-                        {if pi.menu_item.destination == "barra", do: "Barra", else: "Cocina"}
-                      </span>
-                    </li>
+            <.panel class={["p-4 sm:p-5 space-y-3", if(!pkg.active, do: "opacity-60")]}>
+              <%!-- Name + badges --%>
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <h3 class="font-semibold text-base-content truncate">{pkg.name}</h3>
+                  <%= if pkg.description do %>
+                    <p class="text-xs text-base-content/50 mt-0.5 line-clamp-2">
+                      {pkg.description}
+                    </p>
                   <% end %>
-                </ul>
-
-                <%!-- Actions --%>
-                <div class="flex items-center gap-2 pt-1 border-t border-base-200">
-                  <button
-                    class="btn btn-xs btn-ghost"
-                    phx-click="edit_package"
-                    phx-value-id={pkg.id}
-                  >
-                    <.icon name="hero-pencil" class="size-3.5" /> Editar
-                  </button>
-                  <button
-                    class="btn btn-xs btn-ghost"
-                    phx-click="toggle_active"
-                    phx-value-id={pkg.id}
-                  >
-                    {if pkg.active, do: "Desactivar", else: "Activar"}
-                  </button>
-                  <button
-                    class="btn btn-xs btn-ghost text-error ml-auto"
-                    phx-click="delete_package"
-                    phx-value-id={pkg.id}
-                    data-confirm={"¿Eliminar el paquete \"#{pkg.name}\"? Esta acción no se puede deshacer."}
-                  >
-                    <.icon name="hero-trash" class="size-3.5" />
-                  </button>
+                </div>
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                  <.admin_badge variant={if pkg.active, do: :success, else: :ghost}>
+                    {if pkg.active, do: "Activo", else: "Inactivo"}
+                  </.admin_badge>
                 </div>
               </div>
-            </div>
+
+              <%!-- Price --%>
+              <p class="text-2xl font-bold text-primary">${CRC.Utils.format_money(pkg.price)}</p>
+
+              <%!-- Items --%>
+              <ul class="space-y-1">
+                <%= for pi <- pkg.package_items do %>
+                  <li class="flex items-center gap-2 text-sm text-base-content/70">
+                    <span class="badge badge-outline badge-xs">{pi.quantity}x</span>
+                    {pi.menu_item.name}
+                    <span class={"ml-auto badge badge-xs #{if pi.menu_item.destination == "barra", do: "badge-info", else: "badge-warning"}"}>
+                      {if pi.menu_item.destination == "barra", do: "Barra", else: "Cocina"}
+                    </span>
+                  </li>
+                <% end %>
+              </ul>
+
+              <%!-- Actions --%>
+              <div class="flex items-center gap-2 pt-1 border-t border-base-200">
+                <button class="btn btn-xs btn-ghost" phx-click="edit_package" phx-value-id={pkg.id}>
+                  <.icon name="hero-pencil" class="size-3.5" /> Editar
+                </button>
+                <button class="btn btn-xs btn-ghost" phx-click="toggle_active" phx-value-id={pkg.id}>
+                  {if pkg.active, do: "Desactivar", else: "Activar"}
+                </button>
+                <button
+                  class="btn btn-xs btn-ghost text-error ml-auto"
+                  phx-click="delete_package"
+                  phx-value-id={pkg.id}
+                  data-confirm={"¿Eliminar el paquete \"#{pkg.name}\"? Esta acción no se puede deshacer."}
+                >
+                  <.icon name="hero-trash" class="size-3.5" />
+                </button>
+              </div>
+            </.panel>
           <% end %>
         </div>
       <% end %>
@@ -326,229 +312,217 @@ defmodule CRCWeb.Admin.PackagesLive do
 
     <%!-- Modal --%>
     <%= if @modal != nil do %>
-      <div class="fixed inset-0 z-50 flex items-start justify-center p-2 pt-4 sm:p-4 sm:pt-10 bg-black/50 overflow-y-auto">
-        <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-2xl mb-4">
-          <div class="p-4 sm:p-5 border-b border-base-200 flex items-center justify-between">
-            <h2 class="font-bold text-lg text-base-content">
-              {if @modal == :new, do: "Nuevo paquete", else: "Editar paquete"}
-            </h2>
-            <button class="btn btn-sm btn-ghost btn-circle" phx-click="close_modal">
-              <.icon name="hero-x-mark" class="size-5" />
-            </button>
+      <.admin_modal id="package-modal" size="2xl" on_close="close_modal">
+        <:title>{if @modal == :new, do: "Nuevo paquete", else: "Editar paquete"}</:title>
+        <.form
+          id="package-form"
+          for={@form}
+          phx-change="validate_package"
+          phx-submit="save_package"
+          class="space-y-4"
+        >
+          <%!-- Name --%>
+          <div>
+            <label class="label pb-1">
+              <span class="label-text font-medium">Nombre del paquete</span>
+            </label>
+            <input
+              type="text"
+              name="package[name]"
+              value={@form[:name].value}
+              class="input input-bordered w-full"
+              placeholder="Ej. Combo Desayuno, Menú del Día, Paquete Familiar…"
+              required
+            />
+            <%= if @form[:name].errors != [] do %>
+              <p class="text-error text-xs mt-1">{translate_error(hd(@form[:name].errors))}</p>
+            <% end %>
           </div>
 
-          <div class="p-4 sm:p-5 space-y-4 sm:space-y-5">
-            <.form
-              id="package-form"
-              for={@form}
-              phx-change="validate_package"
-              phx-submit="save_package"
-              class="space-y-4"
-            >
-              <%!-- Name --%>
-              <div>
-                <label class="label pb-1">
-                  <span class="label-text font-medium">Nombre del paquete</span>
-                </label>
+          <%!-- Description --%>
+          <div>
+            <label class="label pb-1">
+              <span class="label-text font-medium">
+                Descripción <span class="text-base-content/40">(opcional)</span>
+              </span>
+            </label>
+            <textarea
+              name="package[description]"
+              class="textarea textarea-bordered w-full resize-none"
+              rows="2"
+              placeholder="Ej. Café + sandwich a precio especial. Ideal para llevar."
+            >{@form[:description].value}</textarea>
+          </div>
+
+          <%!-- Price + Active (2 cols) --%>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="label pb-1">
+                <span class="label-text font-medium">Precio del paquete ($)</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                name="package[price]"
+                value={@form[:price].value}
+                class="input input-bordered w-full"
+                placeholder="0.00"
+                required
+              />
+              <p class="text-xs text-base-content/40 mt-1">
+                Normalmente menor al precio individual de cada platillo.
+              </p>
+              <%= if @form[:price].errors != [] do %>
+                <p class="text-error text-xs mt-1">{translate_error(hd(@form[:price].errors))}</p>
+              <% end %>
+            </div>
+
+            <div class="flex flex-col justify-start pt-1">
+              <label class="label pb-1">
+                <span class="label-text font-medium">Estado</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="hidden" name="package[active]" value="false" />
                 <input
-                  type="text"
-                  name="package[name]"
-                  value={@form[:name].value}
-                  class="input input-bordered w-full"
-                  placeholder="Ej. Combo Desayuno, Menú del Día, Paquete Familiar…"
-                  required
+                  type="checkbox"
+                  name="package[active]"
+                  value="true"
+                  class="checkbox checkbox-primary checkbox-sm"
+                  checked={@form[:active].value != false && @form[:active].value != "false"}
                 />
-                <%= if @form[:name].errors != [] do %>
-                  <p class="text-error text-xs mt-1">{translate_error(hd(@form[:name].errors))}</p>
-                <% end %>
-              </div>
+                <span class="text-sm font-medium">Activo</span>
+              </label>
+              <p class="text-xs text-base-content/40 mt-1.5">
+                Solo los paquetes activos aparecen en el menú y pueden pedirse en comandas.
+              </p>
+            </div>
+          </div>
 
-              <%!-- Description --%>
-              <div>
-                <label class="label pb-1">
-                  <span class="label-text font-medium">
-                    Descripción <span class="text-base-content/40">(opcional)</span>
-                  </span>
-                </label>
-                <textarea
-                  name="package[description]"
-                  class="textarea textarea-bordered w-full resize-none"
-                  rows="2"
-                  placeholder="Ej. Café + sandwich a precio especial. Ideal para llevar."
-                >{@form[:description].value}</textarea>
-              </div>
-
-              <%!-- Price + Active (2 cols) --%>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label class="label pb-1">
-                    <span class="label-text font-medium">Precio del paquete ($)</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    name="package[price]"
-                    value={@form[:price].value}
-                    class="input input-bordered w-full"
-                    placeholder="0.00"
-                    required
-                  />
-                  <p class="text-xs text-base-content/40 mt-1">
-                    Normalmente menor al precio individual de cada platillo.
-                  </p>
-                  <%= if @form[:price].errors != [] do %>
-                    <p class="text-error text-xs mt-1">{translate_error(hd(@form[:price].errors))}</p>
-                  <% end %>
-                </div>
-
-                <div class="flex flex-col justify-start pt-1">
-                  <label class="label pb-1">
-                    <span class="label-text font-medium">Estado</span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="hidden" name="package[active]" value="false" />
-                    <input
-                      type="checkbox"
-                      name="package[active]"
-                      value="true"
-                      class="checkbox checkbox-primary checkbox-sm"
-                      checked={@form[:active].value != false && @form[:active].value != "false"}
-                    />
-                    <span class="text-sm font-medium">Activo</span>
-                  </label>
-                  <p class="text-xs text-base-content/40 mt-1.5">
-                    Solo los paquetes activos aparecen en el menú y pueden pedirse en comandas.
-                  </p>
-                </div>
-              </div>
-
-              <%!-- Item selector --%>
-              <div>
-                <label class="label pb-1">
-                  <span class="label-text font-medium">Platillos incluidos en el paquete</span>
-                  <span class="label-text-alt text-base-content/50">
-                    {length(@selected_items)} seleccionados
-                  </span>
-                </label>
-                <p class="text-xs text-base-content/40 mb-2">
-                  Marca los platillos que forman el paquete y ajusta la cantidad con + / −.
-                </p>
-                <div class="border border-base-300 rounded-xl overflow-hidden">
-                  <div class="max-h-60 sm:max-h-64 overflow-y-auto divide-y divide-base-200">
-                    <%= for item <- @all_menu_items do %>
-                      <% selected = Enum.find(@selected_items, &(&1.menu_item_id == item.id)) %>
-                      <div class={"px-3 sm:px-4 py-2 sm:py-2.5 #{if selected, do: "bg-primary/5"}"}>
-                        <%!-- Main row: checkbox + name/price + badge --%>
-                        <div class="flex items-center gap-2 sm:gap-3">
-                          <input
-                            type="checkbox"
-                            class="checkbox checkbox-primary checkbox-sm shrink-0"
-                            checked={selected != nil}
-                            phx-click="toggle_menu_item"
+          <%!-- Item selector --%>
+          <div>
+            <label class="label pb-1">
+              <span class="label-text font-medium">Platillos incluidos en el paquete</span>
+              <span class="label-text-alt text-base-content/50">
+                {length(@selected_items)} seleccionados
+              </span>
+            </label>
+            <p class="text-xs text-base-content/40 mb-2">
+              Marca los platillos que forman el paquete y ajusta la cantidad con + / −.
+            </p>
+            <div class="border border-base-300 rounded-xl overflow-hidden">
+              <div class="max-h-60 sm:max-h-64 overflow-y-auto divide-y divide-base-200">
+                <%= for item <- @all_menu_items do %>
+                  <% selected = Enum.find(@selected_items, &(&1.menu_item_id == item.id)) %>
+                  <div class={"px-3 sm:px-4 py-2 sm:py-2.5 #{if selected, do: "bg-primary/5"}"}>
+                    <%!-- Main row: checkbox + name/price + badge --%>
+                    <div class="flex items-center gap-2 sm:gap-3">
+                      <input
+                        type="checkbox"
+                        class="checkbox checkbox-primary checkbox-sm shrink-0"
+                        checked={selected != nil}
+                        phx-click="toggle_menu_item"
+                        phx-value-id={item.id}
+                      />
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-base-content truncate">{item.name}</p>
+                        <p class="text-xs text-base-content/50">
+                          ${CRC.Utils.format_money(item.price)} c/u
+                        </p>
+                      </div>
+                      <span class={"badge badge-xs shrink-0 #{if item.destination == "barra", do: "badge-info", else: "badge-warning"}"}>
+                        {if item.destination == "barra", do: "Barra", else: "Cocina"}
+                      </span>
+                      <%!-- Qty controls (shown on desktop inline; on mobile in a sub-row below) --%>
+                      <%= if selected do %>
+                        <div class="hidden sm:flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-ghost px-1"
+                            phx-click="update_item_qty"
                             phx-value-id={item.id}
-                          />
-                          <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-base-content truncate">{item.name}</p>
-                            <p class="text-xs text-base-content/50">
-                              ${CRC.Utils.format_money(item.price)} c/u
-                            </p>
-                          </div>
-                          <span class={"badge badge-xs shrink-0 #{if item.destination == "barra", do: "badge-info", else: "badge-warning"}"}>
-                            {if item.destination == "barra", do: "Barra", else: "Cocina"}
+                            phx-value-qty={max(1, selected.quantity - 1)}
+                          >
+                            −
+                          </button>
+                          <span class="text-sm font-mono w-5 text-center">
+                            {selected.quantity}
                           </span>
-                          <%!-- Qty controls (shown on desktop inline; on mobile in a sub-row below) --%>
-                          <%= if selected do %>
-                            <div class="hidden sm:flex items-center gap-1 shrink-0">
-                              <button
-                                type="button"
-                                class="btn btn-xs btn-ghost px-1"
-                                phx-click="update_item_qty"
-                                phx-value-id={item.id}
-                                phx-value-qty={max(1, selected.quantity - 1)}
-                              >
-                                −
-                              </button>
-                              <span class="text-sm font-mono w-5 text-center">
-                                {selected.quantity}
-                              </span>
-                              <button
-                                type="button"
-                                class="btn btn-xs btn-ghost px-1"
-                                phx-click="update_item_qty"
-                                phx-value-id={item.id}
-                                phx-value-qty={selected.quantity + 1}
-                              >
-                                +
-                              </button>
-                            </div>
-                          <% end %>
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-ghost px-1"
+                            phx-click="update_item_qty"
+                            phx-value-id={item.id}
+                            phx-value-qty={selected.quantity + 1}
+                          >
+                            +
+                          </button>
                         </div>
-                        <%!-- Mobile qty row (only when selected) --%>
-                        <%= if selected do %>
-                          <div class="sm:hidden flex items-center gap-1 mt-1 ml-6">
-                            <span class="text-xs text-base-content/40 mr-1">Cantidad:</span>
-                            <button
-                              type="button"
-                              class="btn btn-xs btn-ghost px-2"
-                              phx-click="update_item_qty"
-                              phx-value-id={item.id}
-                              phx-value-qty={max(1, selected.quantity - 1)}
-                            >
-                              −
-                            </button>
-                            <span class="text-sm font-mono w-6 text-center">{selected.quantity}</span>
-                            <button
-                              type="button"
-                              class="btn btn-xs btn-ghost px-2"
-                              phx-click="update_item_qty"
-                              phx-value-id={item.id}
-                              phx-value-qty={selected.quantity + 1}
-                            >
-                              +
-                            </button>
-                          </div>
-                        <% end %>
+                      <% end %>
+                    </div>
+                    <%!-- Mobile qty row (only when selected) --%>
+                    <%= if selected do %>
+                      <div class="sm:hidden flex items-center gap-1 mt-1 ml-6">
+                        <span class="text-xs text-base-content/40 mr-1">Cantidad:</span>
+                        <button
+                          type="button"
+                          class="btn btn-xs btn-ghost px-2"
+                          phx-click="update_item_qty"
+                          phx-value-id={item.id}
+                          phx-value-qty={max(1, selected.quantity - 1)}
+                        >
+                          −
+                        </button>
+                        <span class="text-sm font-mono w-6 text-center">{selected.quantity}</span>
+                        <button
+                          type="button"
+                          class="btn btn-xs btn-ghost px-2"
+                          phx-click="update_item_qty"
+                          phx-value-id={item.id}
+                          phx-value-qty={selected.quantity + 1}
+                        >
+                          +
+                        </button>
                       </div>
                     <% end %>
                   </div>
-                </div>
-
-                <%!-- Price comparison (shown when items selected) --%>
-                <%= if @selected_items != [] do %>
-                  <% individual_total =
-                    Enum.reduce(@selected_items, Decimal.new(0), fn si, acc ->
-                      case Enum.find(@all_menu_items, &(&1.id == si.menu_item_id)) do
-                        nil ->
-                          acc
-
-                        item ->
-                          Decimal.add(
-                            acc,
-                            Decimal.mult(
-                              Decimal.new(to_string(item.price)),
-                              Decimal.new(si.quantity)
-                            )
-                          )
-                      end
-                    end) %>
-                  <div class="mt-2 rounded-lg bg-base-200 px-3 py-2 flex items-center justify-between text-xs text-base-content/60">
-                    <span>Precio individual total:</span>
-                    <span class="font-semibold">${CRC.Utils.format_money(individual_total)}</span>
-                  </div>
                 <% end %>
               </div>
+            </div>
 
-              <div class="flex justify-end gap-3 pt-2">
-                <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary">
-                  {if @modal == :new, do: "Crear paquete", else: "Guardar cambios"}
-                </button>
+            <%!-- Price comparison (shown when items selected) --%>
+            <%= if @selected_items != [] do %>
+              <% individual_total =
+                Enum.reduce(@selected_items, Decimal.new(0), fn si, acc ->
+                  case Enum.find(@all_menu_items, &(&1.id == si.menu_item_id)) do
+                    nil ->
+                      acc
+
+                    item ->
+                      Decimal.add(
+                        acc,
+                        Decimal.mult(
+                          Decimal.new(to_string(item.price)),
+                          Decimal.new(si.quantity)
+                        )
+                      )
+                  end
+                end) %>
+              <div class="mt-2 rounded-lg bg-base-200 px-3 py-2 flex items-center justify-between text-xs text-base-content/60">
+                <span>Precio individual total:</span>
+                <span class="font-semibold">${CRC.Utils.format_money(individual_total)}</span>
               </div>
-            </.form>
+            <% end %>
           </div>
-        </div>
-      </div>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">
+              {if @modal == :new, do: "Crear paquete", else: "Guardar cambios"}
+            </button>
+          </div>
+        </.form>
+      </.admin_modal>
     <% end %>
     """
   end

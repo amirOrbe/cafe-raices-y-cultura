@@ -558,18 +558,20 @@ defmodule CRCWeb.Admin.PlatillosLive do
       <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
       <div class="md:hidden flex flex-col gap-2">
         <%= if visible == [] do %>
-          <div class="text-center py-12 text-base-content/40 text-sm bg-base-100 rounded-2xl border border-base-300">
-            {cond do
-              @status_filter == :unavailable && @filter_category == "all" ->
-                "No hay platillos ocultos."
+          <.panel class="text-center py-12">
+            <p class="text-base-content/40 text-sm">
+              {cond do
+                @status_filter == :unavailable && @filter_category == "all" ->
+                  "No hay platillos ocultos."
 
-              @filter_category != "all" ->
-                "No hay platillos en esta categoría."
+                @filter_category != "all" ->
+                  "No hay platillos en esta categoría."
 
-              true ->
-                "No hay platillos registrados. Crea el primero."
-            end}
-          </div>
+                true ->
+                  "No hay platillos registrados. Crea el primero."
+              end}
+            </p>
+          </.panel>
         <% end %>
         <%= for item <- visible do %>
           <% expanded = MapSet.member?(@expanded_ids, item.id) %>
@@ -695,20 +697,18 @@ defmodule CRCWeb.Admin.PlatillosLive do
       </div>
 
       <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
-      <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <.panel class="hidden md:block overflow-hidden">
         <div class="overflow-x-auto">
           <table class="table table-zebra table-fixed w-full">
-            <thead>
-              <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th class="w-[33%]">Platillo</th>
-                <th class="w-[12%]">Categoría</th>
-                <th class="w-[15%]">Precio / Costo</th>
-                <th class="w-[9%]">Margen</th>
-                <th class="w-[9%]">Destacado</th>
-                <th class="w-[8%]">Estado</th>
-                <th class="w-[14%] text-right">Acciones</th>
-              </tr>
-            </thead>
+            <.admin_table_head>
+              <:col class="w-[33%]">Platillo</:col>
+              <:col class="w-[12%]">Categoría</:col>
+              <:col class="w-[15%]">Precio / Costo</:col>
+              <:col class="w-[9%]">Margen</:col>
+              <:col class="w-[9%]">Destacado</:col>
+              <:col class="w-[8%]">Estado</:col>
+              <:col class="w-[14%] text-right">Acciones</:col>
+            </.admin_table_head>
             <tbody>
               <%= for item <- visible do %>
                 <% expanded = MapSet.member?(@expanded_ids, item.id) %>
@@ -854,7 +854,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
             </tbody>
           </table>
         </div>
-      </div>
+      </.panel>
     </div>
 
     <%!-- Modal --%>
@@ -902,171 +902,203 @@ defmodule CRCWeb.Admin.PlatillosLive do
     assigns = assigns |> assign(:title, title) |> assign(:current_img, current_img)
 
     ~H"""
-    <div
-      id="item-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
-      phx-window-keydown="close_modal"
-      phx-key="Escape"
-    >
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
-
-      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[95vh] sm:max-h-[92vh]">
-        <%!-- Modal header --%>
-        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-base-300 flex items-center justify-between sticky top-0 bg-base-100 z-10">
-          <h2 class="text-base sm:text-lg font-semibold text-base-content">{@title}</h2>
-          <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
-            <.icon name="hero-x-mark" class="size-5" />
-          </button>
+    <.admin_modal id="item-modal" size="2xl" on_close="close_modal">
+      <:title>{@title}</:title>
+      <div class="space-y-4">
+        <%!-- Step flow --%>
+        <div class="flex items-center gap-2 text-xs flex-wrap">
+          <span class="flex items-center gap-1.5 font-semibold text-primary">
+            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-content text-[10px] font-bold shrink-0">
+              1
+            </span>
+            Información
+          </span>
+          <.icon name="hero-chevron-right" class="size-3 text-base-content/30 shrink-0" />
+          <span class="flex items-center gap-1.5 text-base-content/40">
+            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+              2
+            </span>
+            Precio y destino
+          </span>
+          <.icon name="hero-chevron-right" class="size-3 text-base-content/30 shrink-0" />
+          <span class="flex items-center gap-1.5 text-base-content/40">
+            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+              3
+            </span>
+            Ingredientes
+          </span>
         </div>
 
-        <div class="px-3 sm:px-6 py-4 sm:py-5 space-y-4">
-          <%!-- Step flow --%>
-          <div class="flex items-center gap-2 text-xs flex-wrap">
-            <span class="flex items-center gap-1.5 font-semibold text-primary">
-              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-content text-[10px] font-bold shrink-0">
+        <.form
+          id="item-form"
+          for={@form}
+          phx-submit="save_item"
+          phx-change="validate_upload"
+          class="space-y-4"
+        >
+          <%!-- ── ① Información básica ──────────────────────────────────────── --%>
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
+            <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-content text-[10px] font-bold">
                 1
               </span>
-              Información
-            </span>
-            <.icon name="hero-chevron-right" class="size-3 text-base-content/30 shrink-0" />
-            <span class="flex items-center gap-1.5 text-base-content/40">
-              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+              Información básica
+            </p>
+
+            <.input
+              field={@form[:name]}
+              type="text"
+              label="Nombre del platillo"
+              placeholder="Ej. Cappuccino, Toast Francés, El Favorito"
+            />
+
+            <.input
+              field={@form[:description]}
+              type="textarea"
+              label="Descripción (opcional)"
+              placeholder="Breve texto que aparece bajo el nombre en el menú público..."
+            />
+
+            <%!-- Categoría — ancho completo para no mezclar alturas con checkbox --%>
+            <.input
+              field={@form[:category_id]}
+              type="select"
+              label="Categoría"
+              options={[{"— Selecciona categoría —", ""} | Enum.map(@categories, &{&1.name, &1.id})]}
+            />
+
+            <%!-- Checkboxes como tarjetas iguales — misma altura, misma estructura --%>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="flex items-start gap-3 rounded-xl border border-base-300 bg-base-100 p-3 cursor-pointer hover:bg-base-200/60 transition-colors">
+                <div class="pt-0.5 shrink-0">
+                  <input type="hidden" name="menu_item[featured]" value="false" />
+                  <input
+                    type="checkbox"
+                    name="menu_item[featured]"
+                    value="true"
+                    class="checkbox checkbox-primary checkbox-sm"
+                    checked={@form[:featured].value != false && @form[:featured].value != "false"}
+                  />
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-base-content">Platillo destacado ⭐</p>
+                  <p class="text-xs text-base-content/40 mt-0.5">
+                    Aparece primero con una estrella en el menú.
+                  </p>
+                </div>
+              </label>
+              <label class="flex items-start gap-3 rounded-xl border border-base-300 bg-base-100 p-3 cursor-pointer hover:bg-base-200/60 transition-colors">
+                <div class="pt-0.5 shrink-0">
+                  <input type="hidden" name="menu_item[available]" value="false" />
+                  <input
+                    type="checkbox"
+                    name="menu_item[available]"
+                    value="true"
+                    class="checkbox checkbox-primary checkbox-sm"
+                    checked={@form[:available].value != false && @form[:available].value != "false"}
+                  />
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-base-content">Visible en el menú</p>
+                  <p class="text-xs text-base-content/40 mt-0.5">
+                    Los meseros pueden pedirlo en comandas.
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <%!-- ── ② Precio y destino ─────────────────────────────────────────── --%>
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
+            <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold">
                 2
               </span>
               Precio y destino
-            </span>
-            <.icon name="hero-chevron-right" class="size-3 text-base-content/30 shrink-0" />
-            <span class="flex items-center gap-1.5 text-base-content/40">
-              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
-                3
-              </span>
-              Ingredientes
-            </span>
-          </div>
+            </p>
 
-          <.form
-            id="item-form"
-            for={@form}
-            phx-submit="save_item"
-            phx-change="validate_upload"
-            class="space-y-4"
-          >
-            <%!-- ── ① Información básica ──────────────────────────────────────── --%>
-            <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
-              <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
-                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-content text-[10px] font-bold">
-                  1
-                </span>
-                Información básica
+            <%!-- Precio — ancho completo --%>
+            <div>
+              <.input
+                field={@form[:price]}
+                type="number"
+                label="Precio de venta ($)"
+                placeholder="0.00"
+                step="0.01"
+                min="0.01"
+              />
+              <p class="text-xs text-base-content/40 mt-1">
+                Lo que el cliente paga. Aparece en el menú y en las comandas.
               </p>
+            </div>
 
-              <.input
-                field={@form[:name]}
-                type="text"
-                label="Nombre del platillo"
-                placeholder="Ej. Cappuccino, Toast Francés, El Favorito"
-              />
-
-              <.input
-                field={@form[:description]}
-                type="textarea"
-                label="Descripción (opcional)"
-                placeholder="Breve texto que aparece bajo el nombre en el menú público..."
-              />
-
-              <%!-- Categoría — ancho completo para no mezclar alturas con checkbox --%>
-              <.input
-                field={@form[:category_id]}
-                type="select"
-                label="Categoría"
-                options={[{"— Selecciona categoría —", ""} | Enum.map(@categories, &{&1.name, &1.id})]}
-              />
-
-              <%!-- Checkboxes como tarjetas iguales — misma altura, misma estructura --%>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label class="flex items-start gap-3 rounded-xl border border-base-300 bg-base-100 p-3 cursor-pointer hover:bg-base-200/60 transition-colors">
-                  <div class="pt-0.5 shrink-0">
-                    <input type="hidden" name="menu_item[featured]" value="false" />
-                    <input
-                      type="checkbox"
-                      name="menu_item[featured]"
-                      value="true"
-                      class="checkbox checkbox-primary checkbox-sm"
-                      checked={@form[:featured].value != false && @form[:featured].value != "false"}
-                    />
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-base-content">Platillo destacado ⭐</p>
-                    <p class="text-xs text-base-content/40 mt-0.5">
-                      Aparece primero con una estrella en el menú.
-                    </p>
+            <%!-- Destination cards (radio styled as visual cards via peer-checked) --%>
+            <div>
+              <label class="label pb-1.5">
+                <span class="label-text font-medium">¿Dónde se prepara?</span>
+              </label>
+              <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                <label class="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="menu_item[destination]"
+                    value="cocina"
+                    class="sr-only peer"
+                    checked={@form[:destination].value not in ["barra"]}
+                  />
+                  <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-primary peer-checked:bg-primary/5 hover:border-primary/30 transition-all">
+                    <span class="text-xl sm:text-3xl">🍳</span>
+                    <div class="text-center">
+                      <p class="font-semibold text-xs sm:text-sm text-base-content">Cocina</p>
+                      <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
+                        Platillos, sandwiches, ensaladas…
+                      </p>
+                    </div>
                   </div>
                 </label>
-                <label class="flex items-start gap-3 rounded-xl border border-base-300 bg-base-100 p-3 cursor-pointer hover:bg-base-200/60 transition-colors">
-                  <div class="pt-0.5 shrink-0">
-                    <input type="hidden" name="menu_item[available]" value="false" />
-                    <input
-                      type="checkbox"
-                      name="menu_item[available]"
-                      value="true"
-                      class="checkbox checkbox-primary checkbox-sm"
-                      checked={@form[:available].value != false && @form[:available].value != "false"}
-                    />
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-base-content">Visible en el menú</p>
-                    <p class="text-xs text-base-content/40 mt-0.5">
-                      Los meseros pueden pedirlo en comandas.
-                    </p>
+                <label class="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="menu_item[destination]"
+                    value="barra"
+                    class="sr-only peer"
+                    checked={@form[:destination].value == "barra"}
+                  />
+                  <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-info peer-checked:bg-info/5 hover:border-info/30 transition-all">
+                    <span class="text-xl sm:text-3xl">☕</span>
+                    <div class="text-center">
+                      <p class="font-semibold text-xs sm:text-sm text-base-content">Barra</p>
+                      <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
+                        Bebidas, cafés, cócteles…
+                      </p>
+                    </div>
                   </div>
                 </label>
               </div>
             </div>
 
-            <%!-- ── ② Precio y destino ─────────────────────────────────────────── --%>
-            <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
-              <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
-                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold">
-                  2
-                </span>
-                Precio y destino
-              </p>
-
-              <%!-- Precio — ancho completo --%>
-              <div>
-                <.input
-                  field={@form[:price]}
-                  type="number"
-                  label="Precio de venta ($)"
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0.01"
-                />
-                <p class="text-xs text-base-content/40 mt-1">
-                  Lo que el cliente paga. Aparece en el menú y en las comandas.
-                </p>
-              </div>
-
-              <%!-- Destination cards (radio styled as visual cards via peer-checked) --%>
+            <%!-- Barra type selector — only shown when destination is barra --%>
+            <%= if @form[:destination].value == "barra" do %>
               <div>
                 <label class="label pb-1.5">
-                  <span class="label-text font-medium">¿Dónde se prepara?</span>
+                  <span class="label-text font-medium">Temperatura</span>
+                  <span class="label-text-alt text-base-content/40">¿Fría o caliente?</span>
                 </label>
                 <div class="grid grid-cols-2 gap-2 sm:gap-3">
                   <label class="cursor-pointer">
                     <input
                       type="radio"
-                      name="menu_item[destination]"
-                      value="cocina"
+                      name="menu_item[barra_type]"
+                      value="fria"
                       class="sr-only peer"
-                      checked={@form[:destination].value not in ["barra"]}
+                      checked={@form[:barra_type].value == "fria"}
                     />
-                    <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-primary peer-checked:bg-primary/5 hover:border-primary/30 transition-all">
-                      <span class="text-xl sm:text-3xl">🍳</span>
+                    <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-info peer-checked:bg-info/5 hover:border-info/30 transition-all">
+                      <span class="text-xl sm:text-3xl">❄️</span>
                       <div class="text-center">
-                        <p class="font-semibold text-xs sm:text-sm text-base-content">Cocina</p>
+                        <p class="font-semibold text-xs sm:text-sm text-base-content">Fría</p>
                         <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
-                          Platillos, sandwiches, ensaladas…
+                          Frapés, smoothies, aguas…
                         </p>
                       </div>
                     </div>
@@ -1074,385 +1106,337 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   <label class="cursor-pointer">
                     <input
                       type="radio"
-                      name="menu_item[destination]"
-                      value="barra"
+                      name="menu_item[barra_type]"
+                      value="caliente"
                       class="sr-only peer"
-                      checked={@form[:destination].value == "barra"}
+                      checked={@form[:barra_type].value == "caliente"}
                     />
-                    <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-info peer-checked:bg-info/5 hover:border-info/30 transition-all">
+                    <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-error peer-checked:bg-error/5 hover:border-error/30 transition-all">
                       <span class="text-xl sm:text-3xl">☕</span>
                       <div class="text-center">
-                        <p class="font-semibold text-xs sm:text-sm text-base-content">Barra</p>
+                        <p class="font-semibold text-xs sm:text-sm text-base-content">Caliente</p>
                         <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
-                          Bebidas, cafés, cócteles…
+                          Cafés, tés, chocolates…
                         </p>
                       </div>
                     </div>
                   </label>
                 </div>
               </div>
+            <% end %>
+          </div>
 
-              <%!-- Barra type selector — only shown when destination is barra --%>
-              <%= if @form[:destination].value == "barra" do %>
-                <div>
-                  <label class="label pb-1.5">
-                    <span class="label-text font-medium">Temperatura</span>
-                    <span class="label-text-alt text-base-content/40">¿Fría o caliente?</span>
-                  </label>
-                  <div class="grid grid-cols-2 gap-2 sm:gap-3">
-                    <label class="cursor-pointer">
-                      <input
-                        type="radio"
-                        name="menu_item[barra_type]"
-                        value="fria"
-                        class="sr-only peer"
-                        checked={@form[:barra_type].value == "fria"}
-                      />
-                      <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-info peer-checked:bg-info/5 hover:border-info/30 transition-all">
-                        <span class="text-xl sm:text-3xl">❄️</span>
-                        <div class="text-center">
-                          <p class="font-semibold text-xs sm:text-sm text-base-content">Fría</p>
-                          <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
-                            Frapés, smoothies, aguas…
-                          </p>
-                        </div>
-                      </div>
-                    </label>
-                    <label class="cursor-pointer">
-                      <input
-                        type="radio"
-                        name="menu_item[barra_type]"
-                        value="caliente"
-                        class="sr-only peer"
-                        checked={@form[:barra_type].value == "caliente"}
-                      />
-                      <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-error peer-checked:bg-error/5 hover:border-error/30 transition-all">
-                        <span class="text-xl sm:text-3xl">☕</span>
-                        <div class="text-center">
-                          <p class="font-semibold text-xs sm:text-sm text-base-content">Caliente</p>
-                          <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
-                            Cafés, tés, chocolates…
-                          </p>
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              <% end %>
-            </div>
+          <%!-- ── Foto del platillo ───────────────────────────────────────────── --%>
+          <div>
+            <p class="text-sm font-medium text-base-content mb-2">
+              Foto del platillo <span class="text-base-content/40 font-normal">(opcional)</span>
+            </p>
 
-            <%!-- ── Foto del platillo ───────────────────────────────────────────── --%>
-            <div>
-              <p class="text-sm font-medium text-base-content mb-2">
-                Foto del platillo <span class="text-base-content/40 font-normal">(opcional)</span>
-              </p>
-
-              <%!-- Show current image when editing (unless user hit "remove") --%>
-              <%= if @current_img && !@remove_image do %>
-                <div class="flex items-start gap-3 p-3 bg-base-200 rounded-xl mb-2">
-                  <img
-                    src={@current_img}
-                    class="w-20 h-20 rounded-lg object-cover shrink-0 border border-base-300"
-                  />
-                  <div class="flex-1 min-w-0 space-y-1">
-                    <p class="text-sm font-medium text-base-content">Foto actual</p>
-                    <p class="text-xs text-base-content/50 break-all">{@current_img}</p>
-                    <button
-                      type="button"
-                      class="btn btn-xs btn-error btn-outline gap-1 mt-1"
-                      phx-click="remove_image"
-                    >
-                      <.icon name="hero-trash" class="size-3" /> Eliminar foto
-                    </button>
-                  </div>
-                </div>
-              <% end %>
-
-              <%!-- Upload area (shown when no current image, or after remove) --%>
-              <%= if !@current_img || @remove_image do %>
-                <label
-                  for={@uploads.photo.ref}
-                  class="flex flex-col items-center justify-center gap-2 w-full py-6 px-4 rounded-2xl border-2 border-dashed border-base-300 hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all duration-200"
-                >
-                  <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-                    <.icon name="hero-photo" class="size-5 text-primary" />
-                  </div>
-                  <div class="text-center">
-                    <p class="text-sm font-medium text-base-content">
-                      Selecciona una foto del platillo
-                    </p>
-                    <p class="text-xs text-base-content/40 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
-                  </div>
-                  <.live_file_input upload={@uploads.photo} class="sr-only" />
-                </label>
-              <% end %>
-
-              <%!-- Preview of selected (not yet saved) file --%>
-              <%= for entry <- @uploads.photo.entries do %>
-                <div class="flex items-center gap-3 mt-2 p-2.5 bg-base-200 rounded-xl">
-                  <.live_img_preview entry={entry} class="w-12 h-12 object-cover rounded-lg shrink-0" />
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-base-content truncate">{entry.client_name}</p>
-                    <div class="w-full bg-base-300 rounded-full h-1.5 mt-1.5">
-                      <div
-                        class="bg-primary h-1.5 rounded-full transition-all duration-300"
-                        style={"width: #{entry.progress}%"}
-                      />
-                    </div>
-                  </div>
+            <%!-- Show current image when editing (unless user hit "remove") --%>
+            <%= if @current_img && !@remove_image do %>
+              <div class="flex items-start gap-3 p-3 bg-base-200 rounded-xl mb-2">
+                <img
+                  src={@current_img}
+                  class="w-20 h-20 rounded-lg object-cover shrink-0 border border-base-300"
+                />
+                <div class="flex-1 min-w-0 space-y-1">
+                  <p class="text-sm font-medium text-base-content">Foto actual</p>
+                  <p class="text-xs text-base-content/50 break-all">{@current_img}</p>
                   <button
                     type="button"
-                    class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
-                    phx-click="cancel_upload"
-                    phx-value-ref={entry.ref}
+                    class="btn btn-xs btn-error btn-outline gap-1 mt-1"
+                    phx-click="remove_image"
                   >
-                    <.icon name="hero-x-mark" class="size-3.5" />
-                  </button>
-                </div>
-                <%= for err <- upload_errors(@uploads.photo, entry) do %>
-                  <p class="text-xs text-error mt-1">{upload_error_to_string(err)}</p>
-                <% end %>
-              <% end %>
-            </div>
-
-            <%!-- ── ③ Ingredientes (receta) ────────────────────────────────────── --%>
-            <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
-              <div class="flex items-center gap-1.5">
-                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
-                  3
-                </span>
-                <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40">
-                  Ingredientes de la receta
-                </p>
-                <span class="badge badge-xs badge-ghost">{length(@ingredients_draft)}</span>
-              </div>
-              <p class="text-xs text-base-content/40 leading-relaxed">
-                Define qué insumos usa este platillo y en qué cantidad <strong>por porción</strong>.
-                El sistema descuenta ese stock automáticamente cada vez que se envía a cocina o barra,
-                y calcula el costo de producción y el margen de ganancia que ves en la lista.
-              </p>
-
-              <%!-- Current ingredient list --%>
-              <%= if @ingredients_draft != [] do %>
-                <div class="space-y-1.5">
-                  <%= for ing <- @ingredients_draft do %>
-                    <div class="flex items-center justify-between py-1.5 px-3 bg-base-100 border border-base-300 rounded-lg">
-                      <span class="text-sm font-medium text-base-content">{ing.product_name}</span>
-                      <div class="flex items-center gap-3">
-                        <span class="text-xs font-mono text-base-content/60">
-                          {format_qty(ing.quantity)} {unit_abbr(ing.unit)}
-                        </span>
-                        <button
-                          type="button"
-                          class="btn btn-ghost btn-xs text-error p-0"
-                          phx-click="remove_ingredient"
-                          phx-value-product_id={ing.product_id}
-                          title="Quitar ingrediente"
-                        >
-                          <.icon name="hero-x-mark" class="size-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  <% end %>
-                </div>
-              <% end %>
-
-              <%!-- Add ingredient picker — resolves selected product's unit dynamically --%>
-              <% selected_product =
-                Enum.find(@available_products, &(to_string(&1.id) == @selected_product_id)) %>
-              <% selected_unit = if selected_product, do: unit_abbr(selected_product.unit), else: nil %>
-
-              <div class="space-y-2">
-                <%!-- Insumo select — full width always --%>
-                <div>
-                  <label class="label text-xs pb-0.5">Insumo</label>
-                  <select
-                    class="select select-sm w-full"
-                    phx-change="select_ingredient"
-                    name="ingredient_product_id"
-                  >
-                    <option value="">— Selecciona insumo —</option>
-                    <%= for p <- @available_products do %>
-                      <option value={p.id} selected={to_string(p.id) == @selected_product_id}>
-                        {p.name} ({unit_abbr(p.unit)})
-                      </option>
-                    <% end %>
-                  </select>
-                </div>
-
-                <%!-- Cantidad + Agregar — same row, qty is flex-1 --%>
-                <div class="flex gap-2 items-end">
-                  <div class="flex-1 min-w-0">
-                    <label class="label text-xs pb-0.5">
-                      Cantidad
-                      <%= if selected_unit do %>
-                        <span class="badge badge-xs badge-primary badge-outline ml-1">
-                          {selected_unit}
-                        </span>
-                      <% end %>
-                    </label>
-                    <input
-                      type="number"
-                      class="input input-sm w-full"
-                      placeholder={if selected_unit, do: "0.000 #{selected_unit}", else: "0.000"}
-                      step="0.001"
-                      min="0"
-                      value={@ingredient_quantity_input}
-                      phx-change="set_ingredient_qty"
-                      name="ingredient_quantity"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline btn-primary shrink-0"
-                    phx-click="add_ingredient"
-                  >
-                    <.icon name="hero-plus" class="size-3.5" /> Agregar
+                    <.icon name="hero-trash" class="size-3" /> Eliminar foto
                   </button>
                 </div>
               </div>
+            <% end %>
 
-              <%= if @available_products == [] do %>
-                <p class="text-xs text-base-content/50">
-                  No hay insumos disponibles. Crea insumos en <a
-                    href="/admin/insumos"
-                    class="link link-primary"
-                  >Inventario → Insumos</a>.
-                </p>
-              <% end %>
-            </div>
-            <%!-- ── End Ingredientes ───────────────────────────────────────────── --%>
-
-            <%!-- ── ④ Extras opcionales ──────────────────────────────────────────── --%>
-            <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
-              <div class="flex items-center gap-1.5">
-                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
-                  4
-                </span>
-                <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40">
-                  Extras opcionales
-                </p>
-                <span class="badge badge-xs badge-ghost">{length(@optional_extras_draft)}</span>
-              </div>
-              <p class="text-xs text-base-content/40 leading-relaxed">
-                Insumos que el cliente puede pedir aparte, pero que <strong>no forman parte de la receta base</strong>.
-                Solo se descuentan del stock si el mesero los agrega a la comanda.
-                El precio es opcional; déjalo en 0 si no tienen cargo extra.
-              </p>
-
-              <%!-- Current optional extras list --%>
-              <%= if @optional_extras_draft != [] do %>
-                <div class="space-y-1.5">
-                  <%= for e <- @optional_extras_draft do %>
-                    <div class="flex items-center justify-between py-1.5 px-3 bg-base-100 border border-base-300 rounded-lg">
-                      <span class="text-sm font-medium text-base-content">{e.product_name}</span>
-                      <div class="flex items-center gap-3">
-                        <span class="text-xs font-mono text-base-content/60">
-                          {format_qty(e.portion_quantity)} {unit_abbr(e.unit)}
-                        </span>
-                        <%= if e.sale_price && Decimal.compare(e.sale_price, Decimal.new(0)) == :gt do %>
-                          <span class="badge badge-xs badge-accent">
-                            +${format_qty(e.sale_price)}
-                          </span>
-                        <% else %>
-                          <span class="badge badge-xs badge-ghost">Sin cargo</span>
-                        <% end %>
-                        <button
-                          type="button"
-                          class="btn btn-ghost btn-xs text-error p-0"
-                          phx-click="remove_optional_extra"
-                          phx-value-product_id={e.product_id}
-                          title="Quitar extra opcional"
-                        >
-                          <.icon name="hero-x-mark" class="size-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  <% end %>
+            <%!-- Upload area (shown when no current image, or after remove) --%>
+            <%= if !@current_img || @remove_image do %>
+              <label
+                for={@uploads.photo.ref}
+                class="flex flex-col items-center justify-center gap-2 w-full py-6 px-4 rounded-2xl border-2 border-dashed border-base-300 hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all duration-200"
+              >
+                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                  <.icon name="hero-photo" class="size-5 text-primary" />
                 </div>
-              <% end %>
-
-              <%!-- Add optional extra picker --%>
-              <% sel_opt_product =
-                Enum.find(@available_products, &(to_string(&1.id) == @selected_optional_product_id)) %>
-              <% sel_opt_unit = if sel_opt_product, do: unit_abbr(sel_opt_product.unit), else: nil %>
-
-              <div class="space-y-2">
-                <div>
-                  <label class="label text-xs pb-0.5">Insumo</label>
-                  <select
-                    class="select select-sm w-full"
-                    phx-change="select_optional_product"
-                    name="optional_product_id"
-                  >
-                    <option value="">— Selecciona insumo —</option>
-                    <%= for p <- @available_products do %>
-                      <option value={p.id} selected={to_string(p.id) == @selected_optional_product_id}>
-                        {p.name} ({unit_abbr(p.unit)})
-                      </option>
-                    <% end %>
-                  </select>
+                <div class="text-center">
+                  <p class="text-sm font-medium text-base-content">
+                    Selecciona una foto del platillo
+                  </p>
+                  <p class="text-xs text-base-content/40 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
                 </div>
+                <.live_file_input upload={@uploads.photo} class="sr-only" />
+              </label>
+            <% end %>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label class="label text-xs pb-0.5">
-                      Cantidad por porción
-                      <%= if sel_opt_unit do %>
-                        <span class="badge badge-xs badge-primary badge-outline ml-1">
-                          {sel_opt_unit}
-                        </span>
-                      <% end %>
-                    </label>
-                    <input
-                      type="number"
-                      class="input input-sm w-full"
-                      placeholder={if sel_opt_unit, do: "0.000 #{sel_opt_unit}", else: "0.000"}
-                      step="0.001"
-                      min="0"
-                      value={@optional_extra_qty_input}
-                      phx-change="set_optional_extra_qty"
-                      name="optional_extra_qty"
-                    />
-                  </div>
-                  <div>
-                    <label class="label text-xs pb-0.5">Precio extra (0 = sin cargo)</label>
-                    <input
-                      type="number"
-                      class="input input-sm w-full"
-                      placeholder="0.00"
-                      step="0.50"
-                      min="0"
-                      value={@optional_extra_price_input}
-                      phx-change="set_optional_extra_price"
-                      name="optional_extra_price"
+            <%!-- Preview of selected (not yet saved) file --%>
+            <%= for entry <- @uploads.photo.entries do %>
+              <div class="flex items-center gap-3 mt-2 p-2.5 bg-base-200 rounded-xl">
+                <.live_img_preview entry={entry} class="w-12 h-12 object-cover rounded-lg shrink-0" />
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-base-content truncate">{entry.client_name}</p>
+                  <div class="w-full bg-base-300 rounded-full h-1.5 mt-1.5">
+                    <div
+                      class="bg-primary h-1.5 rounded-full transition-all duration-300"
+                      style={"width: #{entry.progress}%"}
                     />
                   </div>
                 </div>
-
                 <button
                   type="button"
-                  class="btn btn-sm btn-outline btn-secondary"
-                  phx-click="add_optional_extra"
+                  class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
+                  phx-click="cancel_upload"
+                  phx-value-ref={entry.ref}
                 >
-                  <.icon name="hero-plus" class="size-3.5" /> Agregar extra opcional
+                  <.icon name="hero-x-mark" class="size-3.5" />
+                </button>
+              </div>
+              <%= for err <- upload_errors(@uploads.photo, entry) do %>
+                <p class="text-xs text-error mt-1">{upload_error_to_string(err)}</p>
+              <% end %>
+            <% end %>
+          </div>
+
+          <%!-- ── ③ Ingredientes (receta) ────────────────────────────────────── --%>
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
+            <div class="flex items-center gap-1.5">
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+                3
+              </span>
+              <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40">
+                Ingredientes de la receta
+              </p>
+              <span class="badge badge-xs badge-ghost">{length(@ingredients_draft)}</span>
+            </div>
+            <p class="text-xs text-base-content/40 leading-relaxed">
+              Define qué insumos usa este platillo y en qué cantidad <strong>por porción</strong>.
+              El sistema descuenta ese stock automáticamente cada vez que se envía a cocina o barra,
+              y calcula el costo de producción y el margen de ganancia que ves en la lista.
+            </p>
+
+            <%!-- Current ingredient list --%>
+            <%= if @ingredients_draft != [] do %>
+              <div class="space-y-1.5">
+                <%= for ing <- @ingredients_draft do %>
+                  <div class="flex items-center justify-between py-1.5 px-3 bg-base-100 border border-base-300 rounded-lg">
+                    <span class="text-sm font-medium text-base-content">{ing.product_name}</span>
+                    <div class="flex items-center gap-3">
+                      <span class="text-xs font-mono text-base-content/60">
+                        {format_qty(ing.quantity)} {unit_abbr(ing.unit)}
+                      </span>
+                      <button
+                        type="button"
+                        class="btn btn-ghost btn-xs text-error p-0"
+                        phx-click="remove_ingredient"
+                        phx-value-product_id={ing.product_id}
+                        title="Quitar ingrediente"
+                      >
+                        <.icon name="hero-x-mark" class="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+
+            <%!-- Add ingredient picker — resolves selected product's unit dynamically --%>
+            <% selected_product =
+              Enum.find(@available_products, &(to_string(&1.id) == @selected_product_id)) %>
+            <% selected_unit = if selected_product, do: unit_abbr(selected_product.unit), else: nil %>
+
+            <div class="space-y-2">
+              <%!-- Insumo select — full width always --%>
+              <div>
+                <label class="label text-xs pb-0.5">Insumo</label>
+                <select
+                  class="select select-sm w-full"
+                  phx-change="select_ingredient"
+                  name="ingredient_product_id"
+                >
+                  <option value="">— Selecciona insumo —</option>
+                  <%= for p <- @available_products do %>
+                    <option value={p.id} selected={to_string(p.id) == @selected_product_id}>
+                      {p.name} ({unit_abbr(p.unit)})
+                    </option>
+                  <% end %>
+                </select>
+              </div>
+
+              <%!-- Cantidad + Agregar — same row, qty is flex-1 --%>
+              <div class="flex gap-2 items-end">
+                <div class="flex-1 min-w-0">
+                  <label class="label text-xs pb-0.5">
+                    Cantidad
+                    <%= if selected_unit do %>
+                      <span class="badge badge-xs badge-primary badge-outline ml-1">
+                        {selected_unit}
+                      </span>
+                    <% end %>
+                  </label>
+                  <input
+                    type="number"
+                    class="input input-sm w-full"
+                    placeholder={if selected_unit, do: "0.000 #{selected_unit}", else: "0.000"}
+                    step="0.001"
+                    min="0"
+                    value={@ingredient_quantity_input}
+                    phx-change="set_ingredient_qty"
+                    name="ingredient_quantity"
+                  />
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline btn-primary shrink-0"
+                  phx-click="add_ingredient"
+                >
+                  <.icon name="hero-plus" class="size-3.5" /> Agregar
                 </button>
               </div>
             </div>
-            <%!-- ── End Extras opcionales ─────────────────────────────────────────── --%>
 
-            <div class="flex justify-end gap-3 pt-2">
-              <button type="button" class="btn btn-ghost" phx-click="close_modal">
-                Cancelar
-              </button>
-              <button type="submit" class="btn btn-primary">
-                {if @modal == :new, do: "Crear platillo", else: "Guardar cambios"}
+            <%= if @available_products == [] do %>
+              <p class="text-xs text-base-content/50">
+                No hay insumos disponibles. Crea insumos en <a
+                  href="/admin/insumos"
+                  class="link link-primary"
+                >Inventario → Insumos</a>.
+              </p>
+            <% end %>
+          </div>
+          <%!-- ── End Ingredientes ───────────────────────────────────────────── --%>
+
+          <%!-- ── ④ Extras opcionales ──────────────────────────────────────────── --%>
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
+            <div class="flex items-center gap-1.5">
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+                4
+              </span>
+              <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40">
+                Extras opcionales
+              </p>
+              <span class="badge badge-xs badge-ghost">{length(@optional_extras_draft)}</span>
+            </div>
+            <p class="text-xs text-base-content/40 leading-relaxed">
+              Insumos que el cliente puede pedir aparte, pero que <strong>no forman parte de la receta base</strong>.
+              Solo se descuentan del stock si el mesero los agrega a la comanda.
+              El precio es opcional; déjalo en 0 si no tienen cargo extra.
+            </p>
+
+            <%!-- Current optional extras list --%>
+            <%= if @optional_extras_draft != [] do %>
+              <div class="space-y-1.5">
+                <%= for e <- @optional_extras_draft do %>
+                  <div class="flex items-center justify-between py-1.5 px-3 bg-base-100 border border-base-300 rounded-lg">
+                    <span class="text-sm font-medium text-base-content">{e.product_name}</span>
+                    <div class="flex items-center gap-3">
+                      <span class="text-xs font-mono text-base-content/60">
+                        {format_qty(e.portion_quantity)} {unit_abbr(e.unit)}
+                      </span>
+                      <%= if e.sale_price && Decimal.compare(e.sale_price, Decimal.new(0)) == :gt do %>
+                        <span class="badge badge-xs badge-accent">
+                          +${format_qty(e.sale_price)}
+                        </span>
+                      <% else %>
+                        <span class="badge badge-xs badge-ghost">Sin cargo</span>
+                      <% end %>
+                      <button
+                        type="button"
+                        class="btn btn-ghost btn-xs text-error p-0"
+                        phx-click="remove_optional_extra"
+                        phx-value-product_id={e.product_id}
+                        title="Quitar extra opcional"
+                      >
+                        <.icon name="hero-x-mark" class="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+
+            <%!-- Add optional extra picker --%>
+            <% sel_opt_product =
+              Enum.find(@available_products, &(to_string(&1.id) == @selected_optional_product_id)) %>
+            <% sel_opt_unit = if sel_opt_product, do: unit_abbr(sel_opt_product.unit), else: nil %>
+
+            <div class="space-y-2">
+              <div>
+                <label class="label text-xs pb-0.5">Insumo</label>
+                <select
+                  class="select select-sm w-full"
+                  phx-change="select_optional_product"
+                  name="optional_product_id"
+                >
+                  <option value="">— Selecciona insumo —</option>
+                  <%= for p <- @available_products do %>
+                    <option value={p.id} selected={to_string(p.id) == @selected_optional_product_id}>
+                      {p.name} ({unit_abbr(p.unit)})
+                    </option>
+                  <% end %>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label class="label text-xs pb-0.5">
+                    Cantidad por porción
+                    <%= if sel_opt_unit do %>
+                      <span class="badge badge-xs badge-primary badge-outline ml-1">
+                        {sel_opt_unit}
+                      </span>
+                    <% end %>
+                  </label>
+                  <input
+                    type="number"
+                    class="input input-sm w-full"
+                    placeholder={if sel_opt_unit, do: "0.000 #{sel_opt_unit}", else: "0.000"}
+                    step="0.001"
+                    min="0"
+                    value={@optional_extra_qty_input}
+                    phx-change="set_optional_extra_qty"
+                    name="optional_extra_qty"
+                  />
+                </div>
+                <div>
+                  <label class="label text-xs pb-0.5">Precio extra (0 = sin cargo)</label>
+                  <input
+                    type="number"
+                    class="input input-sm w-full"
+                    placeholder="0.00"
+                    step="0.50"
+                    min="0"
+                    value={@optional_extra_price_input}
+                    phx-change="set_optional_extra_price"
+                    name="optional_extra_price"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="btn btn-sm btn-outline btn-secondary"
+                phx-click="add_optional_extra"
+              >
+                <.icon name="hero-plus" class="size-3.5" /> Agregar extra opcional
               </button>
             </div>
-          </.form>
-        </div>
+          </div>
+          <%!-- ── End Extras opcionales ─────────────────────────────────────────── --%>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" class="btn btn-ghost" phx-click="close_modal">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">
+              {if @modal == :new, do: "Crear platillo", else: "Guardar cambios"}
+            </button>
+          </div>
+        </.form>
       </div>
-    </div>
+    </.admin_modal>
     """
   end
 

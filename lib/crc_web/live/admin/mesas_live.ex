@@ -161,7 +161,7 @@ defmodule CRCWeb.Admin.MesasLive do
       </div>
 
       <%!-- Floor map canvas --%>
-      <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <.panel class="overflow-hidden">
         <%!-- Map area --%>
         <div
           id="floor-map"
@@ -255,10 +255,10 @@ defmodule CRCWeb.Admin.MesasLive do
           </span>
           <span class="hidden sm:inline">· Toca el ✏️ para editar · Arrastra para mover</span>
         </div>
-      </div>
+      </.panel>
 
       <%!-- Table list — accessible fallback + mobile --%>
-      <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <.panel class="overflow-hidden">
         <div class="px-5 py-3 border-b border-base-200 flex items-center gap-2">
           <.icon name="hero-list-bullet" class="size-4 text-base-content/40" />
           <h3 class="font-semibold text-sm text-base-content">Lista de mesas</h3>
@@ -271,16 +271,14 @@ defmodule CRCWeb.Admin.MesasLive do
         <% else %>
           <%!-- Desktop table --%>
           <div class="hidden sm:block overflow-x-auto">
-            <table class="table table-sm w-full">
-              <thead>
-                <tr class="text-base-content/50 text-xs uppercase">
-                  <th class="w-16">#</th>
-                  <th>Etiqueta</th>
-                  <th class="w-20 text-center">Personas</th>
-                  <th class="w-24 text-center">Estado</th>
-                  <th class="w-28"></th>
-                </tr>
-              </thead>
+            <table class="table table-sm table-fixed w-full">
+              <.admin_table_head>
+                <:col class="w-16">#</:col>
+                <:col>Etiqueta</:col>
+                <:col class="w-20 text-center">Personas</:col>
+                <:col class="w-24 text-center">Estado</:col>
+                <:col class="w-28"></:col>
+              </.admin_table_head>
               <tbody>
                 <%= for table <- @tables do %>
                   <tr class="hover:bg-base-200/50">
@@ -288,13 +286,9 @@ defmodule CRCWeb.Admin.MesasLive do
                     <td class="text-base-content/70">{table.label || "—"}</td>
                     <td class="text-center text-base-content/60">{table.capacity || "—"}</td>
                     <td class="text-center">
-                      <span class={
-                        if table.is_active,
-                          do: "badge badge-sm badge-success",
-                          else: "badge badge-sm badge-ghost"
-                      }>
+                      <.admin_badge variant={if table.is_active, do: :success, else: :ghost}>
                         {if table.is_active, do: "Activa", else: "Inactiva"}
-                      </span>
+                      </.admin_badge>
                     </td>
                     <td class="text-right">
                       <button
@@ -343,129 +337,117 @@ defmodule CRCWeb.Admin.MesasLive do
             <% end %>
           </div>
         <% end %>
-      </div>
+      </.panel>
     </div>
 
     <%!-- Create / Edit modal --%>
     <%= if @show_modal do %>
-      <div class="fixed inset-0 z-50">
-        <div class="absolute inset-0 bg-black/50" phx-click="close_modal" />
-        <div class="relative z-10 flex items-center justify-center min-h-full px-4 pointer-events-none">
-          <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4 pointer-events-auto">
-            <%!-- Modal header --%>
-            <div class="flex items-center justify-between">
-              <h2 class="text-lg font-bold text-base-content">
-                {if @editing_table, do: "Editar mesa #{@editing_table.number}", else: "Nueva mesa"}
-              </h2>
-              <button class="btn btn-sm btn-ghost btn-circle" phx-click="close_modal">
-                <.icon name="hero-x-mark" class="size-5" />
-              </button>
+      <.admin_modal id="table-modal" size="md" on_close="close_modal">
+        <:title>
+          {if @editing_table, do: "Editar mesa #{@editing_table.number}", else: "Nueva mesa"}
+        </:title>
+        <.form for={@form} phx-change="validate" phx-submit="save" class="space-y-4">
+          <%!-- Number + Label row --%>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="label pb-1">
+                <span class="label-text text-xs font-semibold">Número de mesa *</span>
+              </label>
+              <.input
+                field={@form[:number]}
+                type="number"
+                placeholder="1"
+                min="1"
+                class="input input-bordered w-full"
+              />
             </div>
-
-            <.form for={@form} phx-change="validate" phx-submit="save" class="space-y-4">
-              <%!-- Number + Label row --%>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="label pb-1">
-                    <span class="label-text text-xs font-semibold">Número de mesa *</span>
-                  </label>
-                  <.input
-                    field={@form[:number]}
-                    type="number"
-                    placeholder="1"
-                    min="1"
-                    class="input input-bordered w-full"
-                  />
-                </div>
-                <div>
-                  <label class="label pb-1">
-                    <span class="label-text text-xs font-semibold">Etiqueta (opcional)</span>
-                  </label>
-                  <.input
-                    field={@form[:label]}
-                    type="text"
-                    placeholder="Terraza, Ventana…"
-                    class="input input-bordered w-full"
-                  />
-                </div>
-              </div>
-
-              <%!-- Capacity --%>
-              <div>
-                <label class="label pb-1">
-                  <span class="label-text text-xs font-semibold">Capacidad (personas, opcional)</span>
-                </label>
-                <.input
-                  field={@form[:capacity]}
-                  type="number"
-                  placeholder="4"
-                  min="1"
-                  class="input input-bordered w-full"
-                />
-              </div>
-
-              <%!-- Active toggle --%>
-              <div class="flex items-center gap-3">
-                <.input
-                  field={@form[:is_active]}
-                  type="checkbox"
-                  class="toggle toggle-primary toggle-sm"
-                />
-                <label class="text-sm text-base-content cursor-pointer">
-                  Mesa activa (visible para meseros)
-                </label>
-              </div>
-
-              <%!-- Delete confirmation (only in edit mode) --%>
-              <%= if @editing_table do %>
-                <div class="pt-1 border-t border-base-200">
-                  <%= if @confirm_delete_id == @editing_table.id do %>
-                    <p class="text-xs text-error mb-2">
-                      ¿Confirmar eliminación? Esta acción no se puede deshacer.
-                    </p>
-                    <div class="flex gap-2">
-                      <button
-                        type="button"
-                        class="btn btn-xs btn-error flex-1"
-                        phx-click="delete_table"
-                        phx-value-id={@editing_table.id}
-                      >
-                        Sí, eliminar
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-xs btn-ghost flex-1"
-                        phx-click="close_modal"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  <% else %>
-                    <button
-                      type="button"
-                      class="btn btn-xs btn-ghost text-error gap-1"
-                      phx-click="confirm_delete"
-                      phx-value-id={@editing_table.id}
-                    >
-                      <.icon name="hero-trash" class="size-3" /> Eliminar mesa
-                    </button>
-                  <% end %>
-                </div>
-              <% end %>
-
-              <%!-- Actions --%>
-              <div class="flex gap-2 pt-1">
-                <button type="button" class="btn btn-ghost flex-1" phx-click="close_modal">
-                  Cancelar
-                </button>
-                <button type="submit" class="btn btn-primary flex-1">
-                  {if @editing_table, do: "Guardar cambios", else: "Crear mesa"}
-                </button>
-              </div>
-            </.form>
+            <div>
+              <label class="label pb-1">
+                <span class="label-text text-xs font-semibold">Etiqueta (opcional)</span>
+              </label>
+              <.input
+                field={@form[:label]}
+                type="text"
+                placeholder="Terraza, Ventana…"
+                class="input input-bordered w-full"
+              />
+            </div>
           </div>
-        </div>
-      </div>
+
+          <%!-- Capacity --%>
+          <div>
+            <label class="label pb-1">
+              <span class="label-text text-xs font-semibold">Capacidad (personas, opcional)</span>
+            </label>
+            <.input
+              field={@form[:capacity]}
+              type="number"
+              placeholder="4"
+              min="1"
+              class="input input-bordered w-full"
+            />
+          </div>
+
+          <%!-- Active toggle --%>
+          <div class="flex items-center gap-3">
+            <.input
+              field={@form[:is_active]}
+              type="checkbox"
+              class="toggle toggle-primary toggle-sm"
+            />
+            <label class="text-sm text-base-content cursor-pointer">
+              Mesa activa (visible para meseros)
+            </label>
+          </div>
+
+          <%!-- Delete confirmation (only in edit mode) --%>
+          <%= if @editing_table do %>
+            <div class="pt-1 border-t border-base-200">
+              <%= if @confirm_delete_id == @editing_table.id do %>
+                <p class="text-xs text-error mb-2">
+                  ¿Confirmar eliminación? Esta acción no se puede deshacer.
+                </p>
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-xs btn-error flex-1"
+                    phx-click="delete_table"
+                    phx-value-id={@editing_table.id}
+                  >
+                    Sí, eliminar
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-xs btn-ghost flex-1"
+                    phx-click="close_modal"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              <% else %>
+                <button
+                  type="button"
+                  class="btn btn-xs btn-ghost text-error gap-1"
+                  phx-click="confirm_delete"
+                  phx-value-id={@editing_table.id}
+                >
+                  <.icon name="hero-trash" class="size-3" /> Eliminar mesa
+                </button>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%!-- Actions --%>
+          <div class="flex gap-2 pt-1">
+            <button type="button" class="btn btn-ghost flex-1" phx-click="close_modal">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary flex-1">
+              {if @editing_table, do: "Guardar cambios", else: "Crear mesa"}
+            </button>
+          </div>
+        </.form>
+      </.admin_modal>
     <% end %>
     """
   end

@@ -95,16 +95,16 @@ defmodule CRCWeb.Admin.ProductCategoriesLive do
       </div>
 
       <%= if @categories == [] do %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-16 text-center">
+        <.panel class="py-16 text-center">
           <.icon name="hero-tag" class="size-10 text-base-content/20 mx-auto mb-3" />
           <p class="text-base-content/50 text-sm">No hay categorías registradas.</p>
           <p class="text-base-content/30 text-xs mt-1">Crea la primera para organizar tus insumos.</p>
-        </div>
+        </.panel>
       <% else %>
         <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
         <div class="md:hidden flex flex-col gap-2">
           <%= for cat <- @categories do %>
-            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-center gap-3">
+            <.panel class="p-3 flex items-center gap-3">
               <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 shrink-0">
                 <.icon name="hero-tag" class="size-5 text-primary" />
               </div>
@@ -138,21 +138,19 @@ defmodule CRCWeb.Admin.ProductCategoriesLive do
                   <.icon name="hero-trash" class="size-4" />
                 </button>
               </div>
-            </div>
+            </.panel>
           <% end %>
         </div>
 
         <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
-        <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+        <.panel class="hidden md:block overflow-hidden">
           <div class="overflow-x-auto">
             <table class="table table-zebra table-fixed w-full">
-              <thead>
-                <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                  <th class="w-[65%]">Nombre</th>
-                  <th class="w-[15%] text-center">Insumos</th>
-                  <th class="w-[20%] text-right">Acciones</th>
-                </tr>
-              </thead>
+              <.admin_table_head>
+                <:col class="w-[65%]">Nombre</:col>
+                <:col class="w-[15%] text-center">Insumos</:col>
+                <:col class="w-[20%] text-right">Acciones</:col>
+              </.admin_table_head>
               <tbody>
                 <%= for cat <- @categories do %>
                   <tr class="hover:bg-base-200/50 transition-colors">
@@ -191,7 +189,7 @@ defmodule CRCWeb.Admin.ProductCategoriesLive do
               </tbody>
             </table>
           </div>
-        </div>
+        </.panel>
       <% end %>
     </div>
 
@@ -209,40 +207,23 @@ defmodule CRCWeb.Admin.ProductCategoriesLive do
     assigns = assign(assigns, :title, title)
 
     ~H"""
-    <div
-      id="category-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      phx-window-keydown="close_modal"
-      phx-key="Escape"
-    >
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
-
-      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm overflow-y-auto max-h-[90vh]">
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
-          <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
-            <.icon name="hero-x-mark" class="size-5" />
+    <.admin_modal id="category-modal" size="sm" on_close="close_modal">
+      <:title>{@title}</:title>
+      <.form id="category-form" for={@form} phx-submit="save_category" class="space-y-4">
+        <.input
+          field={@form[:name]}
+          type="text"
+          label="Nombre de la categoría"
+          placeholder="Ej. Lácteos, Bebidas, Limpieza..."
+        />
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            {if @modal == :new, do: "Crear categoría", else: "Guardar cambios"}
           </button>
         </div>
-
-        <div class="px-6 py-5">
-          <.form id="category-form" for={@form} phx-submit="save_category" class="space-y-4">
-            <.input
-              field={@form[:name]}
-              type="text"
-              label="Nombre de la categoría"
-              placeholder="Ej. Lácteos, Bebidas, Limpieza..."
-            />
-            <div class="flex justify-end gap-3 pt-2">
-              <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary">
-                {if @modal == :new, do: "Crear categoría", else: "Guardar cambios"}
-              </button>
-            </div>
-          </.form>
-        </div>
-      </div>
-    </div>
+      </.form>
+    </.admin_modal>
     """
   end
 end

@@ -167,25 +167,29 @@ defmodule CRCWeb.Admin.SuppliersLive do
       <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
       <div class="md:hidden flex flex-col gap-2">
         <%= if visible == [] do %>
-          <div class="text-center py-12 text-base-content/40 text-sm bg-base-100 rounded-2xl border border-base-300">
-            {if @status_filter == :active,
-              do: "No hay proveedores activos.",
-              else: "No hay proveedores inactivos."}
-          </div>
+          <.panel class="text-center py-12">
+            <p class="text-base-content/40 text-sm">
+              {if @status_filter == :active,
+                do: "No hay proveedores activos.",
+                else: "No hay proveedores inactivos."}
+            </p>
+          </.panel>
         <% end %>
         <%= for supplier <- visible do %>
-          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-center gap-3">
+          <.panel class="p-3 flex items-center gap-3">
             <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 shrink-0">
               <.icon name="hero-truck" class="size-5 text-primary" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <p class="font-semibold text-sm text-base-content truncate">{supplier.name}</p>
-                <%= if supplier.active do %>
-                  <span class="badge badge-xs badge-success shrink-0">Activo</span>
-                <% else %>
-                  <span class="badge badge-xs badge-error shrink-0">Inactivo</span>
-                <% end %>
+                <.admin_badge
+                  variant={if supplier.active, do: :success, else: :error}
+                  size="xs"
+                  class="shrink-0"
+                >
+                  {if supplier.active, do: "Activo", else: "Inactivo"}
+                </.admin_badge>
               </div>
               <div class="flex items-center gap-2 mt-0.5 flex-wrap">
                 <%= if supplier.contact_name do %>
@@ -223,24 +227,22 @@ defmodule CRCWeb.Admin.SuppliersLive do
                 />
               </button>
             </div>
-          </div>
+          </.panel>
         <% end %>
       </div>
 
       <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
-      <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <.panel class="hidden md:block overflow-hidden">
         <div class="overflow-x-auto">
           <table class="table table-zebra table-fixed w-full">
-            <thead>
-              <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th class="w-[25%]">Nombre</th>
-                <th class="w-[18%]">Contacto</th>
-                <th class="w-[15%]">Teléfono</th>
-                <th class="w-[25%]">Correo</th>
-                <th class="w-[10%]">Estado</th>
-                <th class="w-[7%] text-right">Acciones</th>
-              </tr>
-            </thead>
+            <.admin_table_head>
+              <:col class="w-[25%]">Nombre</:col>
+              <:col class="w-[18%]">Contacto</:col>
+              <:col class="w-[15%]">Teléfono</:col>
+              <:col class="w-[25%]">Correo</:col>
+              <:col class="w-[10%]">Estado</:col>
+              <:col class="w-[7%] text-right">Acciones</:col>
+            </.admin_table_head>
             <tbody>
               <%= for supplier <- visible do %>
                 <tr class="hover:bg-base-200/50 transition-colors">
@@ -255,11 +257,9 @@ defmodule CRCWeb.Admin.SuppliersLive do
                     {supplier.email || "—"}
                   </td>
                   <td>
-                    <%= if supplier.active do %>
-                      <span class="badge badge-sm badge-success">Activo</span>
-                    <% else %>
-                      <span class="badge badge-sm badge-error">Inactivo</span>
-                    <% end %>
+                    <.admin_badge variant={if supplier.active, do: :success, else: :error}>
+                      {if supplier.active, do: "Activo", else: "Inactivo"}
+                    </.admin_badge>
                   </td>
                   <td>
                     <div class="flex items-center justify-end gap-1">
@@ -301,7 +301,7 @@ defmodule CRCWeb.Admin.SuppliersLive do
             </tbody>
           </table>
         </div>
-      </div>
+      </.panel>
     </div>
 
     <%!-- Modal: new / edit supplier --%>
@@ -323,71 +323,54 @@ defmodule CRCWeb.Admin.SuppliersLive do
     assigns = assign(assigns, :title, title)
 
     ~H"""
-    <div
-      id="supplier-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      phx-window-keydown="close_modal"
-      phx-key="Escape"
-    >
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
+    <.admin_modal id="supplier-modal" size="lg" on_close="close_modal">
+      <:title>{@title}</:title>
+      <.form id="supplier-form" for={@form} phx-submit="save_supplier" class="space-y-1">
+        <.input
+          field={@form[:name]}
+          type="text"
+          label="Nombre del proveedor"
+          placeholder="Ej. Lala, La Costena, Distribuidora López"
+        />
+        <.input
+          field={@form[:contact_name]}
+          type="text"
+          label="Persona de contacto (opcional)"
+          placeholder="Ej. Carlos Mendoza"
+        />
+        <.input
+          field={@form[:phone]}
+          type="text"
+          label="Teléfono (opcional)"
+          placeholder="55 1234 5678"
+        />
+        <.input
+          field={@form[:email]}
+          type="email"
+          label="Correo electrónico (opcional)"
+          placeholder="contacto@proveedor.com"
+        />
+        <.input
+          field={@form[:address]}
+          type="text"
+          label="Dirección (opcional)"
+          placeholder="Calle, colonia, ciudad"
+        />
+        <.input
+          field={@form[:notes]}
+          type="textarea"
+          label="Notas (opcional)"
+          placeholder="Días de entrega, condiciones, observaciones..."
+        />
 
-      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
-          <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
-            <.icon name="hero-x-mark" class="size-5" />
+        <div class="flex justify-end gap-3 pt-4">
+          <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            {if @modal == :new, do: "Crear proveedor", else: "Guardar cambios"}
           </button>
         </div>
-
-        <div class="px-6 py-5">
-          <.form id="supplier-form" for={@form} phx-submit="save_supplier" class="space-y-1">
-            <.input
-              field={@form[:name]}
-              type="text"
-              label="Nombre del proveedor"
-              placeholder="Ej. Lala, La Costena, Distribuidora López"
-            />
-            <.input
-              field={@form[:contact_name]}
-              type="text"
-              label="Persona de contacto (opcional)"
-              placeholder="Ej. Carlos Mendoza"
-            />
-            <.input
-              field={@form[:phone]}
-              type="text"
-              label="Teléfono (opcional)"
-              placeholder="55 1234 5678"
-            />
-            <.input
-              field={@form[:email]}
-              type="email"
-              label="Correo electrónico (opcional)"
-              placeholder="contacto@proveedor.com"
-            />
-            <.input
-              field={@form[:address]}
-              type="text"
-              label="Dirección (opcional)"
-              placeholder="Calle, colonia, ciudad"
-            />
-            <.input
-              field={@form[:notes]}
-              type="textarea"
-              label="Notas (opcional)"
-              placeholder="Días de entrega, condiciones, observaciones..."
-            />
-
-            <div class="flex justify-end gap-3 pt-4">
-              <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary">
-                {if @modal == :new, do: "Crear proveedor", else: "Guardar cambios"}
-              </button>
-            </div>
-          </.form>
-        </div>
-      </div>
-    </div>
+      </.form>
+    </.admin_modal>
     """
   end
 

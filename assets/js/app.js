@@ -237,6 +237,29 @@ const FloorMapEditor = {
 }
 
 /**
+ * SidebarScroll — remembers the admin sidebar's scroll position across
+ * live_navigate. Navigating to a different LiveView unmounts the previous
+ * one and mounts the new one fresh (unlike live_patch, this is not a
+ * fine-grained morphdom patch), so the <nav> node itself is torn down and
+ * recreated on every click — resetting its native scrollTop to 0. Persist
+ * the position in sessionStorage (per-tab, survives navigation, cleared
+ * on tab close) and restore it as soon as the hook remounts.
+ *
+ * Usage: <nav phx-hook="SidebarScroll" id="admin-sidebar-nav">...</nav>
+ */
+const SidebarScroll = {
+  mounted() {
+    const key = "crc_admin_sidebar_scroll"
+    const saved = sessionStorage.getItem(key)
+    if (saved) this.el.scrollTop = parseInt(saved, 10)
+
+    this.el.addEventListener("scroll", () => {
+      sessionStorage.setItem(key, this.el.scrollTop)
+    })
+  }
+}
+
+/**
  * DismissableTip — hides an onboarding tip panel and remembers the choice
  * in localStorage so it never shows again for this browser.
  *
@@ -304,6 +327,7 @@ const liveSocket = new LiveSocket("/live", Socket, {
     DismissableTip,
     FloorMapEditor,
     GeolocationClockIn,
+    SidebarScroll,
     SoundNotifier,
   },
 })

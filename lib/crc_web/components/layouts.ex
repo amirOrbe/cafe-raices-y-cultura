@@ -125,7 +125,11 @@ defmodule CRCWeb.Layouts do
         </div>
 
         <%!-- Navegación --%>
-        <nav class="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
+        <nav
+          id="admin-sidebar-nav"
+          phx-hook="SidebarScroll"
+          class="flex-1 px-3 py-5 space-y-1 overflow-y-auto"
+        >
           <%= for section <- nav_sections() do %>
             <div :if={section[:label]} class="pt-3 pb-1">
               <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">

@@ -33,7 +33,7 @@ defmodule CRCWeb.Admin.NavTest do
 
   test "every admin route is reachable from the /admin card grid", %{conn: conn} do
     {conn, _admin} = admin_conn(conn)
-    {:ok, _lv, html} = live(conn, ~p"/admin")
+    {:ok, _lv, html} = live(conn, ~p"/admin?tab=gestion")
 
     for path <- @admin_routes do
       assert html =~ ~s(href="#{path}"), "expected the card grid to link to #{path}"

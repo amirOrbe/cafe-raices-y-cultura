@@ -89,6 +89,35 @@ defmodule CRCWeb.Admin.DashboardLiveTest do
     end
   end
 
+  describe "tabs" do
+    test "defaults to the dashboard tab (operational widgets, no nav grid)", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, _lv, html} = live(conn, ~p"/admin")
+      assert html =~ "Ventas por método de pago"
+      refute html =~ "Carta y Menú"
+    end
+
+    test "?tab=gestion shows the nav grid, not the operational widgets", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, _lv, html} = live(conn, ~p"/admin?tab=gestion")
+      assert html =~ "Carta y Menú"
+      refute html =~ "Ventas por método de pago"
+    end
+
+    test "clicking the Gestión tab patches to ?tab=gestion without remounting", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin")
+
+      html =
+        lv
+        |> element("a", "Gestión")
+        |> render_click()
+
+      assert html =~ "Carta y Menú"
+      assert_patched(lv, ~p"/admin?tab=gestion")
+    end
+  end
+
   describe "set_period event (chart reports)" do
     test "switches to 'week' without crashing", %{conn: conn} do
       {conn, _admin} = admin_conn(conn)

@@ -103,7 +103,6 @@ defmodule CRCWeb.Layouts do
         <% end %>
 
         <div class="flex items-center gap-2 sm:gap-3">
-          <.theme_toggle />
           <.link
             navigate="/"
             class="p-2 rounded-lg hover:bg-primary-content/15 transition-colors"

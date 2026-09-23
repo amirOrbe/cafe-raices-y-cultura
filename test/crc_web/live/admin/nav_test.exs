@@ -15,7 +15,7 @@ defmodule CRCWeb.Admin.NavTest do
   # excluding detail/orphan routes only reached via in-page buttons:
   # /admin/clientes/:id).
   @admin_routes ~w(
-    /admin /admin/usuarios /admin/clientes /admin/lealtad
+    /admin/usuarios /admin/clientes /admin/lealtad
     /admin/platillos /admin/platillos/categorias /admin/paquetes
     /admin/inventario /admin/proveedores /admin/insumos
     /admin/insumos/categorias /admin/insumos/merma /admin/produccion
@@ -39,8 +39,11 @@ defmodule CRCWeb.Admin.NavTest do
       assert html =~ ~s(href="#{path}"), "expected the card grid to link to #{path}"
     end
 
-    # /bitacora is shown in the grid too, even though it isn't under /admin
-    assert html =~ ~s(href="/bitacora")
+    # Dashboard (redundant with the tab itself) and Bitácora de Turno (a
+    # floor-staff tool, not an admin-managed resource — reachable from the
+    # site's own staff navbar like any other employee) are deliberately not
+    # in the grid.
+    refute html =~ ~s(href="/bitacora")
   end
 
   test "top bar shows the logo on /admin and 'Volver al panel' elsewhere", %{conn: conn} do

@@ -310,12 +310,6 @@ defmodule CRCWeb.AdminComponents do
   def nav_sections do
     [
       %{
-        items: [
-          %{path: "/admin", label: "Dashboard", icon: "hero-home"},
-          %{path: "/bitacora", label: "Bitácora de Turno", icon: "hero-clipboard-document-check"}
-        ]
-      },
-      %{
         label: "Clientes",
         items: [
           %{path: "/admin/clientes", label: "Clientes", icon: "hero-identification"},

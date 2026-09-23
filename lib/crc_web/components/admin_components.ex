@@ -212,10 +212,10 @@ defmodule CRCWeb.AdminComponents do
   end
 
   @doc """
-  The "Hoy / Semana / Mes / Total + rango personalizado" filter block
+  The "Hoy / Semana / Mes / Año / Total + rango personalizado" filter block
   duplicated byte-for-byte across `finanzas_live.ex`, `ventas_live.ex`, and
   `rendimiento_live.ex`. Emits `"set_period"` (with a `"period"` param of
-  `"today"|"week"|"month"|"all"`) and `"set_date_range"` (with `"date_from"`/
+  `"today"|"week"|"month"|"year"|"all"`) and `"set_date_range"` (with `"date_from"`/
   `"date_to"` params) — callers keep their existing `handle_event` clauses
   for both, so adopting this component doesn't change any LiveView's event
   handling, only its markup.
@@ -240,6 +240,7 @@ defmodule CRCWeb.AdminComponents do
               {"Hoy", "today"},
               {"Esta semana", "week"},
               {"Este mes", "month"},
+              {"Este año", "year"},
               {"Total", "all"}
             ]
           }

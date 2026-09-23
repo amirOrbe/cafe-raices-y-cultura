@@ -89,6 +89,57 @@ defmodule CRCWeb.Admin.DashboardLiveTest do
     end
   end
 
+  describe "set_period event (chart reports)" do
+    test "switches to 'week' without crashing", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _} = live(conn, ~p"/admin")
+      html = render_click(lv, "set_period", %{"period" => "week"})
+      assert html =~ "Reportes"
+    end
+
+    test "switches to 'year' without crashing", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _} = live(conn, ~p"/admin")
+      html = render_click(lv, "set_period", %{"period" => "year"})
+      assert html =~ "Reportes"
+    end
+
+    test "switches to 'all' without crashing", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _} = live(conn, ~p"/admin")
+      html = render_click(lv, "set_period", %{"period" => "all"})
+      assert html =~ "Reportes"
+    end
+  end
+
+  describe "set_date_range event (chart reports)" do
+    test "accepts a valid date range without crashing", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _} = live(conn, ~p"/admin")
+
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2026-03-01",
+          "date_to" => "2026-03-31"
+        })
+
+      assert html =~ "Reportes"
+    end
+
+    test "ignores an invalid range (from after to)", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _} = live(conn, ~p"/admin")
+
+      html =
+        render_change(lv, "set_date_range", %{
+          "date_from" => "2026-03-31",
+          "date_to" => "2026-03-01"
+        })
+
+      assert html =~ "Reportes"
+    end
+  end
+
   describe "PubSub events" do
     test "user_changed PubSub event triggers stats reload", %{conn: conn} do
       {conn, _admin} = admin_conn(conn)

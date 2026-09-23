@@ -31,6 +31,12 @@ defmodule CRCWeb.Admin.DashboardLive do
     {:ok, socket}
   end
 
+  @impl true
+  def handle_params(params, _uri, socket) do
+    tab = if params["tab"] == "gestion", do: "gestion", else: "dashboard"
+    {:noreply, assign(socket, :tab, tab)}
+  end
+
   # ---------------------------------------------------------------------------
   # PubSub + tick
   # ---------------------------------------------------------------------------
@@ -109,23 +115,12 @@ defmodule CRCWeb.Admin.DashboardLive do
     |> assign(:user_stats, build_user_stats(users))
   end
 
-  # Palette shared by the 4 pie charts — warm tones matching the café brand,
-  # with a neutral gray reserved for "Otros" buckets.
+  # Palette for the payment-method chart — warm tones matching the café brand.
   @chart_colors ~w(#6b4226 #b5651d #d4a373 #8a9b6e #4a7c7c #c1666b #e0b354 #7d8597)
 
   defp load_report_data(socket) do
-    period = socket.assigns.period
-
-    sales = Orders.sales_summary(period)
-    financial = Orders.financial_summary(period)
-    top_items = Orders.top_selling_items(period, 5)
-    %{revenue_ranking: revenue_ranking} = Orders.employee_rankings(period)
-
-    socket
-    |> assign(:payment_method_chart, payment_method_chart_data(sales.by_method))
-    |> assign(:revenue_composition_chart, revenue_composition_chart_data(financial))
-    |> assign(:top_items_chart, top_items_chart_data(top_items))
-    |> assign(:employee_revenue_chart, employee_revenue_chart_data(revenue_ranking))
+    sales = Orders.sales_summary(socket.assigns.period)
+    assign(socket, :payment_method_chart, payment_method_chart_data(sales.by_method))
   end
 
   defp payment_method_chart_data(by_method) when map_size(by_method) == 0 do
@@ -139,53 +134,6 @@ defmodule CRCWeb.Admin.DashboardLive do
       |> Enum.map(fn {method, amount} ->
         {String.capitalize(method || "Desconocido"), Decimal.to_float(amount)}
       end)
-      |> Enum.unzip()
-
-    to_chart(labels, values)
-  end
-
-  defp revenue_composition_chart_data(%{revenue: revenue} = financial) do
-    if Decimal.compare(revenue, Decimal.new(0)) == :eq do
-      empty_chart()
-    else
-      net_profit = Decimal.sub(financial.gross_profit, financial.waste_cost)
-
-      to_chart(
-        ["Costo de insumos", "Ganancia neta", "Desperdicio"],
-        [
-          Decimal.to_float(financial.cogs),
-          Decimal.to_float(net_profit),
-          Decimal.to_float(financial.waste_cost)
-        ]
-      )
-    end
-  end
-
-  defp top_items_chart_data([]), do: empty_chart()
-
-  defp top_items_chart_data(top_items) do
-    {labels, values} = top_items |> Enum.map(fn {name, qty} -> {name, qty} end) |> Enum.unzip()
-    to_chart(labels, values)
-  end
-
-  defp employee_revenue_chart_data([]), do: empty_chart()
-
-  defp employee_revenue_chart_data(revenue_ranking) do
-    {top5, rest} = Enum.split(revenue_ranking, 5)
-
-    entries =
-      case rest do
-        [] ->
-          top5
-
-        rest ->
-          otros_revenue = Enum.reduce(rest, Decimal.new(0), &Decimal.add(&2, &1.revenue))
-          top5 ++ [%{name: "Otros", revenue: otros_revenue}]
-      end
-
-    {labels, values} =
-      entries
-      |> Enum.map(fn entry -> {entry.name, Decimal.to_float(entry.revenue)} end)
       |> Enum.unzip()
 
     to_chart(labels, values)
@@ -242,374 +190,367 @@ defmodule CRCWeb.Admin.DashboardLive do
         </div>
       </div>
 
-      <%!-- ── Métricas de hoy ────────────────────────────────────────────────── --%>
-      <div>
-        <h2 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">
-          Hoy
-        </h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <.stat_card
-            label="Ventas del día"
-            value={"$#{format_price(@sales.total_revenue)}"}
-            icon="hero-banknotes"
-            variant={:success}
-          />
-          <.stat_card
-            label="Cuentas cerradas"
-            value={@sales.order_count}
-            icon="hero-check-circle"
-            variant={:primary}
-          />
-          <.stat_card
-            label="Ticket promedio"
-            value={"$#{format_price(@sales.avg_ticket)}"}
-            icon="hero-receipt-percent"
-            variant={:accent}
-          />
-          <.stat_card
-            label="Órdenes activas"
-            value={length(@open_orders)}
-            icon="hero-clock"
-            variant={:info}
-          />
-          <.stat_card
-            label="Pendiente cocina"
-            value={@pending_cocina}
-            icon="hero-fire"
-            variant={if @pending_cocina > 0, do: :warning, else: :success}
-          />
-          <.stat_card
-            label="Pendiente barra"
-            value={@pending_barra}
-            icon="hero-beaker"
-            variant={if @pending_barra > 0, do: :warning, else: :success}
-          />
-        </div>
+      <%!-- ── Tabs ───────────────────────────────────────────────────────────── --%>
+      <div class="join">
+        <.link
+          patch={~p"/admin?tab=dashboard"}
+          class={[
+            "btn btn-sm join-item gap-2",
+            if(@tab == "dashboard", do: "btn-primary", else: "btn-ghost")
+          ]}
+        >
+          <.icon name="hero-squares-2x2" class="size-4" /> Dashboard
+        </.link>
+        <.link
+          patch={~p"/admin?tab=gestion"}
+          class={[
+            "btn btn-sm join-item gap-2",
+            if(@tab == "gestion", do: "btn-primary", else: "btn-ghost")
+          ]}
+        >
+          <.icon name="hero-wrench-screwdriver" class="size-4" /> Gestión
+        </.link>
       </div>
 
-      <%!-- ── Pago por método (hoy) ─────────────────────────────────────────── --%>
-      <%= if map_size(@sales.by_method) > 0 do %>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <%= for {method, amount} <- @sales.by_method do %>
-            <div class="bg-base-100 rounded-xl border border-base-300 shadow-sm px-4 py-3 flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <.icon name={payment_icon(method)} class="size-4 text-base-content/50" />
-                <span class="text-sm capitalize text-base-content/70">{method}</span>
+      <%= if @tab == "dashboard" do %>
+        <%!-- ── Métricas de hoy ────────────────────────────────────────────────── --%>
+        <div>
+          <h2 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">
+            Hoy
+          </h2>
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <.stat_card
+              label="Ventas del día"
+              value={"$#{format_price(@sales.total_revenue)}"}
+              icon="hero-banknotes"
+              variant={:success}
+            />
+            <.stat_card
+              label="Cuentas cerradas"
+              value={@sales.order_count}
+              icon="hero-check-circle"
+              variant={:primary}
+            />
+            <.stat_card
+              label="Ticket promedio"
+              value={"$#{format_price(@sales.avg_ticket)}"}
+              icon="hero-receipt-percent"
+              variant={:accent}
+            />
+            <.stat_card
+              label="Órdenes activas"
+              value={length(@open_orders)}
+              icon="hero-clock"
+              variant={:info}
+            />
+            <.stat_card
+              label="Pendiente cocina"
+              value={@pending_cocina}
+              icon="hero-fire"
+              variant={if @pending_cocina > 0, do: :warning, else: :success}
+            />
+            <.stat_card
+              label="Pendiente barra"
+              value={@pending_barra}
+              icon="hero-beaker"
+              variant={if @pending_barra > 0, do: :warning, else: :success}
+            />
+          </div>
+        </div>
+
+        <%!-- ── Pago por método (hoy) ─────────────────────────────────────────── --%>
+        <%= if map_size(@sales.by_method) > 0 do %>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <%= for {method, amount} <- @sales.by_method do %>
+              <div class="bg-base-100 rounded-xl border border-base-300 shadow-sm px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <.icon name={payment_icon(method)} class="size-4 text-base-content/50" />
+                  <span class="text-sm capitalize text-base-content/70">{method}</span>
+                </div>
+                <span class="font-bold text-base-content">${format_price(amount)}</span>
               </div>
-              <span class="font-bold text-base-content">${format_price(amount)}</span>
+            <% end %>
+          </div>
+        <% end %>
+
+        <%!-- ── Órdenes activas ────────────────────────────────────────────────── --%>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <%!-- Active orders list (takes 2/3 of the grid) --%>
+          <div class="lg:col-span-2 bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-base-300 flex items-center justify-between">
+              <h2 class="font-semibold text-base-content">Órdenes activas</h2>
+              <%= if @open_orders != [] do %>
+                <span class="badge badge-info badge-sm">{length(@open_orders)}</span>
+              <% end %>
+            </div>
+
+            <%= if @open_orders == [] do %>
+              <div class="py-12 text-center text-base-content/40 text-sm">
+                <.icon name="hero-check-circle" class="size-10 mx-auto mb-2 text-success" />
+                Sin órdenes activas en este momento
+              </div>
+            <% else %>
+              <div class="divide-y divide-base-200">
+                <%= for order <- Enum.sort_by(@open_orders, & &1.inserted_at) do %>
+                  <% mins = elapsed_minutes(order, @now) %>
+                  <div class="px-5 py-3 flex items-center gap-3 flex-wrap">
+                    <%!-- Customer + waiter --%>
+                    <div class="flex-1 min-w-0">
+                      <p class="font-semibold text-base-content text-sm">{order.customer_name}</p>
+                      <p class="text-xs text-base-content/40 mt-0.5">
+                        <%= if order.user do %>
+                          👤 {order.user.name}
+                        <% end %>
+                        · {item_summary(order)}
+                      </p>
+                    </div>
+
+                    <%!-- Elapsed time. A tab open for hours/days is usually a
+                       customer who left it running, not a delay — don't scream. --%>
+                    <%= if mins do %>
+                      <span class={[
+                        "text-xs font-mono font-semibold tabular-nums",
+                        cond do
+                          mins >= 30 and mins < 180 -> "text-error animate-pulse"
+                          mins >= 15 and mins < 180 -> "text-warning"
+                          mins >= 180 -> "text-base-content/40"
+                          true -> "text-base-content/50"
+                        end
+                      ]}>
+                        🕐 {format_elapsed(mins)}
+                      </span>
+                    <% end %>
+
+                    <%!-- Status --%>
+                    <.order_status_badge status={order.status} />
+
+                    <%!-- Pending items by station --%>
+                    <% sent_cocina = count_sent_items(order, "cocina") %>
+                    <% sent_barra = count_sent_items(order, "barra") %>
+                    <%= if sent_cocina > 0 do %>
+                      <span class="badge badge-warning badge-sm">🍳 {sent_cocina}</span>
+                    <% end %>
+                    <%= if sent_barra > 0 do %>
+                      <span class="badge badge-info badge-sm">🍹 {sent_barra}</span>
+                    <% end %>
+                    <%= if count_pending_items(order) > 0 do %>
+                      <span class="badge badge-ghost badge-sm">
+                        ⏳ {count_pending_items(order)} pendiente
+                      </span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+
+          <%!-- Top platillos del día --%>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-base-300">
+              <h2 class="font-semibold text-base-content">Top platillos hoy</h2>
+            </div>
+            <%= if @top_items == [] do %>
+              <div class="py-8 text-center text-base-content/40 text-sm">
+                Sin ventas registradas hoy
+              </div>
+            <% else %>
+              <div class="divide-y divide-base-200">
+                <%= for {{name, qty}, idx} <- Enum.with_index(@top_items) do %>
+                  <div class="flex items-center gap-3 px-5 py-3">
+                    <span class={[
+                      "size-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                      case idx do
+                        0 -> "bg-warning/20 text-warning"
+                        1 -> "bg-base-content/10 text-base-content/60"
+                        2 -> "bg-accent/20 text-accent"
+                        _ -> "bg-base-200 text-base-content/40"
+                      end
+                    ]}>
+                      {idx + 1}
+                    </span>
+                    <p class="flex-1 text-sm text-base-content truncate">{name}</p>
+                    <span class="text-sm font-bold text-primary">{qty}</span>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <%!-- ── Cuentas por cobrar (parked) ─────────────────────────────────────── --%>
+        <div
+          :if={@parked_orders != []}
+          class="bg-base-100 rounded-2xl border border-warning/40 shadow-sm overflow-hidden"
+        >
+          <div class="px-5 py-4 border-b border-base-300 flex items-center justify-between gap-2 bg-warning/5">
+            <div class="flex items-center gap-2">
+              <span class="hero-pause-circle size-5 text-warning" />
+              <h2 class="font-semibold text-base-content">Por cobrar</h2>
+            </div>
+            <span class="text-sm font-semibold text-base-content/70">
+              {length(@parked_orders)}
+              {if length(@parked_orders) == 1, do: "cuenta", else: "cuentas"} · ${CRC.Utils.format_money(
+                parked_total(@parked_orders)
+              )}
+            </span>
+          </div>
+          <div class="divide-y divide-base-200">
+            <%= for order <- @parked_orders do %>
+              <div class="px-5 py-3 flex items-center gap-3 flex-wrap">
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold text-base-content text-sm">{order.customer_name}</p>
+                  <p class="text-xs text-base-content/40 mt-0.5">
+                    <%= if order.user do %>
+                      👤 {order.user.name} ·
+                    <% end %>
+                    {item_summary(order)} · abierta {format_elapsed(
+                      DateTime.diff(@now, order.parked_at, :minute)
+                    )}
+                  </p>
+                </div>
+                <span class="text-sm font-bold text-primary">
+                  ${CRC.Utils.format_money(Orders.calculate_order_total(order))}
+                </span>
+                <a href={"/mesa/#{order.id}"} class="btn btn-xs btn-outline btn-warning">Cobrar</a>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <%!-- ── Stock bajo + Usuarios ──────────────────────────────────────────── --%>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <%!-- Stock bajo --%>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-base-300 flex items-center justify-between">
+              <h2 class="font-semibold text-base-content">Stock bajo</h2>
+              <%= if @low_stock != [] do %>
+                <span class="badge badge-warning badge-sm">{length(@low_stock)}</span>
+              <% end %>
+            </div>
+            <%= if @low_stock == [] do %>
+              <div class="py-8 text-center text-base-content/40 text-sm">
+                <.icon name="hero-check-circle" class="size-8 mx-auto mb-1 text-success" />
+                Todo el stock está bien
+              </div>
+            <% else %>
+              <div class="divide-y divide-base-200">
+                <%= for product <- Enum.take(@low_stock, 8) do %>
+                  <div class="flex items-center justify-between px-5 py-3 gap-3">
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-base-content truncate">{product.name}</p>
+                      <p class="text-xs text-base-content/40">
+                        Mín: {product.min_stock} {product.unit}
+                      </p>
+                    </div>
+                    <div class="text-right shrink-0">
+                      <p class={[
+                        "text-sm font-bold",
+                        if(Decimal.compare(product.stock_quantity, Decimal.new(0)) == :eq,
+                          do: "text-error",
+                          else: "text-warning"
+                        )
+                      ]}>
+                        {format_stock(product.stock_quantity)} {product.unit}
+                      </p>
+                      <%= if Decimal.compare(product.stock_quantity, Decimal.new(0)) == :eq do %>
+                        <p class="text-xs text-error font-semibold">Agotado</p>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+                <%= if length(@low_stock) > 8 do %>
+                  <div class="px-5 py-3 text-center">
+                    <a href="/admin/inventario" class="text-xs text-primary hover:underline">
+                      Ver {length(@low_stock) - 8} más →
+                    </a>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+
+          <%!-- Usuarios --%>
+          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-base-300 flex items-center justify-between">
+              <h2 class="font-semibold text-base-content">Equipo</h2>
+              <a href="/admin/usuarios" class="btn btn-xs btn-ghost text-primary">Ver todos</a>
+            </div>
+            <div class="px-5 py-4 grid grid-cols-2 gap-3">
+              <.mini_stat
+                label="Total"
+                value={@user_stats.total}
+                icon="hero-users"
+                color="text-primary"
+              />
+              <.mini_stat
+                label="Activos"
+                value={@user_stats.active}
+                icon="hero-check-circle"
+                color="text-success"
+              />
+              <.mini_stat
+                label="Empleados"
+                value={@user_stats.employees}
+                icon="hero-briefcase"
+                color="text-secondary"
+              />
+              <.mini_stat
+                label="Admins"
+                value={@user_stats.admins}
+                icon="hero-shield-check"
+                color="text-accent"
+              />
+            </div>
+          </div>
+        </div>
+
+        <%!-- ── Reportes con gráficas ──────────────────────────────────────────── --%>
+        <div class="space-y-4 pt-2">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <h2 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">
+              Reportes
+            </h2>
+            <.period_filter period={@period} date_from={@date_from} date_to={@date_to} />
+          </div>
+
+          <div class="max-w-md">
+            <.panel class="p-5">
+              <h3 class="text-sm font-semibold text-base-content mb-3">Ventas por método de pago</h3>
+              <div class="h-64 relative">
+                <canvas
+                  id="chart-payment-method"
+                  phx-hook="PieChart"
+                  data-chart={Jason.encode!(@payment_method_chart)}
+                />
+              </div>
+            </.panel>
+          </div>
+        </div>
+      <% end %>
+
+      <%= if @tab == "gestion" do %>
+        <%!-- ── Navegación ───────────────────────────────────────────────────── --%>
+        <div class="space-y-5">
+          <%= for section <- nav_sections() do %>
+            <div>
+              <h2
+                :if={section[:label]}
+                class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3"
+              >
+                {section.label}
+              </h2>
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <.nav_card
+                  :for={item <- section.items}
+                  path={item.path}
+                  label={item.label}
+                  icon={item.icon}
+                />
+              </div>
             </div>
           <% end %>
         </div>
       <% end %>
-
-      <%!-- ── Órdenes activas ────────────────────────────────────────────────── --%>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <%!-- Active orders list (takes 2/3 of the grid) --%>
-        <div class="lg:col-span-2 bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-base-300 flex items-center justify-between">
-            <h2 class="font-semibold text-base-content">Órdenes activas</h2>
-            <%= if @open_orders != [] do %>
-              <span class="badge badge-info badge-sm">{length(@open_orders)}</span>
-            <% end %>
-          </div>
-
-          <%= if @open_orders == [] do %>
-            <div class="py-12 text-center text-base-content/40 text-sm">
-              <.icon name="hero-check-circle" class="size-10 mx-auto mb-2 text-success" />
-              Sin órdenes activas en este momento
-            </div>
-          <% else %>
-            <div class="divide-y divide-base-200">
-              <%= for order <- Enum.sort_by(@open_orders, & &1.inserted_at) do %>
-                <% mins = elapsed_minutes(order, @now) %>
-                <div class="px-5 py-3 flex items-center gap-3 flex-wrap">
-                  <%!-- Customer + waiter --%>
-                  <div class="flex-1 min-w-0">
-                    <p class="font-semibold text-base-content text-sm">{order.customer_name}</p>
-                    <p class="text-xs text-base-content/40 mt-0.5">
-                      <%= if order.user do %>
-                        👤 {order.user.name}
-                      <% end %>
-                      · {item_summary(order)}
-                    </p>
-                  </div>
-
-                  <%!-- Elapsed time. A tab open for hours/days is usually a
-                       customer who left it running, not a delay — don't scream. --%>
-                  <%= if mins do %>
-                    <span class={[
-                      "text-xs font-mono font-semibold tabular-nums",
-                      cond do
-                        mins >= 30 and mins < 180 -> "text-error animate-pulse"
-                        mins >= 15 and mins < 180 -> "text-warning"
-                        mins >= 180 -> "text-base-content/40"
-                        true -> "text-base-content/50"
-                      end
-                    ]}>
-                      🕐 {format_elapsed(mins)}
-                    </span>
-                  <% end %>
-
-                  <%!-- Status --%>
-                  <.order_status_badge status={order.status} />
-
-                  <%!-- Pending items by station --%>
-                  <% sent_cocina = count_sent_items(order, "cocina") %>
-                  <% sent_barra = count_sent_items(order, "barra") %>
-                  <%= if sent_cocina > 0 do %>
-                    <span class="badge badge-warning badge-sm">🍳 {sent_cocina}</span>
-                  <% end %>
-                  <%= if sent_barra > 0 do %>
-                    <span class="badge badge-info badge-sm">🍹 {sent_barra}</span>
-                  <% end %>
-                  <%= if count_pending_items(order) > 0 do %>
-                    <span class="badge badge-ghost badge-sm">
-                      ⏳ {count_pending_items(order)} pendiente
-                    </span>
-                  <% end %>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
-
-        <%!-- Top platillos del día --%>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-base-300">
-            <h2 class="font-semibold text-base-content">Top platillos hoy</h2>
-          </div>
-          <%= if @top_items == [] do %>
-            <div class="py-8 text-center text-base-content/40 text-sm">
-              Sin ventas registradas hoy
-            </div>
-          <% else %>
-            <div class="divide-y divide-base-200">
-              <%= for {{name, qty}, idx} <- Enum.with_index(@top_items) do %>
-                <div class="flex items-center gap-3 px-5 py-3">
-                  <span class={[
-                    "size-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                    case idx do
-                      0 -> "bg-warning/20 text-warning"
-                      1 -> "bg-base-content/10 text-base-content/60"
-                      2 -> "bg-accent/20 text-accent"
-                      _ -> "bg-base-200 text-base-content/40"
-                    end
-                  ]}>
-                    {idx + 1}
-                  </span>
-                  <p class="flex-1 text-sm text-base-content truncate">{name}</p>
-                  <span class="text-sm font-bold text-primary">{qty}</span>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
-      </div>
-
-      <%!-- ── Cuentas por cobrar (parked) ─────────────────────────────────────── --%>
-      <div
-        :if={@parked_orders != []}
-        class="bg-base-100 rounded-2xl border border-warning/40 shadow-sm overflow-hidden"
-      >
-        <div class="px-5 py-4 border-b border-base-300 flex items-center justify-between gap-2 bg-warning/5">
-          <div class="flex items-center gap-2">
-            <span class="hero-pause-circle size-5 text-warning" />
-            <h2 class="font-semibold text-base-content">Por cobrar</h2>
-          </div>
-          <span class="text-sm font-semibold text-base-content/70">
-            {length(@parked_orders)}
-            {if length(@parked_orders) == 1, do: "cuenta", else: "cuentas"} · ${CRC.Utils.format_money(
-              parked_total(@parked_orders)
-            )}
-          </span>
-        </div>
-        <div class="divide-y divide-base-200">
-          <%= for order <- @parked_orders do %>
-            <div class="px-5 py-3 flex items-center gap-3 flex-wrap">
-              <div class="flex-1 min-w-0">
-                <p class="font-semibold text-base-content text-sm">{order.customer_name}</p>
-                <p class="text-xs text-base-content/40 mt-0.5">
-                  <%= if order.user do %>
-                    👤 {order.user.name} ·
-                  <% end %>
-                  {item_summary(order)} · abierta {format_elapsed(
-                    DateTime.diff(@now, order.parked_at, :minute)
-                  )}
-                </p>
-              </div>
-              <span class="text-sm font-bold text-primary">
-                ${CRC.Utils.format_money(Orders.calculate_order_total(order))}
-              </span>
-              <a href={"/mesa/#{order.id}"} class="btn btn-xs btn-outline btn-warning">Cobrar</a>
-            </div>
-          <% end %>
-        </div>
-      </div>
-
-      <%!-- ── Stock bajo + Usuarios ──────────────────────────────────────────── --%>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <%!-- Stock bajo --%>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-base-300 flex items-center justify-between">
-            <h2 class="font-semibold text-base-content">Stock bajo</h2>
-            <%= if @low_stock != [] do %>
-              <span class="badge badge-warning badge-sm">{length(@low_stock)}</span>
-            <% end %>
-          </div>
-          <%= if @low_stock == [] do %>
-            <div class="py-8 text-center text-base-content/40 text-sm">
-              <.icon name="hero-check-circle" class="size-8 mx-auto mb-1 text-success" />
-              Todo el stock está bien
-            </div>
-          <% else %>
-            <div class="divide-y divide-base-200">
-              <%= for product <- Enum.take(@low_stock, 8) do %>
-                <div class="flex items-center justify-between px-5 py-3 gap-3">
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-base-content truncate">{product.name}</p>
-                    <p class="text-xs text-base-content/40">
-                      Mín: {product.min_stock} {product.unit}
-                    </p>
-                  </div>
-                  <div class="text-right shrink-0">
-                    <p class={[
-                      "text-sm font-bold",
-                      if(Decimal.compare(product.stock_quantity, Decimal.new(0)) == :eq,
-                        do: "text-error",
-                        else: "text-warning"
-                      )
-                    ]}>
-                      {format_stock(product.stock_quantity)} {product.unit}
-                    </p>
-                    <%= if Decimal.compare(product.stock_quantity, Decimal.new(0)) == :eq do %>
-                      <p class="text-xs text-error font-semibold">Agotado</p>
-                    <% end %>
-                  </div>
-                </div>
-              <% end %>
-              <%= if length(@low_stock) > 8 do %>
-                <div class="px-5 py-3 text-center">
-                  <a href="/admin/inventario" class="text-xs text-primary hover:underline">
-                    Ver {length(@low_stock) - 8} más →
-                  </a>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
-
-        <%!-- Usuarios --%>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-base-300 flex items-center justify-between">
-            <h2 class="font-semibold text-base-content">Equipo</h2>
-            <a href="/admin/usuarios" class="btn btn-xs btn-ghost text-primary">Ver todos</a>
-          </div>
-          <div class="px-5 py-4 grid grid-cols-2 gap-3">
-            <.mini_stat
-              label="Total"
-              value={@user_stats.total}
-              icon="hero-users"
-              color="text-primary"
-            />
-            <.mini_stat
-              label="Activos"
-              value={@user_stats.active}
-              icon="hero-check-circle"
-              color="text-success"
-            />
-            <.mini_stat
-              label="Empleados"
-              value={@user_stats.employees}
-              icon="hero-briefcase"
-              color="text-secondary"
-            />
-            <.mini_stat
-              label="Admins"
-              value={@user_stats.admins}
-              icon="hero-shield-check"
-              color="text-accent"
-            />
-          </div>
-        </div>
-      </div>
-
-      <%!-- ── Reportes con gráficas ──────────────────────────────────────────── --%>
-      <div class="space-y-4 pt-2">
-        <div class="flex items-center justify-between flex-wrap gap-3">
-          <h2 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">
-            Reportes
-          </h2>
-          <.period_filter period={@period} date_from={@date_from} date_to={@date_to} />
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <.panel class="p-5">
-            <h3 class="text-sm font-semibold text-base-content mb-3">Ventas por método de pago</h3>
-            <div class="h-64 relative">
-              <canvas
-                id="chart-payment-method"
-                phx-hook="PieChart"
-                data-chart={Jason.encode!(@payment_method_chart)}
-              />
-            </div>
-          </.panel>
-
-          <.panel class="p-5">
-            <h3 class="text-sm font-semibold text-base-content mb-3">Composición del ingreso</h3>
-            <div class="h-64 relative">
-              <canvas
-                id="chart-revenue-composition"
-                phx-hook="PieChart"
-                data-chart={Jason.encode!(@revenue_composition_chart)}
-              />
-            </div>
-          </.panel>
-
-          <.panel class="p-5">
-            <h3 class="text-sm font-semibold text-base-content mb-3">Platillos más vendidos</h3>
-            <div class="h-64 relative">
-              <canvas
-                id="chart-top-items"
-                phx-hook="PieChart"
-                data-chart={Jason.encode!(@top_items_chart)}
-              />
-            </div>
-          </.panel>
-
-          <.panel class="p-5">
-            <h3 class="text-sm font-semibold text-base-content mb-3">Ventas por empleado</h3>
-            <div class="h-64 relative">
-              <canvas
-                id="chart-employee-revenue"
-                phx-hook="PieChart"
-                data-chart={Jason.encode!(@employee_revenue_chart)}
-              />
-            </div>
-          </.panel>
-        </div>
-      </div>
-
-      <%!-- ── Navegación ─────────────────────────────────────────────────────── --%>
-      <div class="space-y-5 pt-2">
-        <%= for section <- nav_sections() do %>
-          <div>
-            <h2
-              :if={section[:label]}
-              class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3"
-            >
-              {section.label}
-            </h2>
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              <.nav_card
-                :for={item <- section.items}
-                path={item.path}
-                label={item.label}
-                icon={item.icon}
-              />
-            </div>
-          </div>
-        <% end %>
-      </div>
     </div>
     """
   end

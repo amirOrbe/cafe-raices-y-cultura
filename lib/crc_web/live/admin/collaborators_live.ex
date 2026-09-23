@@ -167,25 +167,29 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
       <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
       <div class="md:hidden flex flex-col gap-2">
         <%= if visible == [] do %>
-          <div class="text-center py-12 text-base-content/40 text-sm bg-base-100 rounded-2xl border border-base-300">
-            {if @status_filter == :active,
-              do: "No hay colaboradores activos.",
-              else: "No hay colaboradores inactivos."}
-          </div>
+          <.panel class="text-center py-12">
+            <p class="text-base-content/40 text-sm">
+              {if @status_filter == :active,
+                do: "No hay colaboradores activos.",
+                else: "No hay colaboradores inactivos."}
+            </p>
+          </.panel>
         <% end %>
         <%= for collaborator <- visible do %>
-          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-center gap-3">
+          <.panel class="p-3 flex items-center gap-3">
             <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 shrink-0">
               <.icon name="hero-user" class="size-5 text-primary" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <p class="font-semibold text-sm text-base-content truncate">{collaborator.name}</p>
-                <%= if collaborator.active do %>
-                  <span class="badge badge-xs badge-success shrink-0">Activo</span>
-                <% else %>
-                  <span class="badge badge-xs badge-error shrink-0">Inactivo</span>
-                <% end %>
+                <.admin_badge
+                  variant={if collaborator.active, do: :success, else: :error}
+                  size="xs"
+                  class="shrink-0"
+                >
+                  {if collaborator.active, do: "Activo", else: "Inactivo"}
+                </.admin_badge>
               </div>
               <%= if collaborator.instagram_handle do %>
                 <p class="text-xs text-primary/70 mt-0.5">@{collaborator.instagram_handle}</p>
@@ -218,23 +222,21 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
                 />
               </button>
             </div>
-          </div>
+          </.panel>
         <% end %>
       </div>
 
       <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
-      <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <.panel class="hidden md:block overflow-hidden">
         <div class="overflow-x-auto">
           <table class="table table-zebra table-fixed w-full">
-            <thead>
-              <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th class="w-[25%]">Nombre</th>
-                <th class="w-[20%]">Instagram</th>
-                <th class="w-[40%]">Bio</th>
-                <th class="w-[8%]">Estado</th>
-                <th class="w-[7%] text-right">Acciones</th>
-              </tr>
-            </thead>
+            <.admin_table_head>
+              <:col class="w-[25%]">Nombre</:col>
+              <:col class="w-[20%]">Instagram</:col>
+              <:col class="w-[40%]">Bio</:col>
+              <:col class="w-[8%]">Estado</:col>
+              <:col class="w-[7%] text-right">Acciones</:col>
+            </.admin_table_head>
             <tbody>
               <%= for collaborator <- visible do %>
                 <tr class="hover:bg-base-200/50 transition-colors">
@@ -250,11 +252,9 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
                     {collaborator.bio || "—"}
                   </td>
                   <td>
-                    <%= if collaborator.active do %>
-                      <span class="badge badge-sm badge-success">Activo</span>
-                    <% else %>
-                      <span class="badge badge-sm badge-error">Inactivo</span>
-                    <% end %>
+                    <.admin_badge variant={if collaborator.active, do: :success, else: :error}>
+                      {if collaborator.active, do: "Activo", else: "Inactivo"}
+                    </.admin_badge>
                   </td>
                   <td>
                     <div class="flex items-center justify-end gap-1">
@@ -298,7 +298,7 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
             </tbody>
           </table>
         </div>
-      </div>
+      </.panel>
     </div>
 
     <%!-- Modal: new / edit collaborator --%>
@@ -320,53 +320,36 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
     assigns = assign(assigns, :title, title)
 
     ~H"""
-    <div
-      id="collaborator-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      phx-window-keydown="close_modal"
-      phx-key="Escape"
-    >
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
+    <.admin_modal id="collaborator-modal" size="lg" on_close="close_modal">
+      <:title>{@title}</:title>
+      <.form id="collaborator-form" for={@form} phx-submit="save_collaborator" class="space-y-1">
+        <.input
+          field={@form[:name]}
+          type="text"
+          label="Nombre"
+          placeholder="Ej. Ana García, Trío Raíces"
+        />
+        <.input
+          field={@form[:instagram_handle]}
+          type="text"
+          label="Instagram (opcional)"
+          placeholder="sin @, ej: anagarcia.music"
+        />
+        <.input
+          field={@form[:bio]}
+          type="textarea"
+          label="Biografía (opcional)"
+          placeholder="Breve descripción del colaborador o agrupación..."
+        />
 
-      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between sticky top-0 bg-base-100">
-          <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
-          <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
-            <.icon name="hero-x-mark" class="size-5" />
+        <div class="flex justify-end gap-3 pt-4">
+          <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            {if @modal == :new, do: "Crear colaborador", else: "Guardar cambios"}
           </button>
         </div>
-
-        <div class="px-6 py-5">
-          <.form id="collaborator-form" for={@form} phx-submit="save_collaborator" class="space-y-1">
-            <.input
-              field={@form[:name]}
-              type="text"
-              label="Nombre"
-              placeholder="Ej. Ana García, Trío Raíces"
-            />
-            <.input
-              field={@form[:instagram_handle]}
-              type="text"
-              label="Instagram (opcional)"
-              placeholder="sin @, ej: anagarcia.music"
-            />
-            <.input
-              field={@form[:bio]}
-              type="textarea"
-              label="Biografía (opcional)"
-              placeholder="Breve descripción del colaborador o agrupación..."
-            />
-
-            <div class="flex justify-end gap-3 pt-4">
-              <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary">
-                {if @modal == :new, do: "Crear colaborador", else: "Guardar cambios"}
-              </button>
-            </div>
-          </.form>
-        </div>
-      </div>
-    </div>
+      </.form>
+    </.admin_modal>
     """
   end
 

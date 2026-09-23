@@ -118,6 +118,39 @@ defmodule CRCWeb.Admin.DashboardLiveTest do
     end
   end
 
+  describe "search_nav event (Gestión search box)" do
+    test "filters the nav grid down to matching items only", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin?tab=gestion")
+
+      html = render_change(lv, "search_nav", %{"q" => "inventario"})
+
+      assert html =~ "Inventario (stock)"
+      refute html =~ "Carta y Menú"
+      refute html =~ "Platillos"
+    end
+
+    test "shows an empty state when nothing matches", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin?tab=gestion")
+
+      html = render_change(lv, "search_nav", %{"q" => "zzzzz"})
+
+      assert html =~ "Sin resultados"
+      refute html =~ "Carta y Menú"
+    end
+
+    test "clearing the query restores the full grid", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin?tab=gestion")
+
+      render_change(lv, "search_nav", %{"q" => "inventario"})
+      html = render_change(lv, "search_nav", %{"q" => ""})
+
+      assert html =~ "Carta y Menú"
+    end
+  end
+
   describe "set_period event (chart reports)" do
     test "switches to 'week' without crashing", %{conn: conn} do
       {conn, _admin} = admin_conn(conn)

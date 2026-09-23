@@ -25,6 +25,7 @@ defmodule CRCWeb.Admin.DashboardLive do
       |> assign(:period, :all)
       |> assign(:date_from, "")
       |> assign(:date_to, "")
+      |> assign(:nav_query, "")
       |> load_all()
       |> load_report_data()
 
@@ -87,6 +88,14 @@ defmodule CRCWeb.Admin.DashboardLive do
     else
       _ -> {:noreply, socket}
     end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Events — search box for the Gestión nav grid
+  # ---------------------------------------------------------------------------
+
+  def handle_event("search_nav", %{"q" => query}, socket) do
+    {:noreply, assign(socket, :nav_query, query)}
   end
 
   # ---------------------------------------------------------------------------
@@ -167,6 +176,23 @@ defmodule CRCWeb.Admin.DashboardLive do
       employees: Enum.count(users, &(&1.role == "empleado")),
       admins: Enum.count(users, &(&1.role == "admin"))
     }
+  end
+
+  # Filters nav_sections() by label for the Gestión search box — a group
+  # disappears entirely once none of its items match, rather than showing an
+  # empty header.
+  defp filtered_nav_sections(""), do: nav_sections()
+
+  defp filtered_nav_sections(query) do
+    q = String.downcase(query)
+
+    nav_sections()
+    |> Enum.map(fn section ->
+      Map.update!(section, :items, fn items ->
+        Enum.filter(items, &String.contains?(String.downcase(&1.label), q))
+      end)
+    end)
+    |> Enum.reject(&(&1.items == []))
   end
 
   # ---------------------------------------------------------------------------
@@ -531,23 +557,48 @@ defmodule CRCWeb.Admin.DashboardLive do
       <%= if @tab == "gestion" do %>
         <%!-- ── Navegación ───────────────────────────────────────────────────── --%>
         <div class="space-y-5">
-          <%= for section <- nav_sections() do %>
-            <div>
-              <h2
-                :if={section[:label]}
-                class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3"
-              >
-                {section.label}
-              </h2>
-              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                <.nav_card
-                  :for={item <- section.items}
-                  path={item.path}
-                  label={item.label}
-                  icon={item.icon}
-                />
-              </div>
+          <form phx-change="search_nav" class="max-w-sm">
+            <div class="relative">
+              <.icon
+                name="hero-magnifying-glass"
+                class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/40"
+              />
+              <input
+                type="text"
+                name="q"
+                value={@nav_query}
+                placeholder="Buscar en Gestión…"
+                autocomplete="off"
+                phx-debounce="150"
+                class="input input-bordered input-sm w-full pl-9"
+              />
             </div>
+          </form>
+
+          <% sections = filtered_nav_sections(@nav_query) %>
+          <%= if sections == [] do %>
+            <p class="text-sm text-base-content/40 text-center py-8">
+              Sin resultados para "{@nav_query}".
+            </p>
+          <% else %>
+            <%= for section <- sections do %>
+              <div>
+                <h2
+                  :if={section[:label]}
+                  class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3"
+                >
+                  {section.label}
+                </h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <.nav_card
+                    :for={item <- section.items}
+                    path={item.path}
+                    label={item.label}
+                    icon={item.icon}
+                  />
+                </div>
+              </div>
+            <% end %>
           <% end %>
         </div>
       <% end %>

@@ -402,6 +402,28 @@ defmodule CRCWeb.Admin.DashboardLive do
           </div>
         </div>
       </div>
+
+      <%!-- ── Navegación ─────────────────────────────────────────────────────── --%>
+      <div class="space-y-5 pt-2">
+        <%= for section <- nav_sections() do %>
+          <div>
+            <h2
+              :if={section[:label]}
+              class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3"
+            >
+              {section.label}
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <.nav_card
+                :for={item <- section.items}
+                path={item.path}
+                label={item.label}
+                icon={item.icon}
+              />
+            </div>
+          </div>
+        <% end %>
+      </div>
     </div>
     """
   end

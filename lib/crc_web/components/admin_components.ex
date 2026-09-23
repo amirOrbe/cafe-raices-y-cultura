@@ -276,6 +276,129 @@ defmodule CRCWeb.AdminComponents do
     """
   end
 
+  @doc """
+  A navigation card — icon + label — used to build the card grid on
+  `/admin` that replaced the persistent sidebar. Grouped by `nav_sections/0`.
+
+  ## Examples
+
+      <.nav_card path="/admin/platillos" label="Platillos" icon="hero-clipboard-document-list" />
+  """
+  attr :path, :string, required: true
+  attr :label, :string, required: true
+  attr :icon, :string, required: true
+
+  def nav_card(assigns) do
+    ~H"""
+    <.link navigate={@path} class="block">
+      <.panel class="p-4 flex flex-col items-center gap-2 text-center hover:border-primary/40 hover:shadow-md transition-all">
+        <div class="size-11 rounded-xl bg-primary/10 flex items-center justify-center">
+          <.icon name={@icon} class="size-5 text-primary" />
+        </div>
+        <p class="text-sm font-medium text-base-content leading-tight">{@label}</p>
+      </.panel>
+    </.link>
+    """
+  end
+
+  @doc """
+  The full list of admin destinations, grouped by area — the data behind the
+  `/admin` card grid (moved here from `CRCWeb.Layouts` once the sidebar it
+  used to feed was replaced by that grid; `nav_card/1` is its renderer).
+  """
+  def nav_sections do
+    [
+      %{
+        items: [
+          %{path: "/admin", label: "Dashboard", icon: "hero-home"},
+          %{path: "/bitacora", label: "Bitácora de Turno", icon: "hero-clipboard-document-check"}
+        ]
+      },
+      %{
+        label: "Clientes",
+        items: [
+          %{path: "/admin/clientes", label: "Clientes", icon: "hero-identification"},
+          %{path: "/admin/lealtad", label: "Lealtad", icon: "hero-ticket"}
+        ]
+      },
+      %{
+        label: "Carta y Menú",
+        items: [
+          %{path: "/admin/platillos", label: "Platillos", icon: "hero-clipboard-document-list"},
+          %{
+            path: "/admin/platillos/categorias",
+            label: "Categorías de platillos",
+            icon: "hero-squares-2x2"
+          },
+          %{path: "/admin/paquetes", label: "Paquetes", icon: "hero-gift"}
+        ]
+      },
+      %{
+        label: "Inventario",
+        items: [
+          %{
+            path: "/admin/inventario",
+            label: "Inventario (stock)",
+            icon: "hero-clipboard-document-list"
+          },
+          %{path: "/admin/proveedores", label: "Proveedores", icon: "hero-truck"},
+          %{path: "/admin/insumos", label: "Insumos", icon: "hero-archive-box"},
+          %{
+            path: "/admin/insumos/categorias",
+            label: "Categorías de insumos",
+            icon: "hero-tag"
+          },
+          %{path: "/admin/insumos/merma", label: "Merma", icon: "hero-trash"},
+          %{path: "/admin/produccion", label: "Producción Interna", icon: "hero-beaker"}
+        ]
+      },
+      %{
+        label: "Operaciones del local",
+        items: [
+          %{path: "/admin/mesas", label: "Mesas", icon: "hero-table-cells"},
+          %{path: "/admin/descuentos", label: "Descuentos", icon: "hero-tag"}
+        ]
+      },
+      %{
+        label: "Eventos y Colaboraciones",
+        items: [
+          %{path: "/admin/eventos", label: "Eventos", icon: "hero-calendar"},
+          %{path: "/admin/colaboradores", label: "Colaboradores", icon: "hero-user-group"},
+          %{path: "/admin/eventos/tipos", label: "Tipos de evento", icon: "hero-tag"}
+        ]
+      },
+      %{
+        label: "Reportes y Finanzas",
+        items: [
+          %{path: "/admin/finanzas", label: "Finanzas", icon: "hero-scale"},
+          %{path: "/admin/ventas", label: "Ventas", icon: "hero-chart-bar"},
+          %{path: "/admin/ventas/manual", label: "Venta manual", icon: "hero-plus-circle"},
+          %{path: "/admin/rendimiento", label: "Rendimiento", icon: "hero-clock"}
+        ]
+      },
+      %{
+        label: "Personal",
+        items: [
+          %{path: "/admin/usuarios", label: "Usuarios", icon: "hero-users"},
+          %{path: "/admin/horarios", label: "Horarios", icon: "hero-calendar-days"},
+          %{path: "/admin/asistencia", label: "Asistencia", icon: "hero-finger-print"},
+          %{
+            path: "/admin/calendario",
+            label: "Calendario de actividades",
+            icon: "hero-calendar"
+          },
+          %{path: "/admin/cumpleanos", label: "Cumpleaños", icon: "hero-cake"}
+        ]
+      },
+      %{
+        label: "Sistema",
+        items: [
+          %{path: "/admin/configuracion", label: "Configuración", icon: "hero-cog-6-tooth"}
+        ]
+      }
+    ]
+  end
+
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------

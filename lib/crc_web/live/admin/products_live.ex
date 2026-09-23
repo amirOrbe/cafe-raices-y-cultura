@@ -397,14 +397,23 @@ defmodule CRCWeb.Admin.ProductsLive do
       <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
       <div class="md:hidden flex flex-col gap-2">
         <%= if visible == [] do %>
-          <div class="text-center py-12 text-base-content/40 text-sm bg-base-100 rounded-2xl border border-base-300">
-            {cond do
-              @status_filter == :inactive && @filter_category == "all" -> "No hay insumos inactivos."
-              @status_filter == :inactive -> "No hay insumos inactivos en esta categoría."
-              @filter_category != "all" -> "No hay insumos en esta categoría."
-              true -> "No hay insumos registrados. Crea el primero."
-            end}
-          </div>
+          <.panel class="text-center py-12">
+            <p class="text-base-content/40 text-sm">
+              {cond do
+                @status_filter == :inactive && @filter_category == "all" ->
+                  "No hay insumos inactivos."
+
+                @status_filter == :inactive ->
+                  "No hay insumos inactivos en esta categoría."
+
+                @filter_category != "all" ->
+                  "No hay insumos en esta categoría."
+
+                true ->
+                  "No hay insumos registrados. Crea el primero."
+              end}
+            </p>
+          </.panel>
         <% end %>
         <%= for product <- visible do %>
           <% has_variants = product.variants != [] %>
@@ -427,11 +436,13 @@ defmodule CRCWeb.Admin.ProductsLive do
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
                 <p class="font-semibold text-sm text-base-content truncate">{product.name}</p>
-                <%= if product.active do %>
-                  <span class="badge badge-xs badge-success shrink-0">Activo</span>
-                <% else %>
-                  <span class="badge badge-xs badge-error shrink-0">Inactivo</span>
-                <% end %>
+                <.admin_badge
+                  variant={if product.active, do: :success, else: :error}
+                  size="xs"
+                  class="shrink-0"
+                >
+                  {if product.active, do: "Activo", else: "Inactivo"}
+                </.admin_badge>
               </div>
               <div class="flex items-center gap-2 mt-1 flex-wrap">
                 <%= if product.product_category do %>
@@ -495,22 +506,20 @@ defmodule CRCWeb.Admin.ProductsLive do
       </div>
 
       <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
-      <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <.panel class="hidden md:block overflow-hidden">
         <div class="overflow-x-auto">
           <table class="table table-zebra table-fixed w-full">
-            <thead>
-              <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th class="w-[21%]">Nombre</th>
-                <th class="w-[15%]">Categoría</th>
-                <th class="w-[10%]">Stock</th>
-                <th class="w-[8%]">Mín.</th>
-                <th class="w-[10%]">Costo neto</th>
-                <th class="w-[10%]">Precio venta</th>
-                <th class="w-[12%]">Proveedor</th>
-                <th class="w-[8%]">Estado</th>
-                <th class="w-[6%] text-right">Acciones</th>
-              </tr>
-            </thead>
+            <.admin_table_head>
+              <:col class="w-[21%]">Nombre</:col>
+              <:col class="w-[15%]">Categoría</:col>
+              <:col class="w-[10%]">Stock</:col>
+              <:col class="w-[8%]">Mín.</:col>
+              <:col class="w-[10%]">Costo neto</:col>
+              <:col class="w-[10%]">Precio venta</:col>
+              <:col class="w-[12%]">Proveedor</:col>
+              <:col class="w-[8%]">Estado</:col>
+              <:col class="w-[6%] text-right">Acciones</:col>
+            </.admin_table_head>
             <tbody>
               <%= for product <- visible do %>
                 <% has_variants = product.variants != [] %>
@@ -564,11 +573,9 @@ defmodule CRCWeb.Admin.ProductsLive do
                     {if product.supplier, do: product.supplier.name, else: "—"}
                   </td>
                   <td>
-                    <%= if product.active do %>
-                      <span class="badge badge-sm badge-success">Activo</span>
-                    <% else %>
-                      <span class="badge badge-sm badge-error">Inactivo</span>
-                    <% end %>
+                    <.admin_badge variant={if product.active, do: :success, else: :error}>
+                      {if product.active, do: "Activo", else: "Inactivo"}
+                    </.admin_badge>
                   </td>
                   <td>
                     <div class="flex items-center justify-end gap-1">
@@ -620,7 +627,7 @@ defmodule CRCWeb.Admin.ProductsLive do
             </tbody>
           </table>
         </div>
-      </div>
+      </.panel>
     </div>
 
     <%!-- Pagination --%>
@@ -700,425 +707,408 @@ defmodule CRCWeb.Admin.ProductsLive do
       |> assign(:product, product)
 
     ~H"""
-    <div
-      id="product-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      phx-window-keydown="close_modal"
-      phx-key="Escape"
-    >
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
-
-      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh]">
-        <%!-- Modal header --%>
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between sticky top-0 bg-base-100 z-10">
-          <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
-          <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
-            <.icon name="hero-x-mark" class="size-5" />
-          </button>
+    <.admin_modal id="product-modal" size="2xl" on_close="close_modal">
+      <:title>{@title}</:title>
+      <div class="space-y-5">
+        <%!-- Step flow indicator --%>
+        <div class="flex items-center gap-2 text-xs text-base-content/50 flex-wrap">
+          <span class="flex items-center gap-1 font-semibold text-primary">
+            <span class="size-5 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">
+              1
+            </span>
+            Elige la unidad
+          </span>
+          <span class="text-base-content/30">→</span>
+          <span class="flex items-center gap-1">
+            <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
+              2
+            </span>
+            Calcula el costo
+          </span>
+          <span class="text-base-content/30">→</span>
+          <span class="flex items-center gap-1">
+            <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
+              3
+            </span>
+            Registra el stock
+          </span>
         </div>
 
-        <div class="px-6 py-5 space-y-5">
-          <%!-- Step flow indicator --%>
-          <div class="flex items-center gap-2 text-xs text-base-content/50 flex-wrap">
-            <span class="flex items-center gap-1 font-semibold text-primary">
+        <%!-- Product form --%>
+        <.form
+          id="product-form"
+          for={@form}
+          phx-submit="save_product"
+          phx-change="validate_product"
+          class="space-y-4"
+        >
+          <%!-- Name + Category (2 cols) --%>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <.input
+              field={@form[:name]}
+              type="text"
+              label="Nombre del insumo"
+              placeholder="Ej. Leche, Café molido, Vaso 12oz"
+            />
+            <.input
+              field={@form[:product_category_id]}
+              type="select"
+              label="Categoría (opcional)"
+              options={[{"— Sin categoría —", ""} | Enum.map(@categories, &{&1.name, &1.id})]}
+            />
+          </div>
+
+          <%!-- STEP 1 — Unit (prominent, with warning) --%>
+          <div class="rounded-xl border-2 border-primary/25 bg-primary/4 p-4 space-y-2">
+            <p class="text-xs font-bold text-primary flex items-center gap-1.5">
               <span class="size-5 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">
                 1
               </span>
-              Elige la unidad
-            </span>
-            <span class="text-base-content/30">→</span>
-            <span class="flex items-center gap-1">
+              Unidad de medida — elige primero
+            </p>
+            <.input
+              field={@form[:unit]}
+              type="select"
+              label=""
+              options={unit_options()}
+            />
+            <% unit_val = @form[:unit].value || "" %>
+            <%= if unit_val != "" do %>
+              <p class="text-xs text-base-content/60 leading-relaxed">
+                <strong>Todo lo demás usa {unit_label(unit_val)}.</strong>
+                El stock, el stock mínimo, la calculadora y las recetas de tus platillos
+                deben expresarse siempre en {unit_label(unit_val)}. {unit_example(unit_val)}
+              </p>
+            <% else %>
+              <p class="text-xs text-warning flex items-center gap-1">
+                <.icon name="hero-exclamation-triangle" class="size-3.5 shrink-0" />
+                Selecciona la unidad antes de continuar — todo lo demás depende de ella.
+              </p>
+            <% end %>
+          </div>
+
+          <%!-- STEP 2 — Cost calculator --%>
+          <% unit_val = @form[:unit].value || "" %>
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+            <p class="text-xs font-bold text-base-content/70 flex items-center gap-1.5">
               <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
                 2
               </span>
-              Calcula el costo
-            </span>
-            <span class="text-base-content/30">→</span>
-            <span class="flex items-center gap-1">
+              Costo del insumo
+            </p>
+
+            <%!-- Calculator sub-section --%>
+            <div class="rounded-lg border border-dashed border-base-content/20 bg-base-100 p-3 space-y-2">
+              <p class="text-xs text-base-content/50 font-medium">
+                🧮 Calculadora — si no sabes el costo por unidad, llena estos dos campos
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="form-control">
+                  <label class="label py-0.5">
+                    <span class="label-text text-xs font-medium">
+                      ¿Cuánto pagaste en total? ($)
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    name="purchase_total"
+                    value={@purchase_total}
+                    min="0"
+                    step="0.01"
+                    placeholder="Ej: 100.00"
+                    class="input input-bordered input-sm w-full"
+                  />
+                  <p class="text-xs text-base-content/40 mt-0.5">
+                    El precio que pagaste por toda la compra
+                  </p>
+                </div>
+                <div class="form-control">
+                  <label class="label py-0.5">
+                    <span class="label-text text-xs font-medium">
+                      ¿Cuánto{if unit_val != "", do: " (en #{unit_label(unit_val)})", else: ""} compraste?
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    name="purchase_qty"
+                    value={@purchase_qty}
+                    min="0"
+                    step="0.001"
+                    placeholder={unit_qty_placeholder(unit_val)}
+                    class="input input-bordered input-sm w-full"
+                    onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
+                  />
+                  <p class="text-xs text-base-content/40 mt-0.5">
+                    {unit_qty_hint(unit_val)}
+                  </p>
+                </div>
+              </div>
+              <%= if @purchase_total != "" and @purchase_qty != "" do %>
+                <% total = Decimal.parse(@purchase_total) %>
+                <% qty = Decimal.parse(@purchase_qty) %>
+                <%= case {total, qty} do %>
+                  <% {{t, _}, {q, _}} when true -> %>
+                    <%= if Decimal.compare(q, 0) == :gt and Decimal.compare(t, 0) == :gt do %>
+                      <% unit_cost = t |> Decimal.div(q) |> Decimal.round(4) %>
+                      <div class="flex items-center gap-2 rounded-lg bg-success/10 border border-success/30 px-3 py-2">
+                        <.icon name="hero-check-circle" class="size-4 text-success shrink-0" />
+                        <p class="text-xs text-success font-semibold">
+                          Costo por {if unit_val != "", do: unit_label(unit_val), else: "unidad"}:
+                          <span class="text-base">${CRC.Utils.format_money(unit_cost)}</span>
+                          → se aplicó en "Costo neto" abajo
+                        </p>
+                      </div>
+                    <% else %>
+                      <p class="text-xs text-error flex items-center gap-1">
+                        <.icon name="hero-x-circle" class="size-3.5" />
+                        Los valores deben ser mayores a 0.
+                      </p>
+                    <% end %>
+                  <% _ -> %>
+                    <p class="text-xs text-error flex items-center gap-1">
+                      <.icon name="hero-x-circle" class="size-3.5" />
+                      Escribe números válidos en ambos campos.
+                    </p>
+                <% end %>
+              <% end %>
+            </div>
+
+            <%!-- Net cost (auto-filled or manual) --%>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <.input
+                  field={@form[:net_cost]}
+                  type="number"
+                  label={"Costo neto por #{if unit_val != "", do: unit_label(unit_val), else: "unidad"} ($)"}
+                  placeholder="0.0000"
+                  step="0.0001"
+                  min="0"
+                />
+                <p class="text-xs text-base-content/40 mt-1 leading-relaxed">
+                  Lo que te cuesta <strong>una sola {if unit_val != "", do: unit_label(unit_val), else: "unidad"}</strong>.
+                  Si usaste la calculadora ya está listo; si no, escríbelo directo.
+                </p>
+              </div>
+              <div>
+                <.input
+                  field={@form[:sale_price]}
+                  type="number"
+                  label="Precio de venta ($) (opcional)"
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0"
+                />
+                <p class="text-xs text-base-content/40 mt-1">
+                  Solo si vendes este insumo directamente a un cliente (ej. bebidas embotelladas). La mayoría de insumos lo dejan vacío.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <%!-- STEP 3 — Stock --%>
+          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+            <p class="text-xs font-bold text-base-content/70 flex items-center gap-1.5">
               <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
                 3
               </span>
-              Registra el stock
-            </span>
+              Stock
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <.input
+                  field={@form[:stock_quantity]}
+                  type="number"
+                  label={"¿Cuánto#{if unit_val != "", do: " (#{unit_label(unit_val)})", else: ""} tienes hoy?"}
+                  placeholder="0.000"
+                  step="0.001"
+                  min="0"
+                  onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
+                />
+                <p class="text-xs text-base-content/40 mt-1">
+                  El sistema lo descuenta automáticamente cada vez que se envía un pedido a cocina.
+                </p>
+              </div>
+              <div>
+                <.input
+                  field={@form[:min_stock]}
+                  type="number"
+                  label={"Avisar cuando baje de#{if unit_val != "", do: " (#{unit_label(unit_val)})", else: ""}"}
+                  placeholder="0.000"
+                  step="0.001"
+                  min="0"
+                  onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
+                />
+                <p class="text-xs text-base-content/40 mt-1">
+                  {unit_min_stock_hint(unit_val)}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <%!-- Product form --%>
-          <.form
-            id="product-form"
-            for={@form}
-            phx-submit="save_product"
-            phx-change="validate_product"
-            class="space-y-4"
-          >
-            <%!-- Name + Category (2 cols) --%>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <.input
-                field={@form[:name]}
-                type="text"
-                label="Nombre del insumo"
-                placeholder="Ej. Leche, Café molido, Vaso 12oz"
-              />
-              <.input
-                field={@form[:product_category_id]}
-                type="select"
-                label="Categoría (opcional)"
-                options={[{"— Sin categoría —", ""} | Enum.map(@categories, &{&1.name, &1.id})]}
-              />
-            </div>
+          <%!-- Supplier + Notes --%>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <.input
+              field={@form[:supplier_id]}
+              type="select"
+              label="Proveedor (opcional)"
+              options={[{"— Sin proveedor —", ""} | Enum.map(@suppliers, &{&1.name, &1.id})]}
+            />
+            <.input
+              field={@form[:notes]}
+              type="textarea"
+              label="Notas (opcional)"
+              placeholder="Marca, presentación, observaciones..."
+            />
+          </div>
 
-            <%!-- STEP 1 — Unit (prominent, with warning) --%>
-            <div class="rounded-xl border-2 border-primary/25 bg-primary/4 p-4 space-y-2">
-              <p class="text-xs font-bold text-primary flex items-center gap-1.5">
-                <span class="size-5 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">
-                  1
-                </span>
-                Unidad de medida — elige primero
-              </p>
-              <.input
-                field={@form[:unit]}
-                type="select"
-                label=""
-                options={unit_options()}
-              />
-              <% unit_val = @form[:unit].value || "" %>
-              <%= if unit_val != "" do %>
-                <p class="text-xs text-base-content/60 leading-relaxed">
-                  <strong>Todo lo demás usa {unit_label(unit_val)}.</strong>
-                  El stock, el stock mínimo, la calculadora y las recetas de tus platillos
-                  deben expresarse siempre en {unit_label(unit_val)}. {unit_example(unit_val)}
+          <div class="flex justify-end gap-3 pt-1">
+            <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">
+              {if !@is_edit, do: "Crear insumo", else: "Guardar cambios"}
+            </button>
+          </div>
+        </.form>
+
+        <%!-- Variants section — only visible when editing --%>
+        <%= if @is_edit do %>
+          <div class="border-t border-base-200 pt-5">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="font-semibold text-base-content text-sm">Tipos de este insumo</h3>
+                <p class="text-xs text-base-content/50 mt-0.5">
+                  Opcional · por ejemplo: Entera, Avena, Deslactosada para Leche
                 </p>
-              <% else %>
-                <p class="text-xs text-warning flex items-center gap-1">
-                  <.icon name="hero-exclamation-triangle" class="size-3.5 shrink-0" />
-                  Selecciona la unidad antes de continuar — todo lo demás depende de ella.
-                </p>
+              </div>
+              <%= if is_nil(@variant_form) do %>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline gap-1.5"
+                  phx-click="new_variant_form"
+                >
+                  <.icon name="hero-plus" class="size-3.5" /> Agregar tipo
+                </button>
               <% end %>
             </div>
 
-            <%!-- STEP 2 — Cost calculator --%>
-            <% unit_val = @form[:unit].value || "" %>
-            <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
-              <p class="text-xs font-bold text-base-content/70 flex items-center gap-1.5">
-                <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
-                  2
-                </span>
-                Costo del insumo
-              </p>
-
-              <%!-- Calculator sub-section --%>
-              <div class="rounded-lg border border-dashed border-base-content/20 bg-base-100 p-3 space-y-2">
-                <p class="text-xs text-base-content/50 font-medium">
-                  🧮 Calculadora — si no sabes el costo por unidad, llena estos dos campos
-                </p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div class="form-control">
-                    <label class="label py-0.5">
-                      <span class="label-text text-xs font-medium">
-                        ¿Cuánto pagaste en total? ($)
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      name="purchase_total"
-                      value={@purchase_total}
-                      min="0"
-                      step="0.01"
-                      placeholder="Ej: 100.00"
-                      class="input input-bordered input-sm w-full"
-                    />
-                    <p class="text-xs text-base-content/40 mt-0.5">
-                      El precio que pagaste por toda la compra
-                    </p>
-                  </div>
-                  <div class="form-control">
-                    <label class="label py-0.5">
-                      <span class="label-text text-xs font-medium">
-                        ¿Cuánto{if unit_val != "", do: " (en #{unit_label(unit_val)})", else: ""} compraste?
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      name="purchase_qty"
-                      value={@purchase_qty}
-                      min="0"
-                      step="0.001"
-                      placeholder={unit_qty_placeholder(unit_val)}
-                      class="input input-bordered input-sm w-full"
-                      onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
-                    />
-                    <p class="text-xs text-base-content/40 mt-0.5">
-                      {unit_qty_hint(unit_val)}
-                    </p>
-                  </div>
-                </div>
-                <%= if @purchase_total != "" and @purchase_qty != "" do %>
-                  <% total = Decimal.parse(@purchase_total) %>
-                  <% qty = Decimal.parse(@purchase_qty) %>
-                  <%= case {total, qty} do %>
-                    <% {{t, _}, {q, _}} when true -> %>
-                      <%= if Decimal.compare(q, 0) == :gt and Decimal.compare(t, 0) == :gt do %>
-                        <% unit_cost = t |> Decimal.div(q) |> Decimal.round(4) %>
-                        <div class="flex items-center gap-2 rounded-lg bg-success/10 border border-success/30 px-3 py-2">
-                          <.icon name="hero-check-circle" class="size-4 text-success shrink-0" />
-                          <p class="text-xs text-success font-semibold">
-                            Costo por {if unit_val != "", do: unit_label(unit_val), else: "unidad"}:
-                            <span class="text-base">${CRC.Utils.format_money(unit_cost)}</span>
-                            → se aplicó en "Costo neto" abajo
+            <%!-- Existing variants list --%>
+            <%= if @product.variants != [] do %>
+              <div class="space-y-2 mb-4">
+                <%= for variant <- @product.variants do %>
+                  <% is_editing = @editing_variant_id == variant.id %>
+                  <% v_low = variant_low_stock?(variant) %>
+                  <div class={[
+                    "rounded-xl border p-3",
+                    if(is_editing,
+                      do: "border-primary/30 bg-primary/5",
+                      else: "border-base-200 bg-base-50"
+                    ),
+                    if(v_low and not is_editing, do: "border-warning/30 bg-warning/5", else: "")
+                  ]}>
+                    <%= if is_editing do %>
+                      <%!-- Inline edit form --%>
+                      <.variant_form_fields
+                        form={@variant_form}
+                        unit={@product.unit}
+                        on_cancel="cancel_variant_form"
+                        submit_label="Guardar tipo"
+                      />
+                    <% else %>
+                      <%!-- Variant row display --%>
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-medium text-sm text-base-content">
+                              {variant.name}
+                            </span>
+                            <%= if not variant.active do %>
+                              <span class="badge badge-xs badge-error">Inactivo</span>
+                            <% end %>
+                            <%= if v_low do %>
+                              <span class="badge badge-xs badge-warning gap-1">
+                                <.icon name="hero-exclamation-triangle" class="size-2.5" /> Stock bajo
+                              </span>
+                            <% end %>
+                            <%= if Decimal.compare(variant.extra_charge, 0) == :gt do %>
+                              <span class="badge badge-xs badge-info">
+                                +${format_price(variant.extra_charge)}
+                              </span>
+                            <% end %>
+                          </div>
+                          <p class="text-xs text-base-content/50 mt-1">
+                            Stock: {format_quantity(variant.stock_quantity)} {unit_abbr(@product.unit)} · Mín: {format_quantity(
+                              variant.min_stock
+                            )} {unit_abbr(@product.unit)}
                           </p>
                         </div>
-                      <% else %>
-                        <p class="text-xs text-error flex items-center gap-1">
-                          <.icon name="hero-x-circle" class="size-3.5" />
-                          Los valores deben ser mayores a 0.
-                        </p>
-                      <% end %>
-                    <% _ -> %>
-                      <p class="text-xs text-error flex items-center gap-1">
-                        <.icon name="hero-x-circle" class="size-3.5" />
-                        Escribe números válidos en ambos campos.
-                      </p>
-                  <% end %>
-                <% end %>
-              </div>
-
-              <%!-- Net cost (auto-filled or manual) --%>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <.input
-                    field={@form[:net_cost]}
-                    type="number"
-                    label={"Costo neto por #{if unit_val != "", do: unit_label(unit_val), else: "unidad"} ($)"}
-                    placeholder="0.0000"
-                    step="0.0001"
-                    min="0"
-                  />
-                  <p class="text-xs text-base-content/40 mt-1 leading-relaxed">
-                    Lo que te cuesta <strong>una sola {if unit_val != "", do: unit_label(unit_val), else: "unidad"}</strong>.
-                    Si usaste la calculadora ya está listo; si no, escríbelo directo.
-                  </p>
-                </div>
-                <div>
-                  <.input
-                    field={@form[:sale_price]}
-                    type="number"
-                    label="Precio de venta ($) (opcional)"
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                  />
-                  <p class="text-xs text-base-content/40 mt-1">
-                    Solo si vendes este insumo directamente a un cliente (ej. bebidas embotelladas). La mayoría de insumos lo dejan vacío.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <%!-- STEP 3 — Stock --%>
-            <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
-              <p class="text-xs font-bold text-base-content/70 flex items-center gap-1.5">
-                <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
-                  3
-                </span>
-                Stock
-              </p>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <.input
-                    field={@form[:stock_quantity]}
-                    type="number"
-                    label={"¿Cuánto#{if unit_val != "", do: " (#{unit_label(unit_val)})", else: ""} tienes hoy?"}
-                    placeholder="0.000"
-                    step="0.001"
-                    min="0"
-                    onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
-                  />
-                  <p class="text-xs text-base-content/40 mt-1">
-                    El sistema lo descuenta automáticamente cada vez que se envía un pedido a cocina.
-                  </p>
-                </div>
-                <div>
-                  <.input
-                    field={@form[:min_stock]}
-                    type="number"
-                    label={"Avisar cuando baje de#{if unit_val != "", do: " (#{unit_label(unit_val)})", else: ""}"}
-                    placeholder="0.000"
-                    step="0.001"
-                    min="0"
-                    onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
-                  />
-                  <p class="text-xs text-base-content/40 mt-1">
-                    {unit_min_stock_hint(unit_val)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <%!-- Supplier + Notes --%>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <.input
-                field={@form[:supplier_id]}
-                type="select"
-                label="Proveedor (opcional)"
-                options={[{"— Sin proveedor —", ""} | Enum.map(@suppliers, &{&1.name, &1.id})]}
-              />
-              <.input
-                field={@form[:notes]}
-                type="textarea"
-                label="Notas (opcional)"
-                placeholder="Marca, presentación, observaciones..."
-              />
-            </div>
-
-            <div class="flex justify-end gap-3 pt-1">
-              <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary">
-                {if !@is_edit, do: "Crear insumo", else: "Guardar cambios"}
-              </button>
-            </div>
-          </.form>
-
-          <%!-- Variants section — only visible when editing --%>
-          <%= if @is_edit do %>
-            <div class="border-t border-base-200 pt-5">
-              <div class="flex items-center justify-between mb-3">
-                <div>
-                  <h3 class="font-semibold text-base-content text-sm">Tipos de este insumo</h3>
-                  <p class="text-xs text-base-content/50 mt-0.5">
-                    Opcional · por ejemplo: Entera, Avena, Deslactosada para Leche
-                  </p>
-                </div>
-                <%= if is_nil(@variant_form) do %>
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline gap-1.5"
-                    phx-click="new_variant_form"
-                  >
-                    <.icon name="hero-plus" class="size-3.5" /> Agregar tipo
-                  </button>
-                <% end %>
-              </div>
-
-              <%!-- Existing variants list --%>
-              <%= if @product.variants != [] do %>
-                <div class="space-y-2 mb-4">
-                  <%= for variant <- @product.variants do %>
-                    <% is_editing = @editing_variant_id == variant.id %>
-                    <% v_low = variant_low_stock?(variant) %>
-                    <div class={[
-                      "rounded-xl border p-3",
-                      if(is_editing,
-                        do: "border-primary/30 bg-primary/5",
-                        else: "border-base-200 bg-base-50"
-                      ),
-                      if(v_low and not is_editing, do: "border-warning/30 bg-warning/5", else: "")
-                    ]}>
-                      <%= if is_editing do %>
-                        <%!-- Inline edit form --%>
-                        <.variant_form_fields
-                          form={@variant_form}
-                          unit={@product.unit}
-                          on_cancel="cancel_variant_form"
-                          submit_label="Guardar tipo"
-                        />
-                      <% else %>
-                        <%!-- Variant row display --%>
-                        <div class="flex items-start justify-between gap-3">
-                          <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                              <span class="font-medium text-sm text-base-content">
-                                {variant.name}
-                              </span>
-                              <%= if not variant.active do %>
-                                <span class="badge badge-xs badge-error">Inactivo</span>
-                              <% end %>
-                              <%= if v_low do %>
-                                <span class="badge badge-xs badge-warning gap-1">
-                                  <.icon name="hero-exclamation-triangle" class="size-2.5" />
-                                  Stock bajo
-                                </span>
-                              <% end %>
-                              <%= if Decimal.compare(variant.extra_charge, 0) == :gt do %>
-                                <span class="badge badge-xs badge-info">
-                                  +${format_price(variant.extra_charge)}
-                                </span>
-                              <% end %>
-                            </div>
-                            <p class="text-xs text-base-content/50 mt-1">
-                              Stock: {format_quantity(variant.stock_quantity)} {unit_abbr(
-                                @product.unit
-                              )} · Mín: {format_quantity(variant.min_stock)} {unit_abbr(@product.unit)}
-                            </p>
-                          </div>
-                          <div class="flex items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              class="btn btn-ghost btn-xs"
-                              phx-click="edit_variant_form"
-                              phx-value-id={variant.id}
-                              title="Editar tipo"
-                            >
-                              <.icon name="hero-pencil" class="size-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              class={[
-                                "btn btn-ghost btn-xs",
-                                if(variant.active, do: "text-error", else: "text-success")
-                              ]}
-                              phx-click="toggle_variant_active"
-                              phx-value-id={variant.id}
-                              title={if variant.active, do: "Desactivar", else: "Activar"}
-                            >
-                              <.icon
-                                name={
-                                  if variant.active, do: "hero-no-symbol", else: "hero-check-circle"
-                                }
-                                class="size-3.5"
-                              />
-                            </button>
-                            <button
-                              type="button"
-                              class="btn btn-ghost btn-xs text-error"
-                              phx-click="delete_variant"
-                              phx-value-id={variant.id}
-                              title="Eliminar tipo"
-                              data-confirm={"¿Eliminar el tipo \"#{variant.name}\"? Esta acción no se puede deshacer."}
-                            >
-                              <.icon name="hero-trash" class="size-3.5" />
-                            </button>
-                          </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            class="btn btn-ghost btn-xs"
+                            phx-click="edit_variant_form"
+                            phx-value-id={variant.id}
+                            title="Editar tipo"
+                          >
+                            <.icon name="hero-pencil" class="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            class={[
+                              "btn btn-ghost btn-xs",
+                              if(variant.active, do: "text-error", else: "text-success")
+                            ]}
+                            phx-click="toggle_variant_active"
+                            phx-value-id={variant.id}
+                            title={if variant.active, do: "Desactivar", else: "Activar"}
+                          >
+                            <.icon
+                              name={
+                                if variant.active, do: "hero-no-symbol", else: "hero-check-circle"
+                              }
+                              class="size-3.5"
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-ghost btn-xs text-error"
+                            phx-click="delete_variant"
+                            phx-value-id={variant.id}
+                            title="Eliminar tipo"
+                            data-confirm={"¿Eliminar el tipo \"#{variant.name}\"? Esta acción no se puede deshacer."}
+                          >
+                            <.icon name="hero-trash" class="size-3.5" />
+                          </button>
                         </div>
-                      <% end %>
-                    </div>
-                  <% end %>
-                </div>
-              <% else %>
-                <%= if is_nil(@variant_form) do %>
-                  <p class="text-sm text-base-content/40 italic mb-4">
-                    Sin tipos definidos. Este insumo se registra como una sola variedad.
-                  </p>
+                      </div>
+                    <% end %>
+                  </div>
                 <% end %>
+              </div>
+            <% else %>
+              <%= if is_nil(@variant_form) do %>
+                <p class="text-sm text-base-content/40 italic mb-4">
+                  Sin tipos definidos. Este insumo se registra como una sola variedad.
+                </p>
               <% end %>
+            <% end %>
 
-              <%!-- New variant form (shown when adding) --%>
-              <%= if not is_nil(@variant_form) and is_nil(@editing_variant_id) do %>
-                <div class="rounded-xl border border-primary/30 bg-primary/5 p-4">
-                  <p class="text-xs font-semibold text-primary mb-3 uppercase tracking-wide">
-                    Nuevo tipo
-                  </p>
-                  <.variant_form_fields
-                    form={@variant_form}
-                    unit={@product.unit}
-                    on_cancel="cancel_variant_form"
-                    submit_label="Agregar tipo"
-                  />
-                </div>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
+            <%!-- New variant form (shown when adding) --%>
+            <%= if not is_nil(@variant_form) and is_nil(@editing_variant_id) do %>
+              <div class="rounded-xl border border-primary/30 bg-primary/5 p-4">
+                <p class="text-xs font-semibold text-primary mb-3 uppercase tracking-wide">
+                  Nuevo tipo
+                </p>
+                <.variant_form_fields
+                  form={@variant_form}
+                  unit={@product.unit}
+                  on_cancel="cancel_variant_form"
+                  submit_label="Agregar tipo"
+                />
+              </div>
+            <% end %>
+          </div>
+        <% end %>
       </div>
-    </div>
+    </.admin_modal>
     """
   end
 

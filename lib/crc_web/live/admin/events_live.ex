@@ -387,12 +387,12 @@ defmodule CRCWeb.Admin.EventsLive do
       <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
       <div class="md:hidden flex flex-col gap-2">
         <%= if @events == [] do %>
-          <div class="text-center py-12 text-base-content/40 text-sm bg-base-100 rounded-2xl border border-base-300">
-            No hay eventos registrados. Crea el primero.
-          </div>
+          <.panel class="text-center py-12">
+            <p class="text-base-content/40 text-sm">No hay eventos registrados. Crea el primero.</p>
+          </.panel>
         <% end %>
         <%= for event <- @events do %>
-          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-start gap-3">
+          <.panel class="p-3 flex items-start gap-3">
             <%!-- Date block --%>
             <div class="shrink-0 w-11 flex flex-col items-center justify-center bg-primary/10 rounded-xl py-1.5 px-1 text-center">
               <span class="text-xs font-bold text-primary leading-none">
@@ -451,25 +451,23 @@ defmodule CRCWeb.Admin.EventsLive do
                 />
               </button>
             </div>
-          </div>
+          </.panel>
         <% end %>
       </div>
 
       <%!-- ── Desktop table (md+) ────────────────────────────────────────────── --%>
-      <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+      <.panel class="hidden md:block overflow-hidden">
         <div class="overflow-x-auto">
           <table class="table table-zebra table-fixed w-full">
-            <thead>
-              <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                <th class="w-[28%]">Título</th>
-                <th class="w-[13%]">Tipo</th>
-                <th class="w-[11%]">Fecha</th>
-                <th class="w-[13%]">Horario</th>
-                <th class="w-[10%]">Estado</th>
-                <th class="w-[18%]">Colaboradores</th>
-                <th class="w-[7%] text-right">Acciones</th>
-              </tr>
-            </thead>
+            <.admin_table_head>
+              <:col class="w-[28%]">Título</:col>
+              <:col class="w-[13%]">Tipo</:col>
+              <:col class="w-[11%]">Fecha</:col>
+              <:col class="w-[13%]">Horario</:col>
+              <:col class="w-[10%]">Estado</:col>
+              <:col class="w-[18%]">Colaboradores</:col>
+              <:col class="w-[7%] text-right">Acciones</:col>
+            </.admin_table_head>
             <tbody>
               <%= for event <- @events do %>
                 <tr class="hover:bg-base-200/50 transition-colors">
@@ -537,7 +535,7 @@ defmodule CRCWeb.Admin.EventsLive do
             </tbody>
           </table>
         </div>
-      </div>
+      </.panel>
     </div>
 
     <%!-- Modal: new / edit event --%>
@@ -604,267 +602,250 @@ defmodule CRCWeb.Admin.EventsLive do
     assigns = assign(assigns, :title, title)
 
     ~H"""
-    <div
-      id="event-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      phx-window-keydown="close_modal"
-      phx-key="Escape"
-    >
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
+    <.admin_modal id="event-modal" size="2xl" on_close="close_modal">
+      <:title>{@title}</:title>
+      <.form
+        id="event-form"
+        for={@form}
+        phx-submit="save_event"
+        phx-change="form_changed"
+        class="space-y-3"
+      >
+        <%!-- Title (full width) --%>
+        <.input
+          field={@form[:title]}
+          type="text"
+          label="Título del evento"
+          placeholder="Ej. Noche de Jazz, Taller de Barismo, Feria del Libro"
+        />
 
-      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh]">
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between sticky top-0 bg-base-100 z-10">
-          <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
-          <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
-            <.icon name="hero-x-mark" class="size-5" />
-          </button>
+        <%!-- Event type + Date (2 cols) --%>
+        <div class="grid grid-cols-2 gap-3">
+          <.input
+            field={@form[:event_type_id]}
+            type="select"
+            label="Tipo de evento"
+            options={[{"— Sin tipo —", ""} | Enum.map(@event_types, &{&1.name, &1.id})]}
+          />
+          <.input
+            field={@form[:event_date]}
+            type="date"
+            label="Fecha"
+          />
         </div>
 
-        <div class="px-6 py-5">
-          <.form
-            id="event-form"
-            for={@form}
-            phx-submit="save_event"
-            phx-change="form_changed"
-            class="space-y-3"
-          >
-            <%!-- Title (full width) --%>
-            <.input
-              field={@form[:title]}
-              type="text"
-              label="Título del evento"
-              placeholder="Ej. Noche de Jazz, Taller de Barismo, Feria del Libro"
-            />
+        <%!-- Start time + End time (2 cols) --%>
+        <div class="grid grid-cols-2 gap-3">
+          <.input
+            field={@form[:start_time]}
+            type="time"
+            label="Hora de inicio"
+          />
+          <.input
+            field={@form[:end_time]}
+            type="time"
+            label="Hora de fin"
+          />
+        </div>
 
-            <%!-- Event type + Date (2 cols) --%>
-            <div class="grid grid-cols-2 gap-3">
-              <.input
-                field={@form[:event_type_id]}
-                type="select"
-                label="Tipo de evento"
-                options={[{"— Sin tipo —", ""} | Enum.map(@event_types, &{&1.name, &1.id})]}
-              />
-              <.input
-                field={@form[:event_date]}
-                type="date"
-                label="Fecha"
-              />
-            </div>
+        <%!-- Day timeline --%>
+        <.day_timeline timeline={@timeline} />
 
-            <%!-- Start time + End time (2 cols) --%>
-            <div class="grid grid-cols-2 gap-3">
-              <.input
-                field={@form[:start_time]}
-                type="time"
-                label="Hora de inicio"
-              />
-              <.input
-                field={@form[:end_time]}
-                type="time"
-                label="Hora de fin"
-              />
-            </div>
+        <%!-- Tags --%>
+        <.input
+          field={@form[:tags]}
+          type="text"
+          label="Etiquetas (opcional)"
+          placeholder="separadas por coma, ej: Música, Noche"
+          value={tags_to_string(@form[:tags].value)}
+        />
 
-            <%!-- Day timeline --%>
-            <.day_timeline timeline={@timeline} />
+        <%!-- Description --%>
+        <.input
+          field={@form[:description]}
+          type="textarea"
+          label="Descripción (opcional)"
+          placeholder="Describe el evento, qué pasará, quién es bienvenido..."
+        />
 
-            <%!-- Tags --%>
-            <.input
-              field={@form[:tags]}
-              type="text"
-              label="Etiquetas (opcional)"
-              placeholder="separadas por coma, ej: Música, Noche"
-              value={tags_to_string(@form[:tags].value)}
-            />
+        <%!-- Collaborators section --%>
+        <div class="pt-2">
+          <div class="divider text-sm font-semibold text-base-content/60">Colaboradores</div>
 
-            <%!-- Description --%>
-            <.input
-              field={@form[:description]}
-              type="textarea"
-              label="Descripción (opcional)"
-              placeholder="Describe el evento, qué pasará, quién es bienvenido..."
-            />
-
-            <%!-- Collaborators section --%>
-            <div class="pt-2">
-              <div class="divider text-sm font-semibold text-base-content/60">Colaboradores</div>
-
-              <%!-- Draft list --%>
-              <%= if @collaborators_draft != [] do %>
-                <div class="space-y-2 mb-4">
-                  <%= for entry <- @collaborators_draft do %>
-                    <div class="flex items-center gap-2 bg-base-200 rounded-lg px-3 py-2">
-                      <span class="flex-1 text-sm font-medium text-base-content">{entry.name}</span>
-                      <%= if entry.role != "" do %>
-                        <span class="text-xs text-base-content/60">{entry.role}</span>
-                      <% end %>
-                      <button
-                        type="button"
-                        class="btn btn-ghost btn-xs btn-circle text-error"
-                        phx-click="remove_collaborator_from_draft"
-                        phx-value-id={entry.collaborator_id}
-                      >
-                        <.icon name="hero-x-mark" class="size-3.5" />
-                      </button>
-                    </div>
+          <%!-- Draft list --%>
+          <%= if @collaborators_draft != [] do %>
+            <div class="space-y-2 mb-4">
+              <%= for entry <- @collaborators_draft do %>
+                <div class="flex items-center gap-2 bg-base-200 rounded-lg px-3 py-2">
+                  <span class="flex-1 text-sm font-medium text-base-content">{entry.name}</span>
+                  <%= if entry.role != "" do %>
+                    <span class="text-xs text-base-content/60">{entry.role}</span>
                   <% end %>
-                </div>
-              <% end %>
-
-              <%!-- Add collaborator row --%>
-              <div class="flex gap-2 items-end">
-                <div class="flex-1">
-                  <label class="label text-xs font-medium text-base-content/70 pb-1">
-                    Colaborador
-                  </label>
-                  <select
-                    class="select select-bordered select-sm w-full"
-                    phx-change="update_collaborator_selection"
-                    name="collab_select"
-                    value={@selected_collaborator_id}
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-xs btn-circle text-error"
+                    phx-click="remove_collaborator_from_draft"
+                    phx-value-id={entry.collaborator_id}
                   >
-                    <option value="">— Selecciona —</option>
-                    <%= for c <- @available_collaborators do %>
-                      <option value={c.id} selected={@selected_collaborator_id == to_string(c.id)}>
-                        {c.name}
-                      </option>
-                    <% end %>
-                  </select>
-                </div>
-                <div class="flex-1">
-                  <label class="label text-xs font-medium text-base-content/70 pb-1">
-                    Rol (opcional)
-                  </label>
-                  <input
-                    type="text"
-                    class="input input-bordered input-sm w-full"
-                    placeholder="Ej. Guitarrista, DJ, Ponente"
-                    phx-change="update_collaborator_role"
-                    name="collab_role"
-                    value={@collaborator_role_input}
-                  />
-                </div>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline"
-                  phx-click="add_collaborator_to_draft"
-                  disabled={@selected_collaborator_id == ""}
-                >
-                  Agregar
-                </button>
-              </div>
-            </div>
-
-            <div class="flex justify-end gap-3 pt-4">
-              <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary">
-                {if @modal == :new, do: "Crear evento", else: "Guardar cambios"}
-              </button>
-            </div>
-          </.form>
-
-          <%!-- ── Galería de fotos (solo en modo edición) ──────────────────────── --%>
-          <%= if @modal != :new do %>
-            <div class="mt-5 pt-4 border-t border-base-300">
-              <div class="flex items-center gap-2 mb-3">
-                <.icon name="hero-photo" class="size-4 text-base-content/60" />
-                <h3 class="text-sm font-semibold text-base-content">Fotos del evento</h3>
-                <span class="badge badge-xs badge-ghost">{length(@event_photos)}</span>
-              </div>
-
-              <%!-- Grid de fotos existentes --%>
-              <%= if @event_photos != [] do %>
-                <div class="grid grid-cols-3 gap-2 mb-4">
-                  <%= for photo <- @event_photos do %>
-                    <div class="relative group aspect-square overflow-hidden rounded-xl border border-base-300">
-                      <img
-                        src={photo.image_url}
-                        alt={photo.caption || "Foto del evento"}
-                        class="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      <div class="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center">
-                        <button
-                          type="button"
-                          class="opacity-0 group-hover:opacity-100 transition-opacity btn btn-circle btn-sm btn-error"
-                          phx-click="delete_event_photo"
-                          phx-value-id={photo.id}
-                          data-confirm="¿Eliminar esta foto del evento?"
-                        >
-                          <.icon name="hero-trash" class="size-4" />
-                        </button>
-                      </div>
-                    </div>
-                  <% end %>
+                    <.icon name="hero-x-mark" class="size-3.5" />
+                  </button>
                 </div>
               <% end %>
-
-              <%!-- Subir nuevas fotos --%>
-              <form phx-submit="upload_event_photos" phx-change="validate_upload" class="space-y-3">
-                <%!-- Drop zone — click abre el selector de archivos --%>
-                <label
-                  for={@uploads.event_photo.ref}
-                  class="flex flex-col items-center justify-center gap-2 w-full py-6 px-4 rounded-2xl border-2 border-dashed border-base-300 hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all duration-200"
-                >
-                  <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-                    <.icon name="hero-arrow-up-tray" class="size-5 text-primary" />
-                  </div>
-                  <div class="text-center">
-                    <p class="text-sm font-medium text-base-content">
-                      Selecciona o arrastra fotos aquí
-                    </p>
-                    <p class="text-xs text-base-content/40 mt-0.5">
-                      JPG, PNG o WebP · Máx. 5 MB · Hasta 5 a la vez
-                    </p>
-                  </div>
-                  <.live_file_input upload={@uploads.event_photo} class="sr-only" />
-                </label>
-
-                <%!-- Previews + progreso — solo cuando hay archivos seleccionados --%>
-                <%= if @uploads.event_photo.entries != [] do %>
-                  <div class="space-y-2">
-                    <%= for entry <- @uploads.event_photo.entries do %>
-                      <div class="flex items-center gap-3 p-2.5 bg-base-200 rounded-xl">
-                        <.live_img_preview
-                          entry={entry}
-                          class="w-10 h-10 object-cover rounded-lg shrink-0"
-                        />
-                        <div class="flex-1 min-w-0">
-                          <p class="text-xs font-medium text-base-content truncate">
-                            {entry.client_name}
-                          </p>
-                          <div class="w-full bg-base-300 rounded-full h-1.5 mt-1.5">
-                            <div
-                              class="bg-primary h-1.5 rounded-full transition-all duration-300"
-                              style={"width: #{entry.progress}%"}
-                            />
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
-                          phx-click="cancel_upload"
-                          phx-value-ref={entry.ref}
-                        >
-                          <.icon name="hero-x-mark" class="size-3.5" />
-                        </button>
-                      </div>
-                    <% end %>
-                  </div>
-
-                  <button type="submit" class="btn btn-primary btn-sm w-full gap-2">
-                    <.icon name="hero-arrow-up-tray" class="size-4" />
-                    Subir {length(@uploads.event_photo.entries)}
-                    {if length(@uploads.event_photo.entries) == 1, do: "foto", else: "fotos"}
-                  </button>
-                <% end %>
-              </form>
             </div>
           <% end %>
-          <%!-- ── Fin galería ─────────────────────────────────────────────────── --%>
+
+          <%!-- Add collaborator row --%>
+          <div class="flex gap-2 items-end">
+            <div class="flex-1">
+              <label class="label text-xs font-medium text-base-content/70 pb-1">
+                Colaborador
+              </label>
+              <select
+                class="select select-bordered select-sm w-full"
+                phx-change="update_collaborator_selection"
+                name="collab_select"
+                value={@selected_collaborator_id}
+              >
+                <option value="">— Selecciona —</option>
+                <%= for c <- @available_collaborators do %>
+                  <option value={c.id} selected={@selected_collaborator_id == to_string(c.id)}>
+                    {c.name}
+                  </option>
+                <% end %>
+              </select>
+            </div>
+            <div class="flex-1">
+              <label class="label text-xs font-medium text-base-content/70 pb-1">
+                Rol (opcional)
+              </label>
+              <input
+                type="text"
+                class="input input-bordered input-sm w-full"
+                placeholder="Ej. Guitarrista, DJ, Ponente"
+                phx-change="update_collaborator_role"
+                name="collab_role"
+                value={@collaborator_role_input}
+              />
+            </div>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline"
+              phx-click="add_collaborator_to_draft"
+              disabled={@selected_collaborator_id == ""}
+            >
+              Agregar
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <div class="flex justify-end gap-3 pt-4">
+          <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            {if @modal == :new, do: "Crear evento", else: "Guardar cambios"}
+          </button>
+        </div>
+      </.form>
+
+      <%!-- ── Galería de fotos (solo en modo edición) ──────────────────────── --%>
+      <%= if @modal != :new do %>
+        <div class="mt-5 pt-4 border-t border-base-300">
+          <div class="flex items-center gap-2 mb-3">
+            <.icon name="hero-photo" class="size-4 text-base-content/60" />
+            <h3 class="text-sm font-semibold text-base-content">Fotos del evento</h3>
+            <span class="badge badge-xs badge-ghost">{length(@event_photos)}</span>
+          </div>
+
+          <%!-- Grid de fotos existentes --%>
+          <%= if @event_photos != [] do %>
+            <div class="grid grid-cols-3 gap-2 mb-4">
+              <%= for photo <- @event_photos do %>
+                <div class="relative group aspect-square overflow-hidden rounded-xl border border-base-300">
+                  <img
+                    src={photo.image_url}
+                    alt={photo.caption || "Foto del evento"}
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div class="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                    <button
+                      type="button"
+                      class="opacity-0 group-hover:opacity-100 transition-opacity btn btn-circle btn-sm btn-error"
+                      phx-click="delete_event_photo"
+                      phx-value-id={photo.id}
+                      data-confirm="¿Eliminar esta foto del evento?"
+                    >
+                      <.icon name="hero-trash" class="size-4" />
+                    </button>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%!-- Subir nuevas fotos --%>
+          <form phx-submit="upload_event_photos" phx-change="validate_upload" class="space-y-3">
+            <%!-- Drop zone — click abre el selector de archivos --%>
+            <label
+              for={@uploads.event_photo.ref}
+              class="flex flex-col items-center justify-center gap-2 w-full py-6 px-4 rounded-2xl border-2 border-dashed border-base-300 hover:border-primary/40 hover:bg-primary/5 cursor-pointer transition-all duration-200"
+            >
+              <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                <.icon name="hero-arrow-up-tray" class="size-5 text-primary" />
+              </div>
+              <div class="text-center">
+                <p class="text-sm font-medium text-base-content">
+                  Selecciona o arrastra fotos aquí
+                </p>
+                <p class="text-xs text-base-content/40 mt-0.5">
+                  JPG, PNG o WebP · Máx. 5 MB · Hasta 5 a la vez
+                </p>
+              </div>
+              <.live_file_input upload={@uploads.event_photo} class="sr-only" />
+            </label>
+
+            <%!-- Previews + progreso — solo cuando hay archivos seleccionados --%>
+            <%= if @uploads.event_photo.entries != [] do %>
+              <div class="space-y-2">
+                <%= for entry <- @uploads.event_photo.entries do %>
+                  <div class="flex items-center gap-3 p-2.5 bg-base-200 rounded-xl">
+                    <.live_img_preview
+                      entry={entry}
+                      class="w-10 h-10 object-cover rounded-lg shrink-0"
+                    />
+                    <div class="flex-1 min-w-0">
+                      <p class="text-xs font-medium text-base-content truncate">
+                        {entry.client_name}
+                      </p>
+                      <div class="w-full bg-base-300 rounded-full h-1.5 mt-1.5">
+                        <div
+                          class="bg-primary h-1.5 rounded-full transition-all duration-300"
+                          style={"width: #{entry.progress}%"}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
+                      phx-click="cancel_upload"
+                      phx-value-ref={entry.ref}
+                    >
+                      <.icon name="hero-x-mark" class="size-3.5" />
+                    </button>
+                  </div>
+                <% end %>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-sm w-full gap-2">
+                <.icon name="hero-arrow-up-tray" class="size-4" />
+                Subir {length(@uploads.event_photo.entries)}
+                {if length(@uploads.event_photo.entries) == 1, do: "foto", else: "fotos"}
+              </button>
+            <% end %>
+          </form>
+        </div>
+      <% end %>
+      <%!-- ── Fin galería ─────────────────────────────────────────────────── --%>
+    </.admin_modal>
     """
   end
 

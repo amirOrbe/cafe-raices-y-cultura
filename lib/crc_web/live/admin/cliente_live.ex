@@ -263,14 +263,34 @@ defmodule CRCWeb.Admin.ClienteLive do
 
       <%!-- Stats --%>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <.stat label="Visitas" value={@profile.visit_count} />
-        <.stat label="Gasto total" value={"$#{Utils.format_money(s.total_spend)}"} />
-        <.stat label="Ticket promedio" value={"$#{Utils.format_money(s.avg_ticket)}"} />
-        <.stat label="Comandas" value={s.order_count} />
+        <.stat_card
+          label="Visitas"
+          value={@profile.visit_count}
+          icon="hero-arrow-path"
+          variant={:primary}
+        />
+        <.stat_card
+          label="Gasto total"
+          value={"$#{Utils.format_money(s.total_spend)}"}
+          icon="hero-banknotes"
+          variant={:success}
+        />
+        <.stat_card
+          label="Ticket promedio"
+          value={"$#{Utils.format_money(s.avg_ticket)}"}
+          icon="hero-calculator"
+          variant={:accent}
+        />
+        <.stat_card
+          label="Comandas"
+          value={s.order_count}
+          icon="hero-clipboard-document-check"
+          variant={:secondary}
+        />
       </div>
 
       <%!-- Lealtad --%>
-      <section class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 space-y-4">
+      <.panel class="p-5 space-y-4">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider">Lealtad</h2>
           <button
@@ -328,10 +348,10 @@ defmodule CRCWeb.Admin.ClienteLive do
             </ul>
           </details>
         <% end %>
-      </section>
+      </.panel>
 
       <%!-- Qué consume más --%>
-      <section class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5">
+      <.panel class="p-5">
         <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">
           Qué consume más
         </h2>
@@ -346,10 +366,10 @@ defmodule CRCWeb.Admin.ClienteLive do
             <% end %>
           </div>
         <% end %>
-      </section>
+      </.panel>
 
       <%!-- Historial de comandas --%>
-      <section class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5">
+      <.panel class="p-5">
         <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">
           Historial de comandas
         </h2>
@@ -374,10 +394,10 @@ defmodule CRCWeb.Admin.ClienteLive do
             <% end %>
           </ul>
         <% end %>
-      </section>
+      </.panel>
 
       <%!-- Paquetes personalizados --%>
-      <section class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 space-y-3">
+      <.panel class="p-5 space-y-3">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider">
             Paquetes personalizados
@@ -412,10 +432,10 @@ defmodule CRCWeb.Admin.ClienteLive do
             <% end %>
           </ul>
         <% end %>
-      </section>
+      </.panel>
 
       <%!-- Datos --%>
-      <section class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5">
+      <.panel class="p-5">
         <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-4">
           Datos
         </h2>
@@ -428,7 +448,7 @@ defmodule CRCWeb.Admin.ClienteLive do
             <dd class="text-sm text-base-content mt-1 whitespace-pre-wrap">{c.notes || "—"}</dd>
           </div>
         </dl>
-      </section>
+      </.panel>
     </div>
 
     <%= if @editing do %>
@@ -451,121 +471,93 @@ defmodule CRCWeb.Admin.ClienteLive do
 
   defp package_modal(assigns) do
     ~H"""
-    <div
-      id="package-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      phx-window-keydown="close_package_modal"
-      phx-key="Escape"
-    >
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_package_modal">
-      </div>
-
-      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-base-content">Nuevo paquete personal</h2>
-          <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_package_modal">
-            <.icon name="hero-x-mark" class="size-5" />
-          </button>
-        </div>
-
-        <form phx-change="pkg_change" phx-submit="save_package" class="px-6 py-5 space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label class="form-control">
-              <span class="label-text text-sm font-medium mb-1">Nombre</span>
-              <input
-                type="text"
-                name="package[name]"
-                value={@attrs["name"]}
-                class="input input-bordered input-sm"
-                placeholder="El combo de Ana"
-              />
-            </label>
-            <label class="form-control">
-              <span class="label-text text-sm font-medium mb-1">Precio</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                name="package[price]"
-                value={@attrs["price"]}
-                class="input input-bordered input-sm"
-              />
-            </label>
-          </div>
+    <.admin_modal id="package-modal" size="lg" on_close="close_package_modal">
+      <:title>Nuevo paquete personal</:title>
+      <form phx-change="pkg_change" phx-submit="save_package" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label class="form-control">
-            <span class="label-text text-sm font-medium mb-1">Descripción (opcional)</span>
+            <span class="label-text text-sm font-medium mb-1">Nombre</span>
             <input
               type="text"
-              name="package[description]"
-              value={@attrs["description"]}
+              name="package[name]"
+              value={@attrs["name"]}
+              class="input input-bordered input-sm"
+              placeholder="El combo de Ana"
+            />
+          </label>
+          <label class="form-control">
+            <span class="label-text text-sm font-medium mb-1">Precio</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              name="package[price]"
+              value={@attrs["price"]}
               class="input input-bordered input-sm"
             />
           </label>
+        </div>
+        <label class="form-control">
+          <span class="label-text text-sm font-medium mb-1">Descripción (opcional)</span>
+          <input
+            type="text"
+            name="package[description]"
+            value={@attrs["description"]}
+            class="input input-bordered input-sm"
+          />
+        </label>
 
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-medium text-base-content">Artículos</span>
-            <button type="button" class="btn btn-ghost btn-xs" phx-click="suggest_package">
-              ✨ Sugerir desde consumo
-            </button>
-          </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-base-content">Artículos</span>
+          <button type="button" class="btn btn-ghost btn-xs" phx-click="suggest_package">
+            ✨ Sugerir desde consumo
+          </button>
+        </div>
 
-          <div class="space-y-2">
-            <%= for {item, idx} <- Enum.with_index(@items) do %>
-              <div class="flex gap-2 items-center">
-                <select
-                  name={"items[#{idx}][menu_item_id]"}
-                  class="select select-bordered select-sm flex-1"
-                >
-                  <option value="">— Elige un platillo —</option>
-                  <%= for {name, id} <- @menu_item_options do %>
-                    <option value={id} selected={to_string(id) == item["menu_item_id"]}>
-                      {name}
-                    </option>
-                  <% end %>
-                </select>
-                <input
-                  type="number"
-                  min="1"
-                  name={"items[#{idx}][quantity]"}
-                  value={item["quantity"] || "1"}
-                  class="input input-bordered input-sm w-16"
-                />
-                <button
-                  type="button"
-                  class="btn btn-ghost btn-xs btn-circle text-error"
-                  phx-click="remove_pkg_row"
-                  phx-value-idx={idx}
-                >
-                  <.icon name="hero-x-mark" class="size-4" />
-                </button>
-              </div>
-            <% end %>
-            <button type="button" class="btn btn-ghost btn-xs gap-1" phx-click="add_pkg_row">
-              <.icon name="hero-plus" class="size-3.5" /> Agregar artículo
-            </button>
-          </div>
+        <div class="space-y-2">
+          <%= for {item, idx} <- Enum.with_index(@items) do %>
+            <div class="flex gap-2 items-center">
+              <select
+                name={"items[#{idx}][menu_item_id]"}
+                class="select select-bordered select-sm flex-1"
+              >
+                <option value="">— Elige un platillo —</option>
+                <%= for {name, id} <- @menu_item_options do %>
+                  <option value={id} selected={to_string(id) == item["menu_item_id"]}>
+                    {name}
+                  </option>
+                <% end %>
+              </select>
+              <input
+                type="number"
+                min="1"
+                name={"items[#{idx}][quantity]"}
+                value={item["quantity"] || "1"}
+                class="input input-bordered input-sm w-16"
+              />
+              <button
+                type="button"
+                class="btn btn-ghost btn-xs btn-circle text-error"
+                phx-click="remove_pkg_row"
+                phx-value-idx={idx}
+              >
+                <.icon name="hero-x-mark" class="size-4" />
+              </button>
+            </div>
+          <% end %>
+          <button type="button" class="btn btn-ghost btn-xs gap-1" phx-click="add_pkg_row">
+            <.icon name="hero-plus" class="size-3.5" /> Agregar artículo
+          </button>
+        </div>
 
-          <div class="flex justify-end gap-3 pt-2">
-            <button type="button" class="btn btn-ghost" phx-click="close_package_modal">
-              Cancelar
-            </button>
-            <button type="submit" class="btn btn-primary">Crear paquete</button>
-          </div>
-        </form>
-      </div>
-    </div>
-    """
-  end
-
-  attr :label, :string, required: true
-  attr :value, :any, required: true
-
-  defp stat(assigns) do
-    ~H"""
-    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm px-4 py-3 min-w-0">
-      <p class="text-xs text-base-content/50 uppercase tracking-wider truncate">{@label}</p>
-      <p class="text-lg sm:text-xl font-bold text-base-content mt-1 truncate">{@value}</p>
-    </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" class="btn btn-ghost" phx-click="close_package_modal">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">Crear paquete</button>
+        </div>
+      </form>
+    </.admin_modal>
     """
   end
 
@@ -585,45 +577,28 @@ defmodule CRCWeb.Admin.ClienteLive do
 
   defp edit_modal(assigns) do
     ~H"""
-    <div
-      id="customer-edit-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      phx-window-keydown="close_modal"
-      phx-key="Escape"
-    >
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
-
-      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md overflow-y-auto max-h-[90vh]">
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-base-content">Editar cliente</h2>
-          <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
-            <.icon name="hero-x-mark" class="size-5" />
-          </button>
+    <.admin_modal id="customer-edit-modal" size="md" on_close="close_modal">
+      <:title>Editar cliente</:title>
+      <.form
+        id="customer-edit-form"
+        for={@form}
+        phx-change="validate"
+        phx-submit="save"
+        class="space-y-4"
+      >
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <.input field={@form[:name]} type="text" label="Nombre" />
+          <.input field={@form[:phone]} type="text" label="Teléfono" />
         </div>
-
-        <div class="px-6 py-5">
-          <.form
-            id="customer-edit-form"
-            for={@form}
-            phx-change="validate"
-            phx-submit="save"
-            class="space-y-4"
-          >
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <.input field={@form[:name]} type="text" label="Nombre" />
-              <.input field={@form[:phone]} type="text" label="Teléfono" />
-            </div>
-            <.input field={@form[:email]} type="email" label="Correo (opcional)" />
-            <.input field={@form[:birthday]} type="date" label="Fecha de cumpleaños (opcional)" />
-            <.input field={@form[:notes]} type="textarea" label="Notas (opcional)" />
-            <div class="flex justify-end gap-3 pt-2">
-              <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary">Guardar cambios</button>
-            </div>
-          </.form>
+        <.input field={@form[:email]} type="email" label="Correo (opcional)" />
+        <.input field={@form[:birthday]} type="date" label="Fecha de cumpleaños (opcional)" />
+        <.input field={@form[:notes]} type="textarea" label="Notas (opcional)" />
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
         </div>
-      </div>
-    </div>
+      </.form>
+    </.admin_modal>
     """
   end
 

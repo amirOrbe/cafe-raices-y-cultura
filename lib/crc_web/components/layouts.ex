@@ -73,298 +73,61 @@ defmodule CRCWeb.Layouts do
   end
 
   @doc """
-  Layout for the administration panel with a lateral sidebar.
+  Layout for the administration panel — a slim top bar (logo on `/admin`,
+  "Volver al panel" everywhere else) instead of a persistent sidebar. Every
+  destination now lives in the card grid rendered on `/admin` itself (see
+  `CRCWeb.AdminComponents.nav_sections/0` + `nav_card/1`).
   """
   attr :flash, :map, required: true
   attr :current_scope, :map, default: nil
   attr :inner_content, :any, default: nil
 
+  attr :current_path, :string,
+    default: nil,
+    doc: "set by CRCWeb.UserAuth's :require_admin on_mount hook"
+
   def admin(assigns) do
     ~H"""
-    <div class="min-h-screen bg-base-200">
-      <%!-- Backdrop móvil --%>
-      <div
-        id="admin-backdrop"
-        class="fixed inset-0 z-30 bg-black/50 hidden lg:hidden"
-        phx-click={
-          JS.add_class("hidden", to: "#admin-backdrop")
-          |> JS.remove_class("-translate-x-0", to: "#admin-sidebar")
-          |> JS.add_class("-translate-x-full", to: "#admin-sidebar")
-        }
-      />
+    <div class="min-h-screen bg-base-200 flex flex-col">
+      <header class="sticky top-0 z-20 bg-primary text-primary-content px-4 sm:px-6 h-14 flex items-center justify-between shadow-md">
+        <%= if assigns[:current_path] == "/admin" do %>
+          <span class="font-bold text-sm sm:text-base tracking-tight">CRC Admin</span>
+        <% else %>
+          <.link
+            navigate="/admin"
+            class="flex items-center gap-1.5 text-sm font-medium hover:opacity-80 transition-opacity"
+          >
+            <.icon name="hero-arrow-left" class="size-4 shrink-0" />
+            <span class="hidden sm:inline">Volver al panel</span>
+          </.link>
+        <% end %>
 
-      <%!-- Sidebar --%>
-      <aside
-        id="admin-sidebar"
-        class="fixed inset-y-0 left-0 z-40 w-64 bg-primary text-primary-content flex flex-col shadow-xl
-               -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out"
-      >
-        <%!-- Logo --%>
-        <div class="px-6 py-5 border-b border-primary-content/20 flex items-center justify-between">
-          <div>
-            <a href="/admin" class="flex items-center gap-2">
-              <span class="text-lg font-bold tracking-tight">CRC Admin</span>
-            </a>
-            <p class="text-xs text-primary-content/50 mt-0.5">Panel de Administración</p>
-          </div>
-          <%!-- Cerrar sidebar en móvil --%>
-          <button
-            class="lg:hidden p-1.5 rounded-lg hover:bg-primary-content/15 transition-colors"
-            phx-click={
-              JS.add_class("hidden", to: "#admin-backdrop")
-              |> JS.remove_class("-translate-x-0", to: "#admin-sidebar")
-              |> JS.add_class("-translate-x-full", to: "#admin-sidebar")
-            }
+        <div class="flex items-center gap-2 sm:gap-3">
+          <.link
+            navigate="/"
+            class="p-2 rounded-lg hover:bg-primary-content/15 transition-colors"
+            title="Ver sitio"
           >
-            <.icon name="hero-x-mark" class="size-5" />
-          </button>
-        </div>
-
-        <%!-- Navegación --%>
-        <nav class="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
-          <a
-            href="/admin"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-home" class="size-5 shrink-0" /> Dashboard
-          </a>
-          <a
-            href="/bitacora"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-clipboard-document-check" class="size-5 shrink-0" /> Bitácora de Turno
-          </a>
-          <a
-            href="/admin/usuarios"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-users" class="size-5 shrink-0" /> Usuarios
-          </a>
-          <a
-            href="/admin/clientes"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-identification" class="size-5 shrink-0" /> Clientes
-          </a>
-
-          <%!-- Menu section --%>
-          <div class="pt-3 pb-1">
-            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
-              Carta
-            </p>
-          </div>
-          <a
-            href="/admin/platillos"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-clipboard-document-list" class="size-5 shrink-0" /> Platillos
-          </a>
-          <a
-            href="/admin/platillos/categorias"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-squares-2x2" class="size-5 shrink-0" /> Categorías de platillos
-          </a>
-          <a
-            href="/admin/paquetes"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-gift" class="size-5 shrink-0" /> Paquetes
-          </a>
-
-          <%!-- Inventory section --%>
-          <div class="pt-3 pb-1">
-            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
-              Inventario
-            </p>
-          </div>
-          <a
-            href="/admin/inventario"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-clipboard-document-list" class="size-5 shrink-0" /> Inventario (stock)
-          </a>
-          <a
-            href="/admin/proveedores"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-truck" class="size-5 shrink-0" /> Proveedores
-          </a>
-          <a
-            href="/admin/insumos"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-archive-box" class="size-5 shrink-0" /> Insumos
-          </a>
-          <a
-            href="/admin/insumos/categorias"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-tag" class="size-5 shrink-0" /> Categorías de insumos
-          </a>
-          <a
-            href="/admin/produccion"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-beaker" class="size-5 shrink-0" /> Producción Interna
-          </a>
-
-          <%!-- Colaboraciones section --%>
-          <div class="pt-3 pb-1">
-            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
-              Colaboraciones
-            </p>
-          </div>
-          <a
-            href="/admin/eventos"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-calendar" class="size-5 shrink-0" /> Eventos
-          </a>
-          <a
-            href="/admin/colaboradores"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-user-group" class="size-5 shrink-0" /> Colaboradores
-          </a>
-          <a
-            href="/admin/eventos/tipos"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-tag" class="size-5 shrink-0" /> Tipos de evento
-          </a>
-          <%!-- Operaciones --%>
-          <div class="pt-3 pb-1">
-            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
-              Operaciones
-            </p>
-          </div>
-          <a
-            href="/admin/mesas"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-table-cells" class="size-5 shrink-0" /> Mesas
-          </a>
-          <a
-            href="/admin/descuentos"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-tag" class="size-5 shrink-0" /> Descuentos
-          </a>
-          <a
-            href="/admin/lealtad"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-ticket" class="size-5 shrink-0" /> Lealtad
-          </a>
-
-          <%!-- Reportes section --%>
-          <div class="pt-3 pb-1">
-            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
-              Reportes
-            </p>
-          </div>
-          <a
-            href="/admin/ventas"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-chart-bar" class="size-5 shrink-0" /> Ventas
-          </a>
-          <a
-            href="/admin/rendimiento"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-clock" class="size-5 shrink-0" /> Rendimiento
-          </a>
-          <a
-            href="/admin/finanzas"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-scale" class="size-5 shrink-0" /> Finanzas
-          </a>
-
-          <%!-- Personal --%>
-          <div class="pt-3 pb-1">
-            <p class="px-3 text-xs font-semibold text-primary-content/40 uppercase tracking-wider">
-              Personal
-            </p>
-          </div>
-          <a
-            href="/admin/horarios"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-calendar-days" class="size-5 shrink-0" /> Horarios
-          </a>
-          <a
-            href="/admin/asistencia"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-finger-print" class="size-5 shrink-0" /> Asistencia
-          </a>
-          <a
-            href="/admin/calendario"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-calendar" class="size-5 shrink-0" /> Calendario de actividades
-          </a>
-          <a
-            href="/admin/cumpleanos"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-cake" class="size-5 shrink-0" /> Cumpleaños
-          </a>
-          <a
-            href="/admin/configuracion"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm font-medium"
-          >
-            <.icon name="hero-cog-6-tooth" class="size-5 shrink-0" /> Configuración
-          </a>
-        </nav>
-
-        <%!-- Usuario y logout --%>
-        <div class="px-3 py-4 border-t border-primary-content/20 space-y-1">
-          <a
-            href="/"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm text-primary-content/80"
-          >
-            <.icon name="hero-arrow-left" class="size-4 shrink-0" /> Ver sitio
-          </a>
+            <.icon name="hero-globe-alt" class="size-4.5" />
+          </.link>
           <form action="/cerrar-sesion" method="post">
             <input type="hidden" name="_method" value="delete" />
             <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
             <button
               type="submit"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary-content/15 transition-colors text-sm text-primary-content/80"
+              class="p-2 rounded-lg hover:bg-primary-content/15 transition-colors"
+              title="Cerrar sesión"
             >
-              <.icon name="hero-arrow-right-on-rectangle" class="size-4 shrink-0" /> Cerrar sesión
+              <.icon name="hero-arrow-right-on-rectangle" class="size-4.5" />
             </button>
           </form>
         </div>
-      </aside>
+      </header>
 
-      <%!-- Contenido principal --%>
-      <div class="lg:ml-64 min-h-screen flex flex-col">
-        <%!-- Top bar móvil --%>
-        <header class="lg:hidden sticky top-0 z-20 bg-primary text-primary-content px-4 h-14 flex items-center justify-between shadow-md">
-          <button
-            class="p-1.5 rounded-lg hover:bg-primary-content/15 transition-colors"
-            phx-click={
-              JS.remove_class("hidden", to: "#admin-backdrop")
-              |> JS.remove_class("-translate-x-full", to: "#admin-sidebar")
-              |> JS.add_class("-translate-x-0", to: "#admin-sidebar")
-            }
-          >
-            <.icon name="hero-bars-3" class="size-6" />
-          </button>
-          <span class="font-bold text-sm tracking-tight">CRC Admin</span>
-          <div class="w-9" />
-        </header>
-
-        <main class="flex-1 p-4 sm:p-6 lg:p-8">
-          <.flash_group flash={@flash} />
-          {@inner_content}
-        </main>
-      </div>
+      <main class="flex-1 p-4 sm:p-6 lg:p-8">
+        <.flash_group flash={@flash} />
+        {@inner_content}
+      </main>
     </div>
     """
   end
@@ -420,7 +183,7 @@ defmodule CRCWeb.Layouts do
   def theme_toggle(assigns) do
     ~H"""
     <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left]" />
+      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=cafe-light]_&]:left-1/3 [[data-theme=cafe-dark]_&]:left-2/3 transition-[left]" />
 
       <button
         class="flex p-2 cursor-pointer w-1/3"
@@ -433,7 +196,7 @@ defmodule CRCWeb.Layouts do
       <button
         class="flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="light"
+        data-phx-theme="cafe-light"
       >
         <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
@@ -441,7 +204,7 @@ defmodule CRCWeb.Layouts do
       <button
         class="flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="dark"
+        data-phx-theme="cafe-dark"
       >
         <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>

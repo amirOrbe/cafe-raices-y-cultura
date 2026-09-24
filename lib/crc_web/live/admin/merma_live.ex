@@ -117,7 +117,7 @@ defmodule CRCWeb.Admin.MermaLive do
         </div>
 
         <%!-- History table --%>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+        <.panel class="overflow-hidden">
           <div class="px-5 py-4 border-b border-base-300">
             <h2 class="font-semibold text-base-content">Historial de ajustes</h2>
           </div>
@@ -154,16 +154,14 @@ defmodule CRCWeb.Admin.MermaLive do
             <%!-- Desktop table --%>
             <div class="hidden md:block overflow-x-auto">
               <table class="table table-zebra table-fixed w-full">
-                <thead>
-                  <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                    <th class="w-[22%]">Insumo</th>
-                    <th class="w-[12%]">Cantidad</th>
-                    <th class="w-[20%]">Razón</th>
-                    <th class="w-[26%]">Notas</th>
-                    <th class="w-[12%]">Usuario</th>
-                    <th class="w-[8%]">Fecha</th>
-                  </tr>
-                </thead>
+                <.admin_table_head>
+                  <:col class="w-[22%]">Insumo</:col>
+                  <:col class="w-[16%]">Cantidad</:col>
+                  <:col class="w-[20%]">Razón</:col>
+                  <:col class="w-[22%]">Notas</:col>
+                  <:col class="w-[12%]">Usuario</:col>
+                  <:col class="w-[8%]">Fecha</:col>
+                </.admin_table_head>
                 <tbody>
                   <%= for adj <- @adjustments do %>
                     <tr class="hover:bg-base-200/50 transition-colors">
@@ -176,7 +174,7 @@ defmodule CRCWeb.Admin.MermaLive do
                             adj.quantity
                           )
                           |> format_qty()}
-                          {adj.product && adj.product.unit}
+                          {adj.product && unit_abbr(adj.product.unit)}
                         </span>
                       </td>
                       <td class="text-sm text-base-content/70">
@@ -197,113 +195,110 @@ defmodule CRCWeb.Admin.MermaLive do
               </table>
             </div>
           <% end %>
-        </div>
+        </.panel>
       </div>
     </div>
 
     <%!-- Modal --%>
     <%= if @modal_open do %>
-      <div class="modal modal-open modal-bottom sm:modal-middle" role="dialog">
-        <div class="modal-box max-w-lg">
-          <h3 class="text-lg font-bold mb-1">Registrar ajuste de stock</h3>
-          <p class="text-xs text-base-content/50 mb-4">
-            Selecciona el insumo, indica la cantidad y la razón. El stock se actualiza de inmediato.
-          </p>
+      <.admin_modal id="merma-modal" size="lg" on_close="close_modal">
+        <:title>Registrar ajuste de stock</:title>
+        <p class="text-xs text-base-content/50 -mt-2 mb-4">
+          Selecciona el insumo, indica la cantidad y la razón. El stock se actualiza de inmediato.
+        </p>
 
-          <.form for={@form} phx-submit="save_adjustment" class="space-y-4">
-            <%!-- Product --%>
-            <div class="form-control">
-              <label class="label"><span class="label-text font-medium">Insumo</span></label>
-              <select
-                name="stock_adjustment[product_id]"
-                class="select select-bordered w-full"
-                required
+        <.form for={@form} phx-submit="save_adjustment" class="space-y-4">
+          <%!-- Product --%>
+          <div class="form-control">
+            <label class="label"><span class="label-text font-medium">Insumo</span></label>
+            <select
+              name="stock_adjustment[product_id]"
+              class="select select-bordered w-full"
+              required
+            >
+              <option value="">— Selecciona un insumo —</option>
+              <%= for p <- @products do %>
+                <option value={p.id}>
+                  {p.name} (stock actual: {format_qty(p.stock_quantity)} {p.unit})
+                </option>
+              <% end %>
+            </select>
+          </div>
+
+          <%!-- Type: loss vs correction --%>
+          <div class="form-control">
+            <label class="label"><span class="label-text font-medium">Tipo de ajuste</span></label>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class={"btn btn-sm flex-1 #{if @qty_sign == "-", do: "btn-error", else: "btn-ghost"}"}
+                phx-click="set_sign"
+                phx-value-sign="-"
               >
-                <option value="">— Selecciona un insumo —</option>
-                <%= for p <- @products do %>
-                  <option value={p.id}>
-                    {p.name} (stock actual: {format_qty(p.stock_quantity)} {p.unit})
-                  </option>
-                <% end %>
-              </select>
+                📉 Pérdida (descuenta stock)
+              </button>
+              <button
+                type="button"
+                class={"btn btn-sm flex-1 #{if @qty_sign == "+", do: "btn-success", else: "btn-ghost"}"}
+                phx-click="set_sign"
+                phx-value-sign="+"
+              >
+                📈 Corrección (agrega stock)
+              </button>
             </div>
+          </div>
 
-            <%!-- Type: loss vs correction --%>
-            <div class="form-control">
-              <label class="label"><span class="label-text font-medium">Tipo de ajuste</span></label>
-              <div class="flex gap-2">
-                <button
-                  type="button"
-                  class={"btn btn-sm flex-1 #{if @qty_sign == "-", do: "btn-error", else: "btn-ghost"}"}
-                  phx-click="set_sign"
-                  phx-value-sign="-"
-                >
-                  📉 Pérdida (descuenta stock)
-                </button>
-                <button
-                  type="button"
-                  class={"btn btn-sm flex-1 #{if @qty_sign == "+", do: "btn-success", else: "btn-ghost"}"}
-                  phx-click="set_sign"
-                  phx-value-sign="+"
-                >
-                  📈 Corrección (agrega stock)
-                </button>
-              </div>
-            </div>
+          <%!-- Quantity --%>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">Cantidad</span>
+              <span class="label-text-alt text-base-content/40">
+                En la unidad del insumo (litros, gramos, etc.)
+              </span>
+            </label>
+            <input
+              type="number"
+              name="stock_adjustment[quantity]"
+              min="0.001"
+              step="0.001"
+              placeholder="Ej: 0.500"
+              class="input input-bordered w-full"
+              required
+              onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
+            />
+          </div>
 
-            <%!-- Quantity --%>
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-medium">Cantidad</span>
-                <span class="label-text-alt text-base-content/40">
-                  En la unidad del insumo (litros, gramos, etc.)
-                </span>
-              </label>
-              <input
-                type="number"
-                name="stock_adjustment[quantity]"
-                min="0.001"
-                step="0.001"
-                placeholder="Ej: 0.500"
-                class="input input-bordered w-full"
-                required
-                onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
-              />
-            </div>
+          <%!-- Reason --%>
+          <div class="form-control">
+            <label class="label"><span class="label-text font-medium">Razón</span></label>
+            <select name="stock_adjustment[reason]" class="select select-bordered w-full" required>
+              <option value="">— Selecciona la razón —</option>
+              <%= for {label, value} <- Inventory.adjustment_reasons() do %>
+                <option value={value}>{label}</option>
+              <% end %>
+            </select>
+          </div>
 
-            <%!-- Reason --%>
-            <div class="form-control">
-              <label class="label"><span class="label-text font-medium">Razón</span></label>
-              <select name="stock_adjustment[reason]" class="select select-bordered w-full" required>
-                <option value="">— Selecciona la razón —</option>
-                <%= for {label, value} <- Inventory.adjustment_reasons() do %>
-                  <option value={value}>{label}</option>
-                <% end %>
-              </select>
-            </div>
+          <%!-- Notes --%>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">Notas</span>
+              <span class="label-text-alt text-base-content/40">Opcional</span>
+            </label>
+            <textarea
+              name="stock_adjustment[notes]"
+              class="textarea textarea-bordered w-full"
+              rows="2"
+              placeholder="Ej: Se cayó el bote de leche del refrigerador"
+            ></textarea>
+          </div>
 
-            <%!-- Notes --%>
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-medium">Notas</span>
-                <span class="label-text-alt text-base-content/40">Opcional</span>
-              </label>
-              <textarea
-                name="stock_adjustment[notes]"
-                class="textarea textarea-bordered w-full"
-                rows="2"
-                placeholder="Ej: Se cayó el bote de leche del refrigerador"
-              ></textarea>
-            </div>
-
-            <div class="modal-action pt-2">
-              <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary">Registrar ajuste</button>
-            </div>
-          </.form>
-        </div>
-        <div class="modal-backdrop" phx-click="close_modal"></div>
-      </div>
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Registrar ajuste</button>
+          </div>
+        </.form>
+      </.admin_modal>
     <% end %>
 
     <.flash_group flash={@flash} />
@@ -336,6 +331,15 @@ defmodule CRCWeb.Admin.MermaLive do
   end
 
   defp format_dt(_), do: "—"
+
+  defp unit_abbr("piezas"), do: "pza"
+  defp unit_abbr("gramos"), do: "gr"
+  defp unit_abbr("kilogramos"), do: "kg"
+  defp unit_abbr("mililitros"), do: "ml"
+  defp unit_abbr("litros"), do: "lt"
+  defp unit_abbr("onzas"), do: "oz"
+  defp unit_abbr("paquetes"), do: "paq"
+  defp unit_abbr(other), do: other
 
   # CoreComponents already imports translate_error/1 — used via the .error component directly.
 end

@@ -156,9 +156,9 @@ defmodule CRCWeb.Admin.MermaLive do
               <table class="table table-zebra table-fixed w-full">
                 <.admin_table_head>
                   <:col class="w-[22%]">Insumo</:col>
-                  <:col class="w-[12%]">Cantidad</:col>
+                  <:col class="w-[16%]">Cantidad</:col>
                   <:col class="w-[20%]">Razón</:col>
-                  <:col class="w-[26%]">Notas</:col>
+                  <:col class="w-[22%]">Notas</:col>
                   <:col class="w-[12%]">Usuario</:col>
                   <:col class="w-[8%]">Fecha</:col>
                 </.admin_table_head>
@@ -174,7 +174,7 @@ defmodule CRCWeb.Admin.MermaLive do
                             adj.quantity
                           )
                           |> format_qty()}
-                          {adj.product && adj.product.unit}
+                          {adj.product && unit_abbr(adj.product.unit)}
                         </span>
                       </td>
                       <td class="text-sm text-base-content/70">
@@ -331,6 +331,15 @@ defmodule CRCWeb.Admin.MermaLive do
   end
 
   defp format_dt(_), do: "—"
+
+  defp unit_abbr("piezas"), do: "pza"
+  defp unit_abbr("gramos"), do: "gr"
+  defp unit_abbr("kilogramos"), do: "kg"
+  defp unit_abbr("mililitros"), do: "ml"
+  defp unit_abbr("litros"), do: "lt"
+  defp unit_abbr("onzas"), do: "oz"
+  defp unit_abbr("paquetes"), do: "paq"
+  defp unit_abbr(other), do: other
 
   # CoreComponents already imports translate_error/1 — used via the .error component directly.
 end

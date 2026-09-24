@@ -710,28 +710,15 @@ defmodule CRCWeb.Admin.ProductsLive do
     <.admin_modal id="product-modal" size="2xl" on_close="close_modal">
       <:title>{@title}</:title>
       <div class="space-y-5">
-        <%!-- Step flow indicator --%>
-        <div class="flex items-center gap-2 text-xs text-base-content/50 flex-wrap">
-          <span class="flex items-center gap-1 font-semibold text-primary">
-            <span class="size-5 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">
-              1
-            </span>
-            Elige la unidad
-          </span>
+        <%!-- Step flow indicator — jumps to each section via phx:scroll-to
+             (assets/js/app.js), it doesn't gate a paginated wizard (all
+             sections render at once below). --%>
+        <div class="flex items-center gap-2 text-xs flex-wrap">
+          <.step_link n={1} label="Elige la unidad" target="product-modal-step-1" />
           <span class="text-base-content/30">→</span>
-          <span class="flex items-center gap-1">
-            <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
-              2
-            </span>
-            Calcula el costo
-          </span>
+          <.step_link n={2} label="Calcula el costo" target="product-modal-step-2" />
           <span class="text-base-content/30">→</span>
-          <span class="flex items-center gap-1">
-            <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
-              3
-            </span>
-            Registra el stock
-          </span>
+          <.step_link n={3} label="Registra el stock" target="product-modal-step-3" />
         </div>
 
         <%!-- Product form --%>
@@ -759,7 +746,10 @@ defmodule CRCWeb.Admin.ProductsLive do
           </div>
 
           <%!-- STEP 1 — Unit (prominent, with warning) --%>
-          <div class="rounded-xl border-2 border-primary/25 bg-primary/4 p-4 space-y-2">
+          <div
+            id="product-modal-step-1"
+            class="rounded-xl border-2 border-primary/25 bg-primary/4 p-4 space-y-2"
+          >
             <p class="text-xs font-bold text-primary flex items-center gap-1.5">
               <span class="size-5 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">
                 1
@@ -789,7 +779,10 @@ defmodule CRCWeb.Admin.ProductsLive do
 
           <%!-- STEP 2 — Cost calculator --%>
           <% unit_val = @form[:unit].value || "" %>
-          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+          <div
+            id="product-modal-step-2"
+            class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3"
+          >
             <p class="text-xs font-bold text-base-content/70 flex items-center gap-1.5">
               <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
                 2
@@ -906,7 +899,10 @@ defmodule CRCWeb.Admin.ProductsLive do
           </div>
 
           <%!-- STEP 3 — Stock --%>
-          <div class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3">
+          <div
+            id="product-modal-step-3"
+            class="rounded-xl border border-base-300 bg-base-200/40 p-4 space-y-3"
+          >
             <p class="text-xs font-bold text-base-content/70 flex items-center gap-1.5">
               <span class="size-5 rounded-full bg-base-300 text-base-content flex items-center justify-center font-bold text-[10px]">
                 3

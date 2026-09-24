@@ -253,7 +253,11 @@ defmodule CRCWeb.Admin.PackagesLive do
       <% else %>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <%= for pkg <- @packages do %>
-            <.panel class={["p-4 sm:p-5 space-y-3", if(!pkg.active, do: "opacity-60")]}>
+            <.panel
+              class={["p-4 sm:p-5 space-y-3 cursor-pointer", if(!pkg.active, do: "opacity-60")]}
+              phx-click="edit_package"
+              phx-value-id={pkg.id}
+            >
               <%!-- Name + badges --%>
               <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">

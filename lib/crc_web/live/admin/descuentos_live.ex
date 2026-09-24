@@ -123,7 +123,11 @@ defmodule CRCWeb.Admin.DescuentosLive do
         <%!-- Mobile card list --%>
         <div class="md:hidden flex flex-col gap-2">
           <%= for d <- @discounts do %>
-            <.panel class="p-3 flex items-center gap-3">
+            <.panel
+              class="p-3 flex items-center gap-3 cursor-pointer"
+              phx-click="edit_discount"
+              phx-value-id={d.id}
+            >
               <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 shrink-0">
                 <span class="font-bold text-primary text-sm">{d.percentage}%</span>
               </div>
@@ -186,7 +190,11 @@ defmodule CRCWeb.Admin.DescuentosLive do
               </.admin_table_head>
               <tbody>
                 <%= for d <- @discounts do %>
-                  <tr class="hover:bg-base-200/50 transition-colors">
+                  <tr
+                    class="hover:bg-base-200/50 transition-colors cursor-pointer"
+                    phx-click="edit_discount"
+                    phx-value-id={d.id}
+                  >
                     <td class="font-medium text-sm text-base-content">{d.name}</td>
                     <td class="text-center">
                       <span class="badge badge-sm badge-primary">{d.percentage}%</span>

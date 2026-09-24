@@ -419,10 +419,14 @@ defmodule CRCWeb.Admin.ProductsLive do
           <% has_variants = product.variants != [] %>
           <% variant_low_stock = Enum.any?(product.variants, &variant_low_stock?/1) %>
           <% is_low = low_stock?(product) or variant_low_stock %>
-          <div class={[
-            "bg-base-100 rounded-2xl border shadow-sm p-3 flex items-center gap-3",
-            if(is_low, do: "border-warning/40 bg-warning/5", else: "border-base-300")
-          ]}>
+          <div
+            class={[
+              "bg-base-100 rounded-2xl border shadow-sm p-3 flex items-center gap-3 cursor-pointer",
+              if(is_low, do: "border-warning/40 bg-warning/5", else: "border-base-300")
+            ]}
+            phx-click="edit_product"
+            phx-value-id={product.id}
+          >
             <div class={[
               "flex items-center justify-center w-10 h-10 rounded-xl shrink-0",
               if(is_low, do: "bg-warning/15", else: "bg-primary/10")
@@ -524,10 +528,14 @@ defmodule CRCWeb.Admin.ProductsLive do
               <%= for product <- visible do %>
                 <% has_variants = product.variants != [] %>
                 <% variant_low_stock = Enum.any?(product.variants, &variant_low_stock?/1) %>
-                <tr class={[
-                  "hover:bg-base-200/50 transition-colors",
-                  if(low_stock?(product) or variant_low_stock, do: "bg-warning/5")
-                ]}>
+                <tr
+                  class={[
+                    "hover:bg-base-200/50 transition-colors cursor-pointer",
+                    if(low_stock?(product) or variant_low_stock, do: "bg-warning/5")
+                  ]}
+                  phx-click="edit_product"
+                  phx-value-id={product.id}
+                >
                   <td class="max-w-0">
                     <div class="flex items-center gap-2">
                       <%= if low_stock?(product) or variant_low_stock do %>

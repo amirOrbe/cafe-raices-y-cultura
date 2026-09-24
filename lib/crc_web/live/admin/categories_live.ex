@@ -123,7 +123,11 @@ defmodule CRCWeb.Admin.CategoriesLive do
         <%!-- ── Mobile card list (< md) ──────────────────────────────────────── --%>
         <div class="md:hidden flex flex-col gap-2">
           <%= for cat <- @categories do %>
-            <.panel class="p-3 flex items-center gap-3">
+            <.panel
+              class="p-3 flex items-center gap-3 cursor-pointer"
+              phx-click="edit_category"
+              phx-value-id={cat.id}
+            >
               <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 shrink-0">
                 <.icon name="hero-squares-2x2" class="size-5 text-primary" />
               </div>
@@ -193,7 +197,11 @@ defmodule CRCWeb.Admin.CategoriesLive do
               </.admin_table_head>
               <tbody>
                 <%= for cat <- @categories do %>
-                  <tr class="hover:bg-base-200/50 transition-colors">
+                  <tr
+                    class="hover:bg-base-200/50 transition-colors cursor-pointer"
+                    phx-click="edit_category"
+                    phx-value-id={cat.id}
+                  >
                     <td class="font-medium text-sm text-base-content">{cat.name}</td>
                     <td class="text-center">
                       <span class="badge badge-sm badge-ghost">{cat.item_count}</span>

@@ -284,7 +284,11 @@ defmodule CRCWeb.Admin.MesasLive do
               </.admin_table_head>
               <tbody>
                 <%= for table <- @tables do %>
-                  <tr class="hover:bg-base-200/50">
+                  <tr
+                    class="hover:bg-base-200/50 cursor-pointer"
+                    phx-click="edit_table"
+                    phx-value-id={table.id}
+                  >
                     <td class="font-bold text-base-content">{table.number}</td>
                     <td class="text-base-content/70">{table.label || "—"}</td>
                     <td class="text-center text-base-content/60">{table.capacity || "—"}</td>
@@ -310,7 +314,11 @@ defmodule CRCWeb.Admin.MesasLive do
           <%!-- Mobile cards --%>
           <div class="sm:hidden divide-y divide-base-200">
             <%= for table <- @tables do %>
-              <div class="flex items-center gap-3 px-4 py-3">
+              <div
+                class="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                phx-click="edit_table"
+                phx-value-id={table.id}
+              >
                 <div class={[
                   "size-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0",
                   if(table.is_active,

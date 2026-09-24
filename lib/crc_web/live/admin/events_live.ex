@@ -392,7 +392,11 @@ defmodule CRCWeb.Admin.EventsLive do
           </.panel>
         <% end %>
         <%= for event <- @events do %>
-          <.panel class="p-3 flex items-start gap-3">
+          <.panel
+            class="p-3 flex items-start gap-3 cursor-pointer"
+            phx-click="edit_event"
+            phx-value-id={event.id}
+          >
             <%!-- Date block --%>
             <div class="shrink-0 w-11 flex flex-col items-center justify-center bg-primary/10 rounded-xl py-1.5 px-1 text-center">
               <span class="text-xs font-bold text-primary leading-none">
@@ -470,7 +474,11 @@ defmodule CRCWeb.Admin.EventsLive do
             </.admin_table_head>
             <tbody>
               <%= for event <- @events do %>
-                <tr class="hover:bg-base-200/50 transition-colors">
+                <tr
+                  class="hover:bg-base-200/50 transition-colors cursor-pointer"
+                  phx-click="edit_event"
+                  phx-value-id={event.id}
+                >
                   <td class="max-w-0 font-medium text-sm text-base-content">
                     <span class="truncate block">{event.title}</span>
                   </td>

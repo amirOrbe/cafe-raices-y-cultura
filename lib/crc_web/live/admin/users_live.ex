@@ -315,7 +315,11 @@ defmodule CRCWeb.Admin.UsersLive do
           </.panel>
         <% end %>
         <%= for user <- visible do %>
-          <.panel class="p-3 flex items-center gap-3">
+          <.panel
+            class="p-3 flex items-center gap-3 cursor-pointer"
+            phx-click="edit_user"
+            phx-value-id={user.id}
+          >
             <%!-- Avatar --%>
             <div class="size-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden border border-base-300">
               <%= if user.avatar_url do %>
@@ -385,7 +389,11 @@ defmodule CRCWeb.Admin.UsersLive do
             </.admin_table_head>
             <tbody>
               <%= for user <- visible do %>
-                <tr class="hover:bg-base-200/50 transition-colors">
+                <tr
+                  class="hover:bg-base-200/50 transition-colors cursor-pointer"
+                  phx-click="edit_user"
+                  phx-value-id={user.id}
+                >
                   <td class="max-w-0">
                     <div class="flex items-center gap-3">
                       <div class="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden border border-base-300">

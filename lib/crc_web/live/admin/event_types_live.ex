@@ -176,7 +176,11 @@ defmodule CRCWeb.Admin.EventTypesLive do
           </.panel>
         <% end %>
         <%= for event_type <- visible do %>
-          <.panel class="p-3 flex items-center gap-3">
+          <.panel
+            class="p-3 flex items-center gap-3 cursor-pointer"
+            phx-click="edit_event_type"
+            phx-value-id={event_type.id}
+          >
             <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 shrink-0">
               <.icon name="hero-calendar-days" class="size-5 text-primary" />
             </div>
@@ -231,7 +235,11 @@ defmodule CRCWeb.Admin.EventTypesLive do
             </.admin_table_head>
             <tbody>
               <%= for event_type <- visible do %>
-                <tr class="hover:bg-base-200/50 transition-colors">
+                <tr
+                  class="hover:bg-base-200/50 transition-colors cursor-pointer"
+                  phx-click="edit_event_type"
+                  phx-value-id={event_type.id}
+                >
                   <td class="font-medium text-sm text-base-content">{event_type.name}</td>
                   <td>
                     <.admin_badge variant={if event_type.active, do: :success, else: :error}>

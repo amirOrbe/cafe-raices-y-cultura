@@ -176,7 +176,11 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
           </.panel>
         <% end %>
         <%= for collaborator <- visible do %>
-          <.panel class="p-3 flex items-center gap-3">
+          <.panel
+            class="p-3 flex items-center gap-3 cursor-pointer"
+            phx-click="edit_collaborator"
+            phx-value-id={collaborator.id}
+          >
             <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 shrink-0">
               <.icon name="hero-user" class="size-5 text-primary" />
             </div>
@@ -239,7 +243,11 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
             </.admin_table_head>
             <tbody>
               <%= for collaborator <- visible do %>
-                <tr class="hover:bg-base-200/50 transition-colors">
+                <tr
+                  class="hover:bg-base-200/50 transition-colors cursor-pointer"
+                  phx-click="edit_collaborator"
+                  phx-value-id={collaborator.id}
+                >
                   <td class="max-w-0 font-medium text-sm text-base-content truncate">
                     {collaborator.name}
                   </td>

@@ -173,7 +173,7 @@ defmodule CRCWeb.Admin.PackagesLiveTest do
 
       html =
         lv
-        |> element("[phx-click='edit_package'][phx-value-id='#{pkg.id}']")
+        |> element("button[phx-click='edit_package'][phx-value-id='#{pkg.id}']")
         |> render_click()
 
       assert html =~ "Guardar cambios"
@@ -190,7 +190,7 @@ defmodule CRCWeb.Admin.PackagesLiveTest do
       {:ok, lv, _html} = live(conn, "/admin/paquetes")
 
       lv
-      |> element("[phx-click='edit_package'][phx-value-id='#{pkg.id}']")
+      |> element("button[phx-click='edit_package'][phx-value-id='#{pkg.id}']")
       |> render_click()
 
       html =

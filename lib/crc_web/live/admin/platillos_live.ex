@@ -579,7 +579,11 @@ defmodule CRCWeb.Admin.PlatillosLive do
             "bg-base-100 rounded-2xl border shadow-sm overflow-hidden",
             if(expanded, do: "border-primary/30", else: "border-base-300")
           ]}>
-            <div class="p-3 flex items-center gap-3">
+            <div
+              class="p-3 flex items-center gap-3 cursor-pointer"
+              phx-click="edit_item"
+              phx-value-id={item.id}
+            >
               <%!-- Thumbnail --%>
               <%= if item.image_url do %>
                 <img
@@ -712,10 +716,14 @@ defmodule CRCWeb.Admin.PlatillosLive do
             <tbody>
               <%= for item <- visible do %>
                 <% expanded = MapSet.member?(@expanded_ids, item.id) %>
-                <tr class={[
-                  "hover:bg-base-200/50 transition-colors",
-                  if(expanded, do: "bg-primary/5", else: "")
-                ]}>
+                <tr
+                  class={[
+                    "hover:bg-base-200/50 transition-colors cursor-pointer",
+                    if(expanded, do: "bg-primary/5", else: "")
+                  ]}
+                  phx-click="edit_item"
+                  phx-value-id={item.id}
+                >
                   <td class="max-w-0">
                     <div class="flex items-center gap-3">
                       <%= if item.image_url do %>

@@ -14,6 +14,8 @@ defmodule CRCWeb.AdminComponents do
   """
   use Phoenix.Component
 
+  alias Phoenix.LiveView.JS
+
   import CRCWeb.CoreComponents, only: [icon: 1]
 
   @doc """
@@ -177,6 +179,37 @@ defmodule CRCWeb.AdminComponents do
         </div>
       </div>
     </div>
+    """
+  end
+
+  @doc """
+  A clickable step in a modal's "step flow" breadcrumb (e.g. the recipe
+  editors in Platillos/Insumos) — scrolls the named target into view inside
+  the modal instead of just being a decorative progress indicator (all
+  sections render at once; there's no real paginated wizard to page
+  through). Requires the `phx:scroll-to` listener in `assets/js/app.js`.
+
+  ## Examples
+
+      <.step_link n={1} label="Información" target="item-modal-step-1" />
+      <div id="item-modal-step-1">...</div>
+  """
+  attr :n, :integer, required: true
+  attr :label, :string, required: true
+  attr :target, :string, required: true
+
+  def step_link(assigns) do
+    ~H"""
+    <button
+      type="button"
+      class="flex items-center gap-1.5 text-base-content/40 hover:text-primary transition-colors"
+      phx-click={JS.dispatch("phx:scroll-to", detail: %{id: @target})}
+    >
+      <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+        {@n}
+      </span>
+      {@label}
+    </button>
     """
   end
 

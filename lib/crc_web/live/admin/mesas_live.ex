@@ -232,7 +232,10 @@ defmodule CRCWeb.Admin.MesasLive do
                   <div class={"absolute right-0 top-1/2 -translate-y-1/2 w-3 h-9 rounded-r-xl #{chair_cls}"} />
                 <% end %>
                 <%!-- Table chip --%>
-                <div class={"absolute inset-3 rounded-2xl flex flex-col items-center justify-center shadow-md border-2 #{chip_cls}"}>
+                <div
+                  class={"absolute inset-3 rounded-2xl flex flex-col items-center justify-center shadow-md border-2 #{chip_cls}"}
+                  title={"Mesa #{table.number}#{if table.label && table.label != "", do: " · #{table.label}", else: ""}"}
+                >
                   <span class="text-xl font-bold leading-none">{table.number}</span>
                   <%= if table.label && table.label != "" do %>
                     <span class="text-[9px] leading-tight truncate w-10 text-center px-0.5 mt-0.5 opacity-75">

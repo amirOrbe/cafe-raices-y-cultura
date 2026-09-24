@@ -237,44 +237,6 @@ const FloorMapEditor = {
 }
 
 /**
- * PieChart — renders a Chart.js pie chart on a <canvas> element. The element
- * carries its data as a JSON `data-chart` attribute
- * (`%{labels: [...], datasets: [%{data: [...], backgroundColor: [...]}]}`,
- * Chart.js's own shape). Deliberately NOT `phx-update="ignore"` — a bare
- * <canvas> has no children for LiveView to clobber, so morphdom patching
- * `data-chart` in place (same node, same id) is what makes `updated()` fire
- * when the period filter changes; ignoring the element would also stop its
- * attributes from ever being patched.
- *
- * Usage: <canvas id="chart-x" phx-hook="PieChart"
- *          data-chart={Jason.encode!(chart_data)} />
- */
-const PieChart = {
-  mounted() {
-    this.renderChart()
-  },
-  updated() {
-    this.renderChart()
-  },
-  renderChart() {
-    const data = JSON.parse(this.el.dataset.chart)
-    if (this.chart) this.chart.destroy()
-    this.chart = new Chart(this.el, {
-      type: "pie",
-      data,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {legend: {position: "bottom", labels: {boxWidth: 12, font: {size: 11}}}}
-      }
-    })
-  },
-  destroyed() {
-    if (this.chart) this.chart.destroy()
-  }
-}
-
-/**
  * DismissableTip — hides an onboarding tip panel and remembers the choice
  * in localStorage so it never shows again for this browser.
  *
@@ -342,7 +304,6 @@ const liveSocket = new LiveSocket("/live", Socket, {
     DismissableTip,
     FloorMapEditor,
     GeolocationClockIn,
-    PieChart,
     SoundNotifier,
   },
 })
@@ -351,6 +312,14 @@ const liveSocket = new LiveSocket("/live", Socket, {
 topbar.config({barColors: {0: "#8b5e3c"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
+
+// Smooth-scrolls a target into view — used by <.step_link> in
+// admin_components.ex to make a modal's "step flow" breadcrumb actually
+// jump to the section it names, instead of being a decorative progress
+// indicator that looks clickable but isn't.
+window.addEventListener("phx:scroll-to", ({detail}) => {
+  document.getElementById(detail.id)?.scrollIntoView({behavior: "smooth", block: "start"})
+})
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()

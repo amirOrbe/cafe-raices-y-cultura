@@ -104,6 +104,17 @@ defmodule CRCWeb.AdminComponentsTest do
     end
   end
 
+  describe "step_link/1" do
+    test "renders the number, label, and a scroll-to dispatch targeting the given id" do
+      html = render_component(&step_link/1, %{n: 2, label: "Precio y destino", target: "step-2"})
+
+      assert html =~ "2"
+      assert html =~ "Precio y destino"
+      assert html =~ "phx:scroll-to"
+      assert html =~ "step-2"
+    end
+  end
+
   describe "admin_modal/1" do
     test "renders the title slot, close handler, and inner content" do
       html =

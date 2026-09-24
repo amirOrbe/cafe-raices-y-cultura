@@ -905,28 +905,16 @@ defmodule CRCWeb.Admin.PlatillosLive do
     <.admin_modal id="item-modal" size="2xl" on_close="close_modal">
       <:title>{@title}</:title>
       <div class="space-y-4">
-        <%!-- Step flow --%>
+        <%!-- Step flow — jumps to each section via phx:scroll-to (assets/js/app.js), it
+             doesn't gate a paginated wizard (all sections render at once below). --%>
         <div class="flex items-center gap-2 text-xs flex-wrap">
-          <span class="flex items-center gap-1.5 font-semibold text-primary">
-            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-content text-[10px] font-bold shrink-0">
-              1
-            </span>
-            Información
-          </span>
+          <.step_link n={1} label="Información" target="item-modal-step-1" />
           <.icon name="hero-chevron-right" class="size-3 text-base-content/30 shrink-0" />
-          <span class="flex items-center gap-1.5 text-base-content/40">
-            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
-              2
-            </span>
-            Precio y destino
-          </span>
+          <.step_link n={2} label="Precio y destino" target="item-modal-step-2" />
           <.icon name="hero-chevron-right" class="size-3 text-base-content/30 shrink-0" />
-          <span class="flex items-center gap-1.5 text-base-content/40">
-            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
-              3
-            </span>
-            Ingredientes
-          </span>
+          <.step_link n={3} label="Ingredientes" target="item-modal-step-3" />
+          <.icon name="hero-chevron-right" class="size-3 text-base-content/30 shrink-0" />
+          <.step_link n={4} label="Extras opcionales" target="item-modal-step-4" />
         </div>
 
         <.form
@@ -937,9 +925,12 @@ defmodule CRCWeb.Admin.PlatillosLive do
           class="space-y-4"
         >
           <%!-- ── ① Información básica ──────────────────────────────────────── --%>
-          <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
+          <div
+            id="item-modal-step-1"
+            class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3"
+          >
             <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
-              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-content text-[10px] font-bold">
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold">
                 1
               </span>
               Información básica
@@ -1009,7 +1000,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
           </div>
 
           <%!-- ── ② Precio y destino ─────────────────────────────────────────── --%>
-          <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
+          <div
+            id="item-modal-step-2"
+            class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3"
+          >
             <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
               <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold">
                 2
@@ -1201,7 +1195,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
           </div>
 
           <%!-- ── ③ Ingredientes (receta) ────────────────────────────────────── --%>
-          <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
+          <div
+            id="item-modal-step-3"
+            class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3"
+          >
             <div class="flex items-center gap-1.5">
               <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
                 3
@@ -1309,7 +1306,10 @@ defmodule CRCWeb.Admin.PlatillosLive do
           <%!-- ── End Ingredientes ───────────────────────────────────────────── --%>
 
           <%!-- ── ④ Extras opcionales ──────────────────────────────────────────── --%>
-          <div class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3">
+          <div
+            id="item-modal-step-4"
+            class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3"
+          >
             <div class="flex items-center gap-1.5">
               <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
                 4

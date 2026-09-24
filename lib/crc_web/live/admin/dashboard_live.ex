@@ -22,12 +22,8 @@ defmodule CRCWeb.Admin.DashboardLive do
       socket
       |> assign(:page_title, "Dashboard · Admin")
       |> assign(:now, DateTime.utc_now())
-      |> assign(:period, :all)
-      |> assign(:date_from, "")
-      |> assign(:date_to, "")
       |> assign(:nav_query, "")
       |> load_all()
-      |> load_report_data()
 
     {:ok, socket}
   end
@@ -44,7 +40,7 @@ defmodule CRCWeb.Admin.DashboardLive do
 
   @impl true
   def handle_info({:order_updated, _order_id}, socket) do
-    {:noreply, socket |> load_all() |> load_report_data()}
+    {:noreply, load_all(socket)}
   end
 
   def handle_info({event, _payload}, socket)
@@ -58,42 +54,10 @@ defmodule CRCWeb.Admin.DashboardLive do
   end
 
   # ---------------------------------------------------------------------------
-  # Events — period filter for the chart reports section
-  # ---------------------------------------------------------------------------
-
-  @impl true
-  def handle_event("set_period", %{"period" => period}, socket) do
-    socket =
-      socket
-      |> assign(:period, String.to_existing_atom(period))
-      |> assign(:date_from, "")
-      |> assign(:date_to, "")
-      |> load_report_data()
-
-    {:noreply, socket}
-  end
-
-  def handle_event("set_date_range", %{"date_from" => from, "date_to" => to}, socket) do
-    with {:ok, d_from} <- Date.from_iso8601(from),
-         {:ok, d_to} <- Date.from_iso8601(to),
-         true <- Date.compare(d_from, d_to) != :gt do
-      socket =
-        socket
-        |> assign(:period, {:range, d_from, d_to})
-        |> assign(:date_from, from)
-        |> assign(:date_to, to)
-        |> load_report_data()
-
-      {:noreply, socket}
-    else
-      _ -> {:noreply, socket}
-    end
-  end
-
-  # ---------------------------------------------------------------------------
   # Events — search box for the Gestión nav grid
   # ---------------------------------------------------------------------------
 
+  @impl true
   def handle_event("search_nav", %{"q" => query}, socket) do
     {:noreply, assign(socket, :nav_query, query)}
   end
@@ -123,41 +87,6 @@ defmodule CRCWeb.Admin.DashboardLive do
     |> assign(:low_stock, low_stock)
     |> assign(:user_stats, build_user_stats(users))
   end
-
-  # Palette for the payment-method chart — warm tones matching the café brand.
-  @chart_colors ~w(#6b4226 #b5651d #d4a373 #8a9b6e #4a7c7c #c1666b #e0b354 #7d8597)
-
-  defp load_report_data(socket) do
-    sales = Orders.sales_summary(socket.assigns.period)
-    assign(socket, :payment_method_chart, payment_method_chart_data(sales.by_method))
-  end
-
-  defp payment_method_chart_data(by_method) when map_size(by_method) == 0 do
-    empty_chart()
-  end
-
-  defp payment_method_chart_data(by_method) do
-    {labels, values} =
-      by_method
-      |> Enum.sort_by(fn {_method, amount} -> amount end, {:desc, Decimal})
-      |> Enum.map(fn {method, amount} ->
-        {String.capitalize(method || "Desconocido"), Decimal.to_float(amount)}
-      end)
-      |> Enum.unzip()
-
-    to_chart(labels, values)
-  end
-
-  defp to_chart(labels, values) do
-    %{
-      labels: labels,
-      datasets: [
-        %{data: values, backgroundColor: Enum.take(Stream.cycle(@chart_colors), length(values))}
-      ]
-    }
-  end
-
-  defp empty_chart, do: %{labels: [], datasets: [%{data: [], backgroundColor: []}]}
 
   defp count_sent_by_dest(orders, dest) do
     orders
@@ -527,29 +456,6 @@ defmodule CRCWeb.Admin.DashboardLive do
                 color="text-accent"
               />
             </div>
-          </div>
-        </div>
-
-        <%!-- ── Reportes con gráficas ──────────────────────────────────────────── --%>
-        <div class="space-y-4 pt-2">
-          <div class="flex items-center justify-between flex-wrap gap-3">
-            <h2 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">
-              Reportes
-            </h2>
-            <.period_filter period={@period} date_from={@date_from} date_to={@date_to} />
-          </div>
-
-          <div class="max-w-md">
-            <.panel class="p-5">
-              <h3 class="text-sm font-semibold text-base-content mb-3">Ventas por método de pago</h3>
-              <div class="h-64 relative">
-                <canvas
-                  id="chart-payment-method"
-                  phx-hook="PieChart"
-                  data-chart={Jason.encode!(@payment_method_chart)}
-                />
-              </div>
-            </.panel>
           </div>
         </div>
       <% end %>

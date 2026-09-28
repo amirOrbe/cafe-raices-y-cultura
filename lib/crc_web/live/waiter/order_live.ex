@@ -2644,11 +2644,16 @@ defmodule CRCWeb.Waiter.OrderLive do
       <% end %>
 
       <%= if @panel_open and is_nil(@order.customer) do %>
-        <.live_component
-          module={CustomerSearchComponent}
-          id="customer-search"
-          current_user={@current_user}
-        />
+        <div class="fixed inset-0 z-40 bg-black/60" phx-click="toggle_customer_panel"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+          <div class="w-full max-w-sm pointer-events-auto">
+            <.live_component
+              module={CustomerSearchComponent}
+              id="customer-search"
+              current_user={@current_user}
+            />
+          </div>
+        </div>
       <% end %>
     </div>
     """

@@ -139,9 +139,9 @@ defmodule CRCWeb.ProduccionLive do
                       {recipe.name}
                     </p>
                     <%!-- "1 lote = X unidad" --%>
-                    <p class="text-xs text-base-content/50 mt-1 flex items-center gap-1">
-                      <span class="badge badge-xs badge-ghost">1 lote</span>
-                      →
+                    <p class="text-xs text-base-content/50 mt-1 flex flex-wrap items-center gap-1">
+                      <span class="badge badge-xs badge-ghost shrink-0">1 lote</span>
+                      <span class="shrink-0">→</span>
                       <span class="font-medium text-base-content/70">
                         +{format_qty(recipe.yield_quantity)} {recipe.yield_unit} de {recipe.output_product &&
                           recipe.output_product.name}

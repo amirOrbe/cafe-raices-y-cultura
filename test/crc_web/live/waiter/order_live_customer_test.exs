@@ -71,6 +71,40 @@ defmodule CRCWeb.Waiter.OrderLiveCustomerTest do
       assert html =~ "Café gratis"
     end
 
+    test "search matches by email too", %{conn: conn, order: order} do
+      customer = create_customer(%{name: "Ana López", phone: "5511112222", email: "ana@crc.mx"})
+
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      lv |> element("button", "Asociar cliente de lealtad") |> render_click()
+
+      lv
+      |> element("#customer-search input[type='text']")
+      |> render_keyup(%{"value" => "ana@crc"})
+
+      lv |> element("#customer-search button", "Ana López") |> render_click()
+
+      assert Orders.get_order!(order.id).customer_id == customer.id
+    end
+
+    test "the X button closes the panel without associating anyone", %{
+      conn: conn,
+      order: order
+    } do
+      {:ok, lv, _} = live(conn, "/mesa/#{order.id}")
+
+      lv |> element("button", "Asociar cliente de lealtad") |> render_click()
+      assert has_element?(lv, "#customer-search")
+
+      html =
+        lv
+        |> element("#customer-search button[phx-click='toggle_customer_panel']")
+        |> render_click()
+
+      refute html =~ ~s(id="customer-search")
+      assert Orders.get_order!(order.id).customer_id == nil
+    end
+
     test "remove customer clears the association", %{conn: conn, order: order} do
       customer = create_customer()
       {:ok, _} = Orders.update_order(order, %{customer_id: customer.id})

@@ -66,6 +66,12 @@ defmodule CRC.CRMTest do
       assert [%Customer{name: "Pedro"}] = CRM.search_customers("9988")
     end
 
+    test "matches by email fragment, case-insensitively" do
+      create_customer(%{name: "Ana", phone: "5511111111", email: "ana@example.com"})
+      assert [%Customer{name: "Ana"}] = CRM.search_customers("ana@example")
+      assert [%Customer{name: "Ana"}] = CRM.search_customers("EXAMPLE.COM")
+    end
+
     test "excludes inactive customers" do
       customer = create_customer(%{name: "Inactiva", phone: "5500000000"})
       CRM.deactivate_customer(customer)

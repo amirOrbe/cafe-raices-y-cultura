@@ -768,7 +768,12 @@ defmodule CRC.CRM do
 
   defp filter_by_query(query, text) do
     pattern = "%#{escape_like(text)}%"
-    where(query, [c], ilike(c.name, ^pattern) or ilike(c.phone, ^pattern))
+
+    where(
+      query,
+      [c],
+      ilike(c.name, ^pattern) or ilike(c.phone, ^pattern) or ilike(c.email, ^pattern)
+    )
   end
 
   defp escape_like(text) do

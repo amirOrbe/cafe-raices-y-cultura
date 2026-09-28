@@ -85,6 +85,62 @@ defmodule CRC.CRMTest do
     end
   end
 
+  describe "customer_counter_summary/1 — visits_until_next_reward" do
+    defp visit!(customer, staff) do
+      create_order(%{customer_name: "x", user_id: staff.id})
+      |> associate_customer(customer)
+      |> close_order_for(staff)
+    end
+
+    test "nil when no visit tiers are configured" do
+      customer = create_customer()
+      assert CRM.customer_counter_summary(customer.id).visits_until_next_reward == nil
+    end
+
+    test "counts down to the next repeatable tier" do
+      staff = create_admin()
+      customer = create_customer()
+      create_reward_tier(%{visits_required: 6, repeatable: true})
+
+      visit!(customer, staff)
+      visit!(customer, staff)
+
+      assert CRM.customer_counter_summary(customer.id).visits_until_next_reward == 4
+    end
+
+    test "resets to a full cycle right after earning one" do
+      staff = create_admin()
+      customer = create_customer()
+      create_reward_tier(%{visits_required: 2, repeatable: true})
+
+      visit!(customer, staff)
+      visit!(customer, staff)
+
+      assert CRM.customer_counter_summary(customer.id).visits_until_next_reward == 2
+    end
+
+    test "nil once a non-repeatable tier is already reached" do
+      staff = create_admin()
+      customer = create_customer()
+      create_reward_tier(%{visits_required: 1, repeatable: false})
+
+      visit!(customer, staff)
+
+      assert CRM.customer_counter_summary(customer.id).visits_until_next_reward == nil
+    end
+
+    test "picks the closest tier when several are configured" do
+      staff = create_admin()
+      customer = create_customer()
+      create_reward_tier(%{name: "Chica", visits_required: 10, repeatable: true})
+      create_reward_tier(%{name: "Grande", visits_required: 3, repeatable: true})
+
+      visit!(customer, staff)
+
+      assert CRM.customer_counter_summary(customer.id).visits_until_next_reward == 2
+    end
+  end
+
   describe "list_customers/1" do
     test "filters by status" do
       active = create_customer(%{name: "Activa"})

@@ -554,6 +554,7 @@ defmodule CRC.CRM do
       today = Date.utc_today()
       birthday_reward = get_birthday_reward()
       pending = pending_rewards_for(customer_id)
+      count = visit_count(customer_id)
 
       bday_today? =
         (birthday_reward &&
@@ -561,16 +562,47 @@ defmodule CRC.CRM do
 
       %{
         customer: customer,
-        visit_count: visit_count(customer_id),
+        visit_count: count,
         pending_reward: List.first(pending),
         pending_count: length(pending),
         birthday_today?: bday_today?,
         birthday_reward: birthday_reward,
         birthday_grantable?:
           bday_today? && not birthday_granted_this_year?(customer_id, today.year),
-        top_items: Orders.customer_top_items(customer_id, 3)
+        top_items: Orders.customer_top_items(customer_id, 3),
+        visits_until_next_reward: visits_until_next_reward(count, list_active_visit_tiers())
       }
     end
+  end
+
+  # La menor cantidad de visitas que le faltan al cliente para alcanzar el
+  # próximo nivel no ganado (de entre todos los niveles activos). `nil` si no
+  # hay niveles configurados o ya alcanzó/redimió todo lo que hay.
+  defp visits_until_next_reward(_count, []), do: nil
+
+  defp visits_until_next_reward(count, tiers) do
+    tiers
+    |> Enum.map(&remaining_for_tier(count, &1))
+    |> Enum.reject(&is_nil/1)
+    |> case do
+      [] -> nil
+      remaining -> Enum.min(remaining)
+    end
+  end
+
+  defp remaining_for_tier(_count, %LoyaltyReward{visits_required: req})
+       when is_nil(req) or req <= 0,
+       do: nil
+
+  defp remaining_for_tier(count, %LoyaltyReward{visits_required: req, repeatable: true}) do
+    case rem(count, req) do
+      0 -> req
+      r -> req - r
+    end
+  end
+
+  defp remaining_for_tier(count, %LoyaltyReward{visits_required: req, repeatable: false}) do
+    if count >= req, do: nil, else: req - count
   end
 
   @doc """

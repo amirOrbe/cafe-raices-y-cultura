@@ -2581,9 +2581,14 @@ defmodule CRCWeb.Waiter.OrderLive do
             </div>
             <%= if @summary && @summary.top_items != [] do %>
               <p class="text-xs text-base-content/50 mt-0.5">
-                Suele pedir: {@summary.top_items
+                Favorito del cliente: {@summary.top_items
                 |> Enum.map(fn {n, q} -> "#{n} (#{q})" end)
                 |> Enum.join(" · ")}
+              </p>
+            <% end %>
+            <%= if @summary && is_nil(@summary.pending_reward) && @summary.visits_until_next_reward do %>
+              <p class="text-xs text-base-content/50 mt-0.5">
+                Visitas restantes para ganar obsequio: {@summary.visits_until_next_reward}
               </p>
             <% end %>
 

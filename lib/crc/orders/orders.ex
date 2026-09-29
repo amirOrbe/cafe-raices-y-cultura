@@ -1016,24 +1016,40 @@ defmodule CRC.Orders do
   Marks all pending items as 'sent', updates order status, deducts ingredient
   stock from inventory, and broadcasts to stations and waiter menu browsers.
   All DB writes run in a single transaction.
+
+  Retail items (destination "retail" — café en grano, merch, película…) need
+  no prep, so they skip the sent/ready wait and go straight to "served"
+  instead of sitting on a station board that will never pick them up.
   """
   def send_to_kitchen(%Order{} = order) do
     # Load pending items directly from DB (safe regardless of preload state)
     pending =
       from(oi in OrderItem,
-        where: oi.order_id == ^order.id and oi.status == "pending"
+        where: oi.order_id == ^order.id and oi.status == "pending",
+        preload: [:menu_item]
       )
       |> Repo.all()
 
+    {retail, prepared} =
+      Enum.split_with(pending, fn oi ->
+        oi.menu_item_id && oi.menu_item.destination == "retail"
+      end)
+
     result =
       Repo.transaction(fn ->
-        # 1. Mark pending items → sent (record timestamp)
+        # 1. Mark pending items → sent (record timestamp); retail items go
+        # straight to served since there's no station to prepare them.
         now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-        from(oi in OrderItem,
-          where: oi.order_id == ^order.id and oi.status == "pending"
-        )
-        |> Repo.update_all(set: [status: "sent", sent_at: now])
+        if prepared != [] do
+          from(oi in OrderItem, where: oi.id in ^Enum.map(prepared, & &1.id))
+          |> Repo.update_all(set: [status: "sent", sent_at: now])
+        end
+
+        if retail != [] do
+          from(oi in OrderItem, where: oi.id in ^Enum.map(retail, & &1.id))
+          |> Repo.update_all(set: [status: "served", sent_at: now, ready_at: now, served_at: now])
+        end
 
         # 2. Update order status
         updated =

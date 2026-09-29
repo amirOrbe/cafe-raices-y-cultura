@@ -4,7 +4,9 @@ defmodule CRC.Catalog.MenuItem do
 
   alias CRC.Catalog.{Category, MenuItemIngredient, MenuItemOptionalExtra}
 
-  @destinations ~w(cocina barra)
+  # "retail" = simple products (café en grano, merch, película, revelado…):
+  # no se preparan, no van a cocina ni a barra — solo se cobran.
+  @destinations ~w(cocina barra retail)
   # Only relevant when destination == "barra". nil means unclassified.
   @barra_types ~w(fria caliente)
 
@@ -44,19 +46,19 @@ defmodule CRC.Catalog.MenuItem do
     ])
     |> update_change(:name, &CRC.Utils.title_case/1)
     |> validate_required([:name, :price, :destination, :category_id])
-    |> validate_inclusion(:destination, @destinations, message: "debe ser cocina o barra")
+    |> validate_inclusion(:destination, @destinations, message: "debe ser cocina, barra o retail")
     |> validate_inclusion(:barra_type, @barra_types ++ [nil], message: "debe ser fria o caliente")
-    |> clear_barra_type_for_cocina()
+    |> clear_barra_type_unless_barra()
     |> validate_number(:price, greater_than: 0)
     |> assoc_constraint(:category)
   end
 
-  # If destination is cocina, barra_type is irrelevant — clear it to keep data clean.
-  defp clear_barra_type_for_cocina(changeset) do
-    if get_field(changeset, :destination) == "cocina" do
-      put_change(changeset, :barra_type, nil)
-    else
+  # barra_type is only relevant when destination == "barra" — clear it otherwise.
+  defp clear_barra_type_unless_barra(changeset) do
+    if get_field(changeset, :destination) == "barra" do
       changeset
+    else
+      put_change(changeset, :barra_type, nil)
     end
   end
 end

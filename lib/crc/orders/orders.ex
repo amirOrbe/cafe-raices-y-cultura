@@ -267,6 +267,29 @@ defmodule CRC.Orders do
       :ok
   end
 
+  @doc """
+  Moves a dine-in order to a different physical table — e.g. the customers
+  got up and sat somewhere else. Frees up the previous table (it drops out
+  of `active_orders_by_table/0` since the order no longer points to it) and
+  renames the order to match the new table number.
+  """
+  def change_order_table(%Order{} = order, %Table{} = new_table) do
+    result =
+      order
+      |> Order.changeset(%{table_id: new_table.id, customer_name: "Mesa #{new_table.number}"})
+      |> Repo.update()
+
+    case result do
+      {:ok, updated} ->
+        broadcast({:order_updated, updated.id})
+        broadcast_tables_changed()
+        {:ok, updated}
+
+      error ->
+        error
+    end
+  end
+
   # ---------------------------------------------------------------------------
   # Parked orders — "cuenta abierta para pagar después"
   # ---------------------------------------------------------------------------
@@ -904,21 +927,44 @@ defmodule CRC.Orders do
     end
   end
 
-  @doc "Removes an OrderItem by id. Broadcasts so kitchen/barra refreshes."
+  @doc """
+  Removes an OrderItem by id. Broadcasts so kitchen/barra refreshes.
+
+  If the removed item is a dish (has a `menu_item_id`), also removes any
+  still-pending extras/variants attached to it (`for_menu_item_id` pointing
+  at that dish) — otherwise those extras become orphaned: stuck as pending
+  with no visible parent row, and with no way to remove them from the UI.
+  """
   def remove_item(id) do
     case Repo.get(OrderItem, id) do
       nil ->
         {:error, :not_found}
 
       item ->
-        case Repo.delete(item) do
-          {:ok, deleted} ->
-            broadcast({:order_updated, deleted.order_id})
-            {:ok, deleted}
+        {:ok, {deleted, _orphaned_extras}} =
+          Repo.transaction(fn ->
+            orphaned_extras =
+              if item.menu_item_id do
+                OrderItem
+                |> where(
+                  [oi],
+                  oi.order_id == ^item.order_id and
+                    oi.for_menu_item_id == ^item.menu_item_id and
+                    oi.status == "pending"
+                )
+                |> Repo.all()
+              else
+                []
+              end
 
-          error ->
-            error
-        end
+            Enum.each(orphaned_extras, &Repo.delete!/1)
+            deleted = Repo.delete!(item)
+
+            {deleted, orphaned_extras}
+          end)
+
+        broadcast({:order_updated, deleted.order_id})
+        {:ok, deleted}
     end
   end
 

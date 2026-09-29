@@ -287,6 +287,32 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       assert html =~ "Enviar adicionales"
     end
 
+    test "shows 'Confirmar venta' when all pending items are retail", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      film = insert_menu_item(cat.id, %{name: "Fujifilm 400", destination: "retail"})
+      order = insert_order()
+      insert_order_item(order.id, film.id, %{status: "pending"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+
+      assert html =~ "Confirmar venta"
+      refute html =~ "Enviar a cocina y barra"
+    end
+
+    test "keeps 'Enviar a cocina y barra' when pending items are mixed", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      film = insert_menu_item(cat.id, %{name: "Fujifilm 400", destination: "retail"})
+      coffee = insert_menu_item(cat.id, %{name: "Espresso"})
+      order = insert_order()
+      insert_order_item(order.id, film.id, %{status: "pending"})
+      insert_order_item(order.id, coffee.id, %{status: "pending"})
+      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+
+      assert html =~ "Enviar a cocina y barra"
+      refute html =~ "Confirmar venta"
+    end
+
     test "can add and send additional items after initial send", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       cat = insert_category()

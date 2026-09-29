@@ -255,6 +255,93 @@ defmodule CRC.OrdersTest do
     test "returns error for non-existent id" do
       assert {:error, :not_found} = Orders.remove_item(0)
     end
+
+    test "also removes pending extras attached to the removed dish" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      product =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Extra Test #{System.unique_integer()}",
+          unit: "pz",
+          net_cost: Decimal.new("1.00"),
+          stock_quantity: Decimal.new("100"),
+          active: true
+        })
+
+      {:ok, extra} =
+        Orders.add_item(%{
+          order_id: order.id,
+          product_id: product.id,
+          for_menu_item_id: mi.id,
+          portion_quantity: Decimal.new("1"),
+          quantity: 1
+        })
+
+      assert {:ok, _} = Orders.remove_item(item.id)
+      assert Orders.get_order!(order.id).order_items == []
+      refute CRC.Repo.get(OrderItem, extra.id)
+    end
+
+    test "does not remove an already-sent extra attached to the removed dish" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      product =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Extra Test #{System.unique_integer()}",
+          unit: "pz",
+          net_cost: Decimal.new("1.00"),
+          stock_quantity: Decimal.new("100"),
+          active: true
+        })
+
+      {:ok, extra} =
+        Orders.add_item(%{
+          order_id: order.id,
+          product_id: product.id,
+          for_menu_item_id: mi.id,
+          portion_quantity: Decimal.new("1"),
+          quantity: 1,
+          status: "sent"
+        })
+
+      assert {:ok, _} = Orders.remove_item(item.id)
+      assert CRC.Repo.get(OrderItem, extra.id)
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # change_order_table/2
+  # ---------------------------------------------------------------------------
+
+  describe "change_order_table/2" do
+    test "updates table_id and renames the order to match the new table" do
+      {:ok, old_table} = Orders.create_table(%{number: 1, capacity: 2})
+      {:ok, new_table} = Orders.create_table(%{number: 2, capacity: 4})
+      order = insert_order(%{customer_name: "Mesa 1", table_id: old_table.id})
+
+      assert {:ok, updated} = Orders.change_order_table(order, new_table)
+      assert updated.table_id == new_table.id
+      assert updated.customer_name == "Mesa 2"
+    end
+
+    test "frees the previous table for active_orders_by_table/0" do
+      {:ok, old_table} = Orders.create_table(%{number: 1, capacity: 2})
+      {:ok, new_table} = Orders.create_table(%{number: 2, capacity: 4})
+      order = insert_order(%{customer_name: "Mesa 1", table_id: old_table.id})
+
+      assert Orders.active_orders_by_table() |> Map.has_key?(old_table.id)
+
+      {:ok, _} = Orders.change_order_table(order, new_table)
+
+      refute Orders.active_orders_by_table() |> Map.has_key?(old_table.id)
+      assert Orders.active_orders_by_table() |> Map.has_key?(new_table.id)
+    end
   end
 
   # ---------------------------------------------------------------------------

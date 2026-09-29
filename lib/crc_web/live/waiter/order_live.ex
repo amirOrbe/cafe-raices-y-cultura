@@ -1810,10 +1810,15 @@ defmodule CRCWeb.Waiter.OrderLive do
                       phx-click="send_to_kitchen"
                       disabled={pending == []}
                     >
-                      <.icon name="hero-paper-airplane" class="size-4" />
-                      {if @order.status == "open",
-                        do: "Enviar a cocina y barra",
-                        else: "Enviar adicionales"}
+                      <.icon
+                        name={
+                          if all_pending_retail?(pending),
+                            do: "hero-shopping-bag",
+                            else: "hero-paper-airplane"
+                        }
+                        class="size-4"
+                      />
+                      {send_button_label(@order.status, pending)}
                       <%= if pending != [] do %>
                         <span class="badge badge-sm badge-primary-content/30">
                           {length(pending)}
@@ -2285,6 +2290,23 @@ defmodule CRCWeb.Waiter.OrderLive do
   end
 
   defp pending_items(order), do: Enum.filter(order.order_items, &(&1.status == "pending"))
+
+  # True when every pending item is a no-prep retail product — nothing will
+  # actually be sent to a station, so the button copy shouldn't say so.
+  defp all_pending_retail?(pending) do
+    pending != [] and
+      Enum.all?(pending, fn item ->
+        item.menu_item_id && item.menu_item && item.menu_item.destination == "retail"
+      end)
+  end
+
+  defp send_button_label(order_status, pending) do
+    cond do
+      all_pending_retail?(pending) -> "Confirmar venta"
+      order_status == "open" -> "Enviar a cocina y barra"
+      true -> "Enviar adicionales"
+    end
+  end
 
   # A comanda is read-only when it is closed or parked (waiting for the customer
   # to come back and pay). Parked comandas must be reactivated before editing.

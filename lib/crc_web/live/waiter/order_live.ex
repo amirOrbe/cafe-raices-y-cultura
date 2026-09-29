@@ -2367,9 +2367,11 @@ defmodule CRCWeb.Waiter.OrderLive do
   defp item_overdue?(_, _), do: false
 
   defp station_label("barra"), do: "Barra"
+  defp station_label("retail"), do: "Retail"
   defp station_label(_), do: "Cocina"
 
   defp station_text_class("barra"), do: "text-info font-medium"
+  defp station_text_class("retail"), do: "text-accent font-medium"
   defp station_text_class(_), do: "text-warning font-medium"
 
   # Returns the set of IDs of items currently in "ready" state.

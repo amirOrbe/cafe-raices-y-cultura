@@ -1039,14 +1039,14 @@ defmodule CRCWeb.Admin.PlatillosLive do
               <label class="label pb-1.5">
                 <span class="label-text font-medium">¿Dónde se prepara?</span>
               </label>
-              <div class="grid grid-cols-2 gap-2 sm:gap-3">
+              <div class="grid grid-cols-3 gap-2 sm:gap-3">
                 <label class="cursor-pointer">
                   <input
                     type="radio"
                     name="menu_item[destination]"
                     value="cocina"
                     class="sr-only peer"
-                    checked={@form[:destination].value not in ["barra"]}
+                    checked={@form[:destination].value == "cocina"}
                   />
                   <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-primary peer-checked:bg-primary/5 hover:border-primary/30 transition-all">
                     <span class="text-xl sm:text-3xl">🍳</span>
@@ -1072,6 +1072,24 @@ defmodule CRCWeb.Admin.PlatillosLive do
                       <p class="font-semibold text-xs sm:text-sm text-base-content">Barra</p>
                       <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
                         Bebidas, cafés, cócteles…
+                      </p>
+                    </div>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="menu_item[destination]"
+                    value="retail"
+                    class="sr-only peer"
+                    checked={@form[:destination].value == "retail"}
+                  />
+                  <div class="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-4 rounded-xl border-2 border-base-300 peer-checked:border-accent peer-checked:bg-accent/5 hover:border-accent/30 transition-all">
+                    <span class="text-xl sm:text-3xl">🛍️</span>
+                    <div class="text-center">
+                      <p class="font-semibold text-xs sm:text-sm text-base-content">Retail</p>
+                      <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
+                        Café en grano, merch, película… no se prepara
                       </p>
                     </div>
                   </div>

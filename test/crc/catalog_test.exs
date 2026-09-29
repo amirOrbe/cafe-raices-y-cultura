@@ -736,7 +736,39 @@ defmodule CRC.CatalogTest do
     alias CRC.Catalog.MenuItem
 
     test "returns the list of valid destinations" do
-      assert MenuItem.destinations() == ["cocina", "barra"]
+      assert MenuItem.destinations() == ["cocina", "barra", "retail"]
+    end
+  end
+
+  describe "MenuItem.changeset/2 — barra_type clearing" do
+    test "clears barra_type when destination is retail" do
+      cat = insert_category()
+
+      {:ok, item} =
+        Catalog.create_menu_item(%{
+          name: "Café En Grano",
+          price: "180.00",
+          category_id: cat.id,
+          destination: "retail",
+          barra_type: "caliente"
+        })
+
+      assert item.barra_type == nil
+    end
+
+    test "keeps barra_type when destination is barra" do
+      cat = insert_category()
+
+      {:ok, item} =
+        Catalog.create_menu_item(%{
+          name: "Latte",
+          price: "55.00",
+          category_id: cat.id,
+          destination: "barra",
+          barra_type: "caliente"
+        })
+
+      assert item.barra_type == "caliente"
     end
   end
 

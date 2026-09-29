@@ -392,6 +392,32 @@ defmodule CRC.OrdersTest do
       id = updated.id
       assert_receive {:order_updated, ^id}
     end
+
+    test "retail items skip straight to 'served' instead of 'sent'" do
+      cat = insert_category()
+      film = insert_menu_item(cat.id, %{name: "Fujifilm 400", destination: "retail"})
+      coffee = insert_menu_item(cat.id, %{name: "Espresso"})
+      order = insert_order()
+      retail_item = insert_order_item(order.id, film.id, %{status: "pending"})
+      cocina_item = insert_order_item(order.id, coffee.id, %{status: "pending"})
+
+      {:ok, _} = Orders.send_to_kitchen(order)
+
+      reloaded = Orders.get_order!(order.id)
+      statuses = Map.new(reloaded.order_items, &{&1.id, &1})
+
+      retail = statuses[retail_item.id]
+      assert retail.status == "served"
+      assert retail.sent_at
+      assert retail.ready_at
+      assert retail.served_at
+
+      cocina = statuses[cocina_item.id]
+      assert cocina.status == "sent"
+      assert cocina.sent_at
+      refute cocina.ready_at
+      refute cocina.served_at
+    end
   end
 
   # ---------------------------------------------------------------------------

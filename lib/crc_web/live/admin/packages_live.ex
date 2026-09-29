@@ -284,8 +284,8 @@ defmodule CRCWeb.Admin.PackagesLive do
                   <li class="flex items-center gap-2 text-sm text-base-content/70">
                     <span class="badge badge-outline badge-xs">{pi.quantity}x</span>
                     {pi.menu_item.name}
-                    <span class={"ml-auto badge badge-xs #{if pi.menu_item.destination == "barra", do: "badge-info", else: "badge-warning"}"}>
-                      {if pi.menu_item.destination == "barra", do: "Barra", else: "Cocina"}
+                    <span class={"ml-auto badge badge-xs #{destination_badge_class(pi.menu_item.destination)}"}>
+                      {destination_badge_label(pi.menu_item.destination)}
                     </span>
                   </li>
                 <% end %>
@@ -434,8 +434,8 @@ defmodule CRCWeb.Admin.PackagesLive do
                           ${CRC.Utils.format_money(item.price)} c/u
                         </p>
                       </div>
-                      <span class={"badge badge-xs shrink-0 #{if item.destination == "barra", do: "badge-info", else: "badge-warning"}"}>
-                        {if item.destination == "barra", do: "Barra", else: "Cocina"}
+                      <span class={"badge badge-xs shrink-0 #{destination_badge_class(item.destination)}"}>
+                        {destination_badge_label(item.destination)}
                       </span>
                       <%!-- Qty controls (shown on desktop inline; on mobile in a sub-row below) --%>
                       <%= if selected do %>
@@ -530,4 +530,12 @@ defmodule CRCWeb.Admin.PackagesLive do
     <% end %>
     """
   end
+
+  defp destination_badge_class("barra"), do: "badge-info"
+  defp destination_badge_class("retail"), do: "badge-accent"
+  defp destination_badge_class(_), do: "badge-warning"
+
+  defp destination_badge_label("barra"), do: "Barra"
+  defp destination_badge_label("retail"), do: "Retail"
+  defp destination_badge_label(_), do: "Cocina"
 end

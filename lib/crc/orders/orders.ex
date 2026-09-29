@@ -930,10 +930,20 @@ defmodule CRC.Orders do
   @doc """
   Removes an OrderItem by id. Broadcasts so kitchen/barra refreshes.
 
-  If the removed item is a dish (has a `menu_item_id`), also removes any
-  still-pending extras/variants attached to it (`for_menu_item_id` pointing
-  at that dish) — otherwise those extras become orphaned: stuck as pending
-  with no visible parent row, and with no way to remove them from the UI.
+  Also removes anything that would otherwise be orphaned by taking this item
+  out on its own:
+
+  - If it's a dish (has a `menu_item_id`), any still-pending extras/variants
+    attached to it (`for_menu_item_id` pointing at that dish) — otherwise
+    those extras get stuck as pending with no visible parent row and no way
+    to remove them from the UI.
+  - If it's part of a package (`package_id` set), the other still-pending
+    items from that same package — otherwise they're left behind still
+    billed at their package-discounted `unit_price` instead of the full
+    menu price, with no single dish to have ordered them as.
+
+  Returns `{:ok, [deleted_items]}` (the removed item plus anything cascaded)
+  or `{:error, :not_found}`.
   """
   def remove_item(id) do
     case Repo.get(OrderItem, id) do
@@ -941,29 +951,45 @@ defmodule CRC.Orders do
         {:error, :not_found}
 
       item ->
-        {:ok, {deleted, _orphaned_extras}} =
+        {:ok, deleted} =
           Repo.transaction(fn ->
-            orphaned_extras =
-              if item.menu_item_id do
+            package_siblings =
+              if item.package_id do
                 OrderItem
                 |> where(
                   [oi],
                   oi.order_id == ^item.order_id and
-                    oi.for_menu_item_id == ^item.menu_item_id and
-                    oi.status == "pending"
+                    oi.package_id == ^item.package_id and
+                    oi.status == "pending" and
+                    oi.id != ^item.id
                 )
                 |> Repo.all()
               else
                 []
               end
 
-            Enum.each(orphaned_extras, &Repo.delete!/1)
-            deleted = Repo.delete!(item)
+            orphaned_extras =
+              [item | package_siblings]
+              |> Enum.filter(& &1.menu_item_id)
+              |> Enum.flat_map(fn i ->
+                OrderItem
+                |> where(
+                  [oi],
+                  oi.order_id == ^i.order_id and
+                    oi.for_menu_item_id == ^i.menu_item_id and
+                    oi.status == "pending"
+                )
+                |> Repo.all()
+              end)
 
-            {deleted, orphaned_extras}
+            Enum.each(orphaned_extras, &Repo.delete!/1)
+            Enum.each(package_siblings, &Repo.delete!/1)
+            deleted_item = Repo.delete!(item)
+
+            [deleted_item | package_siblings]
           end)
 
-        broadcast({:order_updated, deleted.order_id})
+        broadcast({:order_updated, item.order_id})
         {:ok, deleted}
     end
   end

@@ -313,6 +313,81 @@ defmodule CRC.OrdersTest do
       assert {:ok, _} = Orders.remove_item(item.id)
       assert CRC.Repo.get(OrderItem, extra.id)
     end
+
+    test "removes the other pending items from the same package" do
+      cat = insert_category()
+      mi_a = insert_menu_item(cat.id, %{name: "Panqueque Casero", price: "40.00"})
+      mi_b = insert_menu_item(cat.id, %{name: "Latte", price: "55.00"})
+
+      {:ok, package} =
+        Catalog.create_package(%{name: "Café Y Panqueque", price: "80.00"})
+
+      {:ok, _} =
+        Catalog.set_package_items(package, [
+          %{menu_item_id: mi_a.id, quantity: 1},
+          %{menu_item_id: mi_b.id, quantity: 1}
+        ])
+
+      order = insert_order()
+      {:ok, items} = Orders.add_package(%{order_id: order.id, package_id: package.id})
+      item_a = Enum.find(items, &(&1.menu_item_id == mi_a.id))
+      item_b = Enum.find(items, &(&1.menu_item_id == mi_b.id))
+
+      assert {:ok, _} = Orders.remove_item(item_a.id)
+      assert Orders.get_order!(order.id).order_items == []
+      refute CRC.Repo.get(OrderItem, item_b.id)
+    end
+
+    test "does not remove already-sent items from the same package" do
+      cat = insert_category()
+      mi_a = insert_menu_item(cat.id, %{name: "Panqueque Casero", price: "40.00"})
+      mi_b = insert_menu_item(cat.id, %{name: "Latte", price: "55.00"})
+
+      {:ok, package} =
+        Catalog.create_package(%{name: "Café Y Panqueque", price: "80.00"})
+
+      {:ok, _} =
+        Catalog.set_package_items(package, [
+          %{menu_item_id: mi_a.id, quantity: 1},
+          %{menu_item_id: mi_b.id, quantity: 1}
+        ])
+
+      order = insert_order()
+      {:ok, items} = Orders.add_package(%{order_id: order.id, package_id: package.id})
+      item_a = Enum.find(items, &(&1.menu_item_id == mi_a.id))
+      item_b = Enum.find(items, &(&1.menu_item_id == mi_b.id))
+      {:ok, _} = Orders.update_item(item_b, %{status: "sent"})
+
+      assert {:ok, _} = Orders.remove_item(item_a.id)
+      assert CRC.Repo.get(OrderItem, item_b.id)
+    end
+
+    test "leaves items from a different package untouched" do
+      cat = insert_category()
+      mi_a = insert_menu_item(cat.id, %{name: "Panqueque Casero", price: "40.00"})
+      mi_b = insert_menu_item(cat.id, %{name: "Latte", price: "55.00"})
+      mi_c = insert_menu_item(cat.id, %{name: "Mocca", price: "75.00"})
+
+      {:ok, package_1} =
+        Catalog.create_package(%{name: "Café Y Panqueque", price: "80.00"})
+
+      {:ok, _} =
+        Catalog.set_package_items(package_1, [
+          %{menu_item_id: mi_a.id, quantity: 1},
+          %{menu_item_id: mi_b.id, quantity: 1}
+        ])
+
+      {:ok, package_2} = Catalog.create_package(%{name: "Solo Mocca", price: "70.00"})
+      {:ok, _} = Catalog.set_package_items(package_2, [%{menu_item_id: mi_c.id, quantity: 1}])
+
+      order = insert_order()
+      {:ok, items_1} = Orders.add_package(%{order_id: order.id, package_id: package_1.id})
+      {:ok, [item_c]} = Orders.add_package(%{order_id: order.id, package_id: package_2.id})
+      item_a = Enum.find(items_1, &(&1.menu_item_id == mi_a.id))
+
+      assert {:ok, _} = Orders.remove_item(item_a.id)
+      assert CRC.Repo.get(OrderItem, item_c.id)
+    end
   end
 
   # ---------------------------------------------------------------------------

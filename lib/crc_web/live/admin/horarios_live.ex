@@ -135,7 +135,7 @@ defmodule CRCWeb.Admin.HorariosLive do
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <%!-- Sidebar: employee list --%>
-          <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
+          <.panel class="overflow-hidden">
             <div class="px-4 py-3 border-b border-base-200">
               <h2 class="font-semibold text-base-content text-sm uppercase tracking-wide">
                 Personal
@@ -163,12 +163,12 @@ defmodule CRCWeb.Admin.HorariosLive do
                 </li>
               <% end %>
             </ul>
-          </div>
+          </.panel>
 
           <%!-- Main panel --%>
           <div class="lg:col-span-2">
             <%= if @selected_user do %>
-              <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
+              <.panel class="overflow-hidden">
                 <%!-- Header --%>
                 <div class="px-6 py-4 border-b border-base-200 flex flex-wrap items-center justify-between gap-3">
                   <div class="min-w-0">
@@ -285,12 +285,12 @@ defmodule CRCWeb.Admin.HorariosLive do
                     </div>
                   </div>
                 <% end %>
-              </div>
+              </.panel>
             <% else %>
-              <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-12 text-center text-base-content/40">
+              <.panel class="p-12 text-center text-base-content/40">
                 <.icon name="hero-user-group" class="size-14 mx-auto mb-4 opacity-30" />
                 <p>Selecciona un empleado para ver o editar su horario.</p>
-              </div>
+              </.panel>
             <% end %>
           </div>
         </div>

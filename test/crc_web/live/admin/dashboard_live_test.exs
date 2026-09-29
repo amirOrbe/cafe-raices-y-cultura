@@ -89,6 +89,68 @@ defmodule CRCWeb.Admin.DashboardLiveTest do
     end
   end
 
+  describe "tabs" do
+    test "defaults to the dashboard tab (operational widgets, no nav grid)", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, _lv, html} = live(conn, ~p"/admin")
+      assert html =~ "Órdenes activas"
+      refute html =~ "Carta y Menú"
+    end
+
+    test "?tab=gestion shows the nav grid, not the operational widgets", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, _lv, html} = live(conn, ~p"/admin?tab=gestion")
+      assert html =~ "Carta y Menú"
+      refute html =~ "Órdenes activas"
+    end
+
+    test "clicking the Gestión tab patches to ?tab=gestion without remounting", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin")
+
+      html =
+        lv
+        |> element("a", "Gestión")
+        |> render_click()
+
+      assert html =~ "Carta y Menú"
+      assert_patched(lv, ~p"/admin?tab=gestion")
+    end
+  end
+
+  describe "search_nav event (Gestión search box)" do
+    test "filters the nav grid down to matching items only", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin?tab=gestion")
+
+      html = render_change(lv, "search_nav", %{"q" => "inventario"})
+
+      assert html =~ "Inventario (stock)"
+      refute html =~ "Carta y Menú"
+      refute html =~ "Platillos"
+    end
+
+    test "shows an empty state when nothing matches", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin?tab=gestion")
+
+      html = render_change(lv, "search_nav", %{"q" => "zzzzz"})
+
+      assert html =~ "Sin resultados"
+      refute html =~ "Carta y Menú"
+    end
+
+    test "clearing the query restores the full grid", %{conn: conn} do
+      {conn, _admin} = admin_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin?tab=gestion")
+
+      render_change(lv, "search_nav", %{"q" => "inventario"})
+      html = render_change(lv, "search_nav", %{"q" => ""})
+
+      assert html =~ "Carta y Menú"
+    end
+  end
+
   describe "PubSub events" do
     test "user_changed PubSub event triggers stats reload", %{conn: conn} do
       {conn, _admin} = admin_conn(conn)

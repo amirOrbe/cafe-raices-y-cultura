@@ -236,19 +236,19 @@ defmodule CRCWeb.Admin.ClientesLive do
       </div>
 
       <%= if @customers == [] do %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-16 text-center">
+        <.panel class="py-16 text-center">
           <.icon name="hero-identification" class="size-10 text-base-content/20 mx-auto mb-3" />
           <p class="text-base-content/50 text-sm">
             {if @query != "",
               do: "Ningún cliente coincide con la búsqueda.",
               else: "No hay clientes registrados."}
           </p>
-        </div>
+        </.panel>
       <% else %>
         <%!-- Mobile card list --%>
         <div class="md:hidden flex flex-col gap-2">
           <%= for c <- @customers do %>
-            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 flex items-center gap-3">
+            <.panel class="p-3 flex items-center gap-3">
               <.link
                 navigate={~p"/admin/clientes/#{c.id}"}
                 class="flex items-center gap-3 flex-1 min-w-0"
@@ -292,23 +292,21 @@ defmodule CRCWeb.Admin.ClientesLive do
                   />
                 </button>
               </div>
-            </div>
+            </.panel>
           <% end %>
         </div>
 
         <%!-- Desktop table --%>
-        <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+        <.panel class="hidden md:block overflow-hidden">
           <div class="overflow-x-auto">
             <table class="table table-zebra table-fixed w-full">
-              <thead>
-                <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                  <th class="w-[30%]">Nombre</th>
-                  <th class="w-[18%]">Teléfono</th>
-                  <th class="w-[26%]">Correo</th>
-                  <th class="w-[14%]">Cumpleaños</th>
-                  <th class="w-[12%] text-right">Acciones</th>
-                </tr>
-              </thead>
+              <.admin_table_head>
+                <:col class="w-[30%]">Nombre</:col>
+                <:col class="w-[18%]">Teléfono</:col>
+                <:col class="w-[26%]">Correo</:col>
+                <:col class="w-[14%]">Cumpleaños</:col>
+                <:col class="w-[12%] text-right">Acciones</:col>
+              </.admin_table_head>
               <tbody>
                 <%= for c <- @customers do %>
                   <tr class="hover:bg-base-200/50 transition-colors">
@@ -362,7 +360,7 @@ defmodule CRCWeb.Admin.ClientesLive do
               </tbody>
             </table>
           </div>
-        </div>
+        </.panel>
       <% end %>
     </div>
 
@@ -385,93 +383,67 @@ defmodule CRCWeb.Admin.ClientesLive do
     assigns = assign(assigns, :title, title)
 
     ~H"""
-    <div
-      id="customer-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
-      phx-window-keydown="close_modal"
-      phx-key="Escape"
-    >
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" phx-click="close_modal"></div>
+    <.admin_modal id="customer-modal" size="md" on_close="close_modal">
+      <:title>{@title}</:title>
+      <.form
+        id="customer-form"
+        for={@form}
+        phx-change="validate"
+        phx-submit="save_customer"
+        class="space-y-4"
+      >
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <.input field={@form[:name]} type="text" label="Nombre" placeholder="Ej. Ana López" />
+          <.input field={@form[:phone]} type="text" label="Teléfono" placeholder="55 1234 5678" />
+        </div>
+        <.input
+          field={@form[:email]}
+          type="email"
+          label="Correo (opcional)"
+          placeholder="correo@ejemplo.com"
+        />
+        <.input field={@form[:birthday]} type="date" label="Fecha de cumpleaños (opcional)" />
+        <.input
+          field={@form[:notes]}
+          type="textarea"
+          label="Notas (opcional)"
+          placeholder="Preferencias, alergias, lo que suele pedir…"
+        />
 
-      <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md overflow-y-auto max-h-[90vh]">
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
-          <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
-            <.icon name="hero-x-mark" class="size-5" />
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            {if @modal == :new, do: "Registrar cliente", else: "Guardar cambios"}
           </button>
         </div>
+      </.form>
 
-        <div class="px-6 py-5">
-          <.form
-            id="customer-form"
-            for={@form}
-            phx-change="validate"
-            phx-submit="save_customer"
-            class="space-y-4"
-          >
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <.input field={@form[:name]} type="text" label="Nombre" placeholder="Ej. Ana López" />
-              <.input
-                field={@form[:phone]}
-                type="text"
-                label="Teléfono"
-                placeholder="55 1234 5678"
-              />
-            </div>
-            <.input
-              field={@form[:email]}
-              type="email"
-              label="Correo (opcional)"
-              placeholder="correo@ejemplo.com"
-            />
-            <.input field={@form[:birthday]} type="date" label="Fecha de cumpleaños (opcional)" />
-            <.input
-              field={@form[:notes]}
-              type="textarea"
-              label="Notas (opcional)"
-              placeholder="Preferencias, alergias, lo que suele pedir…"
-            />
-
-            <div class="flex justify-end gap-3 pt-2">
-              <button type="button" class="btn btn-ghost" phx-click="close_modal">Cancelar</button>
-              <button type="submit" class="btn btn-primary">
-                {if @modal == :new, do: "Registrar cliente", else: "Guardar cambios"}
+      <%= if @modal != :new do %>
+        <div class="border-t border-base-200 mt-4 pt-4">
+          <%= if @confirm_delete do %>
+            <p class="text-xs text-error mb-3 font-medium">
+              ¿Eliminar este cliente permanentemente? Solo es posible si no tiene comandas ni visitas.
+            </p>
+            <div class="flex gap-2">
+              <button type="button" class="btn btn-error btn-sm flex-1" phx-click="delete_customer">
+                Sí, eliminar
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm flex-1" phx-click="close_modal">
+                Cancelar
               </button>
             </div>
-          </.form>
-
-          <%= if @modal != :new do %>
-            <div class="border-t border-base-200 mt-4 pt-4">
-              <%= if @confirm_delete do %>
-                <p class="text-xs text-error mb-3 font-medium">
-                  ¿Eliminar este cliente permanentemente? Solo es posible si no tiene comandas ni visitas.
-                </p>
-                <div class="flex gap-2">
-                  <button
-                    type="button"
-                    class="btn btn-error btn-sm flex-1"
-                    phx-click="delete_customer"
-                  >
-                    Sí, eliminar
-                  </button>
-                  <button type="button" class="btn btn-ghost btn-sm flex-1" phx-click="close_modal">
-                    Cancelar
-                  </button>
-                </div>
-              <% else %>
-                <button
-                  type="button"
-                  class="btn btn-ghost btn-sm text-error gap-1.5"
-                  phx-click="confirm_delete"
-                >
-                  <.icon name="hero-trash" class="size-4" /> Eliminar cliente
-                </button>
-              <% end %>
-            </div>
+          <% else %>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm text-error gap-1.5"
+              phx-click="confirm_delete"
+            >
+              <.icon name="hero-trash" class="size-4" /> Eliminar cliente
+            </button>
           <% end %>
         </div>
-      </div>
-    </div>
+      <% end %>
+    </.admin_modal>
     """
   end
 
@@ -481,11 +453,9 @@ defmodule CRCWeb.Admin.ClientesLive do
 
   defp status_badge(assigns) do
     ~H"""
-    <%= if @active do %>
-      <span class="badge badge-xs badge-success shrink-0">Activo</span>
-    <% else %>
-      <span class="badge badge-xs badge-error shrink-0">Inactivo</span>
-    <% end %>
+    <.admin_badge variant={if @active, do: :success, else: :error} size="xs" class="shrink-0">
+      {if @active, do: "Activo", else: "Inactivo"}
+    </.admin_badge>
     """
   end
 

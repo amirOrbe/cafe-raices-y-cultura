@@ -184,60 +184,21 @@ defmodule CRCWeb.Admin.RendimientoLive do
         </details>
 
         <%!-- Period filter --%>
-        <div class="flex flex-wrap items-end gap-4">
-          <div class="flex gap-2 flex-wrap">
-            <%= for {label, value} <- [{"Hoy", "today"}, {"Esta semana", "week"}, {"Este mes", "month"}, {"Total", "all"}] do %>
-              <button
-                class={[
-                  "btn btn-sm",
-                  if(is_atom(@period) and Atom.to_string(@period) == value,
-                    do: "btn-primary",
-                    else: "btn-ghost border border-base-300"
-                  )
-                ]}
-                phx-click="set_period"
-                phx-value-period={value}
-              >
-                {label}
-              </button>
-            <% end %>
-          </div>
-
-          <%!-- Custom date range --%>
-          <form phx-change="set_date_range" class="flex flex-col gap-1 w-full sm:w-auto">
-            <span class="text-xs text-base-content/50">Rango personalizado</span>
-            <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
-              <input
-                type="date"
-                name="date_from"
-                value={@date_from}
-                class="input input-sm input-bordered w-full sm:w-36"
-              />
-              <span class="text-base-content/40 text-xs text-center sm:text-left">—</span>
-              <input
-                type="date"
-                name="date_to"
-                value={@date_to}
-                class="input input-sm input-bordered w-full sm:w-36"
-              />
-            </div>
-          </form>
-        </div>
+        <.period_filter period={@period} date_from={@date_from} date_to={@date_to} />
 
         <%!-- Active range indicator --%>
         <%= if is_tuple(@period) do %>
-          <div class="alert alert-info alert-sm py-2">
+          <div class="alert alert-info py-2">
             <.icon name="hero-calendar" class="size-4" />
             <span class="text-sm">
-              Rango personalizado activo: {elem(@period, 1) |> Date.to_iso8601()} — {elem(@period, 2)
-              |> Date.to_iso8601()}
+              Rango: {elem(@period, 1) |> Date.to_iso8601()} — {elem(@period, 2) |> Date.to_iso8601()}
             </span>
           </div>
         <% end %>
 
         <%!-- No data --%>
         <%= if @station_stats == [] and @waiter_stats == [] do %>
-          <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-20 text-center">
+          <.panel class="py-20 text-center">
             <.icon name="hero-chart-bar" class="size-12 text-base-content/20 mx-auto mb-3" />
             <p class="text-base-content/50 text-sm">
               No hay datos de rendimiento para este período.
@@ -245,7 +206,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
             <p class="text-base-content/30 text-xs mt-1">
               Los datos aparecen una vez que se cierran comandas con empleados identificados.
             </p>
-          </div>
+          </.panel>
         <% end %>
 
         <%!-- Rankings --%>
@@ -258,7 +219,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <%!-- Revenue ranking --%>
               <%= if @revenue_ranking != [] do %>
-                <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 space-y-3">
+                <.panel class="p-5 space-y-3">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="text-base">💰</span>
                     <h3 class="font-semibold text-sm text-base-content">Mayor venta</h3>
@@ -298,12 +259,12 @@ defmodule CRCWeb.Admin.RendimientoLive do
                       </div>
                     <% end %>
                   </div>
-                </div>
+                </.panel>
               <% end %>
 
               <%!-- Speed ranking --%>
               <%= if @speed_ranking != [] do %>
-                <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 space-y-3">
+                <.panel class="p-5 space-y-3">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="text-base">⚡</span>
                     <h3 class="font-semibold text-sm text-base-content">Mayor velocidad</h3>
@@ -346,7 +307,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
                       </div>
                     <% end %>
                   </div>
-                </div>
+                </.panel>
               <% end %>
             </div>
           </div>
@@ -470,40 +431,39 @@ defmodule CRCWeb.Admin.RendimientoLive do
     <%!-- Recognition modal --%>
     <%= if @recognition_modal do %>
       <% modal = @recognition_modal %>
-      <div class="modal modal-open">
-        <div class="modal-box max-w-sm">
-          <div class="flex items-center gap-3 mb-4">
+      <.admin_modal id="recognition-modal" size="sm" on_close="close_recognition_modal">
+        <:title>
+          <span class="inline-flex items-center gap-3 align-middle">
             <span class="text-3xl">{recognition_emoji(modal.kind)}</span>
-            <div>
-              <h3 class="font-bold text-base">{recognition_label(modal.kind)}</h3>
-              <p class="text-sm text-base-content/60">para {modal.user.name}</p>
-            </div>
-          </div>
+            <span class="inline-flex flex-col">
+              <span class="font-bold text-base leading-tight">{recognition_label(modal.kind)}</span>
+              <span class="text-sm text-base-content/60 font-normal">para {modal.user.name}</span>
+            </span>
+          </span>
+        </:title>
 
-          <div class="form-control mb-4">
-            <label class="label">
-              <span class="label-text text-xs">Nota personal (opcional)</span>
-            </label>
-            <textarea
-              class="textarea textarea-bordered textarea-sm resize-none"
-              rows="3"
-              placeholder="Ej: Excelente actitud hoy, los clientes quedaron muy contentos…"
-              phx-change="update_recognition_note"
-              name="note"
-            >{@recognition_note}</textarea>
-          </div>
-
-          <div class="modal-action">
-            <button class="btn btn-ghost btn-sm" phx-click="close_recognition_modal">
-              Cancelar
-            </button>
-            <button class="btn btn-primary btn-sm gap-1" phx-click="confirm_recognition">
-              <.icon name="hero-check" class="size-4" /> Confirmar
-            </button>
-          </div>
+        <div class="form-control mb-4">
+          <label class="label">
+            <span class="label-text text-xs">Nota personal (opcional)</span>
+          </label>
+          <textarea
+            class="textarea textarea-bordered textarea-sm resize-none"
+            rows="3"
+            placeholder="Ej: Excelente actitud hoy, los clientes quedaron muy contentos…"
+            phx-change="update_recognition_note"
+            name="note"
+          >{@recognition_note}</textarea>
         </div>
-        <div class="modal-backdrop" phx-click="close_recognition_modal"></div>
-      </div>
+
+        <div class="flex justify-end gap-2">
+          <button class="btn btn-ghost btn-sm" phx-click="close_recognition_modal">
+            Cancelar
+          </button>
+          <button class="btn btn-primary btn-sm gap-1" phx-click="confirm_recognition">
+            <.icon name="hero-check" class="size-4" /> Confirmar
+          </button>
+        </div>
+      </.admin_modal>
     <% end %>
     """
   end

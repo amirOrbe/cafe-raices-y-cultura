@@ -195,7 +195,11 @@ defmodule CRCWeb.Admin.LealtadLive do
         <% else %>
           <div class="md:hidden flex flex-col gap-2">
             <%= for t <- @tiers do %>
-              <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3">
+              <div
+                class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-3 cursor-pointer"
+                phx-click="edit_tier"
+                phx-value-id={t.id}
+              >
                 <div class="flex items-start gap-3">
                   <div class="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-primary/10 shrink-0">
                     <span class="font-bold text-primary text-base leading-none">
@@ -237,7 +241,11 @@ defmodule CRCWeb.Admin.LealtadLive do
                 </thead>
                 <tbody>
                   <%= for t <- @tiers do %>
-                    <tr class="hover:bg-base-200/50 transition-colors">
+                    <tr
+                      class="hover:bg-base-200/50 transition-colors cursor-pointer"
+                      phx-click="edit_tier"
+                      phx-value-id={t.id}
+                    >
                       <td class="text-center">
                         <span class="badge badge-primary badge-sm">{t.visits_required}</span>
                       </td>

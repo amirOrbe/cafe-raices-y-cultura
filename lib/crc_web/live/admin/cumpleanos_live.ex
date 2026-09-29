@@ -119,7 +119,7 @@ defmodule CRCWeb.Admin.CumpleanosLive do
 
       <%!-- Month groups --%>
       <%= if @month_groups == [] and @today_bdays == [] and @no_bdays == [] do %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-16 text-center">
+        <.panel class="py-16 text-center">
           <.icon name="hero-cake" class="size-12 text-base-content/20 mx-auto mb-3" />
           <%= if @tab == :team do %>
             <p class="text-base-content/50 text-sm">
@@ -136,11 +136,11 @@ defmodule CRCWeb.Admin.CumpleanosLive do
               Agrégalas al registrar o editar un <a href="/admin/clientes" class="link">cliente</a>.
             </p>
           <% end %>
-        </div>
+        </.panel>
       <% end %>
 
       <%= for group <- @month_groups do %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+        <.panel class="overflow-hidden">
           <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <.icon name="hero-calendar-days" class="size-4 text-base-content/40" />
@@ -153,12 +153,12 @@ defmodule CRCWeb.Admin.CumpleanosLive do
               <.person_row person={person} today={@today} tab={@tab} />
             <% end %>
           </div>
-        </div>
+        </.panel>
       <% end %>
 
       <%!-- No birthday set --%>
       <%= if @no_bdays != [] do %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+        <.panel class="overflow-hidden">
           <div class="px-5 py-3 border-b border-base-200 flex items-center gap-2">
             <.icon name="hero-question-mark-circle" class="size-4 text-base-content/30" />
             <h3 class="font-semibold text-sm text-base-content/40">Sin fecha registrada</h3>
@@ -168,7 +168,7 @@ defmodule CRCWeb.Admin.CumpleanosLive do
               <.person_row person={person} today={@today} tab={@tab} />
             <% end %>
           </div>
-        </div>
+        </.panel>
       <% end %>
     </div>
     """

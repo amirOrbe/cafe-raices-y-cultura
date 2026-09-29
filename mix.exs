@@ -95,7 +95,8 @@ defmodule CRC.MixProject do
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
       {:bcrypt_elixir, "~> 3.0"},
-      {:gen_smtp, "~> 1.2"}
+      {:gen_smtp, "~> 1.2"},
+      {:nimble_csv, "~> 1.2"}
     ]
   end
 

@@ -120,7 +120,7 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
           </div>
         <% end %>
 
-        <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
+        <.panel class="overflow-hidden">
           <%!-- View mode --%>
           <%= if !@editing do %>
             <%= if @rows == [] do %>
@@ -145,7 +145,7 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
                         <% is_nil(row) -> %>
                           <span class="text-base-content/30">Sin configurar</span>
                         <% row.is_closed -> %>
-                          <span class="badge badge-ghost badge-sm">Cerrado</span>
+                          <.admin_badge variant={:ghost}>Cerrado</.admin_badge>
                         <% true -> %>
                           <span class="flex items-center gap-2">
                             <.icon name="hero-clock" class="size-4 text-primary/60" />
@@ -223,7 +223,7 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
               </div>
             </div>
           <% end %>
-        </div>
+        </.panel>
 
         <%!-- Info card --%>
         <div class="mt-6 rounded-xl border border-base-300 bg-base-100 p-4 flex gap-3">

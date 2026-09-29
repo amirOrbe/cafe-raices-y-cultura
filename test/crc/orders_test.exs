@@ -957,6 +957,22 @@ defmodule CRC.OrdersTest do
       refute order.id in ids
     end
 
+    test "returns orders from this year with :year" do
+      recent = DateTime.utc_now() |> DateTime.add(-60, :day) |> DateTime.truncate(:second)
+      order = insert_closed_order_at(recent)
+      ids = Orders.list_closed_orders(:year) |> Enum.map(& &1.id)
+      assert order.id in ids
+    end
+
+    test "excludes orders from last year with :year" do
+      last_year =
+        DateTime.utc_now() |> DateTime.add(-366, :day) |> DateTime.truncate(:second)
+
+      order = insert_closed_order_at(last_year)
+      ids = Orders.list_closed_orders(:year) |> Enum.map(& &1.id)
+      refute order.id in ids
+    end
+
     test "filters by date range {:range, date_from, date_to}" do
       target_dt = ~U[2026-03-10 12:00:00Z]
       order = insert_closed_order_at(target_dt)

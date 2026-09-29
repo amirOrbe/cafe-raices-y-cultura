@@ -265,7 +265,11 @@ defmodule CRCWeb.Admin.ProduccionLive do
             <%!-- Mobile cards --%>
             <div class="md:hidden space-y-3">
               <%= for recipe <- @recipes do %>
-                <div class={"bg-base-100 rounded-2xl border shadow-sm p-4 space-y-3 #{if recipe.active, do: "border-base-300", else: "border-base-300 opacity-60"}"}>
+                <div
+                  class={"bg-base-100 rounded-2xl border shadow-sm p-4 space-y-3 cursor-pointer #{if recipe.active, do: "border-base-300", else: "border-base-300 opacity-60"}"}
+                  phx-click="edit_recipe"
+                  phx-value-id={recipe.id}
+                >
                   <div class="flex items-start justify-between gap-2">
                     <div>
                       <p class="font-semibold text-base-content">{recipe.name}</p>
@@ -318,7 +322,11 @@ defmodule CRCWeb.Admin.ProduccionLive do
                 </thead>
                 <tbody class="divide-y divide-base-200">
                   <%= for recipe <- @recipes do %>
-                    <tr class={"#{unless recipe.active, do: "opacity-50"}"}>
+                    <tr
+                      class={"hover:bg-base-200/50 transition-colors cursor-pointer #{unless recipe.active, do: "opacity-50"}"}
+                      phx-click="edit_recipe"
+                      phx-value-id={recipe.id}
+                    >
                       <td class="font-semibold text-sm">{recipe.name}</td>
                       <td class="text-sm text-base-content/70">
                         {format_qty(recipe.yield_quantity)} {recipe.yield_unit}

@@ -313,6 +313,14 @@ topbar.config({barColors: {0: "#8b5e3c"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+// Smooth-scrolls a target into view — used by <.step_link> in
+// admin_components.ex to make a modal's "step flow" breadcrumb actually
+// jump to the section it names, instead of being a decorative progress
+// indicator that looks clickable but isn't.
+window.addEventListener("phx:scroll-to", ({detail}) => {
+  document.getElementById(detail.id)?.scrollIntoView({behavior: "smooth", block: "start"})
+})
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

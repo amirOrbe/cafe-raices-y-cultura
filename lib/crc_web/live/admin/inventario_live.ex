@@ -209,7 +209,7 @@ defmodule CRCWeb.Admin.InventarioLive do
 
         <%!-- Product list --%>
         <% visible = @products |> visible_products(@filter) |> search_filter(@search) %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+        <.panel class="overflow-hidden">
           <%= if visible == [] do %>
             <div class="py-20 text-center text-base-content/40 text-sm">
               No hay insumos que mostrar en este filtro.
@@ -261,15 +261,13 @@ defmodule CRCWeb.Admin.InventarioLive do
             <%!-- Desktop table --%>
             <div class="hidden md:block overflow-x-auto">
               <table class="table table-fixed w-full">
-                <thead>
-                  <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
-                    <th class="w-[34%]">Insumo</th>
-                    <th class="w-[17%]">Stock actual</th>
-                    <th class="w-[14%]">Mínimo</th>
-                    <th class="w-[13%]">Estado</th>
-                    <th class="w-[22%] text-right pr-5">Acción</th>
-                  </tr>
-                </thead>
+                <.admin_table_head>
+                  <:col class="w-[34%]">Insumo</:col>
+                  <:col class="w-[17%]">Stock actual</:col>
+                  <:col class="w-[14%]">Mínimo</:col>
+                  <:col class="w-[13%]">Estado</:col>
+                  <:col class="w-[22%] text-right pr-5">Acción</:col>
+                </.admin_table_head>
                 <tbody>
                   <%= for p <- visible do %>
                     <tr class="hover:bg-base-200/40 transition-colors border-b border-base-200 last:border-0">
@@ -329,7 +327,7 @@ defmodule CRCWeb.Admin.InventarioLive do
               </table>
             </div>
           <% end %>
-        </div>
+        </.panel>
       </div>
     </div>
 

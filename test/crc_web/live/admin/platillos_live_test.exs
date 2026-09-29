@@ -319,6 +319,53 @@ defmodule CRCWeb.Admin.PlatillosLiveTest do
       html = render_click(lv, "edit_item", %{"id" => to_string(item.id)})
       assert html =~ prod.name
     end
+
+    test "clicking the desktop table row itself opens the edit modal, not just the pencil button",
+         %{conn: conn} do
+      cat = insert_category()
+      item = insert_menu_item(cat.id, %{name: "Fila Clickeable"})
+      {conn, _} = admin_session(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin/platillos")
+
+      html =
+        lv
+        |> element("tr[phx-value-id='#{item.id}']")
+        |> render_click()
+
+      assert html =~ "Editar platillo"
+      assert html =~ "Fila Clickeable"
+    end
+
+    test "clicking the mobile card row itself opens the edit modal too", %{conn: conn} do
+      cat = insert_category()
+      item = insert_menu_item(cat.id, %{name: "Tarjeta Clickeable"})
+      {conn, _} = admin_session(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin/platillos")
+
+      html =
+        lv
+        |> element("div.cursor-pointer[phx-value-id='#{item.id}']")
+        |> render_click()
+
+      assert html =~ "Editar platillo"
+      assert html =~ "Tarjeta Clickeable"
+    end
+
+    test "clicking the toggle_available button inside the row only toggles availability, without also opening the edit modal",
+         %{conn: conn} do
+      cat = insert_category()
+      item = insert_menu_item(cat.id, %{name: "No Debe Abrir Modal", available: true})
+      {conn, _} = admin_session(conn)
+      {:ok, lv, _html} = live(conn, ~p"/admin/platillos")
+
+      html =
+        lv
+        |> element("table button[phx-click='toggle_available'][phx-value-id='#{item.id}']")
+        |> render_click()
+
+      refute html =~ "Editar platillo"
+      assert html =~ "ocultado del menú"
+    end
   end
 
   # ---------------------------------------------------------------------------

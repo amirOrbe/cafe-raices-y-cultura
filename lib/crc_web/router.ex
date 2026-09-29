@@ -146,6 +146,12 @@ defmodule CRCWeb.Router do
       live "/configuracion", ConfiguracionLive
       live "/produccion", ProduccionLive
     end
+
+    # Plain controller routes — not LiveViews, so they live outside
+    # live_session :admin, but share the same auth pipeline.
+    get "/reportes/finanzas.csv", ReportController, :finanzas_csv
+    get "/reportes/desperdicio.csv", ReportController, :desperdicio_csv
+    get "/reportes/ventas.csv", ReportController, :ventas_csv
   end
 
   # ---------------------------------------------------------------------------

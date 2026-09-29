@@ -5,12 +5,11 @@ defmodule CRCWeb.Admin.VentasLive do
 
   alias CRC.Orders
 
-  @periods [
-    {"Hoy", :today},
-    {"Esta semana", :week},
-    {"Este mes", :month},
-    {"Total", :all}
-  ]
+  # Comandas cerradas can accumulate into the thousands once "Total" is
+  # selected — rendering every row (especially as mobile cards) makes the
+  # page effectively unusable. Cap what's *displayed*; the summary totals
+  # below are always computed from the full period, never the truncated list.
+  @max_orders_shown 200
 
   @impl true
   def mount(_params, _session, socket) do
@@ -22,9 +21,9 @@ defmodule CRCWeb.Admin.VentasLive do
       socket
       |> assign(:page_title, "Ventas · Admin")
       |> assign(:period, :all)
-      |> assign(:periods, @periods)
       |> assign(:date_from, "")
       |> assign(:date_to, "")
+      |> assign(:max_orders_shown, @max_orders_shown)
       |> load_sales_data(:all)
 
     {:ok, socket}
@@ -92,76 +91,17 @@ defmodule CRCWeb.Admin.VentasLive do
           <.link navigate={~p"/admin/ventas/manual"} class="btn btn-outline btn-sm gap-2 shrink-0">
             <.icon name="hero-pencil-square" class="size-4" /> Venta manual
           </.link>
-
-          <%!-- Period tabs --%>
-          <div class="flex gap-1 bg-base-200 rounded-xl p-1 self-start sm:self-auto">
-            <%= for {label, value} <- @periods do %>
-              <button
-                class={[
-                  "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-                  if(@period == value,
-                    do: "bg-base-100 text-base-content shadow-sm",
-                    else: "text-base-content/60 hover:text-base-content"
-                  )
-                ]}
-                phx-click="set_period"
-                phx-value-period={value}
-              >
-                {label}
-              </button>
-            <% end %>
-          </div>
         </div>
 
-        <%!-- Custom date range --%>
-        <div class="flex flex-col gap-2">
-          <div class="flex items-center gap-1.5 text-xs text-base-content/50 font-medium uppercase tracking-wide">
-            <.icon name="hero-calendar" class="size-4" /> Rango personalizado
+        <%!-- Period filter --%>
+        <.period_filter period={@period} date_from={@date_from} date_to={@date_to} />
+
+        <%= if @period == nil and @date_from != "" and @date_to != "" do %>
+          <div class="alert alert-info py-2">
+            <.icon name="hero-calendar" class="size-4" />
+            <span class="text-sm">Rango: {@date_from} — {@date_to}</span>
           </div>
-          <form phx-change="set_date_range" class="flex flex-wrap items-end gap-3">
-            <div class="flex flex-col gap-1">
-              <label class="text-xs text-base-content/50">Desde</label>
-              <input
-                type="date"
-                name="date_from"
-                value={@date_from}
-                max={Date.utc_today() |> Date.to_iso8601()}
-                class={[
-                  "input input-bordered input-sm w-40",
-                  if(@date_from != "", do: "input-primary border-primary", else: "")
-                ]}
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-xs text-base-content/50">Hasta</label>
-              <input
-                type="date"
-                name="date_to"
-                value={@date_to}
-                max={Date.utc_today() |> Date.to_iso8601()}
-                class={[
-                  "input input-bordered input-sm w-40",
-                  if(@date_to != "", do: "input-primary border-primary", else: "")
-                ]}
-              />
-            </div>
-            <%= if @date_from != "" or @date_to != "" do %>
-              <button
-                class="btn btn-xs btn-ghost text-base-content/50 self-end"
-                phx-click="set_period"
-                phx-value-period="today"
-                title="Limpiar rango"
-              >
-                <.icon name="hero-x-mark" class="size-3.5" /> Limpiar
-              </button>
-            <% end %>
-          </form>
-          <%= if @period == nil and @date_from != "" and @date_to != "" do %>
-            <span class="badge badge-primary badge-sm self-start">
-              Rango personalizado activo
-            </span>
-          <% end %>
-        </div>
+        <% end %>
       </div>
 
       <%!-- Contextual help --%>
@@ -209,29 +149,26 @@ defmodule CRCWeb.Admin.VentasLive do
           label="Total ingresos"
           value={"$#{format_price(@summary.total_revenue)}"}
           icon="hero-banknotes"
-          color="text-success"
-          bg="bg-success/10"
+          variant={:success}
         />
         <.stat_card
           label="Comandas cerradas"
           value={"#{@summary.order_count}"}
           icon="hero-clipboard-document-check"
-          color="text-primary"
-          bg="bg-primary/10"
+          variant={:primary}
         />
         <.stat_card
           label="Ticket promedio"
           value={"$#{format_price(@summary.avg_ticket)}"}
           icon="hero-calculator"
-          color="text-accent"
-          bg="bg-accent/10"
+          variant={:accent}
         />
       </div>
 
       <%!-- Payment breakdown + top items --%>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <%!-- Payment method breakdown --%>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-6 space-y-4">
+        <.panel class="p-6 space-y-4">
           <h2 class="font-semibold text-base-content">Por método de pago</h2>
           <%= if map_size(@summary.by_method) == 0 do %>
             <p class="text-base-content/40 text-sm py-6 text-center">
@@ -268,10 +205,10 @@ defmodule CRCWeb.Admin.VentasLive do
               </div>
             <% end %>
           <% end %>
-        </div>
+        </.panel>
 
         <%!-- Top 10 platillos --%>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
+        <.panel class="overflow-hidden">
           <div class="px-6 py-4 border-b border-base-300">
             <h2 class="font-semibold text-base-content">Top platillos más vendidos</h2>
           </div>
@@ -300,12 +237,12 @@ defmodule CRCWeb.Admin.VentasLive do
               <% end %>
             </div>
           <% end %>
-        </div>
+        </.panel>
       </div>
 
       <%!-- Timing stats diagram --%>
       <%= if map_size(@timing_stats) > 0 do %>
-        <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-6 space-y-5">
+        <.panel class="p-6 space-y-5">
           <div class="flex items-center gap-2">
             <.icon name="hero-clock" class="size-5 text-primary" />
             <h2 class="font-semibold text-base-content">
@@ -337,67 +274,106 @@ defmodule CRCWeb.Admin.VentasLive do
           <p class="text-xs text-base-content/40">
             Basado en comandas cerradas. La barra roja indica promedio mayor a 15 min.
           </p>
-        </div>
+        </.panel>
       <% end %>
 
-      <%!-- Closed orders table --%>
-      <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
+      <%!-- Closed orders --%>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
           <h2 class="font-semibold text-base-content">Comandas cerradas</h2>
           <span class="badge badge-ghost badge-sm">{length(@orders)}</span>
         </div>
+
         <%= if @orders == [] do %>
-          <p class="text-base-content/40 text-sm py-10 text-center">
-            No hay comandas cerradas en este período.
-          </p>
+          <.panel class="py-10 text-center">
+            <p class="text-base-content/40 text-sm">
+              No hay comandas cerradas en este período.
+            </p>
+          </.panel>
         <% else %>
-          <div class="overflow-x-auto">
-            <table class="table table-sm w-full">
-              <thead>
-                <tr class="text-base-content/50 text-xs uppercase tracking-wide">
-                  <th>Cliente</th>
-                  <th class="text-right">Total</th>
-                  <th>Método</th>
-                  <th>Fecha</th>
-                </tr>
-              </thead>
-              <tbody>
-                <%= for order <- @orders do %>
-                  <tr class="hover:bg-base-50 border-b border-base-200">
-                    <td class="text-sm font-medium text-base-content py-3 max-w-[150px]">
-                      <p class="truncate">{order.customer_name}</p>
-                      <%= if order.manual_entry do %>
-                        <span class="badge badge-xs badge-ghost mt-0.5">📝 Manual</span>
-                      <% end %>
+          <%= if length(@orders) > @max_orders_shown do %>
+            <p class="text-xs text-base-content/40">
+              Mostrando las {@max_orders_shown} comandas más recientes de {length(@orders)}. Usa un rango de fechas más corto para ver comandas específicas.
+            </p>
+          <% end %>
+
+          <%!-- Mobile: cards --%>
+          <div class="md:hidden space-y-2">
+            <.panel :for={order <- @orders_shown} class="p-4 space-y-2">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-base-content truncate">
+                    {order.customer_name}
+                  </p>
+                  <%= if order.manual_entry do %>
+                    <span class="badge badge-xs badge-ghost mt-0.5">📝 Manual</span>
+                  <% end %>
+                </div>
+                <p class="text-sm font-bold text-primary shrink-0">
+                  ${format_price(order.total || Decimal.new(0))}
+                </p>
+              </div>
+              <div class="flex items-center justify-between gap-2 text-xs text-base-content/50">
+                <.payment_badge method={order.payment_method} />
+                <span>{format_datetime(order.closed_at || order.inserted_at)}</span>
+              </div>
+            </.panel>
+            <.panel class="p-4 flex items-center justify-between">
+              <p class="text-sm font-semibold text-base-content">
+                {length(@orders)} comandas · Ticket prom. ${format_price(@summary.avg_ticket)}
+              </p>
+              <p class="text-sm font-bold text-primary">${format_price(@summary.total_revenue)}</p>
+            </.panel>
+          </div>
+
+          <%!-- Desktop: table --%>
+          <.panel class="hidden md:block overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="table table-sm w-full">
+                <.admin_table_head>
+                  <:col>Cliente</:col>
+                  <:col class="text-right">Total</:col>
+                  <:col>Método</:col>
+                  <:col>Fecha</:col>
+                </.admin_table_head>
+                <tbody>
+                  <%= for order <- @orders_shown do %>
+                    <tr class="hover:bg-base-50 border-b border-base-200">
+                      <td class="text-sm font-medium text-base-content py-3 max-w-[150px]">
+                        <p class="truncate">{order.customer_name}</p>
+                        <%= if order.manual_entry do %>
+                          <span class="badge badge-xs badge-ghost mt-0.5">📝 Manual</span>
+                        <% end %>
+                      </td>
+                      <td class="text-sm font-bold text-primary text-right">
+                        ${format_price(order.total || Decimal.new(0))}
+                      </td>
+                      <td>
+                        <.payment_badge method={order.payment_method} />
+                      </td>
+                      <td class="text-xs text-base-content/50">
+                        {format_datetime(order.closed_at || order.inserted_at)}
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+                <%!-- Totals footer --%>
+                <tfoot>
+                  <tr class="border-t-2 border-base-300 bg-base-200/50">
+                    <td class="text-sm font-semibold text-base-content py-3 px-4">
+                      {length(@orders)} comandas
                     </td>
-                    <td class="text-sm font-bold text-primary text-right">
-                      ${format_price(order.total || Decimal.new(0))}
+                    <td class="text-sm font-bold text-primary text-right px-4">
+                      ${format_price(@summary.total_revenue)}
                     </td>
-                    <td>
-                      <.payment_badge method={order.payment_method} />
-                    </td>
-                    <td class="text-xs text-base-content/50">
-                      {format_datetime(order.closed_at || order.inserted_at)}
+                    <td colspan="2" class="text-xs text-base-content/40 px-4">
+                      Ticket prom. ${format_price(@summary.avg_ticket)}
                     </td>
                   </tr>
-                <% end %>
-              </tbody>
-              <%!-- Totals footer --%>
-              <tfoot>
-                <tr class="border-t-2 border-base-300 bg-base-200/50">
-                  <td class="text-sm font-semibold text-base-content py-3 px-4">
-                    {length(@orders)} comandas
-                  </td>
-                  <td class="text-sm font-bold text-primary text-right px-4">
-                    ${format_price(@summary.total_revenue)}
-                  </td>
-                  <td colspan="2" class="text-xs text-base-content/40 px-4">
-                    Ticket prom. ${format_price(@summary.avg_ticket)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+                </tfoot>
+              </table>
+            </div>
+          </.panel>
         <% end %>
       </div>
     </div>
@@ -458,26 +434,6 @@ defmodule CRCWeb.Admin.VentasLive do
     """
   end
 
-  attr :label, :string, required: true
-  attr :value, :string, required: true
-  attr :icon, :string, required: true
-  attr :color, :string, required: true
-  attr :bg, :string, required: true
-
-  defp stat_card(assigns) do
-    ~H"""
-    <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-5 flex items-center gap-4">
-      <div class={["size-12 rounded-xl flex items-center justify-center shrink-0", @bg]}>
-        <.icon name={@icon} class={"size-6 #{@color}"} />
-      </div>
-      <div>
-        <p class="text-2xl font-bold text-base-content">{@value}</p>
-        <p class="text-xs text-base-content/50 mt-0.5">{@label}</p>
-      </div>
-    </div>
-    """
-  end
-
   attr :method, :string, default: nil
 
   defp payment_icon(%{method: "efectivo"} = assigns) do
@@ -519,11 +475,14 @@ defmodule CRCWeb.Admin.VentasLive do
   # ---------------------------------------------------------------------------
 
   defp load_sales_data(socket, period) do
+    orders = Orders.list_closed_orders(period)
+
     socket
     |> assign(:period_filter, period)
     |> assign(:summary, Orders.sales_summary(period))
     |> assign(:top_items, Orders.top_selling_items(period, 10))
-    |> assign(:orders, Orders.list_closed_orders(period))
+    |> assign(:orders, orders)
+    |> assign(:orders_shown, Enum.take(orders, @max_orders_shown))
     |> assign(:timing_stats, Orders.timing_stats(period))
   end
 

@@ -136,7 +136,7 @@ defmodule CRCWeb.Admin.VentasLiveTest do
 
       today = Date.utc_today() |> Date.to_iso8601()
       html = render_change(lv, "set_date_range", %{"date_from" => today, "date_to" => today})
-      assert html =~ "Rango personalizado activo"
+      assert html =~ "Rango:"
       assert html =~ "Cliente Test"
     end
 
@@ -150,7 +150,7 @@ defmodule CRCWeb.Admin.VentasLiveTest do
           "date_to" => "2026-01-01"
         })
 
-      refute html =~ "Rango personalizado activo"
+      refute html =~ "Rango:"
     end
   end
 

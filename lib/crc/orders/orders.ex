@@ -387,7 +387,7 @@ defmodule CRC.Orders do
 
   @doc """
   Returns all closed orders for the given period, newest first.
-  period: :today | :week | :month | :all
+  period: :today | :week | :month | :year | :all | {:range, Date.t(), Date.t()}
   """
   def list_closed_orders(period \\ :all) do
     Order
@@ -1232,6 +1232,24 @@ defmodule CRC.Orders do
 
     start =
       DateTime.new!(first_of_month, ~T[00:00:00], "Etc/UTC")
+      |> DateTime.add(-offset_secs, :second)
+
+    where(query, [o], o.inserted_at >= ^start)
+  end
+
+  defp filter_by_period(query, :year) do
+    offset_hours = Application.get_env(:crc, :utc_offset_hours, -6)
+    offset_secs = offset_hours * 3_600
+
+    local_date =
+      DateTime.utc_now()
+      |> DateTime.add(offset_secs, :second)
+      |> DateTime.to_date()
+
+    first_of_year = Date.new!(local_date.year, 1, 1)
+
+    start =
+      DateTime.new!(first_of_year, ~T[00:00:00], "Etc/UTC")
       |> DateTime.add(-offset_secs, :second)
 
     where(query, [o], o.inserted_at >= ^start)

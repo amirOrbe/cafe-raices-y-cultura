@@ -2499,15 +2499,11 @@ defmodule CRCWeb.Waiter.OrderLive do
   defp category_icon(slug), do: Map.get(@category_icons, slug, "🍽️")
 
   defp menu_item_card(assigns) do
-    image_url = Map.get(assigns.menu_item, :image_url)
-    has_image = is_binary(image_url) && image_url != ""
     desc = Map.get(assigns.menu_item, :description)
     has_desc = is_binary(desc) && String.trim(desc) != ""
 
     assigns =
       assigns
-      |> assign(:image_url, image_url)
-      |> assign(:has_image, has_image)
       |> assign(:desc, desc)
       |> assign(:has_desc, has_desc)
 
@@ -2517,47 +2513,33 @@ defmodule CRCWeb.Waiter.OrderLive do
     <% available? = is_nil(count) or count > 0 %>
     <% low_stock? = not is_nil(count) and count > 0 and count <= @low_stock_threshold %>
     <div class={[
-      "rounded-xl overflow-hidden flex flex-col border transition-all",
+      "rounded-xl flex flex-col border transition-all",
       cond do
         not available? -> "bg-base-100 border-error/20 opacity-60"
         low_stock? -> "bg-warning/5 border-warning/40"
         true -> "bg-base-200/50 border-transparent hover:border-base-300"
       end
     ]}>
-      <div class="relative aspect-[16/9] bg-base-200 shrink-0 overflow-hidden">
-        <%= if @has_image do %>
-          <img
-            src={@image_url}
-            alt={@menu_item.name}
-            loading="lazy"
-            class={[
-              "absolute inset-0 w-full h-full object-cover",
-              not available? && "grayscale"
-            ]}
-          />
-        <% else %>
-          <span class="absolute inset-0 flex items-center justify-center">
-            <img src="/images/brand/logo-color.png" alt="" class="h-10 w-auto opacity-15" />
-          </span>
-        <% end %>
-        <span class="absolute top-2 right-2 bg-primary text-primary-content text-sm font-bold px-2.5 py-1 rounded-full shadow-sm">
-          ${format_price(@menu_item.price)}
-        </span>
-        <span
-          :if={@menu_item.featured}
-          class="absolute top-2 left-2 bg-accent text-accent-content text-[11px] font-semibold px-2 py-0.5 rounded-full shadow-sm"
-        >
-          Recomendado
-        </span>
-      </div>
-
       <div class="p-3 flex flex-col gap-2">
-        <p class={[
-          "text-sm font-semibold leading-snug",
-          if(not available?, do: "text-base-content/50", else: "text-base-content")
-        ]}>
-          {@menu_item.name}
-        </p>
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0 flex flex-col gap-1">
+            <p class={[
+              "text-sm font-semibold leading-snug",
+              if(not available?, do: "text-base-content/50", else: "text-base-content")
+            ]}>
+              {@menu_item.name}
+            </p>
+            <span
+              :if={@menu_item.featured}
+              class="self-start bg-accent text-accent-content text-[11px] font-semibold px-2 py-0.5 rounded-full shadow-sm"
+            >
+              Recomendado
+            </span>
+          </div>
+          <span class="shrink-0 bg-primary text-primary-content text-sm font-bold px-2.5 py-1 rounded-full shadow-sm">
+            ${format_price(@menu_item.price)}
+          </span>
+        </div>
         <p :if={@has_desc and available?} class="text-xs text-base-content/60 line-clamp-2 -mt-1">
           {@desc}
         </p>

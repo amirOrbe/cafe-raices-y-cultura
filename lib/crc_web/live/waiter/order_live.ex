@@ -1008,7 +1008,7 @@ defmodule CRCWeb.Waiter.OrderLive do
     ~H"""
     <div id="sound-notifier" phx-hook="SoundNotifier" class="hidden"></div>
 
-    <div class="min-h-screen lg:h-screen flex flex-col bg-base-200 lg:overflow-hidden">
+    <div class="h-screen flex flex-col bg-base-200 overflow-hidden">
       <%!-- ── Encabezado fijo (no scrollea) ────────────────────────────────────── --%>
       <div class="shrink-0 max-w-6xl w-full mx-auto px-3 sm:px-4 pt-4 lg:pt-5 pb-3 space-y-3">
         <%!-- Header de la orden — reemplaza al navbar del sitio en esta pantalla --%>
@@ -1115,10 +1115,10 @@ defmodule CRCWeb.Waiter.OrderLive do
       </div>
 
       <%!-- ── Grid principal — cada columna scrollea por separado ─────────────── --%>
-      <div class="flex-1 lg:min-h-0 max-w-6xl w-full mx-auto px-3 sm:px-4 pb-4">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:h-full">
+      <div class="flex-1 min-h-0 max-w-6xl w-full mx-auto px-3 sm:px-4 pb-4">
+        <div class="grid grid-cols-1 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1 gap-4 h-full min-h-0">
           <%!-- ── PANEL IZQUIERDO: Buscador de menú ───────────────────────────── --%>
-          <div class="space-y-3 lg:h-full lg:overflow-y-auto">
+          <div class="space-y-3 h-full min-h-0 overflow-y-auto">
             <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
               <%!-- Tabs: Menú / Paquetes --%>
               <div class="px-4 pt-3 pb-0 border-b border-base-300">
@@ -1361,7 +1361,7 @@ defmodule CRCWeb.Waiter.OrderLive do
           </div>
 
           <%!-- ── PANEL DERECHO: Comanda ──────────────────────────────────── --%>
-          <div class="lg:h-full lg:overflow-y-auto">
+          <div class="h-full min-h-0 overflow-y-auto">
             <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
               <%!-- Encabezado de comanda --%>
               <div class="px-4 py-3 border-b border-base-300 flex items-center justify-between gap-2">

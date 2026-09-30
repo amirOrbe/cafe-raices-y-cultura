@@ -1,7 +1,11 @@
 app = "crc-app"
 primary_region = "dfw"
+kill_signal = "SIGTERM"
 
 [build]
+
+[deploy]
+  release_command = "/app/bin/migrate"
 
 [env]
   PHX_HOST = "caferaicescultura.cafe"

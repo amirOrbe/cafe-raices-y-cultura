@@ -70,7 +70,9 @@ if config_env() == :prod do
       "https://caferaicescultura.cafe",
       "//caferaicescultura.cafe",
       "https://www.caferaicescultura.cafe",
-      "//www.caferaicescultura.cafe"
+      "//www.caferaicescultura.cafe",
+      "https://crc-app.fly.dev",
+      "//crc-app.fly.dev"
     ]
 
   # ## SSL Support

@@ -1112,10 +1112,10 @@ defmodule CRCWeb.Waiter.OrderLive do
             <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
               <%!-- Tabs: Menú / Paquetes --%>
               <div class="px-4 pt-3 pb-0 border-b border-base-300">
-                <div class="flex gap-1">
+                <div class="flex flex-wrap gap-1">
                   <button
                     class={[
-                      "btn btn-sm",
+                      "btn btn-sm btn-grow",
                       if(@menu_tab == :menu, do: "btn-primary", else: "btn-ghost")
                     ]}
                     phx-click="select_menu_tab"
@@ -1125,7 +1125,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                   </button>
                   <button
                     class={[
-                      "btn btn-sm gap-1",
+                      "btn btn-sm btn-grow gap-1",
                       if(@menu_tab == :packages, do: "btn-primary", else: "btn-ghost")
                     ]}
                     phx-click="select_menu_tab"
@@ -1133,7 +1133,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                   >
                     <.icon name="hero-gift" class="size-3.5" /> Paquetes
                     <%= if @packages != [] do %>
-                      <span class="badge badge-xs">{length(@packages)}</span>
+                      <span class="badge badge-xs badge-grow">{length(@packages)}</span>
                     <% end %>
                   </button>
                 </div>
@@ -1352,15 +1352,15 @@ defmodule CRCWeb.Waiter.OrderLive do
                   <% s_count = Enum.count(@order.order_items, &(&1.status == "sent")) %>
                   <% r_count = Enum.count(@order.order_items, &(&1.status == "ready")) %>
                   <%= if p_count > 0 do %>
-                    <span class="badge badge-xs badge-warning">
+                    <span class="badge badge-xs badge-warning badge-grow">
                       {p_count} pendiente{if p_count > 1, do: "s"}
                     </span>
                   <% end %>
                   <%= if s_count > 0 do %>
-                    <span class="badge badge-xs badge-info">{s_count} en cocina</span>
+                    <span class="badge badge-xs badge-info badge-grow">{s_count} en cocina</span>
                   <% end %>
                   <%= if r_count > 0 do %>
-                    <span class="badge badge-xs badge-success animate-pulse">
+                    <span class="badge badge-xs badge-success badge-grow animate-pulse">
                       {r_count} ✓ listo{if r_count > 1, do: "s"}
                     </span>
                   <% end %>

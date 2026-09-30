@@ -1208,7 +1208,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                             <% has_items? = length(category.menu_items) > 0 %>
                             <button
                               class={[
-                                "rounded-xl border-2 p-4 flex flex-col items-start gap-1 text-left transition-all active:scale-95",
+                                "rounded-xl border-2 p-4 flex items-center gap-3 text-left transition-all active:scale-95",
                                 if(has_items?,
                                   do:
                                     "bg-base-200/60 border-transparent hover:border-primary/40 hover:bg-primary/5 cursor-pointer",
@@ -1220,14 +1220,20 @@ defmodule CRCWeb.Waiter.OrderLive do
                               phx-value-id={category.id}
                               disabled={not has_items?}
                             >
-                              <span class="text-sm font-bold text-base-content leading-tight">
-                                {category.name}
+                              <span class="text-2xl leading-none shrink-0" aria-hidden="true">
+                                {category_icon(category.slug)}
                               </span>
-                              <span class="text-xs text-base-content/50">
-                                {length(category.menu_items)} platillo{if length(category.menu_items) !=
-                                                                            1,
-                                                                          do: "s"}
-                              </span>
+                              <div class="flex flex-col items-start gap-1 min-w-0">
+                                <span class="text-sm font-bold text-base-content leading-tight">
+                                  {category.name}
+                                </span>
+                                <span class="text-xs text-base-content/50">
+                                  {length(category.menu_items)} platillo{if length(
+                                                                              category.menu_items
+                                                                            ) != 1,
+                                                                            do: "s"}
+                                </span>
+                              </div>
                             </button>
                           <% end %>
                         </div>
@@ -1243,6 +1249,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                           <.icon name="hero-arrow-left" class="size-3.5" /> Categorías
                         </button>
                         <%= if selected_cat do %>
+                          <span class="text-base leading-none" aria-hidden="true">
+                            {category_icon(selected_cat.slug)}
+                          </span>
                           <span class="text-sm font-semibold text-base-content">
                             {selected_cat.name}
                           </span>
@@ -2424,68 +2433,130 @@ defmodule CRCWeb.Waiter.OrderLive do
     |> Decimal.div(Decimal.new(100))
   end
 
+  # Emoji por categoría — puramente cosmético, sin dependencia de datos.
+  # Cualquier categoría nueva creada desde el admin cae en el ícono genérico
+  # hasta que se agregue aquí explícitamente.
+  @category_icons %{
+    "brunch" => "🥐",
+    "cafe-a-granel" => "🫘",
+    "cafeina" => "☕",
+    "extras" => "➕",
+    "frias" => "🧊",
+    "merch" => "🛍️",
+    "mocktails" => "🍹",
+    "panaderia" => "🍞",
+    "panaderia-salada" => "🥖",
+    "film" => "📷",
+    "rev-scan" => "🎞️",
+    "sanduises" => "🥪",
+    "sin-cafeina" => "🍵",
+    "temporada" => "⭐",
+    "un-tentenpie" => "🍪"
+  }
+
+  defp category_icon(slug), do: Map.get(@category_icons, slug, "🍽️")
+
   defp menu_item_card(assigns) do
+    image_url = Map.get(assigns.menu_item, :image_url)
+    has_image = is_binary(image_url) && image_url != ""
+    desc = Map.get(assigns.menu_item, :description)
+    has_desc = is_binary(desc) && String.trim(desc) != ""
+
+    assigns =
+      assigns
+      |> assign(:image_url, image_url)
+      |> assign(:has_image, has_image)
+      |> assign(:desc, desc)
+      |> assign(:has_desc, has_desc)
+
     ~H"""
     <% count = if is_nil(@portions), do: nil, else: @portions.count %>
     <% bottleneck = if is_nil(@portions), do: nil, else: @portions.bottleneck %>
     <% available? = is_nil(count) or count > 0 %>
     <% low_stock? = not is_nil(count) and count > 0 and count <= @low_stock_threshold %>
     <div class={[
-      "rounded-xl p-3 flex flex-col gap-2 border transition-all",
+      "rounded-xl overflow-hidden flex flex-col border transition-all",
       cond do
         not available? -> "bg-base-100 border-error/20 opacity-60"
         low_stock? -> "bg-warning/5 border-warning/40"
         true -> "bg-base-200/50 border-transparent hover:border-base-300"
       end
     ]}>
-      <div class="flex items-start justify-between gap-1.5">
+      <div class="relative aspect-[16/9] bg-base-200 shrink-0 overflow-hidden">
+        <%= if @has_image do %>
+          <img
+            src={@image_url}
+            alt={@menu_item.name}
+            loading="lazy"
+            class={[
+              "absolute inset-0 w-full h-full object-cover",
+              not available? && "grayscale"
+            ]}
+          />
+        <% else %>
+          <span class="absolute inset-0 flex items-center justify-center">
+            <img src="/images/brand/logo-color.png" alt="" class="h-10 w-auto opacity-15" />
+          </span>
+        <% end %>
+        <span class="absolute top-2 right-2 bg-primary text-primary-content text-sm font-bold px-2.5 py-1 rounded-full shadow-sm">
+          ${format_price(@menu_item.price)}
+        </span>
+        <span
+          :if={@menu_item.featured}
+          class="absolute top-2 left-2 bg-accent text-accent-content text-[11px] font-semibold px-2 py-0.5 rounded-full shadow-sm"
+        >
+          Recomendado
+        </span>
+      </div>
+
+      <div class="p-3 flex flex-col gap-2">
         <p class={[
           "text-sm font-semibold leading-snug",
           if(not available?, do: "text-base-content/50", else: "text-base-content")
         ]}>
           {@menu_item.name}
         </p>
-        <span class="text-sm font-bold text-primary whitespace-nowrap shrink-0">
-          ${format_price(@menu_item.price)}
-        </span>
-      </div>
-      <%= if not available? do %>
-        <p class="text-xs text-error flex items-center gap-1">
-          <.icon name="hero-x-circle" class="size-3 shrink-0" />
-          {if bottleneck, do: "Agotado · sin #{bottleneck}", else: "Agotado"}
+        <p :if={@has_desc and available?} class="text-xs text-base-content/60 line-clamp-2 -mt-1">
+          {@desc}
         </p>
-      <% else %>
-        <%= if low_stock? do %>
-          <p class="text-xs text-warning font-semibold flex items-center gap-1">
-            <.icon name="hero-exclamation-triangle" class="size-3 shrink-0" />
-            {cond do
-              count == 1 and bottleneck -> "¡Solo 1! · se acaba #{bottleneck}"
-              count == 1 -> "¡Es el último!"
-              bottleneck -> "¡Solo #{count}! · se acaba #{bottleneck}"
-              true -> "¡Solo quedan #{count}!"
-            end}
-          </p>
-        <% end %>
-      <% end %>
-      <button
-        class={[
-          "btn btn-xs w-full mt-auto",
-          cond do
-            not available? -> "btn-disabled opacity-40"
-            low_stock? -> "btn-warning"
-            true -> "btn-primary"
-          end
-        ]}
-        phx-click="add_item"
-        phx-value-menu_item_id={@menu_item.id}
-        disabled={not available?}
-      >
         <%= if not available? do %>
-          Agotado
+          <p class="text-xs text-error flex items-center gap-1">
+            <.icon name="hero-x-circle" class="size-3 shrink-0" />
+            {if bottleneck, do: "Agotado · sin #{bottleneck}", else: "Agotado"}
+          </p>
         <% else %>
-          <.icon name="hero-plus" class="size-3" /> Agregar
+          <%= if low_stock? do %>
+            <p class="text-xs text-warning font-semibold flex items-center gap-1">
+              <.icon name="hero-exclamation-triangle" class="size-3 shrink-0" />
+              {cond do
+                count == 1 and bottleneck -> "¡Solo 1! · se acaba #{bottleneck}"
+                count == 1 -> "¡Es el último!"
+                bottleneck -> "¡Solo #{count}! · se acaba #{bottleneck}"
+                true -> "¡Solo quedan #{count}!"
+              end}
+            </p>
+          <% end %>
         <% end %>
-      </button>
+        <button
+          class={[
+            "btn btn-xs w-full mt-auto",
+            cond do
+              not available? -> "btn-disabled opacity-40"
+              low_stock? -> "btn-warning"
+              true -> "btn-primary"
+            end
+          ]}
+          phx-click="add_item"
+          phx-value-menu_item_id={@menu_item.id}
+          disabled={not available?}
+        >
+          <%= if not available? do %>
+            Agotado
+          <% else %>
+            <.icon name="hero-plus" class="size-3" /> Agregar
+          <% end %>
+        </button>
+      </div>
     </div>
     """
   end

@@ -137,3 +137,12 @@ html {
   height: auto;
   min-height: var(--size, 2.5rem);
 }
+
+/* Same fixed-height overflow issue as .btn, but for daisyUI's .badge —
+   used for the pending/en cocina/listo counters. */
+.badge-grow {
+  height: auto;
+  min-height: var(--size, 1rem);
+  white-space: normal;
+  text-align: center;
+}

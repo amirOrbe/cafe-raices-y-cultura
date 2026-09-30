@@ -1118,10 +1118,10 @@ defmodule CRCWeb.Waiter.OrderLive do
       <div class="flex-1 min-h-0 max-w-6xl w-full mx-auto px-3 sm:px-4 pb-4">
         <div class="grid grid-cols-1 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1 gap-4 h-full min-h-0">
           <%!-- ── PANEL IZQUIERDO: Buscador de menú ───────────────────────────── --%>
-          <div class="space-y-3 h-full min-h-0 overflow-y-auto">
-            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-              <%!-- Tabs: Menú / Paquetes --%>
-              <div class="px-4 pt-3 pb-0 border-b border-base-300">
+          <div class="h-full min-h-0">
+            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden flex flex-col h-full min-h-0">
+              <%!-- Tabs: Menú / Paquetes (estático) --%>
+              <div class="shrink-0 px-4 pt-3 pb-0 border-b border-base-300">
                 <div class="flex flex-wrap gap-1">
                   <button
                     class={[
@@ -1150,8 +1150,8 @@ defmodule CRCWeb.Waiter.OrderLive do
               </div>
 
               <%= if @menu_tab == :menu do %>
-                <%!-- Buscador --%>
-                <form phx-change="search_menu" class="px-4 py-2.5 border-b border-base-200">
+                <%!-- Buscador (estático) --%>
+                <form phx-change="search_menu" class="shrink-0 px-4 py-2.5 border-b border-base-200">
                   <div class="relative">
                     <.icon
                       name="hero-magnifying-glass"
@@ -1178,7 +1178,10 @@ defmodule CRCWeb.Waiter.OrderLive do
                     <% end %>
                   </div>
                 </form>
+              <% end %>
 
+              <div class="flex-1 min-h-0 overflow-y-auto">
+                <%= if @menu_tab == :menu do %>
                 <%= if locked?(@order) do %>
                   <div class="py-14 text-center text-base-content/40 text-sm">
                     {if parked?(@order),
@@ -1357,6 +1360,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                   <% end %>
                 </div>
               <% end %>
+              </div>
             </div>
           </div>
 

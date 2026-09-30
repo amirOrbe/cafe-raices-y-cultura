@@ -1497,7 +1497,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                         </div>
 
                         <%!-- Controles derechos --%>
-                        <div class="flex items-center gap-1 shrink-0">
+                        <div class="flex items-center flex-wrap justify-end gap-1 shrink-0">
                           <%!-- Servir --%>
                           <%= if item.status == "ready" and @order.status != "closed" do %>
                             <button

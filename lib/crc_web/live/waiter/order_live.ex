@@ -995,6 +995,16 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   @impl true
   def render(assigns) do
+    menu_item_ids_with_extras =
+      assigns.order.order_items
+      |> Enum.map(& &1.menu_item_id)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.uniq()
+      |> Enum.filter(&(Catalog.list_extras_for_waiter(&1) != []))
+      |> MapSet.new()
+
+    assigns = assign(assigns, :menu_item_ids_with_extras, menu_item_ids_with_extras)
+
     ~H"""
     <div id="sound-notifier" phx-hook="SoundNotifier" class="hidden"></div>
 
@@ -1106,12 +1116,12 @@ defmodule CRCWeb.Waiter.OrderLive do
 
       <%!-- ── Grid principal — cada columna scrollea por separado ─────────────── --%>
       <div class="flex-1 min-h-0 max-w-6xl w-full mx-auto px-3 sm:px-4 pb-4">
-        <div class="grid grid-cols-2 gap-4 h-full">
+        <div class="grid grid-cols-1 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1 gap-4 h-full min-h-0">
           <%!-- ── PANEL IZQUIERDO: Buscador de menú ───────────────────────────── --%>
-          <div class="space-y-3 h-full overflow-y-auto">
-            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-              <%!-- Tabs: Menú / Paquetes --%>
-              <div class="px-4 pt-3 pb-0 border-b border-base-300">
+          <div class="h-full min-h-0">
+            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden flex flex-col h-full min-h-0">
+              <%!-- Tabs: Menú / Paquetes (estático) --%>
+              <div class="shrink-0 px-4 pt-3 pb-0 border-b border-base-300">
                 <div class="flex flex-wrap gap-1">
                   <button
                     class={[
@@ -1140,8 +1150,8 @@ defmodule CRCWeb.Waiter.OrderLive do
               </div>
 
               <%= if @menu_tab == :menu do %>
-                <%!-- Buscador --%>
-                <form phx-change="search_menu" class="px-4 py-2.5 border-b border-base-200">
+                <%!-- Buscador (estático) --%>
+                <form phx-change="search_menu" class="shrink-0 px-4 py-2.5 border-b border-base-200">
                   <div class="relative">
                     <.icon
                       name="hero-magnifying-glass"
@@ -1168,7 +1178,10 @@ defmodule CRCWeb.Waiter.OrderLive do
                     <% end %>
                   </div>
                 </form>
+              <% end %>
 
+              <div class="flex-1 min-h-0 overflow-y-auto">
+                <%= if @menu_tab == :menu do %>
                 <%= if locked?(@order) do %>
                   <div class="py-14 text-center text-base-content/40 text-sm">
                     {if parked?(@order),
@@ -1208,7 +1221,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                             <% has_items? = length(category.menu_items) > 0 %>
                             <button
                               class={[
-                                "rounded-xl border-2 p-4 flex flex-col items-start gap-1 text-left transition-all active:scale-95",
+                                "rounded-xl border-2 p-4 flex items-center gap-3 text-left transition-all active:scale-95",
                                 if(has_items?,
                                   do:
                                     "bg-base-200/60 border-transparent hover:border-primary/40 hover:bg-primary/5 cursor-pointer",
@@ -1220,14 +1233,20 @@ defmodule CRCWeb.Waiter.OrderLive do
                               phx-value-id={category.id}
                               disabled={not has_items?}
                             >
-                              <span class="text-sm font-bold text-base-content leading-tight">
-                                {category.name}
+                              <span class="text-2xl leading-none shrink-0" aria-hidden="true">
+                                {category_icon(category.slug)}
                               </span>
-                              <span class="text-xs text-base-content/50">
-                                {length(category.menu_items)} platillo{if length(category.menu_items) !=
-                                                                            1,
-                                                                          do: "s"}
-                              </span>
+                              <div class="flex flex-col items-start gap-1 min-w-0">
+                                <span class="text-sm font-bold text-base-content leading-tight">
+                                  {category.name}
+                                </span>
+                                <span class="text-xs text-base-content/50">
+                                  {length(category.menu_items)} platillo{if length(
+                                                                              category.menu_items
+                                                                            ) != 1,
+                                                                            do: "s"}
+                                </span>
+                              </div>
                             </button>
                           <% end %>
                         </div>
@@ -1243,6 +1262,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                           <.icon name="hero-arrow-left" class="size-3.5" /> Categorías
                         </button>
                         <%= if selected_cat do %>
+                          <span class="text-base leading-none" aria-hidden="true">
+                            {category_icon(selected_cat.slug)}
+                          </span>
                           <span class="text-sm font-semibold text-base-content">
                             {selected_cat.name}
                           </span>
@@ -1338,14 +1360,15 @@ defmodule CRCWeb.Waiter.OrderLive do
                   <% end %>
                 </div>
               <% end %>
+              </div>
             </div>
           </div>
 
           <%!-- ── PANEL DERECHO: Comanda ──────────────────────────────────── --%>
-          <div class="h-full overflow-y-auto">
-            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-              <%!-- Encabezado de comanda --%>
-              <div class="px-4 py-3 border-b border-base-300 flex items-center justify-between gap-2">
+          <div class="h-full min-h-0">
+            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden flex flex-col h-full min-h-0">
+              <%!-- Encabezado de comanda (estático) --%>
+              <div class="shrink-0 px-4 py-3 border-b border-base-300 flex items-center justify-between gap-2">
                 <h2 class="font-semibold text-base-content">Comanda</h2>
                 <div class="flex items-center gap-1.5 flex-wrap justify-end">
                   <% p_count = Enum.count(@order.order_items, &(&1.status == "pending")) %>
@@ -1367,7 +1390,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                 </div>
               </div>
 
-              <%!-- Diálogo de cancelación --%>
+              <div class="flex-1 min-h-0 overflow-y-auto">
+                <%!-- Diálogo de cancelación --%>
               <%= if @cancelling_item do %>
                 <% ci = @cancelling_item %>
                 <div class="mx-4 mt-3 mb-1 rounded-xl border border-error/40 bg-error/5 p-4 space-y-3">
@@ -1428,7 +1452,27 @@ defmodule CRCWeb.Waiter.OrderLive do
                         true -> "border-l-transparent"
                       end
                     ]}>
-                      <%!-- Fila principal: nombre + controles --%>
+                      <%!-- Fila principal: miniatura + nombre + controles --%>
+                      <% item_image_url = if item.product_id, do: nil, else: item.menu_item.image_url %>
+                      <div class="flex items-start gap-3">
+                        <div class="relative size-12 rounded-lg bg-base-200 shrink-0 overflow-hidden">
+                          <%= if is_binary(item_image_url) and item_image_url != "" do %>
+                            <img
+                              src={item_image_url}
+                              alt=""
+                              class={["absolute inset-0 w-full h-full object-cover", cancelled? && "grayscale"]}
+                            />
+                          <% else %>
+                            <span class="absolute inset-0 flex items-center justify-center">
+                              <img
+                                src="/images/brand/logo-color.png"
+                                alt=""
+                                class="h-5 w-auto opacity-20"
+                              />
+                            </span>
+                          <% end %>
+                        </div>
+                        <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2 flex-wrap">
                         <div class="flex-1 min-w-[8rem]">
                           <div class="flex items-center gap-1.5 flex-wrap">
@@ -1509,8 +1553,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                             </button>
                           <% end %>
 
-                          <%!-- Extras (solo platillos pendientes sin paquete ni recompensa) --%>
-                          <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and is_nil(item.package_id) and is_nil(item.loyalty_redemption_id) and item.status == "pending" and @order.status != "closed" do %>
+                          <%!-- Extras (solo platillos pendientes sin paquete ni recompensa, y con extras disponibles) --%>
+                          <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and is_nil(item.package_id) and is_nil(item.loyalty_redemption_id) and item.status == "pending" and @order.status != "closed" and MapSet.member?(@menu_item_ids_with_extras, item.menu_item_id) do %>
                             <button
                               class={[
                                 "btn btn-sm btn-grow gap-1",
@@ -1759,54 +1803,59 @@ defmodule CRCWeb.Waiter.OrderLive do
                           <span class="select-none">📝</span> {item.notes}
                         </p>
                       <% end %>
+                        </div>
+                      </div>
                     </div>
                   <% end %>
                 <% end %>
               </div>
+              </div>
 
-              <%!-- Footer desktop (lg+) --%>
-              <div class="px-4 py-4 border-t border-base-300 space-y-2">
+              <%!-- Footer (estático) --%>
+              <div class="shrink-0 px-4 py-2.5 border-t border-base-300 space-y-1.5">
                 <%= if @order.order_items != [] do %>
                   <% total = Orders.calculate_order_total(@order) %>
-                  <div class="flex items-center justify-between px-1 mb-3">
-                    <span class="text-sm text-base-content/60">Total</span>
-                    <span class="text-2xl font-bold text-primary">${format_price(total)}</span>
+                  <div class="flex items-center justify-between px-1">
+                    <span class="text-xs text-base-content/60">Total</span>
+                    <span class="text-lg font-bold text-primary">${format_price(total)}</span>
                   </div>
                 <% end %>
                 <% pending = pending_items(@order) %>
                 <%= cond do %>
                   <% @order.status == "closed" -> %>
                     <div class="flex gap-2">
-                      <a href="/mesa" class="btn btn-ghost btn-grow flex-1">
+                      <a href="/mesa" class="btn btn-sm btn-ghost btn-grow flex-1">
                         <.icon name="hero-arrow-left" class="size-4" /> Volver
                       </a>
                       <%= if @order.order_items != [] do %>
-                        <button class="btn btn-accent btn-grow flex-1" phx-click="generate_bill">
+                        <button class="btn btn-sm btn-accent btn-grow flex-1" phx-click="generate_bill">
                           <.icon name="hero-qr-code" class="size-4" /> Mostrar QR
                         </button>
                       <% end %>
                     </div>
                   <% parked?(@order) -> %>
-                    <div class="rounded-xl bg-warning/10 border border-warning/30 px-3 py-2 mb-2 text-xs text-warning-content">
+                    <div class="rounded-xl bg-warning/10 border border-warning/30 px-3 py-1.5 text-xs text-warning-content">
                       <.icon name="hero-pause-circle" class="size-4 inline align-text-bottom" />
                       Cuenta en pausa — el cliente paga después.
                     </div>
-                    <button class="btn btn-success btn-grow w-full" phx-click="show_payment_step">
+                    <button class="btn btn-sm btn-success btn-grow w-full" phx-click="show_payment_step">
                       <.icon name="hero-credit-card" class="size-4" /> Cobrar cuenta
                     </button>
-                    <button
-                      class="btn btn-outline btn-grow w-full"
-                      phx-click="unpark_order"
-                      data-confirm="Reactivar la cuenta para seguir agregando platillos?"
-                    >
-                      <.icon name="hero-arrow-path" class="size-4" /> Reactivar cuenta
-                    </button>
-                    <a href="/mesa" class="btn btn-ghost btn-grow w-full">
-                      <.icon name="hero-arrow-left" class="size-4" /> Volver
-                    </a>
+                    <div class="flex gap-2">
+                      <button
+                        class="btn btn-sm btn-outline btn-grow flex-1"
+                        phx-click="unpark_order"
+                        data-confirm="Reactivar la cuenta para seguir agregando platillos?"
+                      >
+                        <.icon name="hero-arrow-path" class="size-4" /> Reactivar
+                      </button>
+                      <a href="/mesa" class="btn btn-sm btn-ghost btn-grow flex-1">
+                        <.icon name="hero-arrow-left" class="size-4" /> Volver
+                      </a>
+                    </div>
                   <% true -> %>
                     <button
-                      class="btn btn-primary btn-grow w-full"
+                      class="btn btn-sm btn-primary btn-grow w-full"
                       phx-click="send_to_kitchen"
                       disabled={pending == []}
                     >
@@ -1827,7 +1876,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                     </button>
                     <%= if @order.order_items == [] and @order.status == "open" do %>
                       <button
-                        class="btn btn-outline btn-error btn-grow w-full"
+                        class="btn btn-sm btn-outline btn-error btn-grow w-full"
                         phx-click="cancel_order"
                         data-confirm="¿Cancelar esta comanda?"
                       >
@@ -1835,19 +1884,21 @@ defmodule CRCWeb.Waiter.OrderLive do
                       </button>
                     <% end %>
                     <%= if @order.order_items != [] do %>
-                      <button
-                        class="btn btn-outline btn-success btn-grow w-full"
-                        phx-click="show_payment_step"
-                      >
-                        <.icon name="hero-credit-card" class="size-4" /> Cobrar y cerrar cuenta
-                      </button>
-                      <button
-                        class="btn btn-outline btn-grow w-full"
-                        phx-click="park_order"
-                        data-confirm="El cliente paga después. Se libera la mesa. ¿Dejar la cuenta abierta?"
-                      >
-                        <.icon name="hero-pause-circle" class="size-4" /> Dejar cuenta abierta
-                      </button>
+                      <div class="flex gap-2">
+                        <button
+                          class="btn btn-sm btn-outline btn-success btn-grow flex-1"
+                          phx-click="show_payment_step"
+                        >
+                          <.icon name="hero-credit-card" class="size-4" /> Cobrar y cerrar cuenta
+                        </button>
+                        <button
+                          class="btn btn-sm btn-outline btn-grow flex-1"
+                          phx-click="park_order"
+                          data-confirm="El cliente paga después. Se libera la mesa. ¿Dejar la cuenta abierta?"
+                        >
+                          <.icon name="hero-pause-circle" class="size-4" /> Dejar cuenta abierta
+                        </button>
+                      </div>
                     <% end %>
                 <% end %>
               </div>
@@ -2424,68 +2475,112 @@ defmodule CRCWeb.Waiter.OrderLive do
     |> Decimal.div(Decimal.new(100))
   end
 
+  # Emoji por categoría — puramente cosmético, sin dependencia de datos.
+  # Cualquier categoría nueva creada desde el admin cae en el ícono genérico
+  # hasta que se agregue aquí explícitamente.
+  @category_icons %{
+    "brunch" => "🥐",
+    "cafe-a-granel" => "🫘",
+    "cafeina" => "☕",
+    "extras" => "➕",
+    "frias" => "🧊",
+    "merch" => "🛍️",
+    "mocktails" => "🍹",
+    "panaderia" => "🍞",
+    "panaderia-salada" => "🥖",
+    "film" => "📷",
+    "rev-scan" => "🎞️",
+    "sanduises" => "🥪",
+    "sin-cafeina" => "🍵",
+    "temporada" => "⭐",
+    "un-tentenpie" => "🍪"
+  }
+
+  defp category_icon(slug), do: Map.get(@category_icons, slug, "🍽️")
+
   defp menu_item_card(assigns) do
+    desc = Map.get(assigns.menu_item, :description)
+    has_desc = is_binary(desc) && String.trim(desc) != ""
+
+    assigns =
+      assigns
+      |> assign(:desc, desc)
+      |> assign(:has_desc, has_desc)
+
     ~H"""
     <% count = if is_nil(@portions), do: nil, else: @portions.count %>
     <% bottleneck = if is_nil(@portions), do: nil, else: @portions.bottleneck %>
     <% available? = is_nil(count) or count > 0 %>
     <% low_stock? = not is_nil(count) and count > 0 and count <= @low_stock_threshold %>
     <div class={[
-      "rounded-xl p-3 flex flex-col gap-2 border transition-all",
+      "rounded-xl flex flex-col border transition-all",
       cond do
         not available? -> "bg-base-100 border-error/20 opacity-60"
         low_stock? -> "bg-warning/5 border-warning/40"
         true -> "bg-base-200/50 border-transparent hover:border-base-300"
       end
     ]}>
-      <div class="flex items-start justify-between gap-1.5">
-        <p class={[
-          "text-sm font-semibold leading-snug",
-          if(not available?, do: "text-base-content/50", else: "text-base-content")
-        ]}>
-          {@menu_item.name}
+      <div class="p-3 flex flex-col gap-2">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0 flex flex-col gap-1">
+            <p class={[
+              "text-sm font-semibold leading-snug",
+              if(not available?, do: "text-base-content/50", else: "text-base-content")
+            ]}>
+              {@menu_item.name}
+            </p>
+            <span
+              :if={@menu_item.featured}
+              class="self-start bg-accent text-accent-content text-[11px] font-semibold px-2 py-0.5 rounded-full shadow-sm"
+            >
+              Recomendado
+            </span>
+          </div>
+          <span class="shrink-0 bg-primary text-primary-content text-sm font-bold px-2.5 py-1 rounded-full shadow-sm">
+            ${format_price(@menu_item.price)}
+          </span>
+        </div>
+        <p :if={@has_desc and available?} class="text-xs text-base-content/60 line-clamp-2 -mt-1">
+          {@desc}
         </p>
-        <span class="text-sm font-bold text-primary whitespace-nowrap shrink-0">
-          ${format_price(@menu_item.price)}
-        </span>
-      </div>
-      <%= if not available? do %>
-        <p class="text-xs text-error flex items-center gap-1">
-          <.icon name="hero-x-circle" class="size-3 shrink-0" />
-          {if bottleneck, do: "Agotado · sin #{bottleneck}", else: "Agotado"}
-        </p>
-      <% else %>
-        <%= if low_stock? do %>
-          <p class="text-xs text-warning font-semibold flex items-center gap-1">
-            <.icon name="hero-exclamation-triangle" class="size-3 shrink-0" />
-            {cond do
-              count == 1 and bottleneck -> "¡Solo 1! · se acaba #{bottleneck}"
-              count == 1 -> "¡Es el último!"
-              bottleneck -> "¡Solo #{count}! · se acaba #{bottleneck}"
-              true -> "¡Solo quedan #{count}!"
-            end}
-          </p>
-        <% end %>
-      <% end %>
-      <button
-        class={[
-          "btn btn-xs w-full mt-auto",
-          cond do
-            not available? -> "btn-disabled opacity-40"
-            low_stock? -> "btn-warning"
-            true -> "btn-primary"
-          end
-        ]}
-        phx-click="add_item"
-        phx-value-menu_item_id={@menu_item.id}
-        disabled={not available?}
-      >
         <%= if not available? do %>
-          Agotado
+          <p class="text-xs text-error flex items-center gap-1">
+            <.icon name="hero-x-circle" class="size-3 shrink-0" />
+            {if bottleneck, do: "Agotado · sin #{bottleneck}", else: "Agotado"}
+          </p>
         <% else %>
-          <.icon name="hero-plus" class="size-3" /> Agregar
+          <%= if low_stock? do %>
+            <p class="text-xs text-warning font-semibold flex items-center gap-1">
+              <.icon name="hero-exclamation-triangle" class="size-3 shrink-0" />
+              {cond do
+                count == 1 and bottleneck -> "¡Solo 1! · se acaba #{bottleneck}"
+                count == 1 -> "¡Es el último!"
+                bottleneck -> "¡Solo #{count}! · se acaba #{bottleneck}"
+                true -> "¡Solo quedan #{count}!"
+              end}
+            </p>
+          <% end %>
         <% end %>
-      </button>
+        <button
+          class={[
+            "btn btn-xs w-full mt-auto",
+            cond do
+              not available? -> "btn-disabled opacity-40"
+              low_stock? -> "btn-warning"
+              true -> "btn-primary"
+            end
+          ]}
+          phx-click="add_item"
+          phx-value-menu_item_id={@menu_item.id}
+          disabled={not available?}
+        >
+          <%= if not available? do %>
+            Agotado
+          <% else %>
+            <.icon name="hero-plus" class="size-3" /> Agregar
+          <% end %>
+        </button>
+      </div>
     </div>
     """
   end

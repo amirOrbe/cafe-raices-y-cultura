@@ -995,10 +995,20 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   @impl true
   def render(assigns) do
+    menu_item_ids_with_extras =
+      assigns.order.order_items
+      |> Enum.map(& &1.menu_item_id)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.uniq()
+      |> Enum.filter(&(Catalog.list_extras_for_waiter(&1) != []))
+      |> MapSet.new()
+
+    assigns = assign(assigns, :menu_item_ids_with_extras, menu_item_ids_with_extras)
+
     ~H"""
     <div id="sound-notifier" phx-hook="SoundNotifier" class="hidden"></div>
 
-    <div class="h-screen flex flex-col bg-base-200 overflow-hidden">
+    <div class="min-h-screen lg:h-screen flex flex-col bg-base-200 lg:overflow-hidden">
       <%!-- ── Encabezado fijo (no scrollea) ────────────────────────────────────── --%>
       <div class="shrink-0 max-w-6xl w-full mx-auto px-3 sm:px-4 pt-4 lg:pt-5 pb-3 space-y-3">
         <%!-- Header de la orden — reemplaza al navbar del sitio en esta pantalla --%>
@@ -1105,10 +1115,10 @@ defmodule CRCWeb.Waiter.OrderLive do
       </div>
 
       <%!-- ── Grid principal — cada columna scrollea por separado ─────────────── --%>
-      <div class="flex-1 min-h-0 max-w-6xl w-full mx-auto px-3 sm:px-4 pb-4">
-        <div class="grid grid-cols-2 gap-4 h-full">
+      <div class="flex-1 lg:min-h-0 max-w-6xl w-full mx-auto px-3 sm:px-4 pb-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:h-full">
           <%!-- ── PANEL IZQUIERDO: Buscador de menú ───────────────────────────── --%>
-          <div class="space-y-3 h-full overflow-y-auto">
+          <div class="space-y-3 lg:h-full lg:overflow-y-auto">
             <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
               <%!-- Tabs: Menú / Paquetes --%>
               <div class="px-4 pt-3 pb-0 border-b border-base-300">
@@ -1351,7 +1361,7 @@ defmodule CRCWeb.Waiter.OrderLive do
           </div>
 
           <%!-- ── PANEL DERECHO: Comanda ──────────────────────────────────── --%>
-          <div class="h-full overflow-y-auto">
+          <div class="lg:h-full lg:overflow-y-auto">
             <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
               <%!-- Encabezado de comanda --%>
               <div class="px-4 py-3 border-b border-base-300 flex items-center justify-between gap-2">
@@ -1437,7 +1447,27 @@ defmodule CRCWeb.Waiter.OrderLive do
                         true -> "border-l-transparent"
                       end
                     ]}>
-                      <%!-- Fila principal: nombre + controles --%>
+                      <%!-- Fila principal: miniatura + nombre + controles --%>
+                      <% item_image_url = if item.product_id, do: nil, else: item.menu_item.image_url %>
+                      <div class="flex items-start gap-3">
+                        <div class="relative size-12 rounded-lg bg-base-200 shrink-0 overflow-hidden">
+                          <%= if is_binary(item_image_url) and item_image_url != "" do %>
+                            <img
+                              src={item_image_url}
+                              alt=""
+                              class={["absolute inset-0 w-full h-full object-cover", cancelled? && "grayscale"]}
+                            />
+                          <% else %>
+                            <span class="absolute inset-0 flex items-center justify-center">
+                              <img
+                                src="/images/brand/logo-color.png"
+                                alt=""
+                                class="h-5 w-auto opacity-20"
+                              />
+                            </span>
+                          <% end %>
+                        </div>
+                        <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2 flex-wrap">
                         <div class="flex-1 min-w-[8rem]">
                           <div class="flex items-center gap-1.5 flex-wrap">
@@ -1518,8 +1548,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                             </button>
                           <% end %>
 
-                          <%!-- Extras (solo platillos pendientes sin paquete ni recompensa) --%>
-                          <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and is_nil(item.package_id) and is_nil(item.loyalty_redemption_id) and item.status == "pending" and @order.status != "closed" do %>
+                          <%!-- Extras (solo platillos pendientes sin paquete ni recompensa, y con extras disponibles) --%>
+                          <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and is_nil(item.package_id) and is_nil(item.loyalty_redemption_id) and item.status == "pending" and @order.status != "closed" and MapSet.member?(@menu_item_ids_with_extras, item.menu_item_id) do %>
                             <button
                               class={[
                                 "btn btn-sm btn-grow gap-1",
@@ -1768,6 +1798,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                           <span class="select-none">📝</span> {item.notes}
                         </p>
                       <% end %>
+                        </div>
+                      </div>
                     </div>
                   <% end %>
                 <% end %>

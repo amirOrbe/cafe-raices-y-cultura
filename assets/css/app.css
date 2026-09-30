@@ -128,3 +128,12 @@ html {
   background: oklch(42% 0.085 45);
   border-radius: 2px;
 }
+
+/* daisyUI's .btn sets a fixed `height` (not `min-height`), so text that
+   wraps to 2-3 lines (narrow columns, larger system font size) overflows
+   the box instead of growing it, visually bleeding into neighboring
+   elements. Opt individual buttons into this to let them grow instead. */
+.btn-grow {
+  height: auto;
+  min-height: var(--size, 2.5rem);
+}

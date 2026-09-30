@@ -1365,10 +1365,10 @@ defmodule CRCWeb.Waiter.OrderLive do
           </div>
 
           <%!-- ── PANEL DERECHO: Comanda ──────────────────────────────────── --%>
-          <div class="h-full min-h-0 overflow-y-auto">
-            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
-              <%!-- Encabezado de comanda --%>
-              <div class="px-4 py-3 border-b border-base-300 flex items-center justify-between gap-2">
+          <div class="h-full min-h-0">
+            <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden flex flex-col h-full min-h-0">
+              <%!-- Encabezado de comanda (estático) --%>
+              <div class="shrink-0 px-4 py-3 border-b border-base-300 flex items-center justify-between gap-2">
                 <h2 class="font-semibold text-base-content">Comanda</h2>
                 <div class="flex items-center gap-1.5 flex-wrap justify-end">
                   <% p_count = Enum.count(@order.order_items, &(&1.status == "pending")) %>
@@ -1390,7 +1390,8 @@ defmodule CRCWeb.Waiter.OrderLive do
                 </div>
               </div>
 
-              <%!-- Diálogo de cancelación --%>
+              <div class="flex-1 min-h-0 overflow-y-auto">
+                <%!-- Diálogo de cancelación --%>
               <%= if @cancelling_item do %>
                 <% ci = @cancelling_item %>
                 <div class="mx-4 mt-3 mb-1 rounded-xl border border-error/40 bg-error/5 p-4 space-y-3">
@@ -1808,50 +1809,53 @@ defmodule CRCWeb.Waiter.OrderLive do
                   <% end %>
                 <% end %>
               </div>
+              </div>
 
-              <%!-- Footer desktop (lg+) --%>
-              <div class="px-4 py-4 border-t border-base-300 space-y-2">
+              <%!-- Footer (estático) --%>
+              <div class="shrink-0 px-4 py-2.5 border-t border-base-300 space-y-1.5">
                 <%= if @order.order_items != [] do %>
                   <% total = Orders.calculate_order_total(@order) %>
-                  <div class="flex items-center justify-between px-1 mb-3">
-                    <span class="text-sm text-base-content/60">Total</span>
-                    <span class="text-2xl font-bold text-primary">${format_price(total)}</span>
+                  <div class="flex items-center justify-between px-1">
+                    <span class="text-xs text-base-content/60">Total</span>
+                    <span class="text-lg font-bold text-primary">${format_price(total)}</span>
                   </div>
                 <% end %>
                 <% pending = pending_items(@order) %>
                 <%= cond do %>
                   <% @order.status == "closed" -> %>
                     <div class="flex gap-2">
-                      <a href="/mesa" class="btn btn-ghost btn-grow flex-1">
+                      <a href="/mesa" class="btn btn-sm btn-ghost btn-grow flex-1">
                         <.icon name="hero-arrow-left" class="size-4" /> Volver
                       </a>
                       <%= if @order.order_items != [] do %>
-                        <button class="btn btn-accent btn-grow flex-1" phx-click="generate_bill">
+                        <button class="btn btn-sm btn-accent btn-grow flex-1" phx-click="generate_bill">
                           <.icon name="hero-qr-code" class="size-4" /> Mostrar QR
                         </button>
                       <% end %>
                     </div>
                   <% parked?(@order) -> %>
-                    <div class="rounded-xl bg-warning/10 border border-warning/30 px-3 py-2 mb-2 text-xs text-warning-content">
+                    <div class="rounded-xl bg-warning/10 border border-warning/30 px-3 py-1.5 text-xs text-warning-content">
                       <.icon name="hero-pause-circle" class="size-4 inline align-text-bottom" />
                       Cuenta en pausa — el cliente paga después.
                     </div>
-                    <button class="btn btn-success btn-grow w-full" phx-click="show_payment_step">
+                    <button class="btn btn-sm btn-success btn-grow w-full" phx-click="show_payment_step">
                       <.icon name="hero-credit-card" class="size-4" /> Cobrar cuenta
                     </button>
-                    <button
-                      class="btn btn-outline btn-grow w-full"
-                      phx-click="unpark_order"
-                      data-confirm="Reactivar la cuenta para seguir agregando platillos?"
-                    >
-                      <.icon name="hero-arrow-path" class="size-4" /> Reactivar cuenta
-                    </button>
-                    <a href="/mesa" class="btn btn-ghost btn-grow w-full">
-                      <.icon name="hero-arrow-left" class="size-4" /> Volver
-                    </a>
+                    <div class="flex gap-2">
+                      <button
+                        class="btn btn-sm btn-outline btn-grow flex-1"
+                        phx-click="unpark_order"
+                        data-confirm="Reactivar la cuenta para seguir agregando platillos?"
+                      >
+                        <.icon name="hero-arrow-path" class="size-4" /> Reactivar
+                      </button>
+                      <a href="/mesa" class="btn btn-sm btn-ghost btn-grow flex-1">
+                        <.icon name="hero-arrow-left" class="size-4" /> Volver
+                      </a>
+                    </div>
                   <% true -> %>
                     <button
-                      class="btn btn-primary btn-grow w-full"
+                      class="btn btn-sm btn-primary btn-grow w-full"
                       phx-click="send_to_kitchen"
                       disabled={pending == []}
                     >
@@ -1872,7 +1876,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                     </button>
                     <%= if @order.order_items == [] and @order.status == "open" do %>
                       <button
-                        class="btn btn-outline btn-error btn-grow w-full"
+                        class="btn btn-sm btn-outline btn-error btn-grow w-full"
                         phx-click="cancel_order"
                         data-confirm="¿Cancelar esta comanda?"
                       >
@@ -1880,19 +1884,21 @@ defmodule CRCWeb.Waiter.OrderLive do
                       </button>
                     <% end %>
                     <%= if @order.order_items != [] do %>
-                      <button
-                        class="btn btn-outline btn-success btn-grow w-full"
-                        phx-click="show_payment_step"
-                      >
-                        <.icon name="hero-credit-card" class="size-4" /> Cobrar y cerrar cuenta
-                      </button>
-                      <button
-                        class="btn btn-outline btn-grow w-full"
-                        phx-click="park_order"
-                        data-confirm="El cliente paga después. Se libera la mesa. ¿Dejar la cuenta abierta?"
-                      >
-                        <.icon name="hero-pause-circle" class="size-4" /> Dejar cuenta abierta
-                      </button>
+                      <div class="flex gap-2">
+                        <button
+                          class="btn btn-sm btn-outline btn-success btn-grow flex-1"
+                          phx-click="show_payment_step"
+                        >
+                          <.icon name="hero-credit-card" class="size-4" /> Cobrar y cerrar cuenta
+                        </button>
+                        <button
+                          class="btn btn-sm btn-outline btn-grow flex-1"
+                          phx-click="park_order"
+                          data-confirm="El cliente paga después. Se libera la mesa. ¿Dejar la cuenta abierta?"
+                        >
+                          <.icon name="hero-pause-circle" class="size-4" /> Dejar cuenta abierta
+                        </button>
+                      </div>
                     <% end %>
                 <% end %>
               </div>

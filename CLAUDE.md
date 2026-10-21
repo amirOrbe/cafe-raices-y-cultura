@@ -105,13 +105,12 @@ Note: staff routes only check that a session exists — they don't check role or
 
 ## Deployment
 - **Git remote**: `github.com:amirOrbe/cafe-raices-y-cultura.git` (branch: `master`)
-- **Hosting**: Fly.io — app `crc-app`, Postgres `crc-db`, region `dfw` (migrated from Gigalixir 2026-09-30; Gigalixir kept frozen — 0 replicas — as a rollback safety net, not yet decommissioned)
+- **Hosting**: Fly.io — app `crc-app`, Postgres `crc-db`, region `dfw` — the only hosting platform (migrated from Gigalixir 2026-09-30; the Gigalixir app has since been deleted, there is no rollback target there)
 - **Workflow**: push to GitHub first → test locally → deploy to Fly only when user explicitly approves
 - **Fly deploy**: `fly deploy -a crc-app` (builds via `Dockerfile`, remote builder — no local Docker needed)
 - **Migrations**: run automatically two ways — `[deploy] release_command = "/app/bin/migrate"` in `fly.toml` (before the app machine starts) **and** `CRC.Release.migrate/0` on every app boot (`CRC.Application.start/2`), which now retries with backoff (up to 12× / 5s) since a freshly-booted Fly Machine's private-network DNS can take a few seconds to come up
 - **Required secrets on Fly** (`fly secrets set ... -a crc-app`): `DATABASE_URL` (set automatically by `fly postgres attach`), `SECRET_KEY_BASE`, `POOL_SIZE`, `CLOUDINARY_API_SECRET`, `BREVO_API_KEY`, `BREVO_SMTP_LOGIN`, `BREVO_SMTP_PASSWORD`, `MAILER_FROM_ADDRESS`, **`ECTO_IPV6=true`** (critical — Fly's private network (6PN) is IPv6-only; without this Postgrex can't resolve `crc-db.flycast`)
 - `PHX_HOST` and `PORT` are set in `fly.toml`'s `[env]`, not as secrets
-- **Legacy Gigalixir commands** (kept for rollback reference only): `git push gigalixir master`, `gigalixir ps:migrate` — see `~/.claude/.../memory/reference_gigalixir_cli.md` for CLI gotchas
 
 ## Cloudinary config (production)
 ```
@@ -123,6 +122,6 @@ api_secret: set via CLOUDINARY_API_SECRET env var
 ## Do NOT
 - Commit `.env` files or secrets
 - Use `mix ecto.drop` in production
-- Deploy to Fly (`fly deploy`) or push to Gigalixir without explicit user approval
+- Deploy to Fly (`fly deploy`) without explicit user approval
 - Use `table` layout without `table-fixed` + explicit column widths (causes horizontal overflow)
 - Place `w-40` date inputs side-by-side without `flex-col sm:flex-row` wrapping

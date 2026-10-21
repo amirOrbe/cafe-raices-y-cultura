@@ -107,7 +107,7 @@ if config_env() == :prod do
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
 
-  # Cloudinary — image uploads. Set CLOUDINARY_API_SECRET in Gigalixir env vars.
+  # Cloudinary — image uploads. Set CLOUDINARY_API_SECRET as a Fly secret.
   # CLOUD_NAME and API_KEY are not sensitive and are hardcoded below.
   if cloudinary_secret = System.get_env("CLOUDINARY_API_SECRET") do
     config :crc, :cloudinary,
@@ -117,7 +117,7 @@ if config_env() == :prod do
   end
 
   # Mailer — Brevo REST API adapter for production.
-  # Set BREVO_API_KEY and MAILER_FROM_ADDRESS in Gigalixir env vars.
+  # Set BREVO_API_KEY and MAILER_FROM_ADDRESS as Fly secrets.
   if brevo_api_key = System.get_env("BREVO_API_KEY") do
     config :crc, CRC.Mailer,
       adapter: CRC.BrevoAdapter,

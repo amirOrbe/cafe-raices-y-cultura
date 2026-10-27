@@ -234,7 +234,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Calendario de actividades</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">Actividades semanales por empleado</p>
+          <p class="text-sm text-base-content/70 mt-0.5">Actividades semanales por empleado</p>
         </div>
         <%!-- Tab toggle --%>
         <div class="flex gap-1 bg-base-200 rounded-xl p-1">
@@ -296,8 +296,9 @@ defmodule CRCWeb.Admin.CalendarioLive do
           </ul>
         </div>
         <button
+          aria-label="Cerrar"
           data-dismiss-tip
-          class="btn btn-ghost btn-xs text-base-content/30 hover:text-base-content shrink-0 self-start"
+          class="btn btn-ghost btn-xs text-base-content/65 hover:text-base-content shrink-0 self-start"
         >
           <.icon name="hero-x-mark" class="size-3.5" />
         </button>
@@ -340,16 +341,16 @@ defmodule CRCWeb.Admin.CalendarioLive do
       <%!-- Week navigation --%>
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div class="flex items-center gap-1">
-          <button class="btn btn-ghost btn-sm shrink-0" phx-click="prev_week">
+          <button aria-label="Anterior" class="btn btn-ghost btn-sm shrink-0" phx-click="prev_week">
             <.icon name="hero-chevron-left" class="size-4" />
           </button>
           <span class="font-semibold text-base-content text-sm flex-1 text-center sm:min-w-52">
             {format_week(@week_start)}
           </span>
-          <button class="btn btn-ghost btn-sm shrink-0" phx-click="next_week">
+          <button aria-label="Siguiente" class="btn btn-ghost btn-sm shrink-0" phx-click="next_week">
             <.icon name="hero-chevron-right" class="size-4" />
           </button>
-          <button class="btn btn-ghost btn-xs text-base-content/50 shrink-0" phx-click="go_today">
+          <button class="btn btn-ghost btn-xs text-base-content/70 shrink-0" phx-click="go_today">
             Hoy
           </button>
         </div>
@@ -362,7 +363,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
       <%= if @areas == [] do %>
         <.panel class="py-20 text-center">
           <.icon name="hero-calendar-days" class="size-12 text-base-content/20 mx-auto mb-3" />
-          <p class="text-base-content/50 text-sm">No hay áreas ni tareas configuradas.</p>
+          <p class="text-base-content/70 text-sm">No hay áreas ni tareas configuradas.</p>
           <button class="btn btn-primary btn-sm mt-4" phx-click="set_tab" phx-value-tab="manage">
             Agregar áreas y tareas
           </button>
@@ -417,7 +418,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
                                 "select select-xs w-full text-center font-semibold",
                                 if(user,
                                   do: "#{cell_select_class(user)}",
-                                  else: "select-ghost text-base-content/30"
+                                  else: "select-ghost text-base-content/65"
                                 )
                               ]}
                               name="user"
@@ -461,7 +462,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
                         <% user = assignment && assignment.user %>
                         <% is_today = Date.add(@week_start, day) == Date.utc_today() %>
                         <div class={"flex flex-col items-center gap-1 w-10 #{if is_today, do: "rounded-xl bg-primary/5 py-1 -my-1", else: ""}"}>
-                          <span class={"text-xs font-bold #{if is_today, do: "text-primary", else: "text-base-content/40"}"}>
+                          <span class={"text-xs font-bold #{if is_today, do: "text-primary", else: "text-base-content/65"}"}>
                             {String.first(Schedule.day_name(day))}
                           </span>
                           <form phx-change="assign_user">
@@ -472,7 +473,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
                                 "select select-xs w-full text-center px-0 font-semibold text-xs",
                                 if(user,
                                   do: cell_select_class(user),
-                                  else: "select-ghost text-base-content/30"
+                                  else: "select-ghost text-base-content/65"
                                 )
                               ]}
                               name="user"
@@ -603,8 +604,8 @@ defmodule CRCWeb.Admin.CalendarioLive do
         <%= if @areas == [] do %>
           <div class="bg-base-100 rounded-2xl border border-dashed border-base-300 p-8 text-center space-y-2">
             <.icon name="hero-squares-plus" class="size-10 text-base-content/20 mx-auto" />
-            <p class="text-sm font-medium text-base-content/60">Aún no hay áreas</p>
-            <p class="text-xs text-base-content/40">
+            <p class="text-sm font-medium text-base-content/70">Aún no hay áreas</p>
+            <p class="text-xs text-base-content/65">
               Crea una área (Barra, Cocina…) y luego agrega las actividades dentro.
             </p>
           </div>
@@ -617,6 +618,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
               <span class="font-bold text-white text-sm flex-1 min-w-0 truncate">{area.name}</span>
               <div class="flex gap-1 shrink-0">
                 <button
+                  aria-label="Editar"
                   class="btn btn-xs btn-ghost text-white/70 hover:text-white"
                   phx-click="edit_area"
                   phx-value-id={area.id}
@@ -624,6 +626,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
                   <.icon name="hero-pencil" class="size-3.5" />
                 </button>
                 <button
+                  aria-label="Eliminar"
                   class="btn btn-xs btn-ghost text-white/70 hover:text-white"
                   phx-click="delete_area"
                   phx-value-id={area.id}
@@ -644,7 +647,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
             <%!-- Task form (shown per-area) --%>
             <%= if @task_form && to_string(@task_area_id) == to_string(area.id) do %>
               <div class="px-4 py-3 bg-base-200/60 border-b border-base-300">
-                <p class="text-xs font-semibold text-base-content/50 mb-2">
+                <p class="text-xs font-semibold text-base-content/70 mb-2">
                   Nueva actividad en
                   <span class={"font-bold #{area_text_class(area.color)}"}>{area.name}</span>
                 </p>
@@ -661,8 +664,9 @@ defmodule CRCWeb.Admin.CalendarioLive do
                     <.icon name="hero-plus" class="size-3.5" /> Agregar
                   </button>
                   <button
+                    aria-label="Cerrar"
                     type="button"
-                    class="btn btn-ghost btn-sm shrink-0 text-base-content/40"
+                    class="btn btn-ghost btn-sm shrink-0 text-base-content/65"
                     phx-click="cancel_task_form"
                   >
                     <.icon name="hero-x-mark" class="size-4" />
@@ -678,13 +682,15 @@ defmodule CRCWeb.Admin.CalendarioLive do
                   <span class="text-sm text-base-content flex-1 min-w-0 truncate">{task.name}</span>
                   <div class="flex gap-1 shrink-0">
                     <button
-                      class="btn btn-xs btn-ghost text-base-content/40 hover:text-base-content"
+                      aria-label="Editar"
+                      class="btn btn-xs btn-ghost text-base-content/65 hover:text-base-content"
                       phx-click="edit_task"
                       phx-value-id={task.id}
                     >
                       <.icon name="hero-pencil" class="size-3.5" />
                     </button>
                     <button
+                      aria-label="Eliminar"
                       class="btn btn-xs btn-ghost text-error/50 hover:text-error"
                       phx-click="delete_task"
                       phx-value-id={task.id}
@@ -709,8 +715,9 @@ defmodule CRCWeb.Admin.CalendarioLive do
                         <.icon name="hero-check" class="size-3.5" /> Guardar
                       </button>
                       <button
+                        aria-label="Cerrar"
                         type="button"
-                        class="btn btn-ghost btn-sm shrink-0 text-base-content/40"
+                        class="btn btn-ghost btn-sm shrink-0 text-base-content/65"
                         phx-click="cancel_task_form"
                       >
                         <.icon name="hero-x-mark" class="size-4" />
@@ -720,7 +727,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
                 <% end %>
               <% end %>
               <%= if area.tasks == [] do %>
-                <div class="px-4 py-3 text-xs text-base-content/40 italic">
+                <div class="px-4 py-3 text-xs text-base-content/65 italic">
                   Sin tareas — toca "+ Tarea" para agregar.
                 </div>
               <% end %>
@@ -742,7 +749,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
             </div>
           <% end %>
         </div>
-        <p class="text-xs text-base-content/40">
+        <p class="text-xs text-base-content/65">
           Los empleados se gestionan en <a href="/admin/usuarios" class="link">Usuarios</a>.
         </p>
       </.panel>

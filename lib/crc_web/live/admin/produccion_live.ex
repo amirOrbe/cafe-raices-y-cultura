@@ -225,7 +225,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
             <.icon name="hero-beaker" class="size-7 text-primary" />
             <div>
               <h1 class="text-2xl font-bold text-base-content">Producción Interna</h1>
-              <p class="text-sm text-base-content/50">
+              <p class="text-sm text-base-content/70">
                 Gestiona recetas de producción y revisa el historial.
               </p>
             </div>
@@ -258,7 +258,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
         <%!-- Recipes tab --%>
         <%= if @tab == :recipes do %>
           <%= if @recipes == [] do %>
-            <div class="bg-base-100 rounded-2xl border border-base-300 py-16 text-center text-base-content/40 text-sm">
+            <div class="bg-base-100 rounded-2xl border border-base-300 py-16 text-center text-base-content/65 text-sm">
               No hay recetas todavía. Crea la primera.
             </div>
           <% else %>
@@ -273,7 +273,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                   <div class="flex items-start justify-between gap-2">
                     <div>
                       <p class="font-semibold text-base-content">{recipe.name}</p>
-                      <p class="text-xs text-base-content/50 mt-0.5">
+                      <p class="text-xs text-base-content/70 mt-0.5">
                         Produce {format_qty(recipe.yield_quantity)} {recipe.yield_unit}
                       </p>
                     </div>
@@ -294,7 +294,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                   </div>
                   <% cost = Production.recipe_unit_cost(recipe) %>
                   <%= if cost do %>
-                    <p class="text-xs text-base-content/40">Costo/u: ${format_qty(cost)}</p>
+                    <p class="text-xs text-base-content/65">Costo/u: ${format_qty(cost)}</p>
                   <% end %>
                   <button
                     class="btn btn-ghost btn-xs w-full"
@@ -310,7 +310,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
             <%!-- Desktop table --%>
             <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
               <table class="table table-fixed w-full">
-                <thead class="bg-base-200 text-xs uppercase tracking-wider text-base-content/50">
+                <thead class="bg-base-200 text-xs uppercase tracking-wider text-base-content/70">
                   <tr>
                     <th class="w-48">Nombre</th>
                     <th class="w-32">Produce</th>
@@ -340,7 +340,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                           <% end %>
                         </div>
                       </td>
-                      <td class="text-right text-sm text-base-content/60">
+                      <td class="text-right text-sm text-base-content/70">
                         <% cost = Production.recipe_unit_cost(recipe) %>
                         {if cost, do: "$#{format_qty(cost)}", else: "—"}
                       </td>
@@ -355,6 +355,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                       </td>
                       <td class="text-right">
                         <button
+                          aria-label="Editar"
                           class="btn btn-ghost btn-xs"
                           phx-click="edit_recipe"
                           phx-value-id={recipe.id}
@@ -373,7 +374,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
         <%!-- History tab --%>
         <%= if @tab == :history do %>
           <%= if @recent_logs == [] do %>
-            <div class="bg-base-100 rounded-2xl border border-base-300 py-16 text-center text-base-content/40 text-sm">
+            <div class="bg-base-100 rounded-2xl border border-base-300 py-16 text-center text-base-content/65 text-sm">
               Sin producción registrada todavía.
             </div>
           <% else %>
@@ -390,11 +391,11 @@ defmodule CRCWeb.Admin.ProduccionLive do
                                                     else: "lotes"}
                     </span>
                   </div>
-                  <p class="text-xs text-base-content/50 mt-1">
+                  <p class="text-xs text-base-content/70 mt-1">
                     {log.produced_by && log.produced_by.name} · {format_dt(log.produced_at)}
                   </p>
                   <%= if log.notes && log.notes != "" do %>
-                    <p class="text-xs text-base-content/40 mt-1 italic">{log.notes}</p>
+                    <p class="text-xs text-base-content/65 mt-1 italic">{log.notes}</p>
                   <% end %>
                 </div>
               <% end %>
@@ -403,7 +404,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
             <%!-- Desktop table --%>
             <div class="hidden md:block bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
               <table class="table table-fixed w-full">
-                <thead class="bg-base-200 text-xs uppercase tracking-wider text-base-content/50">
+                <thead class="bg-base-200 text-xs uppercase tracking-wider text-base-content/70">
                   <tr>
                     <th class="w-40">Fecha / Hora</th>
                     <th class="w-48">Receta</th>
@@ -415,17 +416,17 @@ defmodule CRCWeb.Admin.ProduccionLive do
                 <tbody class="divide-y divide-base-200">
                   <%= for log <- @recent_logs do %>
                     <tr>
-                      <td class="text-sm text-base-content/60">{format_dt(log.produced_at)}</td>
+                      <td class="text-sm text-base-content/70">{format_dt(log.produced_at)}</td>
                       <td class="font-medium text-sm">{log.recipe && log.recipe.name}</td>
                       <td class="text-center">
                         <span class="badge badge-success badge-sm">
                           {format_qty(log.batches)}
                         </span>
                       </td>
-                      <td class="text-sm text-base-content/60">
+                      <td class="text-sm text-base-content/70">
                         {log.produced_by && log.produced_by.name}
                       </td>
-                      <td class="text-sm text-base-content/40 truncate">{log.notes}</td>
+                      <td class="text-sm text-base-content/65 truncate">{log.notes}</td>
                     </tr>
                   <% end %>
                 </tbody>
@@ -438,7 +439,13 @@ defmodule CRCWeb.Admin.ProduccionLive do
 
     <%!-- Recipe modal --%>
     <%= if @modal != nil do %>
-      <div class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        phx-window-keydown="close_modal"
+        phx-key="Escape"
+        class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
+      >
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" phx-click="close_modal" />
 
         <div class="relative bg-base-100 rounded-2xl shadow-xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
@@ -448,7 +455,11 @@ defmodule CRCWeb.Admin.ProduccionLive do
               <h2 class="text-lg font-bold text-base-content">
                 {if @modal == :new, do: "Nueva receta", else: "Editar receta"}
               </h2>
-              <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
+              <button
+                aria-label="Cerrar"
+                class="btn btn-ghost btn-sm btn-circle"
+                phx-click="close_modal"
+              >
                 <.icon name="hero-x-mark" class="size-5" />
               </button>
             </div>
@@ -490,7 +501,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                     class="input input-bordered w-full"
                     placeholder="Ej: Oleo de Naranja, Jarabe de Vainilla, Caldo Base…"
                   />
-                  <p class="text-xs text-base-content/40 mt-1">
+                  <p class="text-xs text-base-content/65 mt-1">
                     Este nombre aparecerá como insumo en Inventario. Si no existe, se crea automáticamente.
                   </p>
                 </div>
@@ -511,7 +522,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                         class="input input-bordered w-full"
                         placeholder="Ej: 200"
                       />
-                      <p class="text-xs text-base-content/40 mt-1">
+                      <p class="text-xs text-base-content/65 mt-1">
                         Cantidad de insumo que obtienes por lote.
                       </p>
                     </div>
@@ -527,7 +538,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                           </option>
                         <% end %>
                       </select>
-                      <p class="text-xs text-base-content/40 mt-1">
+                      <p class="text-xs text-base-content/65 mt-1">
                         Ej: mililitros, gramos, porciones…
                       </p>
                     </div>
@@ -538,7 +549,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                 <div class="form-control">
                   <label class="label pb-1">
                     <span class="label-text font-medium">Stock mínimo en inventario</span>
-                    <span class="label-text-alt text-base-content/40">Opcional</span>
+                    <span class="label-text-alt text-base-content/65">Opcional</span>
                   </label>
                   <input
                     type="number"
@@ -549,7 +560,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                     class="input input-bordered w-full"
                     placeholder="Ej: 0.5"
                   />
-                  <p class="text-xs text-base-content/40 mt-1">
+                  <p class="text-xs text-base-content/65 mt-1">
                     Aparece como "faltante" cuando el stock baje de este valor. Usa las mismas unidades del rendimiento.
                   </p>
                 </div>
@@ -558,7 +569,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                 <div class="form-control">
                   <label class="label pb-1">
                     <span class="label-text font-medium">Notas internas</span>
-                    <span class="label-text-alt text-base-content/40">Opcional</span>
+                    <span class="label-text-alt text-base-content/65">Opcional</span>
                   </label>
                   <textarea
                     name="recipe[notes]"
@@ -574,7 +585,7 @@ defmodule CRCWeb.Admin.ProduccionLive do
                 <div class="flex items-center justify-between">
                   <div>
                     <p class="text-sm font-semibold text-base-content">Ingredientes por lote</p>
-                    <p class="text-xs text-base-content/40 mt-0.5">
+                    <p class="text-xs text-base-content/65 mt-0.5">
                       Insumos que se consumen cada vez que produces un lote completo.
                     </p>
                   </div>
@@ -621,10 +632,11 @@ defmodule CRCWeb.Admin.ProduccionLive do
                           phx-change="update_ingredient_row"
                           name={"ingredient_rows[#{idx}][quantity]"}
                         />
-                        <span class="text-xs text-base-content/40 w-8 shrink-0">
+                        <span class="text-xs text-base-content/65 w-8 shrink-0">
                           {if row_product, do: unit_abbr(row_product.unit), else: ""}
                         </span>
                         <button
+                          aria-label="Eliminar"
                           type="button"
                           class="btn btn-ghost btn-sm btn-circle text-error shrink-0"
                           phx-click="remove_ingredient_row"

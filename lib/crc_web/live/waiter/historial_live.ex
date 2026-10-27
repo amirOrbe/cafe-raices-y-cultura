@@ -115,7 +115,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
         <div class="flex items-center justify-between gap-4">
           <div>
             <h1 class="text-2xl font-bold text-base-content">Historial de comandas</h1>
-            <p class="text-sm text-base-content/50 mt-0.5">
+            <p class="text-sm text-base-content/70 mt-0.5">
               <%= if @is_admin do %>
                 Todas las comandas cerradas
               <% else %>
@@ -151,7 +151,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
 
           <%!-- Custom date range --%>
           <form phx-change="set_date_range" class="flex flex-col gap-1">
-            <span class="text-xs text-base-content/50">Rango personalizado</span>
+            <span class="text-xs text-base-content/70">Rango personalizado</span>
             <div class="flex gap-2 items-center">
               <input
                 type="date"
@@ -159,7 +159,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
                 value={@date_from}
                 class="input input-sm input-bordered w-36"
               />
-              <span class="text-base-content/40 text-xs">—</span>
+              <span class="text-base-content/65 text-xs">—</span>
               <input
                 type="date"
                 name="date_to"
@@ -172,7 +172,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
           <%!-- Admin: filter by waiter --%>
           <%= if @is_admin and @waiters != [] do %>
             <div class="flex flex-col gap-1">
-              <span class="text-xs text-base-content/50">Mesero</span>
+              <span class="text-xs text-base-content/70">Mesero</span>
               <form phx-change="filter_user">
                 <select name="user_id" class="select select-sm select-bordered">
                   <option value="">Todos</option>
@@ -212,7 +212,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
         <%= if @orders == [] do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-20 text-center">
             <.icon name="hero-document-text" class="size-12 text-base-content/20 mx-auto mb-3" />
-            <p class="text-base-content/50 text-sm">No hay comandas cerradas en este período.</p>
+            <p class="text-base-content/70 text-sm">No hay comandas cerradas en este período.</p>
           </div>
         <% end %>
 
@@ -229,7 +229,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
                 <%!-- Date/time --%>
                 <div class="shrink-0 text-center w-12">
                   <p class="text-xs font-bold text-base-content">{format_day(order.closed_at)}</p>
-                  <p class="text-xs text-base-content/50">{format_month(order.closed_at)}</p>
+                  <p class="text-xs text-base-content/70">{format_month(order.closed_at)}</p>
                 </div>
 
                 <div class="flex-1 min-w-0">
@@ -241,12 +241,12 @@ defmodule CRCWeb.Waiter.HistorialLive do
                       {order_item_count(order)} artículos
                     </span>
                     <%= if @is_admin and order.user do %>
-                      <span class="badge badge-xs badge-ghost text-base-content/50">
+                      <span class="badge badge-xs badge-ghost text-base-content/70">
                         {order.user.name}
                       </span>
                     <% end %>
                   </div>
-                  <p class="text-xs text-base-content/40 mt-0.5">
+                  <p class="text-xs text-base-content/65 mt-0.5">
                     {format_time(order.closed_at)} · {payment_label(order.payment_method)}
                   </p>
                 </div>
@@ -255,7 +255,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
                   <p class="font-bold text-primary">${format_total(order.total)}</p>
                   <%= if order.payment_method == "efectivo" and order.amount_paid do %>
                     <% change = Decimal.sub(order.amount_paid, order.total) %>
-                    <p class="text-xs text-base-content/40">
+                    <p class="text-xs text-base-content/65">
                       Cambio: ${format_total(change)}
                     </p>
                   <% end %>
@@ -263,7 +263,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
 
                 <.icon
                   name={if @expanded_id == order.id, do: "hero-chevron-up", else: "hero-chevron-down"}
-                  class="size-4 text-base-content/30 shrink-0"
+                  class="size-4 text-base-content/65 shrink-0"
                 />
               </button>
 
@@ -274,15 +274,15 @@ defmodule CRCWeb.Waiter.HistorialLive do
                     <div class="flex items-center justify-between py-1.5 text-sm">
                       <div class="flex items-center gap-2 min-w-0">
                         <%= if item.for_menu_item_id do %>
-                          <span class="text-base-content/30 text-xs pl-4">↳</span>
-                          <span class="text-base-content/60 truncate">
+                          <span class="text-base-content/65 text-xs pl-4">↳</span>
+                          <span class="text-base-content/70 truncate">
                             {item_name(item)}
-                            <span class="text-xs text-base-content/40">× {item.quantity}</span>
+                            <span class="text-xs text-base-content/65">× {item.quantity}</span>
                           </span>
                         <% else %>
                           <span class="text-base-content truncate">
                             {item_name(item)}
-                            <span class="text-xs text-base-content/40">× {item.quantity}</span>
+                            <span class="text-xs text-base-content/65">× {item.quantity}</span>
                           </span>
                         <% end %>
                         <%= if item.status == "cancelled" or item.status == "cancelled_waste" do %>
@@ -301,7 +301,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
 
                   <div class="pt-3 mt-2 border-t border-base-200 flex items-center justify-between gap-3">
                     <div>
-                      <span class="text-sm text-base-content/50">Total cobrado</span>
+                      <span class="text-sm text-base-content/70">Total cobrado</span>
                       <span class="font-bold text-base-content ml-2">
                         ${format_total(order.total)}
                       </span>
@@ -328,7 +328,13 @@ defmodule CRCWeb.Waiter.HistorialLive do
       <%!-- Backdrop --%>
       <div class="fixed inset-0 z-40 bg-black/60" phx-click="close_bill_qr"></div>
       <%!-- Modal --%>
-      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+      <div
+        role="dialog"
+        aria-modal="true"
+        phx-window-keydown="close_bill_qr"
+        phx-key="Escape"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+      >
         <div class="bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden pointer-events-auto">
           <%!-- Header --%>
           <div class="bg-primary text-primary-content px-5 py-4 flex items-center gap-3">
@@ -337,6 +343,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
               <p class="text-sm opacity-80 truncate">{qr_order.customer_name}</p>
             </div>
             <button
+              aria-label="Cerrar"
               phx-click="close_bill_qr"
               class="btn btn-sm btn-ghost text-primary-content shrink-0"
             >
@@ -347,9 +354,9 @@ defmodule CRCWeb.Waiter.HistorialLive do
           <div class="px-5 py-6 space-y-4">
             <%!-- Total --%>
             <div class="text-center">
-              <p class="text-xs text-base-content/50 mb-1">Total cobrado</p>
+              <p class="text-xs text-base-content/70 mb-1">Total cobrado</p>
               <p class="text-3xl font-bold text-primary">${format_total(qr_order.total)}</p>
-              <p class="text-xs text-base-content/40 mt-1">
+              <p class="text-xs text-base-content/65 mt-1">
                 {format_time_full(qr_order.closed_at)} · {payment_label(qr_order.payment_method)}
               </p>
             </div>
@@ -358,7 +365,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
             <%= if qr_order.bill_token do %>
               <% cuenta_url = CRCWeb.Endpoint.url() <> "/cuenta/#{qr_order.bill_token}" %>
               <div class="flex flex-col items-center gap-3 pt-1">
-                <p class="text-xs text-base-content/50 text-center">
+                <p class="text-xs text-base-content/70 text-center">
                   El cliente puede escanear este QR para ver su cuenta
                 </p>
                 <div class="bg-white p-3 rounded-xl border border-base-300 shadow-sm">
@@ -368,7 +375,7 @@ defmodule CRCWeb.Waiter.HistorialLive do
                     class="w-48 h-48 block"
                   />
                 </div>
-                <p class="text-xs text-base-content/40 font-mono text-center break-all">
+                <p class="text-xs text-base-content/65 font-mono text-center break-all">
                   {cuenta_url}
                 </p>
               </div>

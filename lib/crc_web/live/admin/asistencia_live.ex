@@ -148,7 +148,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
         <div class="mb-6 flex items-start justify-between">
           <div>
             <h1 class="text-2xl font-bold text-base-content">Asistencia</h1>
-            <p class="text-base-content/60 text-sm mt-1">
+            <p class="text-base-content/70 text-sm mt-1">
               Monitoreo en tiempo real y métricas del equipo.
             </p>
           </div>
@@ -220,7 +220,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
             <div class="flex-1 min-w-0">
               <p class="font-semibold text-base-content truncate">{user.name}</p>
               <div class="flex items-center gap-2 mt-0.5">
-                <p class="text-xs text-base-content/50 capitalize shrink-0">{user.role}</p>
+                <p class="text-xs text-base-content/70 capitalize shrink-0">{user.role}</p>
                 <.attendance_status_badge record={record} />
               </div>
             </div>
@@ -229,7 +229,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
           <%!-- Clock times --%>
           <div class="grid grid-cols-2 gap-2 text-sm">
             <div class="bg-base-200 rounded-lg p-2 text-center">
-              <p class="text-xs text-base-content/50">Entrada</p>
+              <p class="text-xs text-base-content/70">Entrada</p>
               <p class="font-semibold text-base-content">
                 {if record && record.clocked_in_at,
                   do: format_time_utc(record.clocked_in_at),
@@ -237,7 +237,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
               </p>
             </div>
             <div class="bg-base-200 rounded-lg p-2 text-center">
-              <p class="text-xs text-base-content/50">Salida</p>
+              <p class="text-xs text-base-content/70">Salida</p>
               <p class="font-semibold text-base-content">
                 {if record && record.clocked_out_at,
                   do: format_time_utc(record.clocked_out_at),
@@ -301,7 +301,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
 
       <%!-- Summary table --%>
       <%= if @summary == [] do %>
-        <.panel class="p-12 text-center text-base-content/40">
+        <.panel class="p-12 text-center text-base-content/65">
           <.icon name="hero-chart-bar" class="size-12 mx-auto mb-3 opacity-30" />
           <p>Sin datos de asistencia para este período.</p>
         </.panel>
@@ -323,9 +323,9 @@ defmodule CRCWeb.Admin.AsistenciaLive do
                 <th class="text-center">
                   <span class="badge badge-error badge-sm">Ausente</span>
                 </th>
-                <th class="text-center text-base-content/60 text-xs">Prom. anticipación</th>
-                <th class="text-center text-base-content/60 text-xs">Prom. retraso</th>
-                <th class="text-center text-base-content/60 text-xs">Días extra</th>
+                <th class="text-center text-base-content/70 text-xs">Prom. anticipación</th>
+                <th class="text-center text-base-content/70 text-xs">Prom. retraso</th>
+                <th class="text-center text-base-content/70 text-xs">Días extra</th>
               </tr>
             </thead>
             <tbody>
@@ -372,7 +372,7 @@ defmodule CRCWeb.Admin.AsistenciaLive do
     <.admin_modal id="manual-attendance-modal" size="sm" on_close="close_modal">
       <:title>Registrar {@action_label}</:title>
       <div class="space-y-5">
-        <p class="text-sm text-base-content/60 -mt-2">
+        <p class="text-sm text-base-content/70 -mt-2">
           Empleado: <strong>{@employee.name}</strong>
         </p>
 

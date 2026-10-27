@@ -181,7 +181,7 @@ defmodule CRCWeb.Admin.PackagesLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Paquetes</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">{length(@packages)} paquetes registrados</p>
+          <p class="text-sm text-base-content/70 mt-0.5">{length(@packages)} paquetes registrados</p>
         </div>
         <button class="btn btn-primary gap-2" phx-click="new_package">
           <.icon name="hero-plus" class="size-4" /> Nuevo paquete
@@ -205,21 +205,21 @@ defmodule CRCWeb.Admin.PackagesLive do
                   <div class="flex items-start justify-between gap-2">
                     <div class="space-y-0.5">
                       <p class="font-medium text-sm text-base-content">{s.item_a.menu_item.name}</p>
-                      <p class="text-xs text-base-content/50">margen {s.item_a.margin}%</p>
+                      <p class="text-xs text-base-content/70">margen {s.item_a.margin}%</p>
                     </div>
-                    <.icon name="hero-plus-small" class="size-4 text-base-content/30 mt-1 shrink-0" />
+                    <.icon name="hero-plus-small" class="size-4 text-base-content/65 mt-1 shrink-0" />
                     <div class="space-y-0.5 text-right">
                       <p class="font-medium text-sm text-base-content">{s.item_b.menu_item.name}</p>
-                      <p class="text-xs text-base-content/50">margen {s.item_b.margin}%</p>
+                      <p class="text-xs text-base-content/70">margen {s.item_b.margin}%</p>
                     </div>
                   </div>
-                  <div class="divider my-1 text-xs text-base-content/30">combo sugerido</div>
+                  <div class="divider my-1 text-xs text-base-content/65">combo sugerido</div>
                   <div class="flex items-center justify-between">
                     <div>
                       <p class="text-lg font-bold text-primary">
                         ${CRC.Utils.format_money(s.suggested_price)}
                       </p>
-                      <p class="text-xs text-base-content/50">
+                      <p class="text-xs text-base-content/70">
                         valor normal ${CRC.Utils.format_money(s.normal_price)} · ahorro ${CRC.Utils.format_money(
                           s.savings
                         )}
@@ -247,8 +247,8 @@ defmodule CRCWeb.Admin.PackagesLive do
       <%= if @packages == [] do %>
         <.panel class="flex flex-col items-center py-16 text-center">
           <.icon name="hero-gift" class="size-12 text-base-content/20 mb-2" />
-          <p class="text-base-content/50">No hay paquetes registrados.</p>
-          <p class="text-sm text-base-content/40">Crea el primero con el botón de arriba.</p>
+          <p class="text-base-content/70">No hay paquetes registrados.</p>
+          <p class="text-sm text-base-content/65">Crea el primero con el botón de arriba.</p>
         </.panel>
       <% else %>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -263,7 +263,7 @@ defmodule CRCWeb.Admin.PackagesLive do
                 <div class="min-w-0">
                   <h3 class="font-semibold text-base-content truncate">{pkg.name}</h3>
                   <%= if pkg.description do %>
-                    <p class="text-xs text-base-content/50 mt-0.5 line-clamp-2">
+                    <p class="text-xs text-base-content/70 mt-0.5 line-clamp-2">
                       {pkg.description}
                     </p>
                   <% end %>
@@ -300,6 +300,7 @@ defmodule CRCWeb.Admin.PackagesLive do
                   {if pkg.active, do: "Desactivar", else: "Activar"}
                 </button>
                 <button
+                  aria-label="Eliminar"
                   class="btn btn-xs btn-ghost text-error ml-auto"
                   phx-click="delete_package"
                   phx-value-id={pkg.id}
@@ -347,7 +348,7 @@ defmodule CRCWeb.Admin.PackagesLive do
           <div>
             <label class="label pb-1">
               <span class="label-text font-medium">
-                Descripción <span class="text-base-content/40">(opcional)</span>
+                Descripción <span class="text-base-content/65">(opcional)</span>
               </span>
             </label>
             <textarea
@@ -374,7 +375,7 @@ defmodule CRCWeb.Admin.PackagesLive do
                 placeholder="0.00"
                 required
               />
-              <p class="text-xs text-base-content/40 mt-1">
+              <p class="text-xs text-base-content/65 mt-1">
                 Normalmente menor al precio individual de cada platillo.
               </p>
               <%= if @form[:price].errors != [] do %>
@@ -397,7 +398,7 @@ defmodule CRCWeb.Admin.PackagesLive do
                 />
                 <span class="text-sm font-medium">Activo</span>
               </label>
-              <p class="text-xs text-base-content/40 mt-1.5">
+              <p class="text-xs text-base-content/65 mt-1.5">
                 Solo los paquetes activos aparecen en el menú y pueden pedirse en comandas.
               </p>
             </div>
@@ -407,11 +408,11 @@ defmodule CRCWeb.Admin.PackagesLive do
           <div>
             <label class="label pb-1">
               <span class="label-text font-medium">Platillos incluidos en el paquete</span>
-              <span class="label-text-alt text-base-content/50">
+              <span class="label-text-alt text-base-content/70">
                 {length(@selected_items)} seleccionados
               </span>
             </label>
-            <p class="text-xs text-base-content/40 mb-2">
+            <p class="text-xs text-base-content/65 mb-2">
               Marca los platillos que forman el paquete y ajusta la cantidad con + / −.
             </p>
             <div class="border border-base-300 rounded-xl overflow-hidden">
@@ -430,7 +431,7 @@ defmodule CRCWeb.Admin.PackagesLive do
                       />
                       <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-base-content truncate">{item.name}</p>
-                        <p class="text-xs text-base-content/50">
+                        <p class="text-xs text-base-content/70">
                           ${CRC.Utils.format_money(item.price)} c/u
                         </p>
                       </div>
@@ -467,7 +468,7 @@ defmodule CRCWeb.Admin.PackagesLive do
                     <%!-- Mobile qty row (only when selected) --%>
                     <%= if selected do %>
                       <div class="sm:hidden flex items-center gap-1 mt-1 ml-6">
-                        <span class="text-xs text-base-content/40 mr-1">Cantidad:</span>
+                        <span class="text-xs text-base-content/65 mr-1">Cantidad:</span>
                         <button
                           type="button"
                           class="btn btn-xs btn-ghost px-2"
@@ -512,7 +513,7 @@ defmodule CRCWeb.Admin.PackagesLive do
                       )
                   end
                 end) %>
-              <div class="mt-2 rounded-lg bg-base-200 px-3 py-2 flex items-center justify-between text-xs text-base-content/60">
+              <div class="mt-2 rounded-lg bg-base-200 px-3 py-2 flex items-center justify-between text-xs text-base-content/70">
                 <span>Precio individual total:</span>
                 <span class="font-semibold">${CRC.Utils.format_money(individual_total)}</span>
               </div>

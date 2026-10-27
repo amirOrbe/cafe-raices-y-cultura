@@ -92,7 +92,7 @@ defmodule CRCWeb.Admin.MermaLive do
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 class="text-2xl font-bold text-base-content">🗑️ Merma de Insumos</h1>
-            <p class="text-sm text-base-content/50 mt-0.5">
+            <p class="text-sm text-base-content/70 mt-0.5">
               Registra pérdidas de stock por caducidad, derrames, robos u otros motivos.
             </p>
           </div>
@@ -123,7 +123,7 @@ defmodule CRCWeb.Admin.MermaLive do
           </div>
 
           <%= if @adjustments == [] do %>
-            <div class="py-16 text-center text-base-content/40 text-sm">
+            <div class="py-16 text-center text-base-content/65 text-sm">
               No hay ajustes registrados todavía.
             </div>
           <% else %>
@@ -139,11 +139,11 @@ defmodule CRCWeb.Admin.MermaLive do
                     <p class="text-sm font-medium text-base-content truncate">
                       {adj.product && adj.product.name}
                     </p>
-                    <p class="text-xs text-base-content/50">
+                    <p class="text-xs text-base-content/70">
                       {Inventory.adjustment_reason_label(adj.reason)}
                       {if adj.notes && adj.notes != "", do: " · #{adj.notes}"}
                     </p>
-                    <p class="text-xs text-base-content/40 mt-0.5">
+                    <p class="text-xs text-base-content/65 mt-0.5">
                       {adj.adjusted_by && adj.adjusted_by.name} · {format_dt(adj.inserted_at)}
                     </p>
                   </div>
@@ -180,13 +180,13 @@ defmodule CRCWeb.Admin.MermaLive do
                       <td class="text-sm text-base-content/70">
                         {Inventory.adjustment_reason_label(adj.reason)}
                       </td>
-                      <td class="text-sm text-base-content/60 truncate max-w-0">
+                      <td class="text-sm text-base-content/70 truncate max-w-0">
                         {adj.notes || "—"}
                       </td>
-                      <td class="text-xs text-base-content/50">
+                      <td class="text-xs text-base-content/70">
                         {(adj.adjusted_by && adj.adjusted_by.name) || "—"}
                       </td>
-                      <td class="text-xs text-base-content/40">
+                      <td class="text-xs text-base-content/65">
                         {format_dt(adj.inserted_at)}
                       </td>
                     </tr>
@@ -203,7 +203,7 @@ defmodule CRCWeb.Admin.MermaLive do
     <%= if @modal_open do %>
       <.admin_modal id="merma-modal" size="lg" on_close="close_modal">
         <:title>Registrar ajuste de stock</:title>
-        <p class="text-xs text-base-content/50 -mt-2 mb-4">
+        <p class="text-xs text-base-content/70 -mt-2 mb-4">
           Selecciona el insumo, indica la cantidad y la razón. El stock se actualiza de inmediato.
         </p>
 
@@ -252,7 +252,7 @@ defmodule CRCWeb.Admin.MermaLive do
           <div class="form-control">
             <label class="label">
               <span class="label-text font-medium">Cantidad</span>
-              <span class="label-text-alt text-base-content/40">
+              <span class="label-text-alt text-base-content/65">
                 En la unidad del insumo (litros, gramos, etc.)
               </span>
             </label>
@@ -283,7 +283,7 @@ defmodule CRCWeb.Admin.MermaLive do
           <div class="form-control">
             <label class="label">
               <span class="label-text font-medium">Notas</span>
-              <span class="label-text-alt text-base-content/40">Opcional</span>
+              <span class="label-text-alt text-base-content/65">Opcional</span>
             </label>
             <textarea
               name="stock_adjustment[notes]"

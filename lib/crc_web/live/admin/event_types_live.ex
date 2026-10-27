@@ -117,7 +117,7 @@ defmodule CRCWeb.Admin.EventTypesLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Tipos de Evento</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">
+          <p class="text-sm text-base-content/70 mt-0.5">
             {length(visible)}
             {if length(visible) == 1, do: "tipo", else: "tipos"}
             {if @status_filter == :active, do: "activos", else: "inactivos"}
@@ -168,7 +168,7 @@ defmodule CRCWeb.Admin.EventTypesLive do
       <div class="md:hidden flex flex-col gap-2">
         <%= if visible == [] do %>
           <.panel class="text-center py-12">
-            <p class="text-base-content/40 text-sm">
+            <p class="text-base-content/65 text-sm">
               {if @status_filter == :active,
                 do: "No hay tipos de evento activos.",
                 else: "No hay tipos de evento inactivos."}
@@ -198,6 +198,7 @@ defmodule CRCWeb.Admin.EventTypesLive do
             </div>
             <div class="flex flex-col items-center gap-1 shrink-0">
               <button
+                aria-label="Editar"
                 class="btn btn-ghost btn-xs btn-circle"
                 phx-click="edit_event_type"
                 phx-value-id={event_type.id}
@@ -249,6 +250,7 @@ defmodule CRCWeb.Admin.EventTypesLive do
                   <td>
                     <div class="flex items-center justify-end gap-1">
                       <button
+                        aria-label="Editar"
                         class="btn btn-ghost btn-xs btn-circle"
                         phx-click="edit_event_type"
                         phx-value-id={event_type.id}
@@ -276,7 +278,7 @@ defmodule CRCWeb.Admin.EventTypesLive do
               <% end %>
               <%= if visible == [] do %>
                 <tr>
-                  <td colspan="3" class="text-center py-12 text-base-content/40 text-sm">
+                  <td colspan="3" class="text-center py-12 text-base-content/65 text-sm">
                     {if @status_filter == :active,
                       do: "No hay tipos de evento activos.",
                       else: "No hay tipos de evento inactivos."}

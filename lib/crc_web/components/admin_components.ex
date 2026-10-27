@@ -73,8 +73,8 @@ defmodule CRCWeb.AdminComponents do
       </div>
       <div class="min-w-0">
         <p class="text-lg sm:text-xl font-bold text-base-content leading-none truncate">{@value}</p>
-        <p class="text-xs text-base-content/50 mt-0.5 leading-tight truncate">{@label}</p>
-        <p :if={@sublabel} class="text-xs text-base-content/40 leading-tight truncate">{@sublabel}</p>
+        <p class="text-xs text-base-content/70 mt-0.5 leading-tight truncate">{@label}</p>
+        <p :if={@sublabel} class="text-xs text-base-content/65 leading-tight truncate">{@sublabel}</p>
       </div>
     </.panel>
     """
@@ -100,7 +100,7 @@ defmodule CRCWeb.AdminComponents do
       <.icon name={@icon} class={"size-4 shrink-0 #{@color}"} />
       <div>
         <p class="text-base font-bold text-base-content leading-none">{@value}</p>
-        <p class="text-xs text-base-content/40">{@label}</p>
+        <p class="text-xs text-base-content/65">{@label}</p>
       </div>
     </div>
     """
@@ -156,6 +156,8 @@ defmodule CRCWeb.AdminComponents do
   def admin_modal(assigns) do
     ~H"""
     <div
+      role="dialog"
+      aria-modal="true"
       id={@id}
       class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
       phx-window-keydown={@on_close}
@@ -169,7 +171,7 @@ defmodule CRCWeb.AdminComponents do
       ]}>
         <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between sticky top-0 bg-base-100 z-10">
           <h2 class="text-lg font-semibold text-base-content">{render_slot(@title)}</h2>
-          <button class="btn btn-ghost btn-sm btn-circle" phx-click={@on_close}>
+          <button aria-label="Cerrar" class="btn btn-ghost btn-sm btn-circle" phx-click={@on_close}>
             <.icon name="hero-x-mark" class="size-5" />
           </button>
         </div>
@@ -202,10 +204,10 @@ defmodule CRCWeb.AdminComponents do
     ~H"""
     <button
       type="button"
-      class="flex items-center gap-1.5 text-base-content/40 hover:text-primary transition-colors"
+      class="flex items-center gap-1.5 text-base-content/65 hover:text-primary transition-colors"
       phx-click={JS.dispatch("phx:scroll-to", detail: %{id: @target})}
     >
-      <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+      <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-base-300 text-base-content/70 text-[10px] font-bold shrink-0">
         {@n}
       </span>
       {@label}
@@ -214,7 +216,7 @@ defmodule CRCWeb.AdminComponents do
   end
 
   @doc """
-  The `"bg-base-200 text-xs font-semibold text-base-content/60 uppercase
+  The `"bg-base-200 text-xs font-semibold text-base-content/70 uppercase
   tracking-wider"` header row shared by every admin desktop table. Columns
   are passed as a `:col` slot so callers keep full control of the raw
   `<table>`/`<tbody>` markup (and the mobile-card/desktop-table dual layout
@@ -237,7 +239,7 @@ defmodule CRCWeb.AdminComponents do
   def admin_table_head(assigns) do
     ~H"""
     <thead>
-      <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
+      <tr class="bg-base-200 text-xs font-semibold text-base-content/70 uppercase tracking-wider">
         <th :for={col <- @col} class={col[:class]}>{render_slot(col)}</th>
       </tr>
     </thead>
@@ -289,7 +291,7 @@ defmodule CRCWeb.AdminComponents do
       </div>
 
       <form phx-change={@on_range} class="flex flex-wrap items-center gap-2">
-        <label class="text-xs text-base-content/50 uppercase tracking-wider whitespace-nowrap">
+        <label class="text-xs text-base-content/70 uppercase tracking-wider whitespace-nowrap">
           Rango personalizado
         </label>
         <input
@@ -298,7 +300,7 @@ defmodule CRCWeb.AdminComponents do
           value={@date_from}
           class="input input-bordered input-sm w-full sm:w-auto"
         />
-        <span class="text-base-content/40">–</span>
+        <span class="text-base-content/65">–</span>
         <input
           type="date"
           name="date_to"

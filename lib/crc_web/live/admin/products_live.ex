@@ -321,7 +321,7 @@ defmodule CRCWeb.Admin.ProductsLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Insumos</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">
+          <p class="text-sm text-base-content/70 mt-0.5">
             {length(filtered)} insumos {if @status_filter == :active, do: "activos", else: "inactivos"}
             <%= if @status_filter == :active && @low_stock_count > 0 do %>
               · <span class="text-warning font-medium">{@low_stock_count} con stock bajo</span>
@@ -337,7 +337,7 @@ defmodule CRCWeb.Admin.ProductsLive do
       <div class="relative">
         <.icon
           name="hero-magnifying-glass"
-          class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/40 pointer-events-none"
+          class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/65 pointer-events-none"
         />
         <input
           type="search"
@@ -398,7 +398,7 @@ defmodule CRCWeb.Admin.ProductsLive do
       <div class="md:hidden flex flex-col gap-2">
         <%= if visible == [] do %>
           <.panel class="text-center py-12">
-            <p class="text-base-content/40 text-sm">
+            <p class="text-base-content/65 text-sm">
               {cond do
                 @status_filter == :inactive && @filter_category == "all" ->
                   "No hay insumos inactivos."
@@ -460,7 +460,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                 ]}>
                   Stock: {format_quantity(product.stock_quantity)} {unit_abbr(product.unit)}
                 </span>
-                <span class="text-xs text-base-content/40">
+                <span class="text-xs text-base-content/65">
                   Mín: {format_quantity(product.min_stock)} {unit_abbr(product.unit)}
                 </span>
               </div>
@@ -469,12 +469,12 @@ defmodule CRCWeb.Admin.ProductsLive do
                   ${format_price(product.net_cost)} costo
                 </span>
                 <%= if product.sale_price do %>
-                  <span class="text-xs text-base-content/50">
+                  <span class="text-xs text-base-content/70">
                     ${format_price(product.sale_price)} venta
                   </span>
                 <% end %>
                 <%= if product.supplier do %>
-                  <span class="text-xs text-base-content/40 truncate">{product.supplier.name}</span>
+                  <span class="text-xs text-base-content/65 truncate">{product.supplier.name}</span>
                 <% end %>
               </div>
               <%= if has_variants and variant_low_stock do %>
@@ -483,6 +483,7 @@ defmodule CRCWeb.Admin.ProductsLive do
             </div>
             <div class="flex flex-col items-center gap-1 shrink-0">
               <button
+                aria-label="Editar"
                 class="btn btn-ghost btn-xs btn-circle"
                 phx-click="edit_product"
                 phx-value-id={product.id}
@@ -546,7 +547,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                           {product.name}
                         </span>
                         <%= if has_variants do %>
-                          <p class="text-xs text-base-content/40 mt-0.5 truncate">
+                          <p class="text-xs text-base-content/65 mt-0.5 truncate">
                             {length(product.variants)} tipo{if length(product.variants) != 1,
                               do: "s",
                               else: ""}
@@ -559,7 +560,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                     </div>
                   </td>
                   <td>
-                    <span class="text-xs leading-tight text-base-content/60">
+                    <span class="text-xs leading-tight text-base-content/70">
                       {if product.product_category, do: product.product_category.name, else: "—"}
                     </span>
                   </td>
@@ -570,14 +571,14 @@ defmodule CRCWeb.Admin.ProductsLive do
                       {format_quantity(product.stock_quantity)} {unit_abbr(product.unit)}
                     </span>
                   </td>
-                  <td class="text-sm text-base-content/60">
+                  <td class="text-sm text-base-content/70">
                     {format_quantity(product.min_stock)} {unit_abbr(product.unit)}
                   </td>
                   <td class="text-sm text-base-content">${format_price(product.net_cost)}</td>
                   <td class="text-sm text-base-content/70">
                     {if product.sale_price, do: "$#{format_price(product.sale_price)}", else: "—"}
                   </td>
-                  <td class="max-w-0 text-sm text-base-content/60 truncate">
+                  <td class="max-w-0 text-sm text-base-content/70 truncate">
                     {if product.supplier, do: product.supplier.name, else: "—"}
                   </td>
                   <td>
@@ -588,6 +589,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                   <td>
                     <div class="flex items-center justify-end gap-1">
                       <button
+                        aria-label="Editar"
                         class="btn btn-ghost btn-xs btn-circle"
                         phx-click="edit_product"
                         phx-value-id={product.id}
@@ -615,7 +617,7 @@ defmodule CRCWeb.Admin.ProductsLive do
               <% end %>
               <%= if visible == [] do %>
                 <tr>
-                  <td colspan="9" class="text-center py-12 text-base-content/40 text-sm">
+                  <td colspan="9" class="text-center py-12 text-base-content/65 text-sm">
                     {cond do
                       @status_filter == :inactive && @filter_category == "all" ->
                         "No hay insumos inactivos."
@@ -723,9 +725,9 @@ defmodule CRCWeb.Admin.ProductsLive do
              sections render at once below). --%>
         <div class="flex items-center gap-2 text-xs flex-wrap">
           <.step_link n={1} label="Elige la unidad" target="product-modal-step-1" />
-          <span class="text-base-content/30">→</span>
+          <span class="text-base-content/65">→</span>
           <.step_link n={2} label="Calcula el costo" target="product-modal-step-2" />
-          <span class="text-base-content/30">→</span>
+          <span class="text-base-content/65">→</span>
           <.step_link n={3} label="Registra el stock" target="product-modal-step-3" />
         </div>
 
@@ -772,7 +774,7 @@ defmodule CRCWeb.Admin.ProductsLive do
             />
             <% unit_val = @form[:unit].value || "" %>
             <%= if unit_val != "" do %>
-              <p class="text-xs text-base-content/60 leading-relaxed">
+              <p class="text-xs text-base-content/70 leading-relaxed">
                 <strong>Todo lo demás usa {unit_label(unit_val)}.</strong>
                 El stock, el stock mínimo, la calculadora y las recetas de tus platillos
                 deben expresarse siempre en {unit_label(unit_val)}. {unit_example(unit_val)}
@@ -800,7 +802,7 @@ defmodule CRCWeb.Admin.ProductsLive do
 
             <%!-- Calculator sub-section --%>
             <div class="rounded-lg border border-dashed border-base-content/20 bg-base-100 p-3 space-y-2">
-              <p class="text-xs text-base-content/50 font-medium">
+              <p class="text-xs text-base-content/70 font-medium">
                 🧮 Calculadora — si no sabes el costo por unidad, llena estos dos campos
               </p>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -819,7 +821,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                     placeholder="Ej: 100.00"
                     class="input input-bordered input-sm w-full"
                   />
-                  <p class="text-xs text-base-content/40 mt-0.5">
+                  <p class="text-xs text-base-content/65 mt-0.5">
                     El precio que pagaste por toda la compra
                   </p>
                 </div>
@@ -839,7 +841,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                     class="input input-bordered input-sm w-full"
                     onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
                   />
-                  <p class="text-xs text-base-content/40 mt-0.5">
+                  <p class="text-xs text-base-content/65 mt-0.5">
                     {unit_qty_hint(unit_val)}
                   </p>
                 </div>
@@ -885,7 +887,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                   step="0.0001"
                   min="0"
                 />
-                <p class="text-xs text-base-content/40 mt-1 leading-relaxed">
+                <p class="text-xs text-base-content/65 mt-1 leading-relaxed">
                   Lo que te cuesta <strong>una sola {if unit_val != "", do: unit_label(unit_val), else: "unidad"}</strong>.
                   Si usaste la calculadora ya está listo; si no, escríbelo directo.
                 </p>
@@ -899,7 +901,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                   step="0.01"
                   min="0"
                 />
-                <p class="text-xs text-base-content/40 mt-1">
+                <p class="text-xs text-base-content/65 mt-1">
                   Solo si vendes este insumo directamente a un cliente (ej. bebidas embotelladas). La mayoría de insumos lo dejan vacío.
                 </p>
               </div>
@@ -928,7 +930,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                   min="0"
                   onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
                 />
-                <p class="text-xs text-base-content/40 mt-1">
+                <p class="text-xs text-base-content/65 mt-1">
                   El sistema lo descuenta automáticamente cada vez que se envía un pedido a cocina.
                 </p>
               </div>
@@ -942,7 +944,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                   min="0"
                   onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
                 />
-                <p class="text-xs text-base-content/40 mt-1">
+                <p class="text-xs text-base-content/65 mt-1">
                   {unit_min_stock_hint(unit_val)}
                 </p>
               </div>
@@ -979,7 +981,7 @@ defmodule CRCWeb.Admin.ProductsLive do
             <div class="flex items-center justify-between mb-3">
               <div>
                 <h3 class="font-semibold text-base-content text-sm">Tipos de este insumo</h3>
-                <p class="text-xs text-base-content/50 mt-0.5">
+                <p class="text-xs text-base-content/70 mt-0.5">
                   Opcional · por ejemplo: Entera, Avena, Deslactosada para Leche
                 </p>
               </div>
@@ -1038,7 +1040,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                               </span>
                             <% end %>
                           </div>
-                          <p class="text-xs text-base-content/50 mt-1">
+                          <p class="text-xs text-base-content/70 mt-1">
                             Stock: {format_quantity(variant.stock_quantity)} {unit_abbr(@product.unit)} · Mín: {format_quantity(
                               variant.min_stock
                             )} {unit_abbr(@product.unit)}
@@ -1046,6 +1048,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
                           <button
+                            aria-label="Editar tipo"
                             type="button"
                             class="btn btn-ghost btn-xs"
                             phx-click="edit_variant_form"
@@ -1072,6 +1075,7 @@ defmodule CRCWeb.Admin.ProductsLive do
                             />
                           </button>
                           <button
+                            aria-label="Eliminar tipo"
                             type="button"
                             class="btn btn-ghost btn-xs text-error"
                             phx-click="delete_variant"
@@ -1089,7 +1093,7 @@ defmodule CRCWeb.Admin.ProductsLive do
               </div>
             <% else %>
               <%= if is_nil(@variant_form) do %>
-                <p class="text-sm text-base-content/40 italic mb-4">
+                <p class="text-sm text-base-content/65 italic mb-4">
                   Sin tipos definidos. Este insumo se registra como una sola variedad.
                 </p>
               <% end %>

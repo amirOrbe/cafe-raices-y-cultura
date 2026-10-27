@@ -155,7 +155,7 @@ defmodule CRCWeb.Admin.VentaManualLive do
             <.icon name="hero-pencil-square" class="size-6 text-primary" />
             <h1 class="text-2xl font-bold text-base-content">Venta manual</h1>
           </div>
-          <p class="text-sm text-base-content/50">
+          <p class="text-sm text-base-content/70">
             Registra comandas tomadas en papel. Cuentan en Finanzas y Ventas, pero no afectan Rendimiento ni tiempos de cocina.
           </p>
         </div>
@@ -206,7 +206,7 @@ defmodule CRCWeb.Admin.VentaManualLive do
           <div class="form-control">
             <label class="label">
               <span class="label-text font-medium">Fecha y hora de la venta</span>
-              <span class="label-text-alt text-base-content/40">¿Cuándo ocurrió?</span>
+              <span class="label-text-alt text-base-content/65">¿Cuándo ocurrió?</span>
             </label>
             <input
               type="datetime-local"
@@ -256,10 +256,11 @@ defmodule CRCWeb.Admin.VentaManualLive do
                   <div class="flex items-center gap-3 px-4 py-2.5">
                     <span class="text-sm font-bold text-primary shrink-0">{line.qty}×</span>
                     <span class="flex-1 text-sm text-base-content truncate">{line.item.name}</span>
-                    <span class="text-sm text-base-content/60 shrink-0">
+                    <span class="text-sm text-base-content/70 shrink-0">
                       ${format_price(Decimal.mult(line.item.price, Decimal.new(line.qty)))}
                     </span>
                     <button
+                      aria-label="Cerrar"
                       class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
                       phx-click="remove_line"
                       phx-value-idx={idx}
@@ -270,7 +271,7 @@ defmodule CRCWeb.Admin.VentaManualLive do
                 <% end %>
                 <%!-- Subtotal + descuento + total --%>
                 <%= if @discount_pct > 0 do %>
-                  <div class="flex items-center justify-between px-4 py-2 text-sm text-base-content/60">
+                  <div class="flex items-center justify-between px-4 py-2 text-sm text-base-content/70">
                     <span>Subtotal</span>
                     <span>${format_price(subtotal)}</span>
                   </div>
@@ -367,7 +368,7 @@ defmodule CRCWeb.Admin.VentaManualLive do
           <div class="form-control">
             <label class="label">
               <span class="label-text font-medium">Notas</span>
-              <span class="label-text-alt text-base-content/40">Opcional</span>
+              <span class="label-text-alt text-base-content/65">Opcional</span>
             </label>
             <textarea
               class="textarea textarea-bordered w-full"

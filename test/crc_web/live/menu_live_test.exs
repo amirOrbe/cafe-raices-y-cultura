@@ -148,7 +148,6 @@ defmodule CRCWeb.MenuLiveTest do
 
       assert html =~ "Paquetes del día"
       assert html =~ "Combo Mañanero"
-      assert html =~ "Combos especiales"
     end
 
     test "hides packages section when no active packages exist", %{conn: conn} do

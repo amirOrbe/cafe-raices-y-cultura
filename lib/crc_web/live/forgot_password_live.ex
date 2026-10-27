@@ -21,7 +21,11 @@ defmodule CRCWeb.ForgotPasswordLive do
       <div class="w-full max-w-sm">
         <div class="flex justify-center mb-8">
           <a href="/">
-            <img src="/images/brand/logo-color.png" alt="Café Raíces y Cultura" class="h-16 w-auto" />
+            <img
+              src="/images/brand/logo-color.webp"
+              alt="Café Raíces y Cultura"
+              class="h-16 w-auto"
+            />
           </a>
         </div>
 
@@ -32,7 +36,7 @@ defmodule CRCWeb.ForgotPasswordLive do
                 <.icon name="hero-envelope" class="size-7 text-success" />
               </div>
               <h1 class="text-xl font-bold text-base-content">Revisa tu correo</h1>
-              <p class="text-sm text-base-content/60 leading-relaxed">
+              <p class="text-sm text-base-content/70 leading-relaxed">
                 Si existe una cuenta con ese correo, recibirás un enlace para restablecer tu contraseña.
                 El enlace es válido por <strong>1 hora</strong>.
               </p>
@@ -42,7 +46,7 @@ defmodule CRCWeb.ForgotPasswordLive do
             </div>
           <% else %>
             <h1 class="text-xl font-bold text-base-content mb-1">Recuperar contraseña</h1>
-            <p class="text-sm text-base-content/60 mb-6">
+            <p class="text-sm text-base-content/70 mb-6">
               Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña.
             </p>
 
@@ -68,8 +72,8 @@ defmodule CRCWeb.ForgotPasswordLive do
           <% end %>
         </div>
 
-        <p class="text-center text-xs text-base-content/40 mt-6">
-          <a href="/iniciar-sesion" class="hover:text-base-content/60 transition-colors">
+        <p class="text-center text-xs text-base-content/65 mt-6">
+          <a href="/iniciar-sesion" class="hover:text-base-content/70 transition-colors">
             ← Volver al inicio de sesión
           </a>
         </p>

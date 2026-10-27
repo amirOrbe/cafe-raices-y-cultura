@@ -107,7 +107,7 @@ defmodule CRCWeb.ProduccionLive do
               <.icon name="hero-beaker" class="size-6 text-primary" />
               <h1 class="text-2xl font-bold text-base-content">Producción Interna</h1>
             </div>
-            <p class="text-sm text-base-content/50">
+            <p class="text-sm text-base-content/70">
               Registra un lote de producción — el sistema ajustará el stock automáticamente.
             </p>
           </div>
@@ -118,13 +118,13 @@ defmodule CRCWeb.ProduccionLive do
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-4 sm:p-5 space-y-4">
             <div>
               <p class="text-sm font-semibold text-base-content">¿Qué vas a producir?</p>
-              <p class="text-xs text-base-content/40 mt-0.5">
+              <p class="text-xs text-base-content/65 mt-0.5">
                 Elige una receta — el sistema calculará qué ingredientes se consumen y qué stock se genera.
               </p>
             </div>
 
             <%= if @recipes == [] do %>
-              <div class="py-10 text-center text-base-content/40 text-sm">
+              <div class="py-10 text-center text-base-content/65 text-sm">
                 No hay recetas activas. Pide al administrador que cree una.
               </div>
             <% else %>
@@ -139,7 +139,7 @@ defmodule CRCWeb.ProduccionLive do
                       {recipe.name}
                     </p>
                     <%!-- "1 lote = X unidad" --%>
-                    <p class="text-xs text-base-content/50 mt-1 flex flex-wrap items-center gap-1">
+                    <p class="text-xs text-base-content/70 mt-1 flex flex-wrap items-center gap-1">
                       <span class="badge badge-xs badge-ghost shrink-0">1 lote</span>
                       <span class="shrink-0">→</span>
                       <span class="font-medium text-base-content/70">
@@ -168,17 +168,21 @@ defmodule CRCWeb.ProduccionLive do
             <%!-- Recipe header --%>
             <div class="flex items-start justify-between gap-3">
               <div>
-                <p class="text-xs text-base-content/50 uppercase tracking-wider mb-0.5">
+                <p class="text-xs text-base-content/70 uppercase tracking-wider mb-0.5">
                   Receta seleccionada
                 </p>
                 <p class="text-lg font-bold text-base-content">{@selected_recipe.name}</p>
-                <p class="text-xs text-base-content/40 mt-0.5">
+                <p class="text-xs text-base-content/65 mt-0.5">
                   1 lote produce {format_qty(@selected_recipe.yield_quantity)}
                   {@selected_recipe.yield_unit} de {@selected_recipe.output_product &&
                     @selected_recipe.output_product.name}
                 </p>
               </div>
-              <button class="btn btn-ghost btn-sm btn-circle shrink-0" phx-click="clear_recipe">
+              <button
+                aria-label="Cerrar"
+                class="btn btn-ghost btn-sm btn-circle shrink-0"
+                phx-click="clear_recipe"
+              >
                 <.icon name="hero-x-mark" class="size-4" />
               </button>
             </div>
@@ -188,7 +192,7 @@ defmodule CRCWeb.ProduccionLive do
             <div class="form-control">
               <label class="label pb-1 flex-col items-start gap-0.5 sm:flex-row sm:items-center">
                 <span class="label-text font-medium">¿Cuántos lotes realizaste?</span>
-                <span class="label-text-alt text-base-content/40">
+                <span class="label-text-alt text-base-content/65">
                   1 = la receta completa una vez
                 </span>
               </label>
@@ -212,7 +216,7 @@ defmodule CRCWeb.ProduccionLive do
 
             <%!-- Preview: what will happen --%>
             <div class="rounded-xl bg-base-200 p-3 sm:p-4 space-y-2">
-              <p class="text-xs font-semibold text-base-content/60 uppercase tracking-wider mb-1">
+              <p class="text-xs font-semibold text-base-content/70 uppercase tracking-wider mb-1">
                 Resumen — qué cambia en el stock
               </p>
               <%!-- Ingredients consumed --%>
@@ -245,7 +249,7 @@ defmodule CRCWeb.ProduccionLive do
             <div class="form-control">
               <label class="label pb-1">
                 <span class="label-text font-medium">Notas</span>
-                <span class="label-text-alt text-base-content/40">Opcional</span>
+                <span class="label-text-alt text-base-content/65">Opcional</span>
               </label>
               <textarea
                 class="textarea textarea-bordered w-full text-sm"
@@ -267,7 +271,7 @@ defmodule CRCWeb.ProduccionLive do
 
         <%!-- Today's log --%>
         <div>
-          <h2 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <h2 class="text-xs font-semibold text-base-content/70 uppercase tracking-wider mb-3 flex items-center gap-2">
             Producción de hoy
             <%= if @today_logs != [] do %>
               <span class="badge badge-ghost badge-sm">{length(@today_logs)}</span>
@@ -275,7 +279,7 @@ defmodule CRCWeb.ProduccionLive do
           </h2>
 
           <%= if @today_logs == [] do %>
-            <div class="bg-base-100 rounded-2xl border border-base-300 py-10 text-center text-sm text-base-content/40">
+            <div class="bg-base-100 rounded-2xl border border-base-300 py-10 text-center text-sm text-base-content/65">
               Sin producción registrada hoy.
             </div>
           <% else %>
@@ -286,7 +290,7 @@ defmodule CRCWeb.ProduccionLive do
                     <p class="text-sm font-semibold text-base-content truncate">
                       {log.recipe && log.recipe.name}
                     </p>
-                    <p class="text-xs text-base-content/50 mt-0.5">
+                    <p class="text-xs text-base-content/70 mt-0.5">
                       {log.produced_by && log.produced_by.name} · {format_dt(log.produced_at)}
                       {if log.notes && log.notes != "", do: " · #{log.notes}"}
                     </p>

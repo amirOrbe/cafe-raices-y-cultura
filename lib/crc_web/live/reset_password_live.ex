@@ -44,7 +44,11 @@ defmodule CRCWeb.ResetPasswordLive do
       <div class="w-full max-w-sm">
         <div class="flex justify-center mb-8">
           <a href="/">
-            <img src="/images/brand/logo-color.png" alt="Café Raíces y Cultura" class="h-16 w-auto" />
+            <img
+              src="/images/brand/logo-color.webp"
+              alt="Café Raíces y Cultura"
+              class="h-16 w-auto"
+            />
           </a>
         </div>
 
@@ -56,7 +60,7 @@ defmodule CRCWeb.ResetPasswordLive do
                   <.icon name="hero-x-circle" class="size-7 text-error" />
                 </div>
                 <h1 class="text-xl font-bold text-base-content">Enlace inválido</h1>
-                <p class="text-sm text-base-content/60 leading-relaxed">
+                <p class="text-sm text-base-content/70 leading-relaxed">
                   Este enlace ha expirado o ya fue usado. Los enlaces son válidos por 1 hora.
                 </p>
                 <a href="/recuperar-contrasena" class="btn btn-primary w-full">
@@ -69,7 +73,7 @@ defmodule CRCWeb.ResetPasswordLive do
                   <.icon name="hero-check-circle" class="size-7 text-success" />
                 </div>
                 <h1 class="text-xl font-bold text-base-content">Contraseña actualizada</h1>
-                <p class="text-sm text-base-content/60">
+                <p class="text-sm text-base-content/70">
                   Tu contraseña ha sido restablecida correctamente.
                 </p>
                 <a href="/iniciar-sesion" class="btn btn-primary w-full">
@@ -78,7 +82,7 @@ defmodule CRCWeb.ResetPasswordLive do
               </div>
             <% true -> %>
               <h1 class="text-xl font-bold text-base-content mb-1">Nueva contraseña</h1>
-              <p class="text-sm text-base-content/60 mb-6">
+              <p class="text-sm text-base-content/70 mb-6">
                 Elige una contraseña segura de al menos 8 caracteres.
               </p>
 
@@ -135,8 +139,8 @@ defmodule CRCWeb.ResetPasswordLive do
           <% end %>
         </div>
 
-        <p class="text-center text-xs text-base-content/40 mt-6">
-          <a href="/iniciar-sesion" class="hover:text-base-content/60 transition-colors">
+        <p class="text-center text-xs text-base-content/65 mt-6">
+          <a href="/iniciar-sesion" class="hover:text-base-content/70 transition-colors">
             ← Volver al inicio de sesión
           </a>
         </p>

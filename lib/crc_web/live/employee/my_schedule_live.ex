@@ -217,7 +217,7 @@ defmodule CRCWeb.Employee.MyScheduleLive do
         <%!-- Greeting --%>
         <div>
           <h1 class="text-2xl font-bold text-base-content">Hola, {@current_user.name} 👋</h1>
-          <p class="text-base-content/60 text-sm mt-1">
+          <p class="text-base-content/70 text-sm mt-1">
             {format_date(Date.utc_today())}
           </p>
         </div>
@@ -240,18 +240,18 @@ defmodule CRCWeb.Employee.MyScheduleLive do
               <div class={"flex flex-col items-center py-3 px-1 rounded-xl text-center
                 #{if is_today, do: "bg-primary/10 border border-primary/30", else: ""}
                 #{if !schedule, do: "opacity-40", else: ""}"}>
-                <span class={"text-xs font-semibold #{if is_today, do: "text-primary", else: "text-base-content/50"}"}>
+                <span class={"text-xs font-semibold #{if is_today, do: "text-primary", else: "text-base-content/70"}"}>
                   {WorkSchedule.day_short(Date.day_of_week(date))}
                 </span>
                 <span class={"text-lg font-bold mt-0.5 #{if is_today, do: "text-primary", else: "text-base-content"}"}>
                   {date.day}
                 </span>
                 <%= if schedule do %>
-                  <span class="text-xs text-base-content/60 mt-1 leading-tight">
+                  <span class="text-xs text-base-content/70 mt-1 leading-tight">
                     {format_time(schedule.start_time)}<br />{format_time(schedule.end_time)}
                   </span>
                 <% else %>
-                  <span class="text-xs text-base-content/30 mt-1">–</span>
+                  <span class="text-xs text-base-content/65 mt-1">–</span>
                 <% end %>
               </div>
             <% end %>
@@ -262,10 +262,10 @@ defmodule CRCWeb.Employee.MyScheduleLive do
         <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
           <div class="px-5 py-4 border-b border-base-200">
             <h2 class="font-semibold text-base-content">Mis actividades esta semana</h2>
-            <p class="text-xs text-base-content/50 mt-0.5">Toca ✓ cuando termines una actividad</p>
+            <p class="text-xs text-base-content/70 mt-0.5">Toca ✓ cuando termines una actividad</p>
           </div>
           <%= if @activity_assignments == %{} do %>
-            <div class="px-5 py-8 text-center text-sm text-base-content/40">
+            <div class="px-5 py-8 text-center text-sm text-base-content/65">
               Sin actividades asignadas esta semana.
             </div>
           <% else %>
@@ -277,7 +277,7 @@ defmodule CRCWeb.Employee.MyScheduleLive do
                   <% is_today = day_date == Date.utc_today() %>
                   <% is_past = Date.compare(day_date, Date.utc_today()) == :lt %>
                   <div class={"flex items-start gap-3 px-5 py-3 #{if is_today, do: "bg-primary/5", else: ""}"}>
-                    <div class={"text-xs font-bold w-10 shrink-0 pt-1 text-center #{if is_today, do: "text-primary", else: "text-base-content/40"}"}>
+                    <div class={"text-xs font-bold w-10 shrink-0 pt-1 text-center #{if is_today, do: "text-primary", else: "text-base-content/65"}"}>
                       <p>{Schedule.day_name(day)}</p>
                       <p class="font-normal opacity-70">{day_date.day}/{day_date.month}</p>
                     </div>
@@ -287,8 +287,7 @@ defmodule CRCWeb.Employee.MyScheduleLive do
                           #{if a.completed, do: "bg-success/10 border border-success/30", else: activity_row_class(a.task.area.color)}"}>
                           <%!-- Color dot --%>
                           <span class={"size-2 rounded-full shrink-0
-                            #{if a.completed, do: "bg-success", else: activity_dot_class(a.task.area.color)}"}>
-                          </span>
+                            #{if a.completed, do: "bg-success", else: activity_dot_class(a.task.area.color)}"}></span>
 
                           <%!-- Task name --%>
                           <span class={"text-sm font-medium flex-1 min-w-0 truncate
@@ -377,7 +376,7 @@ defmodule CRCWeb.Employee.MyScheduleLive do
                 :all -> @all_attendance || []
               end %>
             <%= if display_records == [] do %>
-              <p class="px-5 py-8 text-center text-sm text-base-content/40">
+              <p class="px-5 py-8 text-center text-sm text-base-content/65">
                 Sin registros para este período.
               </p>
             <% else %>
@@ -389,7 +388,7 @@ defmodule CRCWeb.Employee.MyScheduleLive do
                       <p class="text-sm font-medium text-base-content">
                         {format_date(record.date)}
                       </p>
-                      <p class="text-xs text-base-content/50">
+                      <p class="text-xs text-base-content/70">
                         <%= if record.clocked_in_at do %>
                           Entrada: {format_datetime(record.clocked_in_at)}
                           <%= if record.clocked_out_at do %>
@@ -432,13 +431,13 @@ defmodule CRCWeb.Employee.MyScheduleLive do
         <div>
           <h2 class="font-semibold text-base-content">Hoy</h2>
           <%= if @today_record.scheduled_start do %>
-            <p class="text-sm text-base-content/60 mt-0.5">
+            <p class="text-sm text-base-content/70 mt-0.5">
               Horario: {format_time(@today_record.scheduled_start)} — {format_time(
                 @today_record.scheduled_end
               )}
             </p>
           <% else %>
-            <p class="text-sm text-base-content/40 mt-0.5">Día sin horario asignado</p>
+            <p class="text-sm text-base-content/65 mt-0.5">Día sin horario asignado</p>
           <% end %>
         </div>
         <.status_badge status={
@@ -453,14 +452,14 @@ defmodule CRCWeb.Employee.MyScheduleLive do
       <%!-- Times --%>
       <div class="grid grid-cols-2 gap-4 mb-6">
         <div class={"p-3 rounded-xl border #{if @already_in, do: "border-success/30 bg-success/5", else: "border-base-200 bg-base-200/50"}"}>
-          <p class="text-xs text-base-content/50 mb-1">Entrada</p>
-          <p class={"text-lg font-bold #{if @already_in, do: "text-success", else: "text-base-content/30"}"}>
+          <p class="text-xs text-base-content/70 mb-1">Entrada</p>
+          <p class={"text-lg font-bold #{if @already_in, do: "text-success", else: "text-base-content/65"}"}>
             {if @already_in, do: format_datetime(@today_record.clocked_in_at), else: "–"}
           </p>
         </div>
         <div class={"p-3 rounded-xl border #{if @already_out, do: "border-primary/30 bg-primary/5", else: "border-base-200 bg-base-200/50"}"}>
-          <p class="text-xs text-base-content/50 mb-1">Salida</p>
-          <p class={"text-lg font-bold #{if @already_out, do: "text-primary", else: "text-base-content/30"}"}>
+          <p class="text-xs text-base-content/70 mb-1">Salida</p>
+          <p class={"text-lg font-bold #{if @already_out, do: "text-primary", else: "text-base-content/65"}"}>
             {if @already_out, do: format_datetime(@today_record.clocked_out_at), else: "–"}
           </p>
         </div>
@@ -468,7 +467,7 @@ defmodule CRCWeb.Employee.MyScheduleLive do
 
       <%!-- GPS requesting — inline loading indicator --%>
       <%= if @requesting do %>
-        <div class="flex items-center gap-2 text-sm text-base-content/60 mb-4 p-3 rounded-xl bg-base-200">
+        <div class="flex items-center gap-2 text-sm text-base-content/70 mb-4 p-3 rounded-xl bg-base-200">
           <span class="loading loading-spinner loading-sm text-primary"></span>
           Obteniendo tu ubicación…
         </div>
@@ -577,7 +576,7 @@ defmodule CRCWeb.Employee.MyScheduleLive do
         <% end %>
 
         <%= if @already_in and @already_out do %>
-          <div class="flex-1 p-3 rounded-xl bg-base-200 text-center text-sm text-base-content/60">
+          <div class="flex-1 p-3 rounded-xl bg-base-200 text-center text-sm text-base-content/70">
             Jornada completada ✓
           </div>
         <% end %>

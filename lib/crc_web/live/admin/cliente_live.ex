@@ -224,7 +224,7 @@ defmodule CRCWeb.Admin.ClienteLive do
     <div class="space-y-6 max-w-4xl">
       <.link
         navigate={~p"/admin/clientes"}
-        class="inline-flex items-center gap-1.5 text-sm text-base-content/60 hover:text-primary transition-colors"
+        class="inline-flex items-center gap-1.5 text-sm text-base-content/70 hover:text-primary transition-colors"
       >
         <.icon name="hero-arrow-left" class="size-4" /> Todos los clientes
       </.link>
@@ -242,7 +242,7 @@ defmodule CRCWeb.Admin.ClienteLive do
                 🎂 Hoy cumple
               </span>
             </h1>
-            <p class="text-sm text-base-content/50 mt-0.5">
+            <p class="text-sm text-base-content/70 mt-0.5">
               Cliente desde {format_date(c.inserted_at)}
             </p>
           </div>
@@ -292,7 +292,7 @@ defmodule CRCWeb.Admin.ClienteLive do
       <%!-- Lealtad --%>
       <.panel class="p-5 space-y-4">
         <div class="flex items-center justify-between">
-          <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider">Lealtad</h2>
+          <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider">Lealtad</h2>
           <button
             :if={@profile.birthday_today? and @profile.birthday_reward}
             class="btn btn-accent btn-xs"
@@ -303,7 +303,7 @@ defmodule CRCWeb.Admin.ClienteLive do
         </div>
 
         <%= if @profile.pending_rewards == [] do %>
-          <p class="text-sm text-base-content/50">Sin recompensas pendientes.</p>
+          <p class="text-sm text-base-content/70">Sin recompensas pendientes.</p>
         <% else %>
           <ul class="space-y-2">
             <%= for r <- @profile.pending_rewards do %>
@@ -312,7 +312,7 @@ defmodule CRCWeb.Admin.ClienteLive do
                   <p class="text-sm font-medium text-base-content truncate">
                     🎁 {r.benefit_snapshot}
                   </p>
-                  <p class="text-xs text-base-content/50">
+                  <p class="text-xs text-base-content/70">
                     {reward_kind_label(r)} · ganada {format_date(r.earned_at)}
                   </p>
                 </div>
@@ -330,17 +330,17 @@ defmodule CRCWeb.Admin.ClienteLive do
 
         <%= if @profile.redemptions != [] do %>
           <details class="text-sm">
-            <summary class="cursor-pointer text-base-content/60 hover:text-base-content">
+            <summary class="cursor-pointer text-base-content/70 hover:text-base-content">
               Historial de recompensas ({length(@profile.redemptions)})
             </summary>
             <ul class="mt-2 space-y-1">
               <%= for r <- @profile.redemptions do %>
-                <li class="flex items-center gap-2 text-xs text-base-content/60">
+                <li class="flex items-center gap-2 text-xs text-base-content/70">
                   <span class={["badge badge-xs", redemption_badge(r.status)]}>
                     {redemption_status_label(r.status)}
                   </span>
                   <span>🎁 {r.benefit_snapshot}</span>
-                  <span class="text-base-content/40">
+                  <span class="text-base-content/65">
                     · {format_date(r.redeemed_at || r.earned_at)}
                   </span>
                 </li>
@@ -352,11 +352,11 @@ defmodule CRCWeb.Admin.ClienteLive do
 
       <%!-- Qué consume más --%>
       <.panel class="p-5">
-        <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">
+        <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider mb-3">
           Qué consume más
         </h2>
         <%= if @profile.top_items == [] do %>
-          <p class="text-sm text-base-content/50">Aún no hay consumo registrado.</p>
+          <p class="text-sm text-base-content/70">Aún no hay consumo registrado.</p>
         <% else %>
           <div class="flex flex-wrap gap-2">
             <%= for {name, qty} <- @profile.top_items do %>
@@ -370,11 +370,11 @@ defmodule CRCWeb.Admin.ClienteLive do
 
       <%!-- Historial de comandas --%>
       <.panel class="p-5">
-        <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">
+        <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider mb-3">
           Historial de comandas
         </h2>
         <%= if @profile.orders == [] do %>
-          <p class="text-sm text-base-content/50">Este cliente aún no tiene comandas cerradas.</p>
+          <p class="text-sm text-base-content/70">Este cliente aún no tiene comandas cerradas.</p>
         <% else %>
           <ul class="divide-y divide-base-200">
             <%= for o <- @profile.orders do %>
@@ -383,7 +383,7 @@ defmodule CRCWeb.Admin.ClienteLive do
                   <p class="text-sm font-medium text-base-content truncate">
                     {format_date(o.closed_at)} · {o.customer_name}
                   </p>
-                  <p class="text-xs text-base-content/50">
+                  <p class="text-xs text-base-content/70">
                     {length(o.order_items)} artículo(s) · {payment_label(o.payment_method)}
                   </p>
                 </div>
@@ -399,18 +399,18 @@ defmodule CRCWeb.Admin.ClienteLive do
       <%!-- Paquetes personalizados --%>
       <.panel class="p-5 space-y-3">
         <div class="flex items-center justify-between">
-          <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider">
+          <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider">
             Paquetes personalizados
           </h2>
           <button class="btn btn-primary btn-xs gap-1" phx-click="new_package">
             <.icon name="hero-plus" class="size-3.5" /> Crear paquete
           </button>
         </div>
-        <p class="text-xs text-base-content/40">
+        <p class="text-xs text-base-content/65">
           Solo aparecen en la pestaña de Paquetes cuando este cliente está asociado a la comanda.
         </p>
         <%= if @packages == [] do %>
-          <p class="text-sm text-base-content/50">Sin paquetes personalizados.</p>
+          <p class="text-sm text-base-content/70">Sin paquetes personalizados.</p>
         <% else %>
           <ul class="space-y-2">
             <%= for p <- @packages do %>
@@ -436,7 +436,7 @@ defmodule CRCWeb.Admin.ClienteLive do
 
       <%!-- Datos --%>
       <.panel class="p-5">
-        <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-4">
+        <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider mb-4">
           Datos
         </h2>
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
@@ -444,7 +444,7 @@ defmodule CRCWeb.Admin.ClienteLive do
           <.data_row label="Correo" value={c.email} />
           <.data_row label="Cumpleaños" value={format_birthday(c.birthday)} />
           <div class="sm:col-span-2">
-            <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wider">Notas</dt>
+            <dt class="text-xs font-medium text-base-content/70 uppercase tracking-wider">Notas</dt>
             <dd class="text-sm text-base-content mt-1 whitespace-pre-wrap">{c.notes || "—"}</dd>
           </div>
         </dl>
@@ -536,6 +536,7 @@ defmodule CRCWeb.Admin.ClienteLive do
                 class="input input-bordered input-sm w-16"
               />
               <button
+                aria-label="Cerrar"
                 type="button"
                 class="btn btn-ghost btn-xs btn-circle text-error"
                 phx-click="remove_pkg_row"
@@ -567,7 +568,7 @@ defmodule CRCWeb.Admin.ClienteLive do
   defp data_row(assigns) do
     ~H"""
     <div>
-      <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wider">{@label}</dt>
+      <dt class="text-xs font-medium text-base-content/70 uppercase tracking-wider">{@label}</dt>
       <dd class="text-sm text-base-content mt-1">{@value || "—"}</dd>
     </div>
     """

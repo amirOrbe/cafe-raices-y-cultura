@@ -136,11 +136,11 @@ defmodule CRCWeb.Admin.DashboardLive do
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Dashboard</h1>
-          <p class="text-base-content/50 text-sm mt-0.5">
+          <p class="text-base-content/70 text-sm mt-0.5">
             Bienvenido, {@current_user.name} · {format_date(@now)}
           </p>
         </div>
-        <div class="text-xs text-base-content/30 font-mono">
+        <div class="text-xs text-base-content/65 font-mono">
           Actualizado {format_time(@now)}
         </div>
       </div>
@@ -170,7 +170,7 @@ defmodule CRCWeb.Admin.DashboardLive do
       <%= if @tab == "dashboard" do %>
         <%!-- ── Métricas de hoy ────────────────────────────────────────────────── --%>
         <div>
-          <h2 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">
+          <h2 class="text-xs font-semibold text-base-content/70 uppercase tracking-wider mb-3">
             Hoy
           </h2>
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -219,7 +219,7 @@ defmodule CRCWeb.Admin.DashboardLive do
             <%= for {method, amount} <- @sales.by_method do %>
               <div class="bg-base-100 rounded-xl border border-base-300 shadow-sm px-4 py-3 flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <.icon name={payment_icon(method)} class="size-4 text-base-content/50" />
+                  <.icon name={payment_icon(method)} class="size-4 text-base-content/70" />
                   <span class="text-sm capitalize text-base-content/70">{method}</span>
                 </div>
                 <span class="font-bold text-base-content">${format_price(amount)}</span>
@@ -240,7 +240,7 @@ defmodule CRCWeb.Admin.DashboardLive do
             </div>
 
             <%= if @open_orders == [] do %>
-              <div class="py-12 text-center text-base-content/40 text-sm">
+              <div class="py-12 text-center text-base-content/65 text-sm">
                 <.icon name="hero-check-circle" class="size-10 mx-auto mb-2 text-success" />
                 Sin órdenes activas en este momento
               </div>
@@ -252,7 +252,7 @@ defmodule CRCWeb.Admin.DashboardLive do
                     <%!-- Customer + waiter --%>
                     <div class="flex-1 min-w-0">
                       <p class="font-semibold text-base-content text-sm">{order.customer_name}</p>
-                      <p class="text-xs text-base-content/40 mt-0.5">
+                      <p class="text-xs text-base-content/65 mt-0.5">
                         <%= if order.user do %>
                           👤 {order.user.name}
                         <% end %>
@@ -266,10 +266,10 @@ defmodule CRCWeb.Admin.DashboardLive do
                       <span class={[
                         "text-xs font-mono font-semibold tabular-nums",
                         cond do
-                          mins >= 30 and mins < 180 -> "text-error animate-pulse"
+                          mins >= 30 and mins < 180 -> "text-error motion-safe:animate-pulse"
                           mins >= 15 and mins < 180 -> "text-warning"
-                          mins >= 180 -> "text-base-content/40"
-                          true -> "text-base-content/50"
+                          mins >= 180 -> "text-base-content/65"
+                          true -> "text-base-content/70"
                         end
                       ]}>
                         🕐 {format_elapsed(mins)}
@@ -305,7 +305,7 @@ defmodule CRCWeb.Admin.DashboardLive do
               <h2 class="font-semibold text-base-content">Top platillos hoy</h2>
             </div>
             <%= if @top_items == [] do %>
-              <div class="py-8 text-center text-base-content/40 text-sm">
+              <div class="py-8 text-center text-base-content/65 text-sm">
                 Sin ventas registradas hoy
               </div>
             <% else %>
@@ -316,9 +316,9 @@ defmodule CRCWeb.Admin.DashboardLive do
                       "size-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
                       case idx do
                         0 -> "bg-warning/20 text-warning"
-                        1 -> "bg-base-content/10 text-base-content/60"
+                        1 -> "bg-base-content/10 text-base-content/70"
                         2 -> "bg-accent/20 text-accent"
-                        _ -> "bg-base-200 text-base-content/40"
+                        _ -> "bg-base-200 text-base-content/65"
                       end
                     ]}>
                       {idx + 1}
@@ -354,7 +354,7 @@ defmodule CRCWeb.Admin.DashboardLive do
               <div class="px-5 py-3 flex items-center gap-3 flex-wrap">
                 <div class="flex-1 min-w-0">
                   <p class="font-semibold text-base-content text-sm">{order.customer_name}</p>
-                  <p class="text-xs text-base-content/40 mt-0.5">
+                  <p class="text-xs text-base-content/65 mt-0.5">
                     <%= if order.user do %>
                       👤 {order.user.name} ·
                     <% end %>
@@ -383,7 +383,7 @@ defmodule CRCWeb.Admin.DashboardLive do
               <% end %>
             </div>
             <%= if @low_stock == [] do %>
-              <div class="py-8 text-center text-base-content/40 text-sm">
+              <div class="py-8 text-center text-base-content/65 text-sm">
                 <.icon name="hero-check-circle" class="size-8 mx-auto mb-1 text-success" />
                 Todo el stock está bien
               </div>
@@ -393,7 +393,7 @@ defmodule CRCWeb.Admin.DashboardLive do
                   <div class="flex items-center justify-between px-5 py-3 gap-3">
                     <div class="flex-1 min-w-0">
                       <p class="text-sm font-medium text-base-content truncate">{product.name}</p>
-                      <p class="text-xs text-base-content/40">
+                      <p class="text-xs text-base-content/65">
                         Mín: {product.min_stock} {product.unit}
                       </p>
                     </div>
@@ -467,7 +467,7 @@ defmodule CRCWeb.Admin.DashboardLive do
             <div class="relative">
               <.icon
                 name="hero-magnifying-glass"
-                class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/40"
+                class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/65"
               />
               <input
                 type="text"
@@ -483,7 +483,7 @@ defmodule CRCWeb.Admin.DashboardLive do
 
           <% sections = filtered_nav_sections(@nav_query) %>
           <%= if sections == [] do %>
-            <p class="text-sm text-base-content/40 text-center py-8">
+            <p class="text-sm text-base-content/65 text-center py-8">
               Sin resultados para "{@nav_query}".
             </p>
           <% else %>
@@ -491,7 +491,7 @@ defmodule CRCWeb.Admin.DashboardLive do
               <div>
                 <h2
                   :if={section[:label]}
-                  class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3"
+                  class="text-xs font-semibold text-base-content/70 uppercase tracking-wider mb-3"
                 >
                   {section.label}
                 </h2>

@@ -117,7 +117,7 @@ defmodule CRCWeb.Admin.SuppliersLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Proveedores</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">
+          <p class="text-sm text-base-content/70 mt-0.5">
             {length(visible)}
             {if length(visible) == 1, do: "proveedor", else: "proveedores"}
             {if @status_filter == :active, do: "activos", else: "inactivos"}
@@ -168,7 +168,7 @@ defmodule CRCWeb.Admin.SuppliersLive do
       <div class="md:hidden flex flex-col gap-2">
         <%= if visible == [] do %>
           <.panel class="text-center py-12">
-            <p class="text-base-content/40 text-sm">
+            <p class="text-base-content/65 text-sm">
               {if @status_filter == :active,
                 do: "No hay proveedores activos.",
                 else: "No hay proveedores inactivos."}
@@ -197,18 +197,19 @@ defmodule CRCWeb.Admin.SuppliersLive do
               </div>
               <div class="flex items-center gap-2 mt-0.5 flex-wrap">
                 <%= if supplier.contact_name do %>
-                  <span class="text-xs text-base-content/60 truncate">{supplier.contact_name}</span>
+                  <span class="text-xs text-base-content/70 truncate">{supplier.contact_name}</span>
                 <% end %>
                 <%= if supplier.phone do %>
-                  <span class="text-xs text-base-content/40">{supplier.phone}</span>
+                  <span class="text-xs text-base-content/65">{supplier.phone}</span>
                 <% end %>
               </div>
               <%= if supplier.email do %>
-                <p class="text-xs text-base-content/40 truncate mt-0.5">{supplier.email}</p>
+                <p class="text-xs text-base-content/65 truncate mt-0.5">{supplier.email}</p>
               <% end %>
             </div>
             <div class="flex flex-col items-center gap-1 shrink-0">
               <button
+                aria-label="Editar"
                 class="btn btn-ghost btn-xs btn-circle"
                 phx-click="edit_supplier"
                 phx-value-id={supplier.id}
@@ -272,6 +273,7 @@ defmodule CRCWeb.Admin.SuppliersLive do
                   <td>
                     <div class="flex items-center justify-end gap-1">
                       <button
+                        aria-label="Editar"
                         class="btn btn-ghost btn-xs btn-circle"
                         phx-click="edit_supplier"
                         phx-value-id={supplier.id}
@@ -299,7 +301,7 @@ defmodule CRCWeb.Admin.SuppliersLive do
               <% end %>
               <%= if visible == [] do %>
                 <tr>
-                  <td colspan="6" class="text-center py-12 text-base-content/40 text-sm">
+                  <td colspan="6" class="text-center py-12 text-base-content/65 text-sm">
                     {if @status_filter == :active,
                       do: "No hay proveedores activos.",
                       else: "No hay proveedores inactivos."}

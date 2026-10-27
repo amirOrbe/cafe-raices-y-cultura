@@ -132,7 +132,7 @@ defmodule CRCWeb.BitacoraLive do
             <.icon name="hero-clipboard-document-check" class="size-6 text-primary" />
             <h1 class="text-2xl font-bold text-base-content">Bitácora de Turno</h1>
           </div>
-          <p class="text-sm text-base-content/50">
+          <p class="text-sm text-base-content/70">
             Deja notas para el siguiente turno: alertas de stock, preparaciones pendientes, avisos de equipo.
             Las notas permanecen visibles hasta que alguien las resuelva.
           </p>
@@ -179,7 +179,7 @@ defmodule CRCWeb.BitacoraLive do
 
         <%!-- Active notes --%>
         <div class="space-y-3">
-          <h2 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider flex items-center gap-2">
+          <h2 class="text-xs font-semibold text-base-content/70 uppercase tracking-wider flex items-center gap-2">
             Notas activas
             <%= if @active_notes != [] do %>
               <span class="badge badge-primary badge-sm">{length(@active_notes)}</span>
@@ -192,8 +192,8 @@ defmodule CRCWeb.BitacoraLive do
                 name="hero-clipboard-document-check"
                 class="size-10 text-base-content/20 mx-auto mb-3"
               />
-              <p class="text-sm text-base-content/40 font-medium">Todo en orden</p>
-              <p class="text-xs text-base-content/30 mt-1">No hay notas activas para este turno.</p>
+              <p class="text-sm text-base-content/65 font-medium">Todo en orden</p>
+              <p class="text-xs text-base-content/65 mt-1">No hay notas activas para este turno.</p>
             </div>
           <% else %>
             <div class="space-y-3">
@@ -209,7 +209,7 @@ defmodule CRCWeb.BitacoraLive do
 
                   <%!-- Meta + actions --%>
                   <div class="flex items-center justify-between flex-wrap gap-2 mt-3 pt-3 border-t border-base-300/50">
-                    <span class="text-xs text-base-content/50">
+                    <span class="text-xs text-base-content/70">
                       <span class="font-medium text-base-content/70">
                         {note.author && note.author.name}
                       </span>
@@ -225,6 +225,7 @@ defmodule CRCWeb.BitacoraLive do
                       </button>
                       <%= if @current_user.role == "admin" do %>
                         <button
+                          aria-label="Eliminar"
                           class="btn btn-xs btn-ghost text-error"
                           phx-click="delete_note"
                           phx-value-id={note.id}
@@ -245,7 +246,7 @@ defmodule CRCWeb.BitacoraLive do
         <%= if @resolved_notes != [] do %>
           <div>
             <button
-              class="flex items-center gap-2 text-xs font-semibold text-base-content/50 hover:text-base-content transition-colors uppercase tracking-wider"
+              class="flex items-center gap-2 text-xs font-semibold text-base-content/70 hover:text-base-content transition-colors uppercase tracking-wider"
               phx-click="toggle_resolved"
             >
               <.icon
@@ -263,12 +264,12 @@ defmodule CRCWeb.BitacoraLive do
                       <span class="badge badge-sm badge-ghost shrink-0">
                         {ShiftNotes.category_label(note.category)}
                       </span>
-                      <p class="text-sm text-base-content/60 flex-1 line-through decoration-base-content/30">
+                      <p class="text-sm text-base-content/70 flex-1 line-through decoration-base-content/30">
                         {note.content}
                       </p>
                     </div>
                     <div class="flex items-center justify-between flex-wrap gap-2 mt-2">
-                      <p class="text-xs text-base-content/40">
+                      <p class="text-xs text-base-content/65">
                         {note.author && note.author.name} · Resuelto por {(note.resolved_by &&
                                                                              note.resolved_by.name) ||
                           "—"}
@@ -276,6 +277,7 @@ defmodule CRCWeb.BitacoraLive do
                       </p>
                       <%= if @current_user.role == "admin" do %>
                         <button
+                          aria-label="Eliminar"
                           class="btn btn-xs btn-ghost text-error"
                           phx-click="delete_note"
                           phx-value-id={note.id}

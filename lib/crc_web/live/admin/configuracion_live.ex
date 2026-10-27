@@ -101,7 +101,7 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
         <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 class="text-2xl font-bold text-base-content">Configuración del café</h1>
-            <p class="text-base-content/60 text-sm mt-1">
+            <p class="text-base-content/70 text-sm mt-1">
               Horario de apertura y cierre del establecimiento por día de la semana.
             </p>
           </div>
@@ -124,7 +124,7 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
           <%!-- View mode --%>
           <%= if !@editing do %>
             <%= if @rows == [] do %>
-              <div class="p-12 text-center text-base-content/40">
+              <div class="p-12 text-center text-base-content/65">
                 <.icon name="hero-clock" class="size-12 mx-auto mb-3 opacity-30" />
                 <p>Sin horario configurado.</p>
                 <p class="text-sm mt-1">
@@ -137,13 +137,13 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
                   <% row = Enum.find(@rows, &(&1.day_of_week == day)) %>
                   <div class="flex items-center gap-4 px-6 py-4">
                     <span class={"w-24 shrink-0 font-semibold text-sm
-                      #{if row && !row.is_closed, do: "text-primary", else: "text-base-content/40"}"}>
+                      #{if row && !row.is_closed, do: "text-primary", else: "text-base-content/65"}"}>
                       {CafeHours.day_name(day)}
                     </span>
                     <span class="text-sm text-base-content">
                       <%= cond do %>
                         <% is_nil(row) -> %>
-                          <span class="text-base-content/30">Sin configurar</span>
+                          <span class="text-base-content/65">Sin configurar</span>
                         <% row.is_closed -> %>
                           <.admin_badge variant={:ghost}>Cerrado</.admin_badge>
                         <% true -> %>
@@ -161,7 +161,7 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
             <%!-- Edit mode --%>
           <% else %>
             <div class="p-6 space-y-4">
-              <p class="text-sm text-base-content/60">
+              <p class="text-sm text-base-content/70">
                 Activa los días en que el café está abierto y establece los horarios de apertura y cierre.
               </p>
 
@@ -178,7 +178,7 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
                       phx-click="toggle_day"
                       phx-value-day={day}
                     />
-                    <span class={"font-semibold text-sm w-24 #{if data[:active], do: "text-primary", else: "text-base-content/50"}"}>
+                    <span class={"font-semibold text-sm w-24 #{if data[:active], do: "text-primary", else: "text-base-content/70"}"}>
                       {CafeHours.day_name(day)}
                     </span>
                   </label>
@@ -187,7 +187,7 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
                   <div class={"grid grid-cols-2 gap-3 flex-1 sm:flex sm:items-center sm:gap-3
                     #{if !data[:active], do: "opacity-40 pointer-events-none"}"}>
                     <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
-                      <label class="text-xs text-base-content/60 shrink-0">Apertura</label>
+                      <label class="text-xs text-base-content/70 shrink-0">Apertura</label>
                       <input
                         type="time"
                         class="input input-bordered input-sm w-full sm:w-32"
@@ -198,7 +198,7 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
                       />
                     </div>
                     <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
-                      <label class="text-xs text-base-content/60 shrink-0">Cierre</label>
+                      <label class="text-xs text-base-content/70 shrink-0">Cierre</label>
                       <input
                         type="time"
                         class="input input-bordered input-sm w-full sm:w-32"
@@ -228,7 +228,7 @@ defmodule CRCWeb.Admin.ConfiguracionLive do
         <%!-- Info card --%>
         <div class="mt-6 rounded-xl border border-base-300 bg-base-100 p-4 flex gap-3">
           <.icon name="hero-information-circle" class="size-5 text-primary/60 shrink-0 mt-0.5" />
-          <div class="text-sm text-base-content/60 space-y-1">
+          <div class="text-sm text-base-content/70 space-y-1">
             <p>
               Este horario define cuándo el café está operando. Los eventos programados dentro
               de este rango descuentan tiempo disponible para reservaciones automáticamente.

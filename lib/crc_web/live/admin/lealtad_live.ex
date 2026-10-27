@@ -170,7 +170,7 @@ defmodule CRCWeb.Admin.LealtadLive do
     <div class="space-y-8 max-w-4xl">
       <div>
         <h1 class="text-2xl font-bold text-base-content">Lealtad</h1>
-        <p class="text-sm text-base-content/50 mt-0.5">
+        <p class="text-sm text-base-content/70 mt-0.5">
           Define cuántas visitas dan un beneficio y qué se regala. Al cerrar una comanda
           asociada a un cliente se cuenta una visita.
         </p>
@@ -188,7 +188,7 @@ defmodule CRCWeb.Admin.LealtadLive do
         <%= if @tiers == [] do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-12 text-center">
             <.icon name="hero-ticket" class="size-9 text-base-content/20 mx-auto mb-2" />
-            <p class="text-base-content/50 text-sm">
+            <p class="text-base-content/70 text-sm">
               Aún no hay niveles. Crea uno, por ejemplo "6 visitas → Café gratis".
             </p>
           </div>
@@ -212,8 +212,8 @@ defmodule CRCWeb.Admin.LealtadLive do
                       <p class="font-semibold text-sm text-base-content truncate">{t.name}</p>
                       <.active_badge active={t.active} />
                     </div>
-                    <p class="text-xs text-base-content/60 mt-0.5">🎁 {t.benefit}</p>
-                    <p class="text-[11px] text-base-content/40 mt-0.5">
+                    <p class="text-xs text-base-content/70 mt-0.5">🎁 {t.benefit}</p>
+                    <p class="text-[11px] text-base-content/65 mt-0.5">
                       {if t.repeatable,
                         do: "Se repite #{cycle_label(t.visits_required)}",
                         else: "Una sola vez"}
@@ -231,7 +231,7 @@ defmodule CRCWeb.Admin.LealtadLive do
             <div class="overflow-x-auto">
               <table class="table table-zebra table-fixed w-full">
                 <thead>
-                  <tr class="bg-base-200 text-xs font-semibold text-base-content/60 uppercase tracking-wider">
+                  <tr class="bg-base-200 text-xs font-semibold text-base-content/70 uppercase tracking-wider">
                     <th class="w-[14%] text-center">Visitas</th>
                     <th class="w-[24%]">Nombre</th>
                     <th class="w-[28%]">Beneficio</th>
@@ -254,7 +254,7 @@ defmodule CRCWeb.Admin.LealtadLive do
                         <.active_badge :if={not t.active} active={t.active} />
                       </td>
                       <td class="text-sm text-base-content/70">🎁 {t.benefit}</td>
-                      <td class="text-sm text-base-content/60">
+                      <td class="text-sm text-base-content/70">
                         {if t.repeatable,
                           do: String.capitalize(cycle_label(t.visits_required)),
                           else: "Una sola vez"}
@@ -325,7 +325,7 @@ defmodule CRCWeb.Admin.LealtadLive do
                 max="30"
               />
             </div>
-            <p class="text-xs text-base-content/40">
+            <p class="text-xs text-base-content/65">
               Con 0 días el beneficio solo aparece el día exacto del cumpleaños. Con margen,
               el personal lo puede dar los días siguientes.
             </p>
@@ -356,6 +356,7 @@ defmodule CRCWeb.Admin.LealtadLive do
   defp row_actions(assigns) do
     ~H"""
     <button
+      aria-label="Editar"
       id={"btn-edit-#{@target}-#{@scope}-#{@id}"}
       class="btn btn-ghost btn-xs btn-circle"
       phx-click={"edit_#{@target}"}
@@ -376,6 +377,7 @@ defmodule CRCWeb.Admin.LealtadLive do
       <.icon name={if @active, do: "hero-eye-slash", else: "hero-eye"} class="size-4" />
     </button>
     <button
+      aria-label="Eliminar"
       class="btn btn-ghost btn-xs btn-circle text-error"
       phx-click={"delete_#{@target}"}
       phx-value-id={@id}
@@ -407,6 +409,8 @@ defmodule CRCWeb.Admin.LealtadLive do
 
     ~H"""
     <div
+      role="dialog"
+      aria-modal="true"
       id="tier-modal"
       class="fixed inset-0 z-50 flex items-center justify-center p-4"
       phx-window-keydown="close_modal"
@@ -417,7 +421,7 @@ defmodule CRCWeb.Admin.LealtadLive do
       <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md overflow-y-auto max-h-[90vh]">
         <div class="px-6 py-4 border-b border-base-300 flex items-center justify-between">
           <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
-          <button class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
+          <button aria-label="Cerrar" class="btn btn-ghost btn-sm btn-circle" phx-click="close_modal">
             <.icon name="hero-x-mark" class="size-5" />
           </button>
         </div>
@@ -457,7 +461,7 @@ defmodule CRCWeb.Admin.LealtadLive do
               label="Platillo de cortesía (opcional)"
               options={@menu_item_options}
             />
-            <p class="text-xs text-base-content/40 -mt-2">
+            <p class="text-xs text-base-content/65 -mt-2">
               Si eliges un platillo, al aplicar la recompensa se agrega esa línea a $0 en la comanda.
             </p>
 

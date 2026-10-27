@@ -117,7 +117,7 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Colaboradores</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">
+          <p class="text-sm text-base-content/70 mt-0.5">
             {length(visible)}
             {if length(visible) == 1, do: "colaborador", else: "colaboradores"}
             {if @status_filter == :active, do: "activos", else: "inactivos"}
@@ -168,7 +168,7 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
       <div class="md:hidden flex flex-col gap-2">
         <%= if visible == [] do %>
           <.panel class="text-center py-12">
-            <p class="text-base-content/40 text-sm">
+            <p class="text-base-content/65 text-sm">
               {if @status_filter == :active,
                 do: "No hay colaboradores activos.",
                 else: "No hay colaboradores inactivos."}
@@ -199,11 +199,12 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
                 <p class="text-xs text-primary/70 mt-0.5">@{collaborator.instagram_handle}</p>
               <% end %>
               <%= if collaborator.bio do %>
-                <p class="text-xs text-base-content/50 truncate mt-0.5">{collaborator.bio}</p>
+                <p class="text-xs text-base-content/70 truncate mt-0.5">{collaborator.bio}</p>
               <% end %>
             </div>
             <div class="flex flex-col items-center gap-1 shrink-0">
               <button
+                aria-label="Editar"
                 class="btn btn-ghost btn-xs btn-circle"
                 phx-click="edit_collaborator"
                 phx-value-id={collaborator.id}
@@ -256,7 +257,7 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
                       do: "@#{collaborator.instagram_handle}",
                       else: "—"}
                   </td>
-                  <td class="max-w-0 text-sm text-base-content/60 truncate">
+                  <td class="max-w-0 text-sm text-base-content/70 truncate">
                     {collaborator.bio || "—"}
                   </td>
                   <td>
@@ -267,6 +268,7 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
                   <td>
                     <div class="flex items-center justify-end gap-1">
                       <button
+                        aria-label="Editar"
                         class="btn btn-ghost btn-xs btn-circle"
                         phx-click="edit_collaborator"
                         phx-value-id={collaborator.id}
@@ -296,7 +298,7 @@ defmodule CRCWeb.Admin.CollaboratorsLive do
               <% end %>
               <%= if visible == [] do %>
                 <tr>
-                  <td colspan="5" class="text-center py-12 text-base-content/40 text-sm">
+                  <td colspan="5" class="text-center py-12 text-base-content/65 text-sm">
                     {if @status_filter == :active,
                       do: "No hay colaboradores activos.",
                       else: "No hay colaboradores inactivos."}

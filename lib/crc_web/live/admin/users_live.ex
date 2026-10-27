@@ -251,7 +251,7 @@ defmodule CRCWeb.Admin.UsersLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Usuarios</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">
+          <p class="text-sm text-base-content/70 mt-0.5">
             {length(visible)}
             {if length(visible) == 1, do: "usuario", else: "usuarios"}
             {if @status_filter == :active, do: "activos", else: "inactivos"}
@@ -307,7 +307,7 @@ defmodule CRCWeb.Admin.UsersLive do
       <div class="md:hidden flex flex-col gap-2">
         <%= if visible == [] do %>
           <.panel class="text-center py-12">
-            <p class="text-base-content/40 text-sm">
+            <p class="text-base-content/65 text-sm">
               {if @status_filter == :active,
                 do: "No hay usuarios activos.",
                 else: "No hay usuarios inactivos."}
@@ -336,7 +336,7 @@ defmodule CRCWeb.Admin.UsersLive do
                 <p class="font-semibold text-sm text-base-content truncate">{user.name}</p>
                 <.role_badge role={user.role} />
               </div>
-              <p class="text-xs text-base-content/50 truncate mt-0.5">{user.email}</p>
+              <p class="text-xs text-base-content/70 truncate mt-0.5">{user.email}</p>
               <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
                 <.status_badge is_active={user.is_active} />
                 <%= for s <- user.stations do %>
@@ -347,6 +347,7 @@ defmodule CRCWeb.Admin.UsersLive do
             <%!-- Actions --%>
             <div class="flex flex-col items-center gap-1 shrink-0">
               <button
+                aria-label="Editar"
                 id={"btn-edit-mobile-#{user.id}"}
                 class="btn btn-ghost btn-xs btn-circle"
                 phx-click="edit_user"
@@ -415,7 +416,7 @@ defmodule CRCWeb.Admin.UsersLive do
                   <td>
                     <div class="flex flex-wrap gap-1">
                       <%= if user.stations == [] do %>
-                        <span class="text-sm text-base-content/40">—</span>
+                        <span class="text-sm text-base-content/65">—</span>
                       <% else %>
                         <%= for s <- user.stations do %>
                           <span class="badge badge-xs badge-ghost">{station_label(s)}</span>
@@ -429,6 +430,7 @@ defmodule CRCWeb.Admin.UsersLive do
                   <td>
                     <div class="flex items-center justify-end gap-1">
                       <button
+                        aria-label="Editar"
                         id={"btn-edit-#{user.id}"}
                         class="btn btn-ghost btn-xs btn-circle"
                         phx-click="edit_user"
@@ -458,7 +460,7 @@ defmodule CRCWeb.Admin.UsersLive do
               <% end %>
               <%= if visible == [] do %>
                 <tr>
-                  <td colspan="6" class="text-center py-12 text-base-content/40 text-sm">
+                  <td colspan="6" class="text-center py-12 text-base-content/65 text-sm">
                     {if @status_filter == :active,
                       do: "No hay usuarios activos.",
                       else: "No hay usuarios inactivos."}
@@ -535,7 +537,7 @@ defmodule CRCWeb.Admin.UsersLive do
         <%!-- ── Avatar ──────────────────────────────────────────────────────── --%>
         <div class={"pb-2 #{if @modal == :new_guest, do: "hidden"}"}>
           <p class="text-sm font-medium text-base-content mb-2">
-            Foto de perfil <span class="text-base-content/40 font-normal">(opcional)</span>
+            Foto de perfil <span class="text-base-content/65 font-normal">(opcional)</span>
           </p>
 
           <%= if @current_avatar && !@remove_avatar do %>
@@ -567,7 +569,7 @@ defmodule CRCWeb.Admin.UsersLive do
               </div>
               <div class="text-center">
                 <p class="text-sm font-medium text-base-content">Selecciona una foto de perfil</p>
-                <p class="text-xs text-base-content/40 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
+                <p class="text-xs text-base-content/65 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
               </div>
               <.live_file_input upload={@uploads.avatar} class="sr-only" />
             </label>
@@ -586,6 +588,7 @@ defmodule CRCWeb.Admin.UsersLive do
                 </div>
               </div>
               <button
+                aria-label="Cerrar"
                 type="button"
                 class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
                 phx-click="cancel_upload"

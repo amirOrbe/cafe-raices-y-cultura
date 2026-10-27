@@ -284,7 +284,7 @@ defmodule CRCWeb.Waiter.TableLive do
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 class="text-2xl font-bold text-base-content">Mesas</h1>
-            <p class="text-sm text-base-content/50 mt-0.5">
+            <p class="text-sm text-base-content/70 mt-0.5">
               {map_size(@orders_by_table)} ocupada{if map_size(@orders_by_table) != 1, do: "s"} · {length(
                 @tables
               ) - map_size(@orders_by_table)} libre{if length(@tables) - map_size(@orders_by_table) !=
@@ -367,8 +367,8 @@ defmodule CRCWeb.Waiter.TableLive do
         <%= if @tables == [] do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-16 text-center space-y-3">
             <.icon name="hero-table-cells" class="size-12 text-base-content/20 mx-auto" />
-            <p class="text-base-content/50 text-sm font-medium">No hay mesas configuradas</p>
-            <p class="text-base-content/40 text-xs">
+            <p class="text-base-content/70 text-sm font-medium">No hay mesas configuradas</p>
+            <p class="text-base-content/65 text-xs">
               Un administrador debe agregar las mesas desde <a href="/admin/mesas" class="link">Admin → Mesas</a>.
             </p>
           </div>
@@ -427,11 +427,11 @@ defmodule CRCWeb.Waiter.TableLive do
                       </div>
                       <%!-- Alert dot: overdue kitchen (red) or unattended (orange) --%>
                       <%= if order && overdue?(order, @now) do %>
-                        <span class="absolute top-2 right-2 size-3 rounded-full bg-error border-2 border-base-100 animate-ping" />
+                        <span class="absolute top-2 right-2 size-3 rounded-full bg-error border-2 border-base-100 motion-safe:animate-ping" />
                         <span class="absolute top-2 right-2 size-3 rounded-full bg-error border-2 border-base-100" />
                       <% end %>
                       <%= if order && unattended?(order, @now) && not overdue?(order, @now) do %>
-                        <span class="absolute top-2 right-2 size-3 rounded-full bg-orange-400 border-2 border-base-100 animate-ping" />
+                        <span class="absolute top-2 right-2 size-3 rounded-full bg-orange-400 border-2 border-base-100 motion-safe:animate-ping" />
                         <span class="absolute top-2 right-2 size-3 rounded-full bg-orange-400 border-2 border-base-100" />
                       <% end %>
                     </div>
@@ -440,7 +440,7 @@ defmodule CRCWeb.Waiter.TableLive do
               </div>
 
               <%!-- Status legend --%>
-              <div class="px-5 py-3 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-base-content/60">
+              <div class="px-5 py-3 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-base-content/70">
                 <span class="flex items-center gap-1.5">
                   <span class="size-3 rounded bg-base-200 border border-base-300 inline-block" />
                   Libre
@@ -449,7 +449,8 @@ defmodule CRCWeb.Waiter.TableLive do
                   <span class="size-3 rounded bg-info inline-block" /> Abierta
                 </span>
                 <span class="flex items-center gap-1.5">
-                  <span class="size-3 rounded bg-orange-500 inline-block animate-pulse" /> Sin atender
+                  <span class="size-3 rounded bg-orange-500 inline-block motion-safe:animate-pulse" />
+                  Sin atender
                 </span>
                 <span class="flex items-center gap-1.5">
                   <span class="size-3 rounded bg-warning inline-block" /> En cocina
@@ -458,7 +459,8 @@ defmodule CRCWeb.Waiter.TableLive do
                   <span class="size-3 rounded bg-success inline-block" /> Lista
                 </span>
                 <span class="flex items-center gap-1.5">
-                  <span class="size-3 rounded bg-error inline-block animate-pulse" /> +15 min
+                  <span class="size-3 rounded bg-error inline-block motion-safe:animate-pulse" />
+                  +15 min
                 </span>
               </div>
             </div>
@@ -502,13 +504,13 @@ defmodule CRCWeb.Waiter.TableLive do
                     <p class="text-xs font-semibold text-base-content leading-tight">
                       Mesa {table.number}
                       <%= if table.label && table.label != "" do %>
-                        <span class="font-normal text-base-content/50"> ·   {table.label}</span>
+                        <span class="font-normal text-base-content/70"> ·   {table.label}</span>
                       <% end %>
                     </p>
                     <p class={[
                       "text-[11px] mt-0.5 font-medium",
                       cond do
-                        is_nil(order) -> "text-base-content/40"
+                        is_nil(order) -> "text-base-content/65"
                         overdue?(order, @now) -> "text-error"
                         all_active_items_ready?(order) -> "text-success"
                         order.status == "sent" -> "text-warning"
@@ -549,7 +551,7 @@ defmodule CRCWeb.Waiter.TableLive do
               <span class="badge badge-warning badge-sm">{length(@parked_orders)}</span>
             </div>
             <%= if @parked_orders == [] do %>
-              <div class="py-12 text-center text-base-content/40 text-sm">
+              <div class="py-12 text-center text-base-content/65 text-sm">
                 No hay cuentas abiertas pendientes de pago.
               </div>
             <% else %>
@@ -566,7 +568,7 @@ defmodule CRCWeb.Waiter.TableLive do
                             ${CRC.Utils.format_money(Orders.calculate_order_total(order))}
                           </span>
                         </div>
-                        <div class="flex items-center justify-between gap-2 text-xs text-base-content/50">
+                        <div class="flex items-center justify-between gap-2 text-xs text-base-content/70">
                           <span>
                             {length(order.order_items)} art{if length(order.order_items) != 1,
                               do: "ículos",
@@ -591,7 +593,7 @@ defmodule CRCWeb.Waiter.TableLive do
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
             <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between gap-2">
               <div class="flex items-center gap-2">
-                <.icon name="hero-user-group" class="size-4 text-base-content/40" />
+                <.icon name="hero-user-group" class="size-4 text-base-content/65" />
                 <h3 class="font-semibold text-sm text-base-content">Grupos de comensales</h3>
               </div>
               <span class="badge badge-ghost badge-sm">{length(@groups)}</span>
@@ -609,7 +611,7 @@ defmodule CRCWeb.Waiter.TableLive do
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
             <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between gap-2">
               <div class="flex items-center gap-2">
-                <.icon name="hero-shopping-bag" class="size-4 text-base-content/40" />
+                <.icon name="hero-shopping-bag" class="size-4 text-base-content/65" />
                 <h3 class="font-semibold text-sm text-base-content">Para llevar</h3>
               </div>
               <span class="badge badge-ghost badge-sm">{length(@takeout)}</span>
@@ -627,7 +629,7 @@ defmodule CRCWeb.Waiter.TableLive do
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm overflow-hidden">
             <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between gap-2">
               <div class="flex items-center gap-2">
-                <.icon name="hero-clipboard-document-list" class="size-4 text-base-content/40" />
+                <.icon name="hero-clipboard-document-list" class="size-4 text-base-content/65" />
                 <h3 class="font-semibold text-sm text-base-content">Cuentas sin mesa asignada</h3>
               </div>
               <span class="badge badge-ghost badge-sm">{length(@tableless)}</span>
@@ -644,7 +646,13 @@ defmodule CRCWeb.Waiter.TableLive do
 
     <%!-- Open table modal --%>
     <%= if @show_new_modal and @selected_table do %>
-      <div class="fixed inset-0 z-50">
+      <div
+        role="dialog"
+        aria-modal="true"
+        phx-window-keydown="close_modal"
+        phx-key="Escape"
+        class="fixed inset-0 z-50"
+      >
         <div class="absolute inset-0 bg-black/50" phx-click="close_modal" />
         <div class="relative z-10 flex items-center justify-center min-h-full px-4 pointer-events-none">
           <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4 pointer-events-auto">
@@ -656,12 +664,12 @@ defmodule CRCWeb.Waiter.TableLive do
                 <h2 class="text-lg font-bold text-base-content">
                   Mesa {@selected_table.number}
                   <%= if @selected_table.label && @selected_table.label != "" do %>
-                    <span class="text-base-content/50 font-normal text-base">
+                    <span class="text-base-content/70 font-normal text-base">
                       · {@selected_table.label}
                     </span>
                   <% end %>
                 </h2>
-                <p class="text-sm text-base-content/50">
+                <p class="text-sm text-base-content/70">
                   {if @selected_table.capacity,
                     do: "Hasta #{@selected_table.capacity} personas · ",
                     else: ""} Libre
@@ -690,7 +698,13 @@ defmodule CRCWeb.Waiter.TableLive do
 
     <%!-- Group order modal --%>
     <%= if @show_group_modal do %>
-      <div class="fixed inset-0 z-50">
+      <div
+        role="dialog"
+        aria-modal="true"
+        phx-window-keydown="close_modal"
+        phx-key="Escape"
+        class="fixed inset-0 z-50"
+      >
         <div class="absolute inset-0 bg-black/50" phx-click="close_modal" />
         <div class="relative z-10 flex items-center justify-center min-h-full px-4 pointer-events-none">
           <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4 pointer-events-auto">
@@ -700,7 +714,7 @@ defmodule CRCWeb.Waiter.TableLive do
               </div>
               <div>
                 <h2 class="text-lg font-bold text-base-content">Nuevo grupo</h2>
-                <p class="text-sm text-base-content/50">Sin mesa asignada</p>
+                <p class="text-sm text-base-content/70">Sin mesa asignada</p>
               </div>
             </div>
 
@@ -759,7 +773,13 @@ defmodule CRCWeb.Waiter.TableLive do
 
     <%!-- Takeout modal --%>
     <%= if @show_takeout_modal do %>
-      <div class="fixed inset-0 z-50">
+      <div
+        role="dialog"
+        aria-modal="true"
+        phx-window-keydown="close_modal"
+        phx-key="Escape"
+        class="fixed inset-0 z-50"
+      >
         <div class="absolute inset-0 bg-black/50" phx-click="close_modal" />
         <div class="relative z-10 flex items-center justify-center min-h-full px-4 pointer-events-none">
           <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4 pointer-events-auto">
@@ -769,7 +789,7 @@ defmodule CRCWeb.Waiter.TableLive do
               </div>
               <div>
                 <h2 class="text-lg font-bold text-base-content">Para llevar</h2>
-                <p class="text-sm text-base-content/50">Nueva orden de takeout</p>
+                <p class="text-sm text-base-content/70">Nueva orden de takeout</p>
               </div>
             </div>
 
@@ -829,7 +849,7 @@ defmodule CRCWeb.Waiter.TableLive do
 
   # Returns {chip_class, chair_class, label}
   defp table_chip_style(nil, _now) do
-    {"bg-base-200 text-base-content/50 border-base-300", "bg-base-300", "Libre"}
+    {"bg-base-200 text-base-content/70 border-base-300", "bg-base-300", "Libre"}
   end
 
   defp table_chip_style(order, now) do
@@ -914,20 +934,20 @@ defmodule CRCWeb.Waiter.TableLive do
               </span>
             <% end %>
           </div>
-          <div class="flex items-center justify-between gap-2 text-sm text-base-content/60">
+          <div class="flex items-center justify-between gap-2 text-sm text-base-content/70">
             <span>
               {length(@order.order_items)} art{if length(@order.order_items) != 1,
                 do: "ículos",
                 else: "ículo"}
             </span>
             <%= if @order.user do %>
-              <span class="text-xs text-base-content/40 truncate max-w-[100px]">
+              <span class="text-xs text-base-content/65 truncate max-w-[100px]">
                 <.icon name="hero-user" class="size-3 inline" /> {@order.user.name}
               </span>
             <% end %>
           </div>
           <%= if @overdue? do %>
-            <span class="badge badge-xs badge-error gap-1 animate-pulse">
+            <span class="badge badge-xs badge-error gap-1 motion-safe:animate-pulse">
               <.icon name="hero-clock" class="size-3" /> +15 min
             </span>
           <% end %>
@@ -953,7 +973,7 @@ defmodule CRCWeb.Waiter.TableLive do
     ~H'<span class="badge badge-sm badge-ghost">{@status}</span>'
   end
 
-  defp card_border_class(true, _all_ready, _status), do: "border-error animate-pulse"
+  defp card_border_class(true, _all_ready, _status), do: "border-error motion-safe:animate-pulse"
   defp card_border_class(_overdue, true, _status), do: "border-success"
   defp card_border_class(_overdue, _all_ready, "sent"), do: "border-warning"
   defp card_border_class(_overdue, _all_ready, _status), do: "border-base-300"

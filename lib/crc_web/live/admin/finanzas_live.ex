@@ -73,7 +73,7 @@ defmodule CRCWeb.Admin.FinanzasLive do
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 class="text-2xl font-bold text-base-content">Finanzas</h1>
-            <p class="text-sm text-base-content/50 mt-0.5">
+            <p class="text-sm text-base-content/70 mt-0.5">
               Ingresos, costos, ganancias y desperdicio
             </p>
           </div>
@@ -190,8 +190,8 @@ defmodule CRCWeb.Admin.FinanzasLive do
 
         <%!-- Note about COGS coverage --%>
         <div class="alert bg-base-100 border-base-300 py-2.5">
-          <.icon name="hero-information-circle" class="size-4 text-base-content/40 shrink-0" />
-          <p class="text-xs text-base-content/50">
+          <.icon name="hero-information-circle" class="size-4 text-base-content/65 shrink-0" />
+          <p class="text-xs text-base-content/70">
             El costo de ventas solo incluye platillos con receta registrada en el sistema.
             Platillos sin ingredientes asignados no suman al costo.
           </p>
@@ -209,7 +209,7 @@ defmodule CRCWeb.Admin.FinanzasLive do
               <.panel :for={item <- @waste_items} class="p-4 flex items-center justify-between gap-3">
                 <div class="min-w-0">
                   <p class="text-sm font-medium text-base-content truncate">{item.name}</p>
-                  <p class="text-xs text-base-content/50">Cantidad: {item.qty}</p>
+                  <p class="text-xs text-base-content/70">Cantidad: {item.qty}</p>
                 </div>
                 <p class="text-sm font-semibold text-error shrink-0">${fmt(item.cost)}</p>
               </.panel>
@@ -259,7 +259,7 @@ defmodule CRCWeb.Admin.FinanzasLive do
         <% else %>
           <.panel class="py-10 text-center">
             <.icon name="hero-check-circle" class="size-10 text-success/40 mx-auto mb-2" />
-            <p class="text-sm text-base-content/50">Sin desperdicios registrados en este período.</p>
+            <p class="text-sm text-base-content/70">Sin desperdicios registrados en este período.</p>
           </.panel>
         <% end %>
       </div>

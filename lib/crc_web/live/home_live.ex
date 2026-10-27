@@ -19,6 +19,7 @@ defmodule CRCWeb.HomeLive do
       |> assign(:page_title, "Café Raíces y Cultura")
       |> assign(:photos, photos)
       |> assign(:active_slide, 0)
+      |> assign(:autoplay, true)
       |> assign(:nav_open, false)
       |> assign(:packages, packages)
       |> assign(:cafe_hours, cafe_hours)
@@ -43,6 +44,15 @@ defmodule CRCWeb.HomeLive do
     {:noreply, assign(socket, :active_slide, String.to_integer(index))}
   end
 
+  def handle_event("toggle_autoplay", _params, socket) do
+    {:noreply, assign(socket, :autoplay, !socket.assigns.autoplay)}
+  end
+
+  # Sent by the hook when the visitor prefers reduced motion
+  def handle_event("disable_autoplay", _params, socket) do
+    {:noreply, assign(socket, :autoplay, false)}
+  end
+
   def handle_event("toggle_nav", _params, socket) do
     {:noreply, assign(socket, :nav_open, !socket.assigns.nav_open)}
   end
@@ -61,7 +71,7 @@ defmodule CRCWeb.HomeLive do
         current_user={@current_user}
       />
       <main class="flex-1">
-        <.hero_section photos={@photos} active_slide={@active_slide} />
+        <.hero_section photos={@photos} active_slide={@active_slide} autoplay={@autoplay} />
         <.about_section cafe_hours={@cafe_hours} />
         <.packages_section :if={@packages != []} packages={@packages} />
         <.contact_section cafe_hours={@cafe_hours} />
@@ -80,25 +90,25 @@ defmodule CRCWeb.HomeLive do
 
   defp carousel_photos do
     [
-      %{url: "/images/carousel/crc-01.jpg", caption: "Café Raíces y Cultura"},
-      %{url: "/images/carousel/crc-02.jpg", caption: "Un espacio para conectar"},
-      %{url: "/images/carousel/crc-03.jpg", caption: "Café de origen seleccionado"},
-      %{url: "/images/carousel/crc-04.jpg", caption: "Arte y sabor en cada taza"},
-      %{url: "/images/carousel/crc-05.jpg", caption: "Tu refugio en Santa María la Ribera"},
-      %{url: "/images/carousel/crc-06.jpg", caption: "Café Raíces y Cultura"},
-      %{url: "/images/carousel/crc-07.jpg", caption: "Hecho con amor y detalle"},
-      %{url: "/images/carousel/crc-08.jpg", caption: "Raíces que nos sostienen"},
-      %{url: "/images/carousel/crc-09.jpg", caption: "Cultura que inspira"},
-      %{url: "/images/carousel/crc-10.jpg", caption: "Un proyecto familiar"},
-      %{url: "/images/carousel/crc-11.jpg", caption: "Granos de origen seleccionado"},
-      %{url: "/images/carousel/crc-12.jpg", caption: "Santa María la Ribera · CDMX"},
-      %{url: "/images/carousel/crc-13.jpg", caption: "Café Raíces y Cultura"},
-      %{url: "/images/carousel/crc-14.jpg", caption: "Cada taza, una historia"},
-      %{url: "/images/carousel/crc-15.jpg", caption: "Bienvenidos a CRC"},
-      %{url: "/images/carousel/crc-16.jpg", caption: "Arte, café y cultura"},
-      %{url: "/images/carousel/crc-17.jpg", caption: "Compromiso con la comunidad"},
-      %{url: "/images/carousel/crc-18.jpg", caption: "Lo artesanal en cada detalle"},
-      %{url: "/images/carousel/crc-19.jpg", caption: "Ven y descúbrenos"}
+      %{url: "/images/carousel/crc-01", caption: "Café Raíces y Cultura"},
+      %{url: "/images/carousel/crc-02", caption: "Un espacio para conectar"},
+      %{url: "/images/carousel/crc-03", caption: "Café de origen seleccionado"},
+      %{url: "/images/carousel/crc-04", caption: "Arte y sabor en cada taza"},
+      %{url: "/images/carousel/crc-05", caption: "Tu refugio en Santa María la Ribera"},
+      %{url: "/images/carousel/crc-06", caption: "Café Raíces y Cultura"},
+      %{url: "/images/carousel/crc-07", caption: "Hecho con amor y detalle"},
+      %{url: "/images/carousel/crc-08", caption: "Raíces que nos sostienen"},
+      %{url: "/images/carousel/crc-09", caption: "Cultura que inspira"},
+      %{url: "/images/carousel/crc-10", caption: "Un proyecto familiar"},
+      %{url: "/images/carousel/crc-11", caption: "Granos de origen seleccionado"},
+      %{url: "/images/carousel/crc-12", caption: "Santa María la Ribera · CDMX"},
+      %{url: "/images/carousel/crc-13", caption: "Café Raíces y Cultura"},
+      %{url: "/images/carousel/crc-14", caption: "Cada taza, una historia"},
+      %{url: "/images/carousel/crc-15", caption: "Bienvenidos a CRC"},
+      %{url: "/images/carousel/crc-16", caption: "Arte, café y cultura"},
+      %{url: "/images/carousel/crc-17", caption: "Compromiso con la comunidad"},
+      %{url: "/images/carousel/crc-18", caption: "Lo artesanal en cada detalle"},
+      %{url: "/images/carousel/crc-19", caption: "Ven y descúbrenos"}
     ]
   end
 
@@ -121,27 +131,40 @@ defmodule CRCWeb.HomeLive do
   end
 
   defp hero_section(assigns) do
+    total = length(assigns.photos)
+    assigns = assign(assigns, :total, total)
+
     ~H"""
     <section
       id="inicio"
       class="relative pt-16 h-64 sm:h-80 md:h-[500px] lg:h-[600px] overflow-hidden"
       phx-hook="CarouselAutoplay"
+      data-autoplay={to_string(@autoplay)}
+      aria-roledescription="carrusel"
+      aria-label="Fotos de Café Raíces y Cultura"
     >
-      <!-- Slides -->
-      <div class="relative w-full h-full">
+      <!-- Slides: only the active photo and its neighbours carry an image, so the
+           browser downloads 3 photos instead of all 19 -->
+      <div class="relative w-full h-full" aria-live={if @autoplay, do: "off", else: "polite"}>
         <%= for {photo, index} <- Enum.with_index(@photos) do %>
-          <div class={"absolute inset-0 transition-opacity duration-700 #{if index == @active_slide, do: "opacity-100 z-10", else: "opacity-0 z-0"}"}>
+          <div
+            class={"absolute inset-0 transition-opacity duration-700 motion-reduce:transition-none #{if index == @active_slide, do: "opacity-100 z-10", else: "opacity-0 z-0"}"}
+            aria-hidden={to_string(index != @active_slide)}
+          >
             <img
-              src={photo.url}
+              :if={near_slide?(index, @active_slide, @total)}
+              src={photo.url <> ".webp"}
+              srcset={"#{photo.url}-800.webp 800w, #{photo.url}.webp 1400w"}
+              sizes="100vw"
               alt={photo.caption || "Café Raíces y Cultura"}
               class="w-full h-full object-cover"
-              loading={if index == 0, do: "eager", else: "lazy"}
+              fetchpriority={if index == @active_slide, do: "high", else: "low"}
             />
             <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent">
             </div>
             <div
               :if={photo.caption}
-              class="absolute bottom-12 md:bottom-16 left-0 right-0 text-center px-4"
+              class="absolute bottom-14 md:bottom-16 left-0 right-0 text-center px-4"
             >
               <p class="text-white text-base sm:text-lg md:text-2xl font-medium drop-shadow-lg">
                 {photo.caption}
@@ -150,66 +173,69 @@ defmodule CRCWeb.HomeLive do
           </div>
         <% end %>
       </div>
-      
-    <!-- Previous arrow -->
+
+      <!-- Previous arrow -->
       <button
         phx-click="carousel_prev"
-        class="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 sm:p-3 transition-all backdrop-blur-sm"
+        class="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 text-white rounded-full size-11 sm:size-12 flex items-center justify-center transition-colors"
         aria-label="Foto anterior"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5 sm:h-6 sm:w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
+        <.icon name="hero-chevron-left" class="size-5 sm:size-6" />
       </button>
-      
-    <!-- Next arrow -->
+
+      <!-- Next arrow -->
       <button
         phx-click="carousel_next"
-        class="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 sm:p-3 transition-all backdrop-blur-sm"
+        class="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 text-white rounded-full size-11 sm:size-12 flex items-center justify-center transition-colors"
         aria-label="Foto siguiente"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5 sm:h-6 sm:w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
+        <.icon name="hero-chevron-right" class="size-5 sm:size-6" />
       </button>
-      
-    <!-- Dot indicators -->
-      <div class="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2">
-        <%= for {_photo, index} <- Enum.with_index(@photos) do %>
-          <button
-            phx-click="carousel_goto"
-            phx-value-index={index}
-            class={"rounded-full transition-all #{if index == @active_slide, do: "w-8 h-4 bg-white", else: "w-4 h-4 bg-white/50 hover:bg-white/75"}"}
-            aria-label={"Ir a la foto #{index + 1}"}
-          />
-        <% end %>
+
+      <!-- Controls: pause + position. 19 dots don't fit a phone, so phones get a counter -->
+      <div class="absolute bottom-3 left-0 right-0 z-20 flex items-center justify-center gap-2 px-4">
+        <button
+          phx-click="toggle_autoplay"
+          class="size-8 shrink-0 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-colors"
+          aria-label={if @autoplay, do: "Pausar fotos", else: "Reanudar fotos"}
+          aria-pressed={to_string(!@autoplay)}
+        >
+          <.icon name={if @autoplay, do: "hero-pause-solid", else: "hero-play-solid"} class="size-4" />
+        </button>
+        <span class="sm:hidden text-xs font-medium text-white bg-black/40 rounded-full px-3 py-1.5 tabular-nums">
+          {@active_slide + 1} / {@total}
+        </span>
+        <div class="hidden sm:flex items-center">
+          <%= for {_photo, index} <- Enum.with_index(@photos) do %>
+            <button
+              phx-click="carousel_goto"
+              phx-value-index={index}
+              class="group size-6 flex items-center justify-center"
+              aria-label={"Ir a la foto #{index + 1}"}
+              aria-current={if index == @active_slide, do: "true"}
+            >
+              <span class={"block rounded-full transition-all motion-reduce:transition-none #{if index == @active_slide, do: "w-5 h-2.5 bg-white", else: "size-2.5 bg-white/60 group-hover:bg-white/90"}"} />
+            </button>
+          <% end %>
+        </div>
       </div>
-      
-    <!-- Headline overlay -->
-      <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 z-20 text-center px-4 pointer-events-none">
-        <h1 class="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white drop-shadow-xl leading-tight">
+
+      <!-- Headline overlay -->
+      <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 z-20 text-center px-16 pointer-events-none">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white drop-shadow-xl leading-tight text-balance">
           Café Raíces y Cultura
         </h1>
-        <p class="mt-2 text-sm sm:text-base md:text-lg text-white/90 drop-shadow">
+        <p class="mt-2 text-sm sm:text-base md:text-lg text-white drop-shadow">
           Santa María la Ribera · Ciudad de México
         </p>
       </div>
     </section>
     """
+  end
+
+  defp near_slide?(index, active, total) do
+    diff = abs(index - active)
+    diff <= 1 or diff == total - 1
   end
 
   # ---------------------------------------------------------------------------
@@ -222,31 +248,27 @@ defmodule CRCWeb.HomeLive do
     ~H"""
     <section id="nosotros" class="py-16 sm:py-20 lg:py-24 bg-base-100">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-    <!-- Header -->
+        <!-- Header -->
         <div class="text-center mb-12 sm:mb-16">
-          <span class="inline-block text-primary font-semibold text-sm uppercase tracking-widest mb-3">
-            Nuestra historia
-          </span>
           <h2 class="text-3xl sm:text-4xl font-bold text-base-content leading-tight">
             Un espacio para conectar
           </h2>
         </div>
-        
-    <!-- Intro + imagen -->
+
+        <!-- Intro + imagen -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-16 sm:mb-20">
           <!-- Imagen -->
           <div class="relative rounded-2xl overflow-hidden shadow-xl aspect-[4/3]">
             <img
-              src="/images/carousel/crc-17.jpg"
+              src="/images/carousel/crc-17-800.webp"
               alt="Interior de Café Raíces y Cultura"
               class="w-full h-full object-cover"
               loading="lazy"
             />
             <div class="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent"></div>
           </div>
-          
-    <!-- Texto intro -->
+
+          <!-- Texto intro -->
           <div>
             <p class="text-base-content/70 text-base sm:text-lg leading-relaxed mb-6">
               En un rincón acogedor de la ciudad,
@@ -264,13 +286,13 @@ defmodule CRCWeb.HomeLive do
               <%= if @cafe_hours == [] do %>
                 <div class="bg-base-200 rounded-xl p-4 text-center">
                   <p class="text-xl font-bold text-primary">Lun – Vie</p>
-                  <p class="text-sm text-base-content/60 mt-1">8:00 – 21:00</p>
+                  <p class="text-sm text-base-content/70 mt-1">8:00 – 21:00</p>
                 </div>
               <% else %>
                 <%= for group <- @cafe_hours do %>
                   <div class="bg-base-200 rounded-xl p-4 text-center">
                     <p class="text-xl font-bold text-primary">{group.label}</p>
-                    <p class="text-sm text-base-content/60 mt-1">
+                    <p class="text-sm text-base-content/70 mt-1">
                       {format_time(group.opening)} – {format_time(group.closing)}
                     </p>
                   </div>
@@ -279,125 +301,63 @@ defmodule CRCWeb.HomeLive do
             </div>
           </div>
         </div>
-        
-    <!-- 4 pilares -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 mb-14">
-          
-    <!-- Raíces -->
-          <div class="bg-base-200 border border-base-300 rounded-2xl p-6 hover:shadow-md transition-shadow">
-            <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-6 w-6 text-primary"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M12 3v1m0 16v1m8.66-13l-.87.5M4.21 15.5l-.87.5M20.66 15.5l-.87-.5M4.21 8.5l-.87-.5M21 12h-1M4 12H3m15.07-7.07l-.7.7M6.63 17.37l-.7.7M17.37 17.37l-.7-.7M6.63 6.63l-.7-.7"
-                />
-              </svg>
-            </div>
-            <h3 class="text-base font-bold text-base-content mb-2">Raíces que Sostienen</h3>
-            <p class="text-sm text-base-content/60 leading-relaxed">
+
+        <!-- 4 pilares -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 max-w-5xl mx-auto mb-16">
+          <div class="border-t-2 border-primary/25 pt-5">
+            <h3 class="flex items-center gap-2.5 text-lg font-bold text-base-content mb-2">
+              <.icon name="hero-sparkles" class="size-5 text-primary shrink-0" /> Raíces que Sostienen
+            </h3>
+            <p class="text-base-content/70 leading-relaxed text-pretty">
               Nuestras raíces son profundas, nutridas por la historia y el esfuerzo de quienes
               han guiado este camino. Son el ADN que nos sostiene y nos conecta con el pasado
               para guiarnos hacia el futuro.
             </p>
           </div>
-          
-    <!-- Cultura -->
-          <div class="bg-base-200 border border-base-300 rounded-2xl p-6 hover:shadow-md transition-shadow">
-            <div class="w-12 h-12 bg-secondary/10 rounded-2xl flex items-center justify-center mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-6 w-6 text-secondary"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                />
-              </svg>
-            </div>
-            <h3 class="text-base font-bold text-base-content mb-2">Cultura que Inspira</h3>
-            <p class="text-sm text-base-content/60 leading-relaxed">
+          <div class="border-t-2 border-primary/25 pt-5">
+            <h3 class="flex items-center gap-2.5 text-lg font-bold text-base-content mb-2">
+              <.icon name="hero-light-bulb" class="size-5 text-primary shrink-0" />
+              Cultura que Inspira
+            </h3>
+            <p class="text-base-content/70 leading-relaxed text-pretty">
               Más que una cafetería, somos un espacio cultural vibrante. Promovemos actividades
               artísticas que unen a las personas y generan un impacto positivo. Somos un faro
               de colaboración y creatividad.
             </p>
           </div>
-          
-    <!-- Comunidad -->
-          <div class="bg-base-200 border border-base-300 rounded-2xl p-6 hover:shadow-md transition-shadow">
-            <div class="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-6 w-6 text-accent"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            </div>
-            <h3 class="text-base font-bold text-base-content mb-2">Compromiso con la Comunidad</h3>
-            <p class="text-sm text-base-content/60 leading-relaxed">
+          <div class="border-t-2 border-primary/25 pt-5">
+            <h3 class="flex items-center gap-2.5 text-lg font-bold text-base-content mb-2">
+              <.icon name="hero-user-group" class="size-5 text-primary shrink-0" />
+              Compromiso con la Comunidad
+            </h3>
+            <p class="text-base-content/70 leading-relaxed text-pretty">
               Creemos en la trazabilidad del café, mostrando el impacto de quienes lo producen.
               Nuestra visión es fomentar comunidades comprometidas que trabajen juntas para
               mejorar el ámbito cafetalero.
             </p>
           </div>
-          
-    <!-- Valores -->
-          <div class="bg-base-200 border border-base-300 rounded-2xl p-6 hover:shadow-md transition-shadow">
-            <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-6 w-6 text-primary"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
-            </div>
-            <h3 class="text-base font-bold text-base-content mb-2">Valores que Nos Definen</h3>
-            <p class="text-sm text-base-content/60 leading-relaxed">
+          <div class="border-t-2 border-primary/25 pt-5">
+            <h3 class="flex items-center gap-2.5 text-lg font-bold text-base-content mb-2">
+              <.icon name="hero-heart" class="size-5 text-primary shrink-0" /> Valores que Nos Definen
+            </h3>
+            <p class="text-base-content/70 leading-relaxed text-pretty">
               Empatía, respeto, colaboración e integridad son el pilar de cada acción. Promovemos
               el trabajo en equipo, la responsabilidad social y la conciencia del entorno con
               perseverancia y resiliencia.
             </p>
           </div>
         </div>
-        
-    <!-- Cierre -->
+
+        <!-- Cierre -->
         <div class="text-center max-w-2xl mx-auto">
-          <p class="text-base-content/60 text-base sm:text-lg leading-relaxed">
+          <p class="text-base-content/70 text-base sm:text-lg leading-relaxed">
             En CRC somos personas cálidas y versátiles, siempre en busca de nuevos horizontes.
             Ven y descubre un espacio donde el <strong class="text-base-content">café</strong>,
             el <strong class="text-base-content">arte</strong>
             y la <strong class="text-base-content">cultura</strong>
             convergen para nutrir y transformar nuestro entorno.
           </p>
-          <p class="mt-4 text-primary font-semibold">
+          <p class="mt-4 text-primary font-semibold text-balance">
             ¡Te esperamos en Café Raíces y Cultura para compartir una experiencia única y auténtica!
           </p>
         </div>
@@ -415,13 +375,10 @@ defmodule CRCWeb.HomeLive do
     <section id="paquetes" class="py-16 sm:py-20 lg:py-24 bg-base-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-12">
-          <span class="inline-block text-primary font-semibold text-sm uppercase tracking-widest mb-3">
-            Combos especiales
-          </span>
           <h2 class="text-3xl sm:text-4xl font-bold text-base-content leading-tight">
             Paquetes del día
           </h2>
-          <p class="mt-3 text-base-content/60 max-w-xl mx-auto">
+          <p class="mt-3 text-base-content/70 max-w-xl mx-auto">
             Lleva más por menos. Combinaciones pensadas para que disfrutes al máximo.
           </p>
         </div>
@@ -436,13 +393,13 @@ defmodule CRCWeb.HomeLive do
                   <span class="badge badge-primary badge-sm whitespace-nowrap shrink-0">Combo</span>
                 </div>
                 <%= if package.description do %>
-                  <p class="text-sm text-base-content/60 mt-1">{package.description}</p>
+                  <p class="text-sm text-base-content/70 mt-1">{package.description}</p>
                 <% end %>
               </div>
 
               <%!-- Items included --%>
               <div class="flex-1 px-5 py-4">
-                <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-3">
+                <p class="text-xs font-semibold text-base-content/65 uppercase tracking-wider mb-3">
                   Incluye:
                 </p>
                 <ul class="space-y-2">
@@ -468,7 +425,7 @@ defmodule CRCWeb.HomeLive do
                       Decimal.add(acc, Decimal.mult(pi.menu_item.price, pi.quantity))
                     end) %>
                   <%= if Decimal.compare(individual_total, package.price) == :gt do %>
-                    <p class="text-xs text-base-content/40 line-through">
+                    <p class="text-xs text-base-content/65 line-through">
                       ${individual_total |> Decimal.round(0) |> Decimal.to_string()}
                     </p>
                   <% end %>
@@ -544,8 +501,8 @@ defmodule CRCWeb.HomeLive do
                 </a>
               </div>
             </div>
-            
-    <!-- Horario -->
+
+            <!-- Horario -->
             <div class="flex gap-4">
               <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
                 <svg
@@ -578,8 +535,8 @@ defmodule CRCWeb.HomeLive do
                 <% end %>
               </div>
             </div>
-            
-    <!-- Redes sociales -->
+
+            <!-- Redes sociales -->
             <div>
               <p class="font-semibold text-base-content mb-4">Síguenos</p>
               <div class="flex gap-3">
@@ -632,8 +589,8 @@ defmodule CRCWeb.HomeLive do
               </div>
             </div>
           </div>
-          
-    <!-- Google Maps embed -->
+
+          <!-- Google Maps embed -->
           <div class="rounded-2xl overflow-hidden shadow-xl border border-base-300">
             <iframe
               src="https://maps.google.com/maps?q=Dr.+Mariano+Azuela+80,+Santa+María+la+Ribera,+Cuauhtémoc,+06400+Ciudad+de+México,+CDMX&output=embed&z=17"
@@ -643,8 +600,7 @@ defmodule CRCWeb.HomeLive do
               loading="lazy"
               referrerpolicy="no-referrer-when-downgrade"
               title="Ubicación de Café Raíces y Cultura — Dr. Mariano Azuela #80 Local A, Santa María la Ribera"
-            >
-            </iframe>
+            ></iframe>
           </div>
         </div>
       </div>

@@ -187,7 +187,7 @@ defmodule CRCWeb.Employee.ProfileLive do
           </div>
           <div>
             <h1 class="text-xl font-bold text-base-content">{@current_user.name}</h1>
-            <p class="text-sm text-base-content/50">{@current_user.email}</p>
+            <p class="text-sm text-base-content/70">{@current_user.email}</p>
             <span class="badge badge-sm badge-ghost mt-1">
               {if @current_user.role == "admin", do: "Administrador", else: "Empleado"}
             </span>
@@ -207,7 +207,7 @@ defmodule CRCWeb.Employee.ProfileLive do
             <%!-- Avatar section --%>
             <div>
               <p class="text-sm font-medium text-base-content mb-2">
-                Foto de perfil <span class="text-base-content/40 font-normal">(opcional)</span>
+                Foto de perfil <span class="text-base-content/65 font-normal">(opcional)</span>
               </p>
 
               <%!-- Current avatar --%>
@@ -257,7 +257,7 @@ defmodule CRCWeb.Employee.ProfileLive do
                         do: "Subir foto nueva (opcional)",
                         else: "Selecciona una foto de perfil"}
                     </p>
-                    <p class="text-xs text-base-content/40 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
+                    <p class="text-xs text-base-content/65 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
                   </div>
                   <.live_file_input upload={@uploads.avatar} class="sr-only" />
                 </label>
@@ -277,6 +277,7 @@ defmodule CRCWeb.Employee.ProfileLive do
                     </div>
                   </div>
                   <button
+                    aria-label="Cerrar"
                     type="button"
                     class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
                     phx-click="cancel_upload"
@@ -307,7 +308,7 @@ defmodule CRCWeb.Employee.ProfileLive do
         <%!-- Card 2: Cambiar contraseña --%>
         <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-6">
           <h2 class="text-base font-semibold text-base-content mb-1">Cambiar contraseña</h2>
-          <p class="text-xs text-base-content/50 mb-4">Mínimo 8 caracteres.</p>
+          <p class="text-xs text-base-content/70 mb-4">Mínimo 8 caracteres.</p>
 
           <%!-- Password errors --%>
           <%= if @pw_errors != [] do %>

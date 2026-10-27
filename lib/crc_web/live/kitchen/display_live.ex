@@ -164,7 +164,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 class="text-2xl font-bold text-base-content">🍳 Cocina</h1>
-            <p class="text-sm text-base-content/50 mt-0.5">Platillos y comida</p>
+            <p class="text-sm text-base-content/70 mt-0.5">Platillos y comida</p>
           </div>
           <div class="flex items-center gap-2">
             <% pending = pending_orders(@orders) %>
@@ -186,7 +186,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
               <span>💡</span>
               <p class="font-semibold text-base-content text-sm">¿Primera vez en Cocina?</p>
             </div>
-            <button data-dismiss-tip class="btn btn-xs btn-ghost text-base-content/40 shrink-0">
+            <button data-dismiss-tip class="btn btn-xs btn-ghost text-base-content/65 shrink-0">
               ✕ Entendido
             </button>
           </div>
@@ -274,7 +274,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
         <%= if pending_orders(@orders) == [] do %>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-20 text-center">
             <.icon name="hero-check-circle" class="size-12 text-success mx-auto mb-3" />
-            <p class="text-base-content/50 text-sm">No hay pedidos pendientes en cocina.</p>
+            <p class="text-base-content/70 text-sm">No hay pedidos pendientes en cocina.</p>
           </div>
         <% end %>
 
@@ -290,7 +290,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                       <span class="text-primary text-lg">{group.total_qty}×</span>
                       {group.menu_item.name}
                     </h2>
-                    <p class="text-xs text-base-content/50">
+                    <p class="text-xs text-base-content/70">
                       {group.entry_count} {if group.entry_count == 1, do: "mesa", else: "mesas"}
                     </p>
                   </div>
@@ -299,7 +299,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                       <span class={[
                         "text-xs font-mono font-semibold tabular-nums",
                         cond do
-                          gmins >= 12 -> "text-error animate-pulse"
+                          gmins >= 12 -> "text-error motion-safe:animate-pulse"
                           gmins >= 7 -> "text-warning"
                           true -> "text-success"
                         end
@@ -326,7 +326,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                         <p class="text-sm font-medium text-base-content">
                           {display_name}
                           <%= if item.quantity > 1 do %>
-                            <span class="text-xs text-base-content/50 font-normal ml-1">
+                            <span class="text-xs text-base-content/70 font-normal ml-1">
                               ×{item.quantity}
                             </span>
                           <% end %>
@@ -399,7 +399,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                           <span class="badge badge-xs badge-ghost shrink-0">👥 Grupo</span>
                         <% end %>
                       </div>
-                      <p class="text-xs text-base-content/50">
+                      <p class="text-xs text-base-content/70">
                         {length(food_items)} {if length(food_items) == 1,
                           do: "platillo",
                           else: "platillos"}
@@ -410,7 +410,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                         <span class={[
                           "text-xs font-mono font-semibold tabular-nums",
                           cond do
-                            mins >= 12 -> "text-error animate-pulse"
+                            mins >= 12 -> "text-error motion-safe:animate-pulse"
                             mins >= 7 -> "text-warning"
                             true -> "text-success"
                           end
@@ -432,7 +432,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                             <%= if item.product_id do %>
                               <span class="text-accent">Extra:</span> {item.product.name}
                               <%= if item.portion_quantity do %>
-                                <span class="text-xs text-base-content/50 font-normal">
+                                <span class="text-xs text-base-content/70 font-normal">
                                   ({format_qty(item.portion_quantity)} {item.product.unit})
                                 </span>
                               <% end %>
@@ -524,7 +524,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
         <% ready = ready_orders(@orders) %>
         <%= if ready != [] do %>
           <div class="space-y-3">
-            <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider">
+            <h2 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider">
               Listos para servir
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -532,7 +532,7 @@ defmodule CRCWeb.Kitchen.DisplayLive do
                 <div class="bg-base-100 rounded-2xl border border-success/50 shadow-sm px-4 py-4 flex items-center gap-3">
                   <div class="flex-1 min-w-0">
                     <p class="font-bold text-base-content truncate">{order.customer_name}</p>
-                    <p class="text-xs text-base-content/50">
+                    <p class="text-xs text-base-content/70">
                       {kitchen_item_count(order)} platillos
                     </p>
                   </div>

@@ -102,7 +102,7 @@ defmodule CRCWeb.Admin.DescuentosLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Descuentos</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">
+          <p class="text-sm text-base-content/70 mt-0.5">
             Los meseros pueden aplicar estos descuentos al cerrar una comanda.
           </p>
         </div>
@@ -114,8 +114,8 @@ defmodule CRCWeb.Admin.DescuentosLive do
       <%= if @discounts == [] do %>
         <.panel class="py-16 text-center">
           <.icon name="hero-tag" class="size-10 text-base-content/20 mx-auto mb-3" />
-          <p class="text-base-content/50 text-sm">No hay descuentos registrados.</p>
-          <p class="text-base-content/30 text-xs mt-1">
+          <p class="text-base-content/70 text-sm">No hay descuentos registrados.</p>
+          <p class="text-base-content/65 text-xs mt-1">
             Crea uno para que los meseros puedan aplicarlo en las comandas.
           </p>
         </.panel>
@@ -142,10 +142,11 @@ defmodule CRCWeb.Admin.DescuentosLive do
                     {if d.active, do: "Activo", else: "Inactivo"}
                   </.admin_badge>
                 </div>
-                <p class="text-xs text-base-content/50 mt-0.5">{d.percentage}% de descuento</p>
+                <p class="text-xs text-base-content/70 mt-0.5">{d.percentage}% de descuento</p>
               </div>
               <div class="flex flex-col items-center gap-1 shrink-0">
                 <button
+                  aria-label="Editar"
                   class="btn btn-ghost btn-xs btn-circle"
                   phx-click="edit_discount"
                   phx-value-id={d.id}
@@ -165,6 +166,7 @@ defmodule CRCWeb.Admin.DescuentosLive do
                   <.icon name={if d.active, do: "hero-eye-slash", else: "hero-eye"} class="size-4" />
                 </button>
                 <button
+                  aria-label="Eliminar"
                   class="btn btn-ghost btn-xs btn-circle text-error"
                   phx-click="delete_discount"
                   phx-value-id={d.id}
@@ -207,6 +209,7 @@ defmodule CRCWeb.Admin.DescuentosLive do
                     <td>
                       <div class="flex items-center justify-end gap-1">
                         <button
+                          aria-label="Editar"
                           class="btn btn-ghost btn-xs btn-circle"
                           phx-click="edit_discount"
                           phx-value-id={d.id}
@@ -229,6 +232,7 @@ defmodule CRCWeb.Admin.DescuentosLive do
                           />
                         </button>
                         <button
+                          aria-label="Eliminar"
                           class="btn btn-ghost btn-xs btn-circle text-error"
                           phx-click="delete_discount"
                           phx-value-id={d.id}

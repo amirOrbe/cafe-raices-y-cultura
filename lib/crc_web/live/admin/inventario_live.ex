@@ -141,7 +141,7 @@ defmodule CRCWeb.Admin.InventarioLive do
         <div class="flex items-start justify-between flex-wrap gap-3">
           <div>
             <h1 class="text-2xl font-bold text-base-content">📦 Inventario</h1>
-            <p class="text-sm text-base-content/50 mt-0.5">
+            <p class="text-sm text-base-content/70 mt-0.5">
               Stock actual de todos los insumos. Haz clic en <strong>Actualizar</strong>
               para corregir cualquier cantidad.
             </p>
@@ -155,7 +155,7 @@ defmodule CRCWeb.Admin.InventarioLive do
         <div class="relative">
           <.icon
             name="hero-magnifying-glass"
-            class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/40 pointer-events-none"
+            class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/65 pointer-events-none"
           />
           <input
             type="search"
@@ -194,7 +194,7 @@ defmodule CRCWeb.Admin.InventarioLive do
         </div>
 
         <%!-- Legend --%>
-        <div class="flex gap-4 text-xs text-base-content/50 flex-wrap">
+        <div class="flex gap-4 text-xs text-base-content/70 flex-wrap">
           <span class="flex items-center gap-1">
             <span class="inline-block w-2.5 h-2.5 rounded-full bg-error"></span> Sin stock o crítico
           </span>
@@ -211,7 +211,7 @@ defmodule CRCWeb.Admin.InventarioLive do
         <% visible = @products |> visible_products(@filter) |> search_filter(@search) %>
         <.panel class="overflow-hidden">
           <%= if visible == [] do %>
-            <div class="py-20 text-center text-base-content/40 text-sm">
+            <div class="py-20 text-center text-base-content/65 text-sm">
               No hay insumos que mostrar en este filtro.
             </div>
           <% else %>
@@ -220,8 +220,7 @@ defmodule CRCWeb.Admin.InventarioLive do
               <%= for p <- visible do %>
                 <div class="px-4 py-4 space-y-2">
                   <div class="flex items-center gap-2">
-                    <span class={"inline-block w-2.5 h-2.5 rounded-full shrink-0 #{stock_dot_class(p)}"}>
-                    </span>
+                    <span class={"inline-block w-2.5 h-2.5 rounded-full shrink-0 #{stock_dot_class(p)}"}></span>
                     <span class="font-medium text-base-content text-sm">{p.name}</span>
                   </div>
                   <div class="flex items-center justify-between">
@@ -229,14 +228,14 @@ defmodule CRCWeb.Admin.InventarioLive do
                       <span class={"text-2xl font-bold #{stock_text_class(p)}"}>
                         {format_qty(p.stock_quantity)}
                       </span>
-                      <span class="text-xs text-base-content/50 ml-1">{p.unit}</span>
-                      <p class="text-xs text-base-content/40 mt-0.5">
+                      <span class="text-xs text-base-content/70 ml-1">{p.unit}</span>
+                      <p class="text-xs text-base-content/65 mt-0.5">
                         Mínimo: {format_qty(p.min_stock)} {p.unit}
                       </p>
                     </div>
                     <%= if @editing_id == p.id do %>
                       <button
-                        class="btn btn-ghost btn-xs text-base-content/40"
+                        class="btn btn-ghost btn-xs text-base-content/65"
                         phx-click="cancel_edit"
                       >
                         Cancelar
@@ -273,8 +272,7 @@ defmodule CRCWeb.Admin.InventarioLive do
                     <tr class="hover:bg-base-200/40 transition-colors border-b border-base-200 last:border-0">
                       <td>
                         <div class="flex items-center gap-2">
-                          <span class={"inline-block w-2.5 h-2.5 rounded-full shrink-0 #{stock_dot_class(p)}"}>
-                          </span>
+                          <span class={"inline-block w-2.5 h-2.5 rounded-full shrink-0 #{stock_dot_class(p)}"}></span>
                           <span class="text-sm font-medium text-base-content">{p.name}</span>
                           <%= if p.supplier do %>
                             <span class="badge badge-ghost badge-xs">{p.supplier.name}</span>
@@ -285,9 +283,9 @@ defmodule CRCWeb.Admin.InventarioLive do
                         <span class={"text-base font-bold #{stock_text_class(p)}"}>
                           {format_qty(p.stock_quantity)}
                         </span>
-                        <span class="text-xs text-base-content/50 ml-1">{p.unit}</span>
+                        <span class="text-xs text-base-content/70 ml-1">{p.unit}</span>
                       </td>
-                      <td class="text-sm text-base-content/50">
+                      <td class="text-sm text-base-content/70">
                         {format_qty(p.min_stock)} {p.unit}
                       </td>
                       <td>
@@ -298,7 +296,7 @@ defmodule CRCWeb.Admin.InventarioLive do
                       <td class="text-right pr-4">
                         <%= if @editing_id == p.id do %>
                           <button
-                            class="btn btn-ghost btn-xs text-base-content/40"
+                            class="btn btn-ghost btn-xs text-base-content/65"
                             phx-click="cancel_edit"
                           >
                             Cancelar
@@ -353,7 +351,7 @@ defmodule CRCWeb.Admin.InventarioLive do
             <span class="label-text text-xs font-semibold text-primary">
               Nuevo stock
               <%= if @product.unit && @product.unit != "" do %>
-                <span class="font-normal text-base-content/50">({@product.unit})</span>
+                <span class="font-normal text-base-content/70">({@product.unit})</span>
               <% end %>
             </span>
           </label>
@@ -369,7 +367,7 @@ defmodule CRCWeb.Admin.InventarioLive do
             required
             onblur="if(this.value){this.value=parseFloat(this.value).toFixed(3)}"
           />
-          <p class="text-xs text-base-content/40 mt-0.5">
+          <p class="text-xs text-base-content/65 mt-0.5">
             Actual: <strong>{format_qty(@product.stock_quantity)}</strong>
             {if @product.unit && @product.unit != "", do: @product.unit}
             <.delta_preview new_qty={@new_qty} current={@product.stock_quantity} unit={@product.unit} />
@@ -380,7 +378,7 @@ defmodule CRCWeb.Admin.InventarioLive do
         <div class="flex-1 min-w-0">
           <label class="label py-0.5">
             <span class="label-text text-xs font-semibold">Comentario</span>
-            <span class="label-text-alt text-base-content/40 text-xs">Opcional</span>
+            <span class="label-text-alt text-base-content/65 text-xs">Opcional</span>
           </label>
           <input
             type="text"

@@ -66,7 +66,7 @@ defmodule CRCWeb.Admin.CumpleanosLive do
       <%!-- Header --%>
       <div>
         <h1 class="text-2xl font-bold text-base-content">Cumpleaños</h1>
-        <p class="text-sm text-base-content/50 mt-0.5">{format_date(@today)}</p>
+        <p class="text-sm text-base-content/70 mt-0.5">{format_date(@today)}</p>
       </div>
 
       <div class="flex gap-2">
@@ -103,7 +103,7 @@ defmodule CRCWeb.Admin.CumpleanosLive do
                 <.avatar user={user} size="md" />
                 <div>
                   <p class="font-semibold text-base-content">{user.name}</p>
-                  <p class="text-xs text-base-content/50">
+                  <p class="text-xs text-base-content/70">
                     <.role_badge role={user.role} />
                     <%= if user.birthday do %>
                       · {age_label(user.birthday, @today)}
@@ -122,17 +122,17 @@ defmodule CRCWeb.Admin.CumpleanosLive do
         <.panel class="py-16 text-center">
           <.icon name="hero-cake" class="size-12 text-base-content/20 mx-auto mb-3" />
           <%= if @tab == :team do %>
-            <p class="text-base-content/50 text-sm">
+            <p class="text-base-content/70 text-sm">
               No hay empleados con fecha de nacimiento registrada.
             </p>
-            <p class="text-base-content/40 text-xs mt-1">
+            <p class="text-base-content/65 text-xs mt-1">
               Agrégalas desde <a href="/admin/usuarios" class="link">Usuarios</a>.
             </p>
           <% else %>
-            <p class="text-base-content/50 text-sm">
+            <p class="text-base-content/70 text-sm">
               No hay clientes con fecha de cumpleaños registrada.
             </p>
-            <p class="text-base-content/40 text-xs mt-1">
+            <p class="text-base-content/65 text-xs mt-1">
               Agrégalas al registrar o editar un <a href="/admin/clientes" class="link">cliente</a>.
             </p>
           <% end %>
@@ -143,7 +143,7 @@ defmodule CRCWeb.Admin.CumpleanosLive do
         <.panel class="overflow-hidden">
           <div class="px-5 py-3 border-b border-base-200 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <.icon name="hero-calendar-days" class="size-4 text-base-content/40" />
+              <.icon name="hero-calendar-days" class="size-4 text-base-content/65" />
               <h3 class="font-semibold text-sm text-base-content">{group.label}</h3>
             </div>
             <span class="badge badge-ghost badge-sm">{length(group.users)}</span>
@@ -160,8 +160,8 @@ defmodule CRCWeb.Admin.CumpleanosLive do
       <%= if @no_bdays != [] do %>
         <.panel class="overflow-hidden">
           <div class="px-5 py-3 border-b border-base-200 flex items-center gap-2">
-            <.icon name="hero-question-mark-circle" class="size-4 text-base-content/30" />
-            <h3 class="font-semibold text-sm text-base-content/40">Sin fecha registrada</h3>
+            <.icon name="hero-question-mark-circle" class="size-4 text-base-content/65" />
+            <h3 class="font-semibold text-sm text-base-content/65">Sin fecha registrada</h3>
           </div>
           <div class="divide-y divide-base-200">
             <%= for person <- @no_bdays do %>
@@ -195,7 +195,7 @@ defmodule CRCWeb.Admin.CumpleanosLive do
         >
           {@person.name}
         </.link>
-        <p class="text-xs text-base-content/50 mt-0.5">
+        <p class="text-xs text-base-content/70 mt-0.5">
           Cliente
           <%= if @person.birthday do %>
             · {format_birthday(@person.birthday)}
@@ -211,9 +211,9 @@ defmodule CRCWeb.Admin.CumpleanosLive do
               En {@person.days_until_birthday} día{if @person.days_until_birthday != 1, do: "s"}
             </span>
           <% not is_nil(@person.days_until_birthday) -> %>
-            <span class="text-xs text-base-content/40">En {@person.days_until_birthday} días</span>
+            <span class="text-xs text-base-content/65">En {@person.days_until_birthday} días</span>
           <% true -> %>
-            <span class="text-xs text-base-content/30 italic">Sin fecha</span>
+            <span class="text-xs text-base-content/65 italic">Sin fecha</span>
         <% end %>
       </div>
     </div>
@@ -233,7 +233,7 @@ defmodule CRCWeb.Admin.CumpleanosLive do
       <.avatar user={@user} size="sm" />
       <div class="flex-1 min-w-0">
         <p class="text-sm font-semibold text-base-content truncate">{@user.name}</p>
-        <p class="text-xs text-base-content/50 mt-0.5">
+        <p class="text-xs text-base-content/70 mt-0.5">
           {role_label(@user.role)}
           <%= if @user.birthday do %>
             · {format_birthday(@user.birthday)}
@@ -253,11 +253,11 @@ defmodule CRCWeb.Admin.CumpleanosLive do
               En {@user.days_until_birthday} días
             </span>
           <% not is_nil(@user.days_until_birthday) -> %>
-            <span class="text-xs text-base-content/40">
+            <span class="text-xs text-base-content/65">
               En {@user.days_until_birthday} días
             </span>
           <% true -> %>
-            <span class="text-xs text-base-content/30 italic">Sin fecha</span>
+            <span class="text-xs text-base-content/65 italic">Sin fecha</span>
         <% end %>
       </div>
     </div>
@@ -301,7 +301,7 @@ defmodule CRCWeb.Admin.CumpleanosLive do
   end
 
   defp role_badge_class("admin"), do: "text-primary font-semibold"
-  defp role_badge_class(_), do: "text-base-content/60"
+  defp role_badge_class(_), do: "text-base-content/70"
 
   defp initials(name) when is_binary(name) do
     name

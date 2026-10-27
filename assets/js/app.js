@@ -15,17 +15,25 @@ import topbar from "../vendor/topbar"
 // ---------------------------------------------------------------------------
 
 /**
- * CarouselAutoplay — pushes "carousel_next" event to the server every 5 seconds.
- * Pauses on hover / touch to avoid interrupting the user.
+ * CarouselAutoplay — pushes "carousel_next" event to the server every 6 seconds
+ * while `data-autoplay="true"` (the server owns the pause toggle).
+ * Pauses on hover / touch to avoid interrupting the user, and
+ * asks the server to stay paused when the visitor prefers reduced motion.
  */
 const CarouselAutoplay = {
   mounted() {
     this.interval = null
     this._touchStartX = null
-    this.startAutoplay()
+    this._hovering = false
 
-    this.el.addEventListener("mouseenter", () => this.stopAutoplay())
-    this.el.addEventListener("mouseleave", () => this.startAutoplay())
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.pushEvent("disable_autoplay", {})
+    } else {
+      this.syncAutoplay()
+    }
+
+    this.el.addEventListener("mouseenter", () => { this._hovering = true; this.stopAutoplay() })
+    this.el.addEventListener("mouseleave", () => { this._hovering = false; this.syncAutoplay() })
     this.el.addEventListener("touchstart", (e) => {
       this.stopAutoplay()
       this._touchStartX = e.touches[0].clientX
@@ -39,11 +47,26 @@ const CarouselAutoplay = {
         this._touchStartX = null
       }
       clearTimeout(this._touchTimeout)
-      this._touchTimeout = setTimeout(() => this.startAutoplay(), 3000)
+      this._touchTimeout = setTimeout(() => this.syncAutoplay(), 3000)
     }, {passive: true})
+  },
+  updated() {
+    // Re-sync only when the pause state flips, so slide changes don't reset the timer
+    if (this.enabled() !== (this.interval !== null) && !this._hovering) this.syncAutoplay()
   },
   destroyed() {
     this.stopAutoplay()
+    clearTimeout(this._touchTimeout)
+  },
+  enabled() {
+    return this.el.dataset.autoplay === "true"
+  },
+  syncAutoplay() {
+    if (this.enabled()) {
+      this.startAutoplay()
+    } else {
+      this.stopAutoplay()
+    }
   },
   startAutoplay() {
     this.stopAutoplay()
@@ -309,7 +332,8 @@ const liveSocket = new LiveSocket("/live", Socket, {
 })
 
 // Show progress bar on live navigation and form submits
-topbar.config({barColors: {0: "#8b5e3c"}, shadowColor: "rgba(0, 0, 0, .3)"})
+// #724c21 = --color-primary (cafe-light); canvas gradients need a plain hex
+topbar.config({barColors: {0: "#724c21"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 

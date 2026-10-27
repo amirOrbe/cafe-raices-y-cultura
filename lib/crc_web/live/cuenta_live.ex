@@ -88,7 +88,7 @@ defmodule CRCWeb.CuentaLive do
       <%!-- ── Meta info (mesero · fecha) ────────────────────────────────────── --%>
       <div class="max-w-lg mx-auto w-full px-4 pt-4 pb-1">
         <div class="bg-base-100 rounded-xl border border-base-300 px-4 py-3 print-card
-                    grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-base-content/60">
+                    grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-base-content/70">
           <div>
             <span class="font-semibold text-base-content/80">Mesero</span> <br />
             {if @order.user, do: @order.user.name, else: "—"}
@@ -138,14 +138,14 @@ defmodule CRCWeb.CuentaLive do
       <div class="flex-1 px-4 pt-3 pb-4 max-w-lg mx-auto w-full space-y-2">
         <% bill_lines = bill_items(@order) %>
         <%= if bill_lines == [] do %>
-          <div class="text-center py-10 text-base-content/40 text-sm">
+          <div class="text-center py-10 text-base-content/65 text-sm">
             Aún no hay artículos en tu cuenta.
           </div>
         <% else %>
           <div class="bg-base-100 rounded-2xl shadow-sm overflow-hidden border border-base-300 print-card">
             <%!-- Header row --%>
             <div class="px-4 py-2 bg-base-200/70 border-b border-base-300
-                        grid grid-cols-[1fr_auto] text-xs font-semibold text-base-content/50 uppercase tracking-wide">
+                        grid grid-cols-[1fr_auto] text-xs font-semibold text-base-content/70 uppercase tracking-wide">
               <span>Artículo</span>
               <span class="text-right">Importe</span>
             </div>
@@ -159,7 +159,7 @@ defmodule CRCWeb.CuentaLive do
                       <span class="text-primary font-bold">{line.quantity}×</span>
                       {line.name}
                       <%= if line.note do %>
-                        <span class="text-xs text-base-content/40 font-normal">· {line.note}</span>
+                        <span class="text-xs text-base-content/65 font-normal">· {line.note}</span>
                       <% end %>
                     </p>
 
@@ -168,7 +168,7 @@ defmodule CRCWeb.CuentaLive do
                       <p class="text-xs text-primary/70 mt-0.5 flex items-baseline gap-1">
                         <span>◦ {v.name}</span>
                         <%= if v.extra_price do %>
-                          <span class="text-base-content/40">+${format_price(v.extra_price)}</span>
+                          <span class="text-base-content/65">+${format_price(v.extra_price)}</span>
                         <% end %>
                       </p>
                     <% end %>
@@ -177,7 +177,7 @@ defmodule CRCWeb.CuentaLive do
                     <%= for e <- line.extras do %>
                       <p class="text-xs text-secondary/80 mt-0.5 flex items-baseline gap-1">
                         <span>+ {e.quantity}× {e.name}</span>
-                        <span class="text-base-content/40">+${format_price(e.unit_price)}</span>
+                        <span class="text-base-content/65">+${format_price(e.unit_price)}</span>
                       </p>
                     <% end %>
 
@@ -190,7 +190,7 @@ defmodule CRCWeb.CuentaLive do
 
                     <%!-- Who this item is for --%>
                     <%= if line.for_person && line.for_person != "" do %>
-                      <p class="text-xs text-base-content/50 mt-0.5">
+                      <p class="text-xs text-base-content/70 mt-0.5">
                         👤 {line.for_person}
                       </p>
                     <% end %>
@@ -205,7 +205,7 @@ defmodule CRCWeb.CuentaLive do
 
                   <%!-- Right: price --%>
                   <div class="text-right shrink-0">
-                    <p class="text-xs text-base-content/40">${format_price(line.unit_price)} c/u</p>
+                    <p class="text-xs text-base-content/65">${format_price(line.unit_price)} c/u</p>
                     <p class="text-sm font-bold text-base-content">${format_price(line.subtotal)}</p>
                   </div>
                 </div>
@@ -214,7 +214,7 @@ defmodule CRCWeb.CuentaLive do
 
             <%!-- Discount breakdown + Total --%>
             <%= if @order.discount_percentage && @order.discount_percentage > 0 do %>
-              <div class="px-4 py-2 border-t border-base-300 flex items-center justify-between text-sm text-base-content/60">
+              <div class="px-4 py-2 border-t border-base-300 flex items-center justify-between text-sm text-base-content/70">
                 <span>Subtotal</span>
                 <span>${format_price(@subtotal)}</span>
               </div>
@@ -242,7 +242,7 @@ defmodule CRCWeb.CuentaLive do
                 <span>Pagado con {payment_label(@order.payment_method)}</span>
               </div>
               <%= if @order.amount_paid && @order.payment_method == "efectivo" do %>
-                <div class="mt-2 text-xs text-base-content/60 space-y-0.5 pl-6">
+                <div class="mt-2 text-xs text-base-content/70 space-y-0.5 pl-6">
                   <p>
                     Entregado: <span class="font-semibold">${format_price(@order.amount_paid)}</span>
                   </p>
@@ -270,10 +270,10 @@ defmodule CRCWeb.CuentaLive do
       </div>
 
       <%!-- Footer --%>
-      <div class="text-center pb-8 text-xs text-base-content/30 px-4 no-print">
+      <div class="text-center pb-8 text-xs text-base-content/65 px-4 no-print">
         ¡Gracias por visitarnos! 🌱
       </div>
-      <div class="hidden text-center pb-4 text-xs text-base-content/40 px-4" style="display:none">
+      <div class="hidden text-center pb-4 text-xs text-base-content/65 px-4" style="display:none">
         <p>Café Raíces y Cultura · cafe@raicesycultura.mx</p>
       </div>
     </div>

@@ -61,33 +61,33 @@ defmodule CRCWeb.MenuLive do
       <main class="flex-1 pt-16">
         <section class="py-14 sm:py-20 lg:py-24 bg-base-100">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-    <!-- Header -->
+            <!-- Header -->
             <div class="text-center mb-10 sm:mb-14">
-              <span class="inline-block text-primary font-semibold text-xs sm:text-sm uppercase tracking-widest mb-3">
-                Lo que ofrecemos
-              </span>
               <h1 class="text-3xl sm:text-5xl font-bold text-base-content">
                 Nuestro Menú
               </h1>
-              <p class="mt-3 text-base-content/50 text-sm sm:text-base max-w-lg mx-auto">
+              <p class="mt-3 text-base-content/70 text-sm sm:text-base max-w-lg mx-auto">
                 Hecho en casa, con procesos orgánicos y atención al detalle.
               </p>
             </div>
-            
-    <!-- Menu empty state -->
+
+            <!-- Menu empty state -->
             <div :if={@categories == []} class="text-center py-20 sm:py-28">
-              <p class="text-5xl mb-6">☕</p>
+              <img
+                src="/images/brand/logo-color.webp"
+                alt=""
+                class="h-16 w-auto mx-auto mb-6 opacity-60"
+              />
               <h2 class="text-2xl sm:text-3xl font-bold text-base-content mb-3">
                 Nuestra carta está en camino
               </h2>
-              <p class="text-base-content/50 text-sm sm:text-base max-w-sm mx-auto">
+              <p class="text-base-content/70 text-sm sm:text-base max-w-sm mx-auto">
                 Estamos preparando todo con cariño. Muy pronto encontrarás aquí
                 nuestra selección completa de bebidas y platillos.
               </p>
             </div>
-            
-    <!-- Category tabs -->
+
+            <!-- Category tabs -->
             <div
               :if={@categories != []}
               class="flex gap-2 sm:gap-3 overflow-x-auto pb-3 mb-8 sm:mb-10 scrollbar-hide"
@@ -96,6 +96,7 @@ defmodule CRCWeb.MenuLive do
                 <button
                   phx-click="select_category"
                   phx-value-id={category.id}
+                  aria-pressed={to_string(!!(@active_category && @active_category.id == category.id))}
                   class={[
                     "whitespace-nowrap flex-shrink-0 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-sm sm:text-base font-semibold transition-all",
                     if(@active_category && @active_category.id == category.id,
@@ -109,8 +110,10 @@ defmodule CRCWeb.MenuLive do
                 </button>
               <% end %>
             </div>
-            
-    <!-- Items grid -->
+
+            <h2 :if={@active_category} class="sr-only">{@active_category.name}</h2>
+
+            <!-- Items grid -->
             <div
               :if={@active_category && length(@active_category.menu_items) > 0}
               class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
@@ -119,20 +122,20 @@ defmodule CRCWeb.MenuLive do
                 <SiteComponents.menu_item_card item={item} />
               <% end %>
             </div>
-            
-    <!-- Empty state for category with no items -->
+
+            <!-- Empty state for category with no items -->
             <div
               :if={@active_category && length(@active_category.menu_items) == 0}
-              class="text-center py-16 text-base-content/40"
+              class="text-center py-16 text-base-content/65"
             >
               <p class="text-lg">Próximamente más opciones en esta categoría.</p>
             </div>
-            
-    <!-- Bottom nav -->
+
+            <!-- Bottom nav -->
             <div class="text-center mt-14 sm:mt-16 pt-8 border-t border-base-300">
               <a
                 href="/"
-                class="text-sm text-base-content/40 hover:text-primary transition-colors inline-flex items-center gap-1"
+                class="text-sm text-base-content/65 hover:text-primary transition-colors inline-flex items-center gap-1"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -153,18 +156,15 @@ defmodule CRCWeb.MenuLive do
             </div>
           </div>
         </section>
-        
-    <!-- Packages section -->
+
+        <!-- Packages section -->
         <section :if={@packages != []} class="py-14 sm:py-20 lg:py-24 bg-base-200">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
-              <span class="inline-block text-primary font-semibold text-xs sm:text-sm uppercase tracking-widest mb-3">
-                Combos especiales
-              </span>
               <h2 class="text-3xl sm:text-4xl font-bold text-base-content leading-tight">
                 Paquetes del día
               </h2>
-              <p class="mt-3 text-base-content/60 max-w-xl mx-auto text-sm sm:text-base">
+              <p class="mt-3 text-base-content/70 max-w-xl mx-auto text-sm sm:text-base">
                 Lleva más por menos. Combinaciones pensadas para que disfrutes al máximo.
               </p>
             </div>
@@ -181,13 +181,13 @@ defmodule CRCWeb.MenuLive do
                       </span>
                     </div>
                     <%= if package.description do %>
-                      <p class="text-sm text-base-content/60 mt-1">{package.description}</p>
+                      <p class="text-sm text-base-content/70 mt-1">{package.description}</p>
                     <% end %>
                   </div>
 
                   <%!-- Items included --%>
                   <div class="flex-1 px-5 py-4">
-                    <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-3">
+                    <p class="text-xs font-semibold text-base-content/65 uppercase tracking-wider mb-3">
                       Incluye:
                     </p>
                     <ul class="space-y-2">
@@ -213,7 +213,7 @@ defmodule CRCWeb.MenuLive do
                           Decimal.add(acc, Decimal.mult(pi.menu_item.price, pi.quantity))
                         end) %>
                       <%= if Decimal.compare(individual_total, package.price) == :gt do %>
-                        <p class="text-xs text-base-content/40 line-through">
+                        <p class="text-xs text-base-content/65 line-through">
                           ${individual_total |> Decimal.round(0) |> Decimal.to_string()}
                         </p>
                       <% end %>

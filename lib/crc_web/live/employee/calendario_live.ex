@@ -75,22 +75,22 @@ defmodule CRCWeb.Employee.CalendarioLive do
         <%!-- Header --%>
         <div>
           <h1 class="text-2xl font-bold text-base-content">Calendario de actividades</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">Actividades asignadas por semana</p>
+          <p class="text-sm text-base-content/70 mt-0.5">Actividades asignadas por semana</p>
         </div>
 
         <%!-- Week navigation --%>
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div class="flex items-center gap-1">
-            <button class="btn btn-ghost btn-sm shrink-0" phx-click="prev_week">
+            <button aria-label="Anterior" class="btn btn-ghost btn-sm shrink-0" phx-click="prev_week">
               <.icon name="hero-chevron-left" class="size-4" />
             </button>
             <span class="font-semibold text-base-content text-sm flex-1 text-center sm:min-w-52">
               {format_week(@week_start)}
             </span>
-            <button class="btn btn-ghost btn-sm shrink-0" phx-click="next_week">
+            <button aria-label="Siguiente" class="btn btn-ghost btn-sm shrink-0" phx-click="next_week">
               <.icon name="hero-chevron-right" class="size-4" />
             </button>
-            <button class="btn btn-ghost btn-xs text-base-content/50 shrink-0" phx-click="go_today">
+            <button class="btn btn-ghost btn-xs text-base-content/70 shrink-0" phx-click="go_today">
               Hoy
             </button>
           </div>
@@ -100,7 +100,7 @@ defmodule CRCWeb.Employee.CalendarioLive do
           <%!-- Empty state --%>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm py-20 text-center">
             <.icon name="hero-calendar-days" class="size-12 text-base-content/20 mx-auto mb-3" />
-            <p class="text-base-content/50 text-sm">Aún no hay actividades configuradas.</p>
+            <p class="text-base-content/70 text-sm">Aún no hay actividades configuradas.</p>
           </div>
         <% else %>
           <%!-- Desktop table --%>
@@ -147,7 +147,7 @@ defmodule CRCWeb.Employee.CalendarioLive do
                               {Schedule.initials(user)}
                             </span>
                           <% else %>
-                            <span class="text-base-content/20 text-xs">—</span>
+                            <span class="text-base-content/70 text-xs">—</span>
                           <% end %>
                         </td>
                       <% end %>
@@ -176,7 +176,7 @@ defmodule CRCWeb.Employee.CalendarioLive do
                           <% is_today = Date.add(@week_start, day) == Date.utc_today() %>
                           <% is_me = user && user.id == @current_user.id %>
                           <div class={"flex flex-col items-center gap-1 w-10 #{if is_today, do: "rounded-xl bg-primary/5 py-1 -my-1", else: ""}"}>
-                            <span class={"text-xs font-bold #{if is_today, do: "text-primary", else: "text-base-content/40"}"}>
+                            <span class={"text-xs font-bold #{if is_today, do: "text-primary", else: "text-base-content/65"}"}>
                               {String.first(Schedule.day_name(day))}
                             </span>
                             <%= if user do %>
@@ -184,7 +184,7 @@ defmodule CRCWeb.Employee.CalendarioLive do
                                 {Schedule.initials(user)}
                               </span>
                             <% else %>
-                              <span class="text-base-content/20 text-xs">—</span>
+                              <span class="text-base-content/70 text-xs">—</span>
                             <% end %>
                           </div>
                         <% end %>
@@ -198,7 +198,7 @@ defmodule CRCWeb.Employee.CalendarioLive do
 
           <%!-- Employee legend --%>
           <div class="bg-base-100 rounded-2xl border border-base-300 shadow-sm p-4">
-            <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">
+            <p class="text-xs font-semibold text-base-content/70 uppercase tracking-wider mb-3">
               Empleados
             </p>
             <div class="flex flex-wrap gap-3">
@@ -207,7 +207,7 @@ defmodule CRCWeb.Employee.CalendarioLive do
                   <span class={"badge badge-sm font-bold #{if emp.id == @current_user.id, do: "badge-primary ring-2 ring-primary ring-offset-1", else: employee_badge_class(emp)}"}>
                     {Schedule.initials(emp)}
                   </span>
-                  <span class={"text-sm #{if emp.id == @current_user.id, do: "font-semibold text-base-content", else: "text-base-content/60"}"}>
+                  <span class={"text-sm #{if emp.id == @current_user.id, do: "font-semibold text-base-content", else: "text-base-content/70"}"}>
                     {emp.name}
                     <%= if emp.id == @current_user.id do %>
                       <span class="text-primary text-xs">(tú)</span>

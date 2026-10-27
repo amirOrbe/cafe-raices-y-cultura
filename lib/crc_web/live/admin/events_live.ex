@@ -375,7 +375,7 @@ defmodule CRCWeb.Admin.EventsLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Eventos</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">
+          <p class="text-sm text-base-content/70 mt-0.5">
             {length(@events)} {if length(@events) == 1, do: "evento", else: "eventos"} registrados
           </p>
         </div>
@@ -388,7 +388,7 @@ defmodule CRCWeb.Admin.EventsLive do
       <div class="md:hidden flex flex-col gap-2">
         <%= if @events == [] do %>
           <.panel class="text-center py-12">
-            <p class="text-base-content/40 text-sm">No hay eventos registrados. Crea el primero.</p>
+            <p class="text-base-content/65 text-sm">No hay eventos registrados. Crea el primero.</p>
           </.panel>
         <% end %>
         <%= for event <- @events do %>
@@ -418,7 +418,7 @@ defmodule CRCWeb.Admin.EventsLive do
                 <%= if event.event_type do %>
                   <span class="badge badge-xs badge-ghost">{event.event_type.name}</span>
                 <% end %>
-                <span class="text-xs text-base-content/50">
+                <span class="text-xs text-base-content/70">
                   {format_time(event.start_time)} – {format_time(event.end_time)}
                 </span>
               </div>
@@ -433,6 +433,7 @@ defmodule CRCWeb.Admin.EventsLive do
             <%!-- Actions --%>
             <div class="flex flex-col items-center gap-1 shrink-0">
               <button
+                aria-label="Editar"
                 class="btn btn-ghost btn-xs btn-circle"
                 phx-click="edit_event"
                 phx-value-id={event.id}
@@ -497,7 +498,7 @@ defmodule CRCWeb.Admin.EventsLive do
                   <td>
                     <div class="flex flex-wrap gap-1">
                       <%= if event.event_collaborators == [] do %>
-                        <span class="text-xs text-base-content/40">—</span>
+                        <span class="text-xs text-base-content/65">—</span>
                       <% else %>
                         <%= for ec <- event.event_collaborators do %>
                           <span class="badge badge-xs badge-ghost">{ec.collaborator.name}</span>
@@ -508,6 +509,7 @@ defmodule CRCWeb.Admin.EventsLive do
                   <td>
                     <div class="flex items-center justify-end gap-1">
                       <button
+                        aria-label="Editar"
                         class="btn btn-ghost btn-xs btn-circle"
                         phx-click="edit_event"
                         phx-value-id={event.id}
@@ -535,7 +537,7 @@ defmodule CRCWeb.Admin.EventsLive do
               <% end %>
               <%= if @events == [] do %>
                 <tr>
-                  <td colspan="7" class="text-center py-12 text-base-content/40 text-sm">
+                  <td colspan="7" class="text-center py-12 text-base-content/65 text-sm">
                     No hay eventos registrados. Crea el primero.
                   </td>
                 </tr>
@@ -678,7 +680,7 @@ defmodule CRCWeb.Admin.EventsLive do
 
         <%!-- Collaborators section --%>
         <div class="pt-2">
-          <div class="divider text-sm font-semibold text-base-content/60">Colaboradores</div>
+          <div class="divider text-sm font-semibold text-base-content/70">Colaboradores</div>
 
           <%!-- Draft list --%>
           <%= if @collaborators_draft != [] do %>
@@ -687,9 +689,10 @@ defmodule CRCWeb.Admin.EventsLive do
                 <div class="flex items-center gap-2 bg-base-200 rounded-lg px-3 py-2">
                   <span class="flex-1 text-sm font-medium text-base-content">{entry.name}</span>
                   <%= if entry.role != "" do %>
-                    <span class="text-xs text-base-content/60">{entry.role}</span>
+                    <span class="text-xs text-base-content/70">{entry.role}</span>
                   <% end %>
                   <button
+                    aria-label="Cerrar"
                     type="button"
                     class="btn btn-ghost btn-xs btn-circle text-error"
                     phx-click="remove_collaborator_from_draft"
@@ -758,7 +761,7 @@ defmodule CRCWeb.Admin.EventsLive do
       <%= if @modal != :new do %>
         <div class="mt-5 pt-4 border-t border-base-300">
           <div class="flex items-center gap-2 mb-3">
-            <.icon name="hero-photo" class="size-4 text-base-content/60" />
+            <.icon name="hero-photo" class="size-4 text-base-content/70" />
             <h3 class="text-sm font-semibold text-base-content">Fotos del evento</h3>
             <span class="badge badge-xs badge-ghost">{length(@event_photos)}</span>
           </div>
@@ -776,6 +779,7 @@ defmodule CRCWeb.Admin.EventsLive do
                   />
                   <div class="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center">
                     <button
+                      aria-label="Eliminar"
                       type="button"
                       class="opacity-0 group-hover:opacity-100 transition-opacity btn btn-circle btn-sm btn-error"
                       phx-click="delete_event_photo"
@@ -804,7 +808,7 @@ defmodule CRCWeb.Admin.EventsLive do
                 <p class="text-sm font-medium text-base-content">
                   Selecciona o arrastra fotos aquí
                 </p>
-                <p class="text-xs text-base-content/40 mt-0.5">
+                <p class="text-xs text-base-content/65 mt-0.5">
                   JPG, PNG o WebP · Máx. 5 MB · Hasta 5 a la vez
                 </p>
               </div>
@@ -832,6 +836,7 @@ defmodule CRCWeb.Admin.EventsLive do
                       </div>
                     </div>
                     <button
+                      aria-label="Cerrar"
                       type="button"
                       class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
                       phx-click="cancel_upload"
@@ -882,8 +887,8 @@ defmodule CRCWeb.Admin.EventsLive do
     assigns = assign(assigns, :day_name, day_name)
 
     ~H"""
-    <div class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-base-200 border border-base-300 text-sm text-base-content/60">
-      <.icon name="hero-clock" class="size-4 shrink-0 text-base-content/40" />
+    <div class="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-base-200 border border-base-300 text-sm text-base-content/70">
+      <.icon name="hero-clock" class="size-4 shrink-0 text-base-content/65" />
       <span>El café no tiene horario configurado para los <strong>{@day_name}</strong>.</span>
       <a
         href="/admin/configuracion"
@@ -948,7 +953,7 @@ defmodule CRCWeb.Admin.EventsLive do
 
     ~H"""
     <div class="space-y-1 pb-1">
-      <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide">
+      <p class="text-xs font-semibold text-base-content/70 uppercase tracking-wide">
         Disponibilidad del día
       </p>
 
@@ -986,7 +991,7 @@ defmodule CRCWeb.Admin.EventsLive do
       <div class="relative h-4">
         <%= for {label, pct} <- @ticks do %>
           <span
-            class="absolute text-xs text-base-content/35 -translate-x-1/2 leading-none"
+            class="absolute text-xs text-base-content/65 -translate-x-1/2 leading-none"
             style={"left: #{pct}%;"}
           >
             {label}
@@ -1003,7 +1008,7 @@ defmodule CRCWeb.Admin.EventsLive do
       <% end %>
 
       <%= if @outside_hours do %>
-        <div class="flex items-center gap-1.5 text-xs text-base-content/50">
+        <div class="flex items-center gap-1.5 text-xs text-base-content/70">
           <.icon name="hero-information-circle" class="size-3.5 shrink-0" />
           El evento se extiende fuera del horario de apertura
           ({format_time(@opening)} – {format_time(@closing)}).
@@ -1011,7 +1016,7 @@ defmodule CRCWeb.Admin.EventsLive do
       <% end %>
 
       <%!-- Legend + time range --%>
-      <div class="flex items-center gap-3 text-xs text-base-content/40 pt-0.5 flex-wrap">
+      <div class="flex items-center gap-3 text-xs text-base-content/65 pt-0.5 flex-wrap">
         <%= if @event_blocks != [] do %>
           <div class="flex items-center gap-1">
             <div class="w-3 h-3 rounded-sm bg-error/25 border border-error/50 shrink-0"></div>

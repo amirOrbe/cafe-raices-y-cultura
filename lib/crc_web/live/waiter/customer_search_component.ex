@@ -95,6 +95,7 @@ defmodule CRCWeb.Waiter.CustomerSearchComponent do
             ← Buscar
           </button>
           <button
+            aria-label="Cerrar"
             type="button"
             class="btn btn-ghost btn-xs btn-circle text-primary-content"
             phx-click="toggle_customer_panel"
@@ -134,7 +135,7 @@ defmodule CRCWeb.Waiter.CustomerSearchComponent do
                 </div>
                 <div class="min-w-0">
                   <p class="text-sm font-medium text-base-content truncate">{c.name}</p>
-                  <p class="text-xs text-base-content/50 truncate">
+                  <p class="text-xs text-base-content/70 truncate">
                     {[c.phone, c.email] |> Enum.reject(&(&1 in [nil, ""])) |> Enum.join(" · ")}
                   </p>
                 </div>
@@ -142,7 +143,7 @@ defmodule CRCWeb.Waiter.CustomerSearchComponent do
             <% end %>
 
             <%= if @query != "" and @results == [] do %>
-              <p class="text-xs text-base-content/50 px-2 py-1">Sin coincidencias.</p>
+              <p class="text-xs text-base-content/70 px-2 py-1">Sin coincidencias.</p>
             <% end %>
           </div>
 

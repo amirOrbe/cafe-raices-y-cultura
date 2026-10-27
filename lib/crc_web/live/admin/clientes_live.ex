@@ -185,7 +185,7 @@ defmodule CRCWeb.Admin.ClientesLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Clientes</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">
+          <p class="text-sm text-base-content/70 mt-0.5">
             {length(@customers)} {customer_count_label(length(@customers), @status_filter)}
           </p>
         </div>
@@ -221,7 +221,7 @@ defmodule CRCWeb.Admin.ClientesLive do
         </div>
         <form phx-change="search" phx-submit="search" class="sm:ml-auto w-full sm:w-72">
           <label class="input input-bordered input-sm flex items-center gap-2 w-full">
-            <.icon name="hero-magnifying-glass" class="size-4 text-base-content/40" />
+            <.icon name="hero-magnifying-glass" class="size-4 text-base-content/65" />
             <input
               type="text"
               name="query"
@@ -238,7 +238,7 @@ defmodule CRCWeb.Admin.ClientesLive do
       <%= if @customers == [] do %>
         <.panel class="py-16 text-center">
           <.icon name="hero-identification" class="size-10 text-base-content/20 mx-auto mb-3" />
-          <p class="text-base-content/50 text-sm">
+          <p class="text-base-content/70 text-sm">
             {if @query != "",
               do: "Ningún cliente coincide con la búsqueda.",
               else: "No hay clientes registrados."}
@@ -261,13 +261,14 @@ defmodule CRCWeb.Admin.ClientesLive do
                     <p class="font-semibold text-sm text-base-content truncate">{c.name}</p>
                     <.status_badge active={c.active} />
                   </div>
-                  <p class="text-xs text-base-content/50 truncate mt-0.5">
+                  <p class="text-xs text-base-content/70 truncate mt-0.5">
                     {c.phone}{if c.email, do: " · #{c.email}"}
                   </p>
                 </div>
               </.link>
               <div class="flex flex-col items-center gap-1 shrink-0">
                 <button
+                  aria-label="Editar"
                   id={"btn-edit-mobile-#{c.id}"}
                   class="btn btn-ghost btn-xs btn-circle"
                   phx-click="edit_customer"
@@ -330,6 +331,7 @@ defmodule CRCWeb.Admin.ClientesLive do
                     <td>
                       <div class="flex items-center justify-end gap-1">
                         <button
+                          aria-label="Editar"
                           id={"btn-edit-#{c.id}"}
                           class="btn btn-ghost btn-xs btn-circle"
                           phx-click="edit_customer"

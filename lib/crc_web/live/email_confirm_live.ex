@@ -52,7 +52,7 @@ defmodule CRCWeb.EmailConfirmLive do
             <h1 class="text-xl font-bold text-base-content mb-2">
               ¡Correo confirmado!
             </h1>
-            <p class="text-base-content/60 text-sm mb-6">
+            <p class="text-base-content/70 text-sm mb-6">
               Hola, <strong class="text-base-content">{user.name}</strong>.
               Tu dirección de correo ha sido verificada correctamente.
             </p>
@@ -66,7 +66,7 @@ defmodule CRCWeb.EmailConfirmLive do
             <h1 class="text-xl font-bold text-base-content mb-2">
               Ya confirmado
             </h1>
-            <p class="text-base-content/60 text-sm mb-6">
+            <p class="text-base-content/70 text-sm mb-6">
               Este correo ya había sido confirmado anteriormente. No necesitas hacer nada más.
             </p>
             <a href="/" class="btn btn-ghost btn-sm">Ir al inicio</a>
@@ -77,7 +77,7 @@ defmodule CRCWeb.EmailConfirmLive do
             <h1 class="text-xl font-bold text-base-content mb-2">
               Enlace expirado
             </h1>
-            <p class="text-base-content/60 text-sm">
+            <p class="text-base-content/70 text-sm">
               El enlace de confirmación venció (tiene validez de 7 días).
               Pide a un administrador que reenvíe el correo de bienvenida.
             </p>
@@ -88,7 +88,7 @@ defmodule CRCWeb.EmailConfirmLive do
             <h1 class="text-xl font-bold text-base-content mb-2">
               Enlace inválido
             </h1>
-            <p class="text-base-content/60 text-sm">
+            <p class="text-base-content/70 text-sm">
               El enlace de confirmación no es válido o ya fue utilizado.
               Pide a un administrador que reenvíe el correo de bienvenida.
             </p>

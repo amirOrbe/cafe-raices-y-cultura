@@ -102,7 +102,7 @@ defmodule CRCWeb.Admin.CategoriesLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Categorías de platillos</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">
+          <p class="text-sm text-base-content/70 mt-0.5">
             {length(@categories)} categorías registradas
           </p>
         </div>
@@ -114,8 +114,8 @@ defmodule CRCWeb.Admin.CategoriesLive do
       <%= if @categories == [] do %>
         <.panel class="py-16 text-center">
           <.icon name="hero-squares-2x2" class="size-10 text-base-content/20 mx-auto mb-3" />
-          <p class="text-base-content/50 text-sm">No hay categorías registradas.</p>
-          <p class="text-base-content/30 text-xs mt-1">
+          <p class="text-base-content/70 text-sm">No hay categorías registradas.</p>
+          <p class="text-base-content/65 text-xs mt-1">
             Crea la primera para poder agregar platillos al menú.
           </p>
         </.panel>
@@ -142,12 +142,13 @@ defmodule CRCWeb.Admin.CategoriesLive do
                     {if cat.active, do: "Activa", else: "Inactiva"}
                   </.admin_badge>
                 </div>
-                <p class="text-xs text-base-content/50 mt-0.5">
+                <p class="text-xs text-base-content/70 mt-0.5">
                   {cat.item_count} {if cat.item_count == 1, do: "platillo", else: "platillos"}
                 </p>
               </div>
               <div class="flex flex-col items-center gap-1 shrink-0">
                 <button
+                  aria-label="Editar"
                   class="btn btn-ghost btn-xs btn-circle"
                   phx-click="edit_category"
                   phx-value-id={cat.id}
@@ -167,6 +168,7 @@ defmodule CRCWeb.Admin.CategoriesLive do
                   <.icon name={if cat.active, do: "hero-eye-slash", else: "hero-eye"} class="size-4" />
                 </button>
                 <button
+                  aria-label="Eliminar"
                   class="btn btn-ghost btn-xs btn-circle text-error"
                   phx-click="delete_category"
                   phx-value-id={cat.id}
@@ -214,6 +216,7 @@ defmodule CRCWeb.Admin.CategoriesLive do
                     <td>
                       <div class="flex items-center justify-end gap-1">
                         <button
+                          aria-label="Editar"
                           class="btn btn-ghost btn-xs btn-circle"
                           phx-click="edit_category"
                           phx-value-id={cat.id}
@@ -236,6 +239,7 @@ defmodule CRCWeb.Admin.CategoriesLive do
                           />
                         </button>
                         <button
+                          aria-label="Eliminar"
                           class="btn btn-ghost btn-xs btn-circle text-error"
                           phx-click="delete_category"
                           phx-value-id={cat.id}

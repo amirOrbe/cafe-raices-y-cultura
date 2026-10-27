@@ -149,7 +149,7 @@ defmodule CRCWeb.FaltantesLive do
       <div class="max-w-lg mx-auto px-4 py-6 pb-24">
         <%!-- Header --%>
         <h1 class="text-2xl font-bold text-base-content mb-1">Faltantes</h1>
-        <p class="text-sm text-base-content/50 mb-6">
+        <p class="text-sm text-base-content/70 mb-6">
           Toca un insumo para registrar cuánto compraste
         </p>
 
@@ -157,13 +157,13 @@ defmodule CRCWeb.FaltantesLive do
         <div :if={@faltantes == []} class="bg-base-100 rounded-2xl p-12 text-center shadow-sm">
           <div class="text-5xl mb-3">✅</div>
           <p class="font-semibold text-base-content">¡Todo en orden!</p>
-          <p class="text-sm text-base-content/50 mt-1">No hay insumos por debajo del mínimo.</p>
+          <p class="text-sm text-base-content/70 mt-1">No hay insumos por debajo del mínimo.</p>
         </div>
 
         <%!-- Faltantes: lista limpia --%>
         <div :if={@faltantes != []} class="bg-base-100 rounded-2xl shadow-sm overflow-hidden mb-4">
           <div class="px-4 py-3 border-b border-base-200 flex items-center justify-between">
-            <span class="text-xs font-semibold text-base-content/50 uppercase tracking-widest">
+            <span class="text-xs font-semibold text-base-content/70 uppercase tracking-widest">
               Hay que comprar
             </span>
             <span class="text-xs font-bold text-error">{length(@faltantes)} insumos</span>
@@ -188,13 +188,13 @@ defmodule CRCWeb.FaltantesLive do
             <%!-- Nombre --%>
             <div class="flex-1 min-w-0">
               <p class="font-medium text-base-content">{product.name}</p>
-              <p class="text-xs text-base-content/40 mt-0.5">
+              <p class="text-xs text-base-content/65 mt-0.5">
                 Quedan
-                <span class="font-semibold text-base-content/60">
+                <span class="font-semibold text-base-content/70">
                   {format_qty(product.stock_quantity)} {product.unit}
                 </span>
                 · necesitas mín.
-                <span class="font-semibold text-base-content/60">
+                <span class="font-semibold text-base-content/70">
                   {format_qty(product.min_stock)} {product.unit}
                 </span>
               </p>
@@ -211,18 +211,18 @@ defmodule CRCWeb.FaltantesLive do
           phx-click="registrar_otro"
           class="w-full flex items-center gap-3 px-4 py-4 bg-base-100 rounded-2xl shadow-sm border-2 border-dashed border-base-300 hover:border-primary/40 hover:bg-base-50 transition-colors text-left mb-8"
         >
-          <div class="size-8 rounded-full bg-base-200 flex items-center justify-center text-base-content/40 font-bold text-lg shrink-0">
+          <div class="size-8 rounded-full bg-base-200 flex items-center justify-center text-base-content/65 font-bold text-lg shrink-0">
             +
           </div>
           <div>
             <p class="font-medium text-base-content/70">Registrar otro insumo</p>
-            <p class="text-xs text-base-content/40">Para algo que no está en la lista de arriba</p>
+            <p class="text-xs text-base-content/65">Para algo que no está en la lista de arriba</p>
           </div>
         </button>
 
         <%!-- Registrado hoy --%>
         <div :if={@compras_hoy != []}>
-          <p class="text-xs font-semibold text-base-content/40 uppercase tracking-widest mb-3">
+          <p class="text-xs font-semibold text-base-content/65 uppercase tracking-widest mb-3">
             Registrado hoy
           </p>
           <div class="bg-base-100 rounded-2xl shadow-sm overflow-hidden">
@@ -235,7 +235,7 @@ defmodule CRCWeb.FaltantesLive do
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-base-content truncate">{adj.product.name}</p>
-                <p class="text-xs text-base-content/40">
+                <p class="text-xs text-base-content/65">
                   {adj.adjusted_by && adj.adjusted_by.name} · {format_time(adj.inserted_at)}
                 </p>
               </div>
@@ -250,6 +250,10 @@ defmodule CRCWeb.FaltantesLive do
       <%!-- Modal --%>
       <div
         :if={@registrando != nil}
+        role="dialog"
+        aria-modal="true"
+        phx-window-keydown="cancelar"
+        phx-key="Escape"
         class="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
       >
         <div class="absolute inset-0 bg-black/50" phx-click="cancelar"></div>
@@ -281,14 +285,14 @@ defmodule CRCWeb.FaltantesLive do
                 class="w-full flex items-center justify-between px-4 py-3 hover:bg-base-200 border-b border-base-200 last:border-0 transition-colors"
               >
                 <span class="font-medium text-base-content">{p.name}</span>
-                <span class="text-xs text-base-content/40">
+                <span class="text-xs text-base-content/65">
                   {format_qty(p.stock_quantity)} {p.unit}
                 </span>
               </button>
             </div>
             <p
               :if={String.length(String.trim(@search)) >= 1 && @search_results == []}
-              class="text-sm text-base-content/40 text-center py-6"
+              class="text-sm text-base-content/65 text-center py-6"
             >
               No encontré ese insumo.
             </p>
@@ -296,11 +300,11 @@ defmodule CRCWeb.FaltantesLive do
 
           <%!-- Formulario de cantidad --%>
           <div :if={@selected_product != nil && @registrando != :buscar}>
-            <p class="text-xs text-base-content/40 uppercase tracking-wide font-semibold mb-1">
+            <p class="text-xs text-base-content/65 uppercase tracking-wide font-semibold mb-1">
               Registrar compra
             </p>
             <p class="text-xl font-bold text-base-content mb-1">{@selected_product.name}</p>
-            <p class="text-sm text-base-content/50 mb-6">
+            <p class="text-sm text-base-content/70 mb-6">
               Tienes
               <strong>{format_qty(@selected_product.stock_quantity)} {@selected_product.unit}</strong>
               y necesitas al menos

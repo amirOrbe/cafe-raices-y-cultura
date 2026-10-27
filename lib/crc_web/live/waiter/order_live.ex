@@ -1155,7 +1155,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                   <div class="relative">
                     <.icon
                       name="hero-magnifying-glass"
-                      class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/30 pointer-events-none"
+                      class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/65 pointer-events-none"
                     />
                     <input
                       type="text"
@@ -1169,8 +1169,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                     />
                     <%= if @menu_search != "" do %>
                       <button
+                        aria-label="Cerrar"
                         type="button"
-                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/30 hover:text-base-content"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/65 hover:text-base-content"
                         phx-click="clear_menu_search"
                       >
                         <.icon name="hero-x-mark" class="size-4" />
@@ -1182,184 +1183,184 @@ defmodule CRCWeb.Waiter.OrderLive do
 
               <div class="flex-1 min-h-0 overflow-y-auto">
                 <%= if @menu_tab == :menu do %>
-                <%= if locked?(@order) do %>
-                  <div class="py-14 text-center text-base-content/40 text-sm">
-                    {if parked?(@order),
-                      do: "Cuenta en pausa. Reactívala para agregar platillos.",
-                      else: "Esta cuenta está cerrada."}
-                  </div>
-                <% else %>
-                  <%= if @search_results != nil do %>
-                    <%!-- Resultados de búsqueda --%>
-                    <div class="p-3">
-                      <p class="text-xs text-base-content/40 mb-3 px-1">
-                        <%= if @search_results == [] do %>
-                          Sin resultados para "<span class="font-semibold">{@menu_search}</span>"
-                        <% else %>
-                          {length(@search_results)} resultado(s)
-                        <% end %>
-                      </p>
-                      <div class="grid grid-cols-1 gap-2.5">
-                        <%= for {menu_item, portions} <- @search_results do %>
-                          <.menu_item_card
-                            menu_item={menu_item}
-                            portions={portions}
-                            low_stock_threshold={@low_stock_threshold}
-                          />
-                        <% end %>
-                      </div>
+                  <%= if locked?(@order) do %>
+                    <div class="py-14 text-center text-base-content/65 text-sm">
+                      {if parked?(@order),
+                        do: "Cuenta en pausa. Reactívala para agregar platillos.",
+                        else: "Esta cuenta está cerrada."}
                     </div>
                   <% else %>
-                    <%= if @menu_step == :categories do %>
-                      <%!-- Paso 1: grid de categorías --%>
+                    <%= if @search_results != nil do %>
+                      <%!-- Resultados de búsqueda --%>
                       <div class="p-3">
-                        <p class="text-xs text-base-content/50 font-medium px-1 mb-3">
-                          ¿Qué sección?
+                        <p class="text-xs text-base-content/65 mb-3 px-1">
+                          <%= if @search_results == [] do %>
+                            Sin resultados para "<span class="font-semibold">{@menu_search}</span>"
+                          <% else %>
+                            {length(@search_results)} resultado(s)
+                          <% end %>
                         </p>
                         <div class="grid grid-cols-1 gap-2.5">
-                          <%= for category <- @categories do %>
-                            <% has_items? = length(category.menu_items) > 0 %>
-                            <button
-                              class={[
-                                "rounded-xl border-2 p-4 flex items-center gap-3 text-left transition-all active:scale-95",
-                                if(has_items?,
-                                  do:
-                                    "bg-base-200/60 border-transparent hover:border-primary/40 hover:bg-primary/5 cursor-pointer",
-                                  else:
-                                    "bg-base-200/30 border-transparent opacity-40 cursor-not-allowed"
-                                )
-                              ]}
-                              phx-click="select_category"
-                              phx-value-id={category.id}
-                              disabled={not has_items?}
-                            >
-                              <span class="text-2xl leading-none shrink-0" aria-hidden="true">
-                                {category_icon(category.slug)}
-                              </span>
-                              <div class="flex flex-col items-start gap-1 min-w-0">
-                                <span class="text-sm font-bold text-base-content leading-tight">
-                                  {category.name}
-                                </span>
-                                <span class="text-xs text-base-content/50">
-                                  {length(category.menu_items)} platillo{if length(
-                                                                              category.menu_items
-                                                                            ) != 1,
-                                                                            do: "s"}
-                                </span>
-                              </div>
-                            </button>
-                          <% end %>
-                        </div>
-                      </div>
-                    <% else %>
-                      <%!-- Paso 2: platillos de la categoría seleccionada --%>
-                      <% selected_cat = Enum.find(@categories, &(&1.id == @selected_category_id)) %>
-                      <div class="flex items-center gap-2 px-4 py-2.5 border-b border-base-200">
-                        <button
-                          class="btn btn-xs btn-ghost gap-1 text-base-content/60"
-                          phx-click="back_to_categories"
-                        >
-                          <.icon name="hero-arrow-left" class="size-3.5" /> Categorías
-                        </button>
-                        <%= if selected_cat do %>
-                          <span class="text-base leading-none" aria-hidden="true">
-                            {category_icon(selected_cat.slug)}
-                          </span>
-                          <span class="text-sm font-semibold text-base-content">
-                            {selected_cat.name}
-                          </span>
-                        <% end %>
-                      </div>
-                      <div class="p-3">
-                        <div class="grid grid-cols-1 gap-2.5">
-                          <%= for {menu_item, portions} <- @menu_items do %>
+                          <%= for {menu_item, portions} <- @search_results do %>
                             <.menu_item_card
                               menu_item={menu_item}
                               portions={portions}
                               low_stock_threshold={@low_stock_threshold}
                             />
                           <% end %>
-                          <%= if @menu_items == [] do %>
-                            <p class="col-span-full text-center py-8 text-base-content/40 text-sm">
-                              No hay artículos en esta categoría.
-                            </p>
-                          <% end %>
                         </div>
-                        <div class="mt-4 pt-3 border-t border-base-200">
+                      </div>
+                    <% else %>
+                      <%= if @menu_step == :categories do %>
+                        <%!-- Paso 1: grid de categorías --%>
+                        <div class="p-3">
+                          <p class="text-xs text-base-content/70 font-medium px-1 mb-3">
+                            ¿Qué sección?
+                          </p>
+                          <div class="grid grid-cols-1 gap-2.5">
+                            <%= for category <- @categories do %>
+                              <% has_items? = length(category.menu_items) > 0 %>
+                              <button
+                                class={[
+                                  "rounded-xl border-2 p-4 flex items-center gap-3 text-left transition-all active:scale-95",
+                                  if(has_items?,
+                                    do:
+                                      "bg-base-200/60 border-transparent hover:border-primary/40 hover:bg-primary/5 cursor-pointer",
+                                    else:
+                                      "bg-base-200/30 border-transparent opacity-40 cursor-not-allowed"
+                                  )
+                                ]}
+                                phx-click="select_category"
+                                phx-value-id={category.id}
+                                disabled={not has_items?}
+                              >
+                                <span class="text-2xl leading-none shrink-0" aria-hidden="true">
+                                  {category_icon(category.slug)}
+                                </span>
+                                <div class="flex flex-col items-start gap-1 min-w-0">
+                                  <span class="text-sm font-bold text-base-content leading-tight">
+                                    {category.name}
+                                  </span>
+                                  <span class="text-xs text-base-content/70">
+                                    {length(category.menu_items)} platillo{if length(
+                                                                                category.menu_items
+                                                                              ) != 1,
+                                                                              do: "s"}
+                                  </span>
+                                </div>
+                              </button>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% else %>
+                        <%!-- Paso 2: platillos de la categoría seleccionada --%>
+                        <% selected_cat = Enum.find(@categories, &(&1.id == @selected_category_id)) %>
+                        <div class="flex items-center gap-2 px-4 py-2.5 border-b border-base-200">
                           <button
-                            class="btn btn-sm btn-ghost w-full gap-2 text-base-content/60"
+                            class="btn btn-xs btn-ghost gap-1 text-base-content/70"
                             phx-click="back_to_categories"
                           >
-                            <.icon name="hero-squares-2x2" class="size-4" /> Ver otras categorías
+                            <.icon name="hero-arrow-left" class="size-3.5" /> Categorías
                           </button>
+                          <%= if selected_cat do %>
+                            <span class="text-base leading-none" aria-hidden="true">
+                              {category_icon(selected_cat.slug)}
+                            </span>
+                            <span class="text-sm font-semibold text-base-content">
+                              {selected_cat.name}
+                            </span>
+                          <% end %>
                         </div>
-                      </div>
+                        <div class="p-3">
+                          <div class="grid grid-cols-1 gap-2.5">
+                            <%= for {menu_item, portions} <- @menu_items do %>
+                              <.menu_item_card
+                                menu_item={menu_item}
+                                portions={portions}
+                                low_stock_threshold={@low_stock_threshold}
+                              />
+                            <% end %>
+                            <%= if @menu_items == [] do %>
+                              <p class="col-span-full text-center py-8 text-base-content/65 text-sm">
+                                No hay artículos en esta categoría.
+                              </p>
+                            <% end %>
+                          </div>
+                          <div class="mt-4 pt-3 border-t border-base-200">
+                            <button
+                              class="btn btn-sm btn-ghost w-full gap-2 text-base-content/70"
+                              phx-click="back_to_categories"
+                            >
+                              <.icon name="hero-squares-2x2" class="size-4" /> Ver otras categorías
+                            </button>
+                          </div>
+                        </div>
+                      <% end %>
                     <% end %>
                   <% end %>
-                <% end %>
-              <% else %>
-                <%!-- Tab Paquetes --%>
-                <div class="p-4">
-                  <%= if locked?(@order) do %>
-                    <p class="text-center py-12 text-base-content/40 text-sm">
-                      {if parked?(@order),
-                        do: "Cuenta en pausa. Reactívala para agregar platillos.",
-                        else: "Esta cuenta está cerrada."}
-                    </p>
-                  <% else %>
-                    <%= if @packages == [] do %>
-                      <p class="text-center py-12 text-base-content/40 text-sm">
-                        No hay paquetes disponibles.
+                <% else %>
+                  <%!-- Tab Paquetes --%>
+                  <div class="p-4">
+                    <%= if locked?(@order) do %>
+                      <p class="text-center py-12 text-base-content/65 text-sm">
+                        {if parked?(@order),
+                          do: "Cuenta en pausa. Reactívala para agregar platillos.",
+                          else: "Esta cuenta está cerrada."}
                       </p>
                     <% else %>
-                      <div class="space-y-3">
-                        <%= for package <- @packages do %>
-                          <div class="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-start gap-3">
-                            <div class="flex-1 min-w-0">
-                              <p class="text-sm font-semibold">
-                                {package.name}
-                                <span
-                                  :if={personal_package?(package)}
-                                  class="badge badge-xs badge-accent ml-1"
-                                >
-                                  ★ Personal
-                                </span>
-                              </p>
-                              <%= if package.description do %>
-                                <p class="text-xs text-base-content/50 mt-0.5">
-                                  {package.description}
-                                </p>
-                              <% end %>
-                              <div class="flex flex-wrap gap-1 mt-2">
-                                <%= for pi <- package.package_items do %>
-                                  <span class="badge badge-xs badge-ghost">
-                                    <%= if pi.quantity > 1 do %>
-                                      {pi.quantity}×
-                                    <% end %>
-                                    {pi.menu_item.name}
+                      <%= if @packages == [] do %>
+                        <p class="text-center py-12 text-base-content/65 text-sm">
+                          No hay paquetes disponibles.
+                        </p>
+                      <% else %>
+                        <div class="space-y-3">
+                          <%= for package <- @packages do %>
+                            <div class="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-start gap-3">
+                              <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold">
+                                  {package.name}
+                                  <span
+                                    :if={personal_package?(package)}
+                                    class="badge badge-xs badge-accent ml-1"
+                                  >
+                                    ★ Personal
                                   </span>
+                                </p>
+                                <%= if package.description do %>
+                                  <p class="text-xs text-base-content/70 mt-0.5">
+                                    {package.description}
+                                  </p>
                                 <% end %>
+                                <div class="flex flex-wrap gap-1 mt-2">
+                                  <%= for pi <- package.package_items do %>
+                                    <span class="badge badge-xs badge-ghost">
+                                      <%= if pi.quantity > 1 do %>
+                                        {pi.quantity}×
+                                      <% end %>
+                                      {pi.menu_item.name}
+                                    </span>
+                                  <% end %>
+                                </div>
+                              </div>
+                              <div class="flex flex-col items-end gap-2 shrink-0">
+                                <span class="text-base font-bold text-primary">
+                                  ${format_price(package.price)}
+                                </span>
+                                <button
+                                  class="btn btn-xs btn-primary"
+                                  phx-click="add_package"
+                                  phx-value-package_id={package.id}
+                                >
+                                  <.icon name="hero-plus" class="size-3" /> Agregar
+                                </button>
                               </div>
                             </div>
-                            <div class="flex flex-col items-end gap-2 shrink-0">
-                              <span class="text-base font-bold text-primary">
-                                ${format_price(package.price)}
-                              </span>
-                              <button
-                                class="btn btn-xs btn-primary"
-                                phx-click="add_package"
-                                phx-value-package_id={package.id}
-                              >
-                                <.icon name="hero-plus" class="size-3" /> Agregar
-                              </button>
-                            </div>
-                          </div>
-                        <% end %>
-                      </div>
+                          <% end %>
+                        </div>
+                      <% end %>
                     <% end %>
-                  <% end %>
-                </div>
-              <% end %>
+                  </div>
+                <% end %>
               </div>
             </div>
           </div>
@@ -1383,7 +1384,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                     <span class="badge badge-xs badge-info badge-grow">{s_count} en cocina</span>
                   <% end %>
                   <%= if r_count > 0 do %>
-                    <span class="badge badge-xs badge-success badge-grow animate-pulse">
+                    <span class="badge badge-xs badge-success badge-grow motion-safe:animate-pulse">
                       {r_count} ✓ listo{if r_count > 1, do: "s"}
                     </span>
                   <% end %>
@@ -1392,423 +1393,432 @@ defmodule CRCWeb.Waiter.OrderLive do
 
               <div class="flex-1 min-h-0 overflow-y-auto">
                 <%!-- Diálogo de cancelación --%>
-              <%= if @cancelling_item do %>
-                <% ci = @cancelling_item %>
-                <div class="mx-4 mt-3 mb-1 rounded-xl border border-error/40 bg-error/5 p-4 space-y-3">
-                  <p class="text-sm font-semibold">
-                    Cancelar: {if ci.product_id,
-                      do: "Extra — #{ci.product.name}",
-                      else: ci.menu_item.name}
-                  </p>
-                  <p class="text-xs text-base-content/60">¿Este artículo ya fue preparado?</p>
-                  <div class="flex flex-col gap-2">
-                    <button class="btn btn-sm btn-error w-full" phx-click="cancel_as_waste">
-                      <.icon name="hero-fire" class="size-4" /> Sí — ya fue preparado (desperdicio)
-                    </button>
-                    <button class="btn btn-sm btn-outline w-full" phx-click="cancel_with_restore">
-                      <.icon name="hero-arrow-uturn-left" class="size-4" /> No — restaurar stock
-                    </button>
-                    <button
-                      class="btn btn-sm btn-ghost w-full text-base-content/50"
-                      phx-click="dismiss_cancel"
-                    >
-                      Mantener artículo
-                    </button>
+                <%= if @cancelling_item do %>
+                  <% ci = @cancelling_item %>
+                  <div class="mx-4 mt-3 mb-1 rounded-xl border border-error/40 bg-error/5 p-4 space-y-3">
+                    <p class="text-sm font-semibold">
+                      Cancelar: {if ci.product_id,
+                        do: "Extra — #{ci.product.name}",
+                        else: ci.menu_item.name}
+                    </p>
+                    <p class="text-xs text-base-content/70">¿Este artículo ya fue preparado?</p>
+                    <div class="flex flex-col gap-2">
+                      <button class="btn btn-sm btn-error w-full" phx-click="cancel_as_waste">
+                        <.icon name="hero-fire" class="size-4" /> Sí — ya fue preparado (desperdicio)
+                      </button>
+                      <button class="btn btn-sm btn-outline w-full" phx-click="cancel_with_restore">
+                        <.icon name="hero-arrow-uturn-left" class="size-4" /> No — restaurar stock
+                      </button>
+                      <button
+                        class="btn btn-sm btn-ghost w-full text-base-content/70"
+                        phx-click="dismiss_cancel"
+                      >
+                        Mantener artículo
+                      </button>
+                    </div>
                   </div>
-                </div>
-              <% end %>
+                <% end %>
 
-              <%!-- Lista de artículos --%>
-              <% used_persons =
-                @order.order_items
-                |> Enum.map(& &1.for_person)
-                |> Enum.reject(&(is_nil(&1) or &1 == ""))
-                |> Enum.uniq() %>
+                <%!-- Lista de artículos --%>
+                <% used_persons =
+                  @order.order_items
+                  |> Enum.map(& &1.for_person)
+                  |> Enum.reject(&(is_nil(&1) or &1 == ""))
+                  |> Enum.uniq() %>
 
-              <div class="divide-y divide-base-200">
-                <%= if @order.order_items == [] do %>
-                  <div class="py-14 text-center text-base-content/40">
-                    <.icon
-                      name="hero-clipboard-document-list"
-                      class="size-10 mx-auto mb-2 opacity-25"
-                    />
-                    <p class="text-sm font-medium">La comanda está vacía</p>
-                    <p class="text-xs mt-1 opacity-70">Agrega artículos desde el menú</p>
-                  </div>
-                <% else %>
-                  <%= for item <- sort_items_for_display(@order.order_items) do %>
-                    <% cancelled? = item.status in ["cancelled", "cancelled_waste"] %>
-                    <% served? = item.status == "served" %>
-                    <% overdue? = item_overdue?(item, @now) %>
-                    <div class={[
-                      "px-4 py-3 border-l-4",
-                      cond do
-                        cancelled? -> "opacity-40 border-l-base-300"
-                        served? -> "opacity-50 border-l-base-300 bg-base-200/30"
-                        overdue? -> "bg-error/5 border-l-error"
-                        item.status == "ready" -> "bg-success/5 border-l-success"
-                        item.status == "sent" -> "bg-info/5 border-l-info"
-                        item.status == "pending" -> "border-l-warning"
-                        true -> "border-l-transparent"
-                      end
-                    ]}>
-                      <%!-- Fila principal: miniatura + nombre + controles --%>
-                      <% item_image_url = if item.product_id, do: nil, else: item.menu_item.image_url %>
-                      <div class="flex items-start gap-3">
-                        <div class="relative size-12 rounded-lg bg-base-200 shrink-0 overflow-hidden">
-                          <%= if is_binary(item_image_url) and item_image_url != "" do %>
-                            <img
-                              src={item_image_url}
-                              alt=""
-                              class={["absolute inset-0 w-full h-full object-cover", cancelled? && "grayscale"]}
-                            />
-                          <% else %>
-                            <span class="absolute inset-0 flex items-center justify-center">
+                <div class="divide-y divide-base-200">
+                  <%= if @order.order_items == [] do %>
+                    <div class="py-14 text-center text-base-content/65">
+                      <.icon
+                        name="hero-clipboard-document-list"
+                        class="size-10 mx-auto mb-2 opacity-25"
+                      />
+                      <p class="text-sm font-medium">La comanda está vacía</p>
+                      <p class="text-xs mt-1 opacity-70">Agrega artículos desde el menú</p>
+                    </div>
+                  <% else %>
+                    <%= for item <- sort_items_for_display(@order.order_items) do %>
+                      <% cancelled? = item.status in ["cancelled", "cancelled_waste"] %>
+                      <% served? = item.status == "served" %>
+                      <% overdue? = item_overdue?(item, @now) %>
+                      <div class={[
+                        "px-4 py-3 border-l-4",
+                        cond do
+                          cancelled? -> "opacity-40 border-l-base-300"
+                          served? -> "opacity-50 border-l-base-300 bg-base-200/30"
+                          overdue? -> "bg-error/5 border-l-error"
+                          item.status == "ready" -> "bg-success/5 border-l-success"
+                          item.status == "sent" -> "bg-info/5 border-l-info"
+                          item.status == "pending" -> "border-l-warning"
+                          true -> "border-l-transparent"
+                        end
+                      ]}>
+                        <%!-- Fila principal: miniatura + nombre + controles --%>
+                        <% item_image_url =
+                          if item.product_id, do: nil, else: item.menu_item.image_url %>
+                        <div class="flex items-start gap-3">
+                          <div class="relative size-12 rounded-lg bg-base-200 shrink-0 overflow-hidden">
+                            <%= if is_binary(item_image_url) and item_image_url != "" do %>
                               <img
-                                src="/images/brand/logo-color.png"
+                                src={item_image_url}
                                 alt=""
-                                class="h-5 w-auto opacity-20"
+                                class={[
+                                  "absolute inset-0 w-full h-full object-cover",
+                                  cancelled? && "grayscale"
+                                ]}
                               />
-                            </span>
-                          <% end %>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                      <div class="flex items-center gap-2 flex-wrap">
-                        <div class="flex-1 min-w-[8rem]">
-                          <div class="flex items-center gap-1.5 flex-wrap">
-                            <p class={[
-                              "text-sm font-semibold leading-tight",
-                              if(cancelled?,
-                                do: "line-through text-base-content/50",
-                                else: "text-base-content"
-                              )
-                            ]}>
-                              <%= if item.product_id do %>
-                                <span class="text-accent">+</span> {item.product.name}
-                              <% else %>
-                                {item.menu_item.name}
-                              <% end %>
-                            </p>
-                            <%= if item.package_id do %>
-                              <span class="badge badge-xs badge-primary gap-0.5">
-                                <.icon name="hero-gift" class="size-2.5" /> Paquete
+                            <% else %>
+                              <span class="absolute inset-0 flex items-center justify-center">
+                                <img
+                                  src="/images/brand/logo-color.webp"
+                                  alt=""
+                                  class="h-5 w-auto opacity-20"
+                                />
                               </span>
-                            <% end %>
-                            <%= if item.loyalty_redemption_id do %>
-                              <span class="badge badge-xs badge-success gap-0.5">🎁 Recompensa</span>
-                            <% end %>
-                            <%= if overdue? do %>
-                              <span class="badge badge-xs badge-error animate-pulse">+15 min</span>
-                            <% end %>
-                            <%= if item.status == "ready" and not cancelled? do %>
-                              <span class="badge badge-xs badge-success animate-pulse">
-                                ¡Listo!
-                              </span>
-                            <% end %>
-                            <%= if served? do %>
-                              <span class="badge badge-xs badge-ghost">Servido</span>
                             <% end %>
                           </div>
-                          <p class="text-xs text-base-content/50 mt-0.5">
-                            <%= if cancelled? do %>
-                              <span class="text-error font-medium">
-                                {if item.status == "cancelled_waste",
-                                  do: "Cancelado — desperdicio",
-                                  else: "Cancelado"}
-                              </span>
-                            <% else %>
-                              <%= if item.product_id do %>
-                                {format_qty(item.portion_quantity)} {item.product.unit} ·
-                                <span class="text-warning font-medium">Cocina</span>
-                              <% else %>
-                                <%= if item.loyalty_redemption_id do %>
-                                  <span class="text-success font-medium">Cortesía · $0</span> ·
-                                <% else %>
-                                  ${format_price(item.unit_price || item.menu_item.price)} c/u ·
-                                <% end %>
-                                <span class={station_text_class(item.menu_item.destination)}>
-                                  {station_label(item.menu_item.destination)}
-                                </span>
-                              <% end %>
-                            <% end %>
-                          </p>
-                          <%!-- "Para quién" badge (no pendiente) --%>
-                          <%= if not is_nil(item.for_person) and item.for_person != "" and item.status != "pending" do %>
-                            <span class="badge badge-xs badge-ghost mt-0.5">
-                              👤 {item.for_person}
-                            </span>
-                          <% end %>
-                        </div>
-
-                        <%!-- Controles derechos --%>
-                        <div class="flex items-center flex-wrap justify-end gap-1 shrink-0">
-                          <%!-- Servir --%>
-                          <%= if item.status == "ready" and @order.status != "closed" do %>
-                            <button
-                              class="btn btn-sm btn-success gap-1"
-                              phx-click="mark_item_served"
-                              phx-value-id={item.id}
-                            >
-                              <.icon name="hero-check" class="size-4" /> Servir
-                            </button>
-                          <% end %>
-
-                          <%!-- Extras (solo platillos pendientes sin paquete ni recompensa, y con extras disponibles) --%>
-                          <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and is_nil(item.package_id) and is_nil(item.loyalty_redemption_id) and item.status == "pending" and @order.status != "closed" and MapSet.member?(@menu_item_ids_with_extras, item.menu_item_id) do %>
-                            <button
-                              class={[
-                                "btn btn-sm btn-grow gap-1",
-                                if(
-                                  @selected_menu_item &&
-                                    @selected_menu_item.id == item.menu_item_id,
-                                  do: "btn-accent",
-                                  else: "btn-outline btn-accent"
-                                )
-                              ]}
-                              phx-click="select_menu_item_extras"
-                              phx-value-id={item.menu_item_id}
-                              title="Agregar extras"
-                            >
-                              <.icon name="hero-plus-circle" class="size-4" /> Extras
-                            </button>
-                          <% end %>
-
-                          <%!-- Repetir --%>
-                          <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and item.status in ["sent", "ready"] and @order.status != "closed" do %>
-                            <button
-                              class="btn btn-sm btn-ghost btn-circle text-primary"
-                              phx-click="repeat_item"
-                              phx-value-menu-item-id={item.menu_item_id}
-                              title="Repetir"
-                            >
-                              <.icon name="hero-arrow-path" class="size-4" />
-                            </button>
-                          <% end %>
-
-                          <%!-- Cantidad (fija en las líneas de recompensa) --%>
-                          <%= if not cancelled? and not served? and is_nil(item.loyalty_redemption_id) do %>
-                            <div class="flex items-center">
-                              <button
-                                class="btn btn-xs btn-ghost btn-circle"
-                                phx-click="decrement_item"
-                                phx-value-id={item.id}
-                                disabled={item.quantity <= 1 or locked?(@order)}
-                              >
-                                <.icon name="hero-minus" class="size-3.5" />
-                              </button>
-                              <span class="w-7 text-center text-sm font-bold">{item.quantity}</span>
-                              <% max_qty = item_max_quantity(item) %>
-                              <button
-                                class="btn btn-xs btn-ghost btn-circle"
-                                phx-click="increment_item"
-                                phx-value-id={item.id}
-                                disabled={
-                                  locked?(@order) or
-                                    (max_qty != nil and item.quantity >= max_qty)
-                                }
-                                title={
-                                  if max_qty != nil and item.quantity >= max_qty,
-                                    do: "Sin stock suficiente",
-                                    else: nil
-                                }
-                              >
-                                <.icon name="hero-plus" class="size-3.5" />
-                              </button>
-                            </div>
-                          <% end %>
-
-                          <%!-- Eliminar / cancelar (las líneas de recompensa se quitan desde el banner) --%>
-                          <%= if not cancelled? and not served? and is_nil(item.loyalty_redemption_id) and @order.status != "closed" do %>
-                            <%= if item.status == "pending" do %>
-                              <button
-                                class="btn btn-xs btn-ghost btn-circle text-error"
-                                phx-click="remove_item"
-                                phx-value-id={item.id}
-                              >
-                                <.icon name="hero-trash" class="size-3.5" />
-                              </button>
-                            <% else %>
-                              <button
-                                class="btn btn-xs btn-ghost btn-circle text-error"
-                                phx-click="request_cancel_item"
-                                phx-value-id={item.id}
-                              >
-                                <.icon name="hero-x-circle" class="size-4" />
-                              </button>
-                            <% end %>
-                          <% end %>
-                        </div>
-                      </div>
-
-                      <%!-- Modificadores (solo pendientes, no recompensas) --%>
-                      <%= if item.status == "pending" and not is_nil(item.menu_item_id) and is_nil(item.loyalty_redemption_id) do %>
-                        <div class="mt-2 space-y-1.5 pl-0">
-                          <%!-- Exclusiones --%>
-                          <%= if item.menu_item.menu_item_ingredients != [] do %>
-                            <div class="flex flex-wrap items-center gap-1">
-                              <span class="text-xs text-base-content/40 shrink-0">Sin:</span>
-                              <%= for mii <- item.menu_item.menu_item_ingredients do %>
-                                <% excl? =
-                                  Enum.any?(item.exclusions, &(&1.product_id == mii.product_id)) %>
-                                <button
-                                  phx-click="toggle_exclusion"
-                                  phx-value-order_item_id={item.id}
-                                  phx-value-product_id={mii.product_id}
-                                  class={[
-                                    "badge badge-sm cursor-pointer select-none transition-all",
-                                    if(excl?,
-                                      do: "badge-error line-through",
-                                      else: "badge-ghost hover:badge-warning"
+                          <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                              <div class="flex-1 min-w-[8rem]">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                  <p class={[
+                                    "text-sm font-semibold leading-tight",
+                                    if(cancelled?,
+                                      do: "line-through text-base-content/70",
+                                      else: "text-base-content"
                                     )
-                                  ]}
-                                >
-                                  {mii.product.name}
-                                </button>
-                              <% end %>
-                            </div>
-                          <% end %>
-
-                          <%!-- Variantes --%>
-                          <%= for mii <- item.menu_item.menu_item_ingredients do %>
-                            <% active_variants = Enum.filter(mii.product.variants, & &1.active) %>
-                            <%= if active_variants != [] do %>
-                              <% sel =
-                                find_selected_variant(
-                                  @order.order_items,
-                                  item.menu_item_id,
-                                  mii.product_id
-                                ) %>
-                              <div class="flex flex-wrap items-center gap-1">
-                                <span class="text-xs text-base-content/40 shrink-0">
-                                  {mii.product.name}:
-                                </span>
-                                <%= for variant <- active_variants do %>
-                                  <% selected? = sel != nil and sel.variant_id == variant.id %>
-                                  <button
-                                    phx-click="select_variant"
-                                    phx-value-menu_item_id={item.menu_item_id}
-                                    phx-value-variant_id={variant.id}
-                                    phx-value-product_id={mii.product_id}
-                                    class={[
-                                      "badge badge-sm cursor-pointer select-none transition-all",
-                                      if(selected?,
-                                        do: "badge-primary",
-                                        else: "badge-ghost hover:badge-primary"
-                                      )
-                                    ]}
-                                  >
-                                    {variant.name}
-                                    <%= if Decimal.compare(variant.extra_charge, Decimal.new(0)) == :gt do %>
-                                      <span class="opacity-60 ml-0.5">
-                                        +${format_price(variant.extra_charge)}
+                                  ]}>
+                                    <%= if item.product_id do %>
+                                      <span class="text-accent">+</span> {item.product.name}
+                                    <% else %>
+                                      {item.menu_item.name}
+                                    <% end %>
+                                  </p>
+                                  <%= if item.package_id do %>
+                                    <span class="badge badge-xs badge-primary gap-0.5">
+                                      <.icon name="hero-gift" class="size-2.5" /> Paquete
+                                    </span>
+                                  <% end %>
+                                  <%= if item.loyalty_redemption_id do %>
+                                    <span class="badge badge-xs badge-success gap-0.5">🎁 Recompensa</span>
+                                  <% end %>
+                                  <%= if overdue? do %>
+                                    <span class="badge badge-xs badge-error motion-safe:animate-pulse">+15 min</span>
+                                  <% end %>
+                                  <%= if item.status == "ready" and not cancelled? do %>
+                                    <span class="badge badge-xs badge-success motion-safe:animate-pulse">
+                                      ¡Listo!
+                                    </span>
+                                  <% end %>
+                                  <%= if served? do %>
+                                    <span class="badge badge-xs badge-ghost">Servido</span>
+                                  <% end %>
+                                </div>
+                                <p class="text-xs text-base-content/70 mt-0.5">
+                                  <%= if cancelled? do %>
+                                    <span class="text-error font-medium">
+                                      {if item.status == "cancelled_waste",
+                                        do: "Cancelado — desperdicio",
+                                        else: "Cancelado"}
+                                    </span>
+                                  <% else %>
+                                    <%= if item.product_id do %>
+                                      {format_qty(item.portion_quantity)} {item.product.unit} ·
+                                      <span class="text-warning font-medium">Cocina</span>
+                                    <% else %>
+                                      <%= if item.loyalty_redemption_id do %>
+                                        <span class="text-success font-medium">Cortesía · $0</span> ·
+                                      <% else %>
+                                        ${format_price(item.unit_price || item.menu_item.price)} c/u ·
+                                      <% end %>
+                                      <span class={station_text_class(item.menu_item.destination)}>
+                                        {station_label(item.menu_item.destination)}
                                       </span>
                                     <% end %>
+                                  <% end %>
+                                </p>
+                                <%!-- "Para quién" badge (no pendiente) --%>
+                                <%= if not is_nil(item.for_person) and item.for_person != "" and item.status != "pending" do %>
+                                  <span class="badge badge-xs badge-ghost mt-0.5">
+                                    👤 {item.for_person}
+                                  </span>
+                                <% end %>
+                              </div>
+
+                              <%!-- Controles derechos --%>
+                              <div class="flex items-center flex-wrap justify-end gap-1 shrink-0">
+                                <%!-- Servir --%>
+                                <%= if item.status == "ready" and @order.status != "closed" do %>
+                                  <button
+                                    class="btn btn-sm btn-success gap-1"
+                                    phx-click="mark_item_served"
+                                    phx-value-id={item.id}
+                                  >
+                                    <.icon name="hero-check" class="size-4" /> Servir
                                   </button>
+                                <% end %>
+
+                                <%!-- Extras (solo platillos pendientes sin paquete ni recompensa, y con extras disponibles) --%>
+                                <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and is_nil(item.package_id) and is_nil(item.loyalty_redemption_id) and item.status == "pending" and @order.status != "closed" and MapSet.member?(@menu_item_ids_with_extras, item.menu_item_id) do %>
+                                  <button
+                                    class={[
+                                      "btn btn-sm btn-grow gap-1",
+                                      if(
+                                        @selected_menu_item &&
+                                          @selected_menu_item.id == item.menu_item_id,
+                                        do: "btn-accent",
+                                        else: "btn-outline btn-accent"
+                                      )
+                                    ]}
+                                    phx-click="select_menu_item_extras"
+                                    phx-value-id={item.menu_item_id}
+                                    title="Agregar extras"
+                                  >
+                                    <.icon name="hero-plus-circle" class="size-4" /> Extras
+                                  </button>
+                                <% end %>
+
+                                <%!-- Repetir --%>
+                                <%= if not cancelled? and not served? and not is_nil(item.menu_item_id) and item.status in ["sent", "ready"] and @order.status != "closed" do %>
+                                  <button
+                                    aria-label="Repetir"
+                                    class="btn btn-sm btn-ghost btn-circle text-primary"
+                                    phx-click="repeat_item"
+                                    phx-value-menu-item-id={item.menu_item_id}
+                                    title="Repetir"
+                                  >
+                                    <.icon name="hero-arrow-path" class="size-4" />
+                                  </button>
+                                <% end %>
+
+                                <%!-- Cantidad (fija en las líneas de recompensa) --%>
+                                <%= if not cancelled? and not served? and is_nil(item.loyalty_redemption_id) do %>
+                                  <div class="flex items-center">
+                                    <button
+                                      aria-label="Quitar"
+                                      class="btn btn-xs btn-ghost btn-circle"
+                                      phx-click="decrement_item"
+                                      phx-value-id={item.id}
+                                      disabled={item.quantity <= 1 or locked?(@order)}
+                                    >
+                                      <.icon name="hero-minus" class="size-3.5" />
+                                    </button>
+                                    <span class="w-7 text-center text-sm font-bold">{item.quantity}</span>
+                                    <% max_qty = item_max_quantity(item) %>
+                                    <button
+                                      aria-label="Agregar"
+                                      class="btn btn-xs btn-ghost btn-circle"
+                                      phx-click="increment_item"
+                                      phx-value-id={item.id}
+                                      disabled={
+                                        locked?(@order) or
+                                          (max_qty != nil and item.quantity >= max_qty)
+                                      }
+                                      title={
+                                        if max_qty != nil and item.quantity >= max_qty,
+                                          do: "Sin stock suficiente",
+                                          else: nil
+                                      }
+                                    >
+                                      <.icon name="hero-plus" class="size-3.5" />
+                                    </button>
+                                  </div>
+                                <% end %>
+
+                                <%!-- Eliminar / cancelar (las líneas de recompensa se quitan desde el banner) --%>
+                                <%= if not cancelled? and not served? and is_nil(item.loyalty_redemption_id) and @order.status != "closed" do %>
+                                  <%= if item.status == "pending" do %>
+                                    <button
+                                      aria-label="Eliminar"
+                                      class="btn btn-xs btn-ghost btn-circle text-error"
+                                      phx-click="remove_item"
+                                      phx-value-id={item.id}
+                                    >
+                                      <.icon name="hero-trash" class="size-3.5" />
+                                    </button>
+                                  <% else %>
+                                    <button
+                                      aria-label="Quitar"
+                                      class="btn btn-xs btn-ghost btn-circle text-error"
+                                      phx-click="request_cancel_item"
+                                      phx-value-id={item.id}
+                                    >
+                                      <.icon name="hero-x-circle" class="size-4" />
+                                    </button>
+                                  <% end %>
+                                <% end %>
+                              </div>
+                            </div>
+
+                            <%!-- Modificadores (solo pendientes, no recompensas) --%>
+                            <%= if item.status == "pending" and not is_nil(item.menu_item_id) and is_nil(item.loyalty_redemption_id) do %>
+                              <div class="mt-2 space-y-1.5 pl-0">
+                                <%!-- Exclusiones --%>
+                                <%= if item.menu_item.menu_item_ingredients != [] do %>
+                                  <div class="flex flex-wrap items-center gap-1">
+                                    <span class="text-xs text-base-content/65 shrink-0">Sin:</span>
+                                    <%= for mii <- item.menu_item.menu_item_ingredients do %>
+                                      <% excl? =
+                                        Enum.any?(item.exclusions, &(&1.product_id == mii.product_id)) %>
+                                      <button
+                                        phx-click="toggle_exclusion"
+                                        phx-value-order_item_id={item.id}
+                                        phx-value-product_id={mii.product_id}
+                                        class={[
+                                          "badge badge-sm cursor-pointer select-none transition-all",
+                                          if(excl?,
+                                            do: "badge-error line-through",
+                                            else: "badge-ghost hover:badge-warning"
+                                          )
+                                        ]}
+                                      >
+                                        {mii.product.name}
+                                      </button>
+                                    <% end %>
+                                  </div>
+                                <% end %>
+
+                                <%!-- Variantes --%>
+                                <%= for mii <- item.menu_item.menu_item_ingredients do %>
+                                  <% active_variants = Enum.filter(mii.product.variants, & &1.active) %>
+                                  <%= if active_variants != [] do %>
+                                    <% sel =
+                                      find_selected_variant(
+                                        @order.order_items,
+                                        item.menu_item_id,
+                                        mii.product_id
+                                      ) %>
+                                    <div class="flex flex-wrap items-center gap-1">
+                                      <span class="text-xs text-base-content/65 shrink-0">
+                                        {mii.product.name}:
+                                      </span>
+                                      <%= for variant <- active_variants do %>
+                                        <% selected? = sel != nil and sel.variant_id == variant.id %>
+                                        <button
+                                          phx-click="select_variant"
+                                          phx-value-menu_item_id={item.menu_item_id}
+                                          phx-value-variant_id={variant.id}
+                                          phx-value-product_id={mii.product_id}
+                                          class={[
+                                            "badge badge-sm cursor-pointer select-none transition-all",
+                                            if(selected?,
+                                              do: "badge-primary",
+                                              else: "badge-ghost hover:badge-primary"
+                                            )
+                                          ]}
+                                        >
+                                          {variant.name}
+                                          <%= if Decimal.compare(variant.extra_charge, Decimal.new(0)) == :gt do %>
+                                            <span class="opacity-60 ml-0.5">
+                                              +${format_price(variant.extra_charge)}
+                                            </span>
+                                          <% end %>
+                                        </button>
+                                      <% end %>
+                                    </div>
+                                  <% end %>
+                                <% end %>
+
+                                <%!-- Para quién --%>
+                                <div class="flex flex-wrap items-center gap-1">
+                                  <%= if used_persons != [] do %>
+                                    <%= for person <- used_persons do %>
+                                      <button
+                                        type="button"
+                                        class={[
+                                          "badge badge-xs cursor-pointer select-none transition-all",
+                                          if(item.for_person == person,
+                                            do: "badge-primary",
+                                            else: "badge-ghost hover:badge-primary"
+                                          )
+                                        ]}
+                                        phx-click="set_item_for_person"
+                                        phx-value-item_id={item.id}
+                                        phx-value-for_person={person}
+                                      >
+                                        👤 {person}
+                                      </button>
+                                    <% end %>
+                                    <%= if item.for_person && item.for_person != "" do %>
+                                      <button
+                                        type="button"
+                                        class="badge badge-xs badge-ghost cursor-pointer hover:badge-error select-none"
+                                        phx-click="set_item_for_person"
+                                        phx-value-item_id={item.id}
+                                        phx-value-for_person=""
+                                      >
+                                        ✕
+                                      </button>
+                                    <% end %>
+                                  <% end %>
+                                  <form phx-change="set_item_for_person" class="flex-1 min-w-[8rem]">
+                                    <input type="hidden" name="item_id" value={item.id} />
+                                    <div class="flex items-center gap-1">
+                                      <span class="text-xs shrink-0 select-none leading-none">👤</span>
+                                      <input
+                                        type="text"
+                                        name="for_person"
+                                        maxlength="50"
+                                        class="input input-xs flex-1 border-base-300 text-xs placeholder-base-content/30"
+                                        placeholder="¿Para quién?"
+                                        value={item.for_person || ""}
+                                        phx-debounce="600"
+                                      />
+                                    </div>
+                                  </form>
+                                </div>
+
+                                <%!-- Nota --%>
+                                <form phx-change="set_item_note">
+                                  <input type="hidden" name="item_id" value={item.id} />
+                                  <div class="flex items-center gap-1">
+                                    <span class="text-xs shrink-0 select-none">📝</span>
+                                    <input
+                                      type="text"
+                                      name="note"
+                                      class="input input-xs flex-1 border-base-300 text-xs placeholder-base-content/30"
+                                      placeholder="Nota para cocina…"
+                                      value={item.notes || ""}
+                                      phx-debounce="600"
+                                    />
+                                  </div>
+                                </form>
+                              </div>
+                            <% end %>
+
+                            <%!-- Badges de sólo lectura para enviados/listos --%>
+                            <% sent_variants = get_variant_items(@order.order_items, item) %>
+                            <%= if item.status in ["sent", "ready"] and sent_variants != [] do %>
+                              <div class="flex flex-wrap gap-1 mt-1.5">
+                                <%= for vi <- sent_variants do %>
+                                  <span class="badge badge-xs badge-primary">{vi.variant.name}</span>
+                                  <%= if vi.unit_price && Decimal.compare(vi.unit_price, Decimal.new(0)) == :gt do %>
+                                    <span class="text-xs text-primary font-medium">
+                                      +${format_price(vi.unit_price)}
+                                    </span>
+                                  <% end %>
                                 <% end %>
                               </div>
                             <% end %>
-                          <% end %>
-
-                          <%!-- Para quién --%>
-                          <div class="flex flex-wrap items-center gap-1">
-                            <%= if used_persons != [] do %>
-                              <%= for person <- used_persons do %>
-                                <button
-                                  type="button"
-                                  class={[
-                                    "badge badge-xs cursor-pointer select-none transition-all",
-                                    if(item.for_person == person,
-                                      do: "badge-primary",
-                                      else: "badge-ghost hover:badge-primary"
-                                    )
-                                  ]}
-                                  phx-click="set_item_for_person"
-                                  phx-value-item_id={item.id}
-                                  phx-value-for_person={person}
-                                >
-                                  👤 {person}
-                                </button>
-                              <% end %>
-                              <%= if item.for_person && item.for_person != "" do %>
-                                <button
-                                  type="button"
-                                  class="badge badge-xs badge-ghost cursor-pointer hover:badge-error select-none"
-                                  phx-click="set_item_for_person"
-                                  phx-value-item_id={item.id}
-                                  phx-value-for_person=""
-                                >
-                                  ✕
-                                </button>
-                              <% end %>
-                            <% end %>
-                            <form phx-change="set_item_for_person" class="flex-1 min-w-[8rem]">
-                              <input type="hidden" name="item_id" value={item.id} />
-                              <div class="flex items-center gap-1">
-                                <span class="text-xs shrink-0 select-none leading-none">👤</span>
-                                <input
-                                  type="text"
-                                  name="for_person"
-                                  maxlength="50"
-                                  class="input input-xs flex-1 border-base-300 text-xs placeholder-base-content/30"
-                                  placeholder="¿Para quién?"
-                                  value={item.for_person || ""}
-                                  phx-debounce="600"
-                                />
+                            <%= if item.status in ["sent", "ready"] and item.exclusions != [] do %>
+                              <div class="flex flex-wrap items-center gap-1 mt-1.5">
+                                <span class="text-xs text-warning font-semibold">Sin:</span>
+                                <%= for excl <- item.exclusions do %>
+                                  <span class="badge badge-xs badge-warning">{excl.product.name}</span>
+                                <% end %>
                               </div>
-                            </form>
-                          </div>
-
-                          <%!-- Nota --%>
-                          <form phx-change="set_item_note">
-                            <input type="hidden" name="item_id" value={item.id} />
-                            <div class="flex items-center gap-1">
-                              <span class="text-xs shrink-0 select-none">📝</span>
-                              <input
-                                type="text"
-                                name="note"
-                                class="input input-xs flex-1 border-base-300 text-xs placeholder-base-content/30"
-                                placeholder="Nota para cocina…"
-                                value={item.notes || ""}
-                                phx-debounce="600"
-                              />
-                            </div>
-                          </form>
-                        </div>
-                      <% end %>
-
-                      <%!-- Badges de sólo lectura para enviados/listos --%>
-                      <% sent_variants = get_variant_items(@order.order_items, item) %>
-                      <%= if item.status in ["sent", "ready"] and sent_variants != [] do %>
-                        <div class="flex flex-wrap gap-1 mt-1.5">
-                          <%= for vi <- sent_variants do %>
-                            <span class="badge badge-xs badge-primary">{vi.variant.name}</span>
-                            <%= if vi.unit_price && Decimal.compare(vi.unit_price, Decimal.new(0)) == :gt do %>
-                              <span class="text-xs text-primary font-medium">
-                                +${format_price(vi.unit_price)}
-                              </span>
                             <% end %>
-                          <% end %>
-                        </div>
-                      <% end %>
-                      <%= if item.status in ["sent", "ready"] and item.exclusions != [] do %>
-                        <div class="flex flex-wrap items-center gap-1 mt-1.5">
-                          <span class="text-xs text-warning font-semibold">Sin:</span>
-                          <%= for excl <- item.exclusions do %>
-                            <span class="badge badge-xs badge-warning">{excl.product.name}</span>
-                          <% end %>
-                        </div>
-                      <% end %>
-                      <%= if item.status in ["sent", "ready"] and not is_nil(item.notes) and item.notes != "" do %>
-                        <p class="text-xs text-base-content/50 italic mt-1.5 flex items-center gap-1">
-                          <span class="select-none">📝</span> {item.notes}
-                        </p>
-                      <% end %>
+                            <%= if item.status in ["sent", "ready"] and not is_nil(item.notes) and item.notes != "" do %>
+                              <p class="text-xs text-base-content/70 italic mt-1.5 flex items-center gap-1">
+                                <span class="select-none">📝</span> {item.notes}
+                              </p>
+                            <% end %>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    <% end %>
                   <% end %>
-                <% end %>
-              </div>
+                </div>
               </div>
 
               <%!-- Footer (estático) --%>
@@ -1816,7 +1826,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                 <%= if @order.order_items != [] do %>
                   <% total = Orders.calculate_order_total(@order) %>
                   <div class="flex items-center justify-between px-1">
-                    <span class="text-xs text-base-content/60">Total</span>
+                    <span class="text-xs text-base-content/70">Total</span>
                     <span class="text-lg font-bold text-primary">${format_price(total)}</span>
                   </div>
                 <% end %>
@@ -1828,7 +1838,10 @@ defmodule CRCWeb.Waiter.OrderLive do
                         <.icon name="hero-arrow-left" class="size-4" /> Volver
                       </a>
                       <%= if @order.order_items != [] do %>
-                        <button class="btn btn-sm btn-accent btn-grow flex-1" phx-click="generate_bill">
+                        <button
+                          class="btn btn-sm btn-accent btn-grow flex-1"
+                          phx-click="generate_bill"
+                        >
                           <.icon name="hero-qr-code" class="size-4" /> Mostrar QR
                         </button>
                       <% end %>
@@ -1838,7 +1851,10 @@ defmodule CRCWeb.Waiter.OrderLive do
                       <.icon name="hero-pause-circle" class="size-4 inline align-text-bottom" />
                       Cuenta en pausa — el cliente paga después.
                     </div>
-                    <button class="btn btn-sm btn-success btn-grow w-full" phx-click="show_payment_step">
+                    <button
+                      class="btn btn-sm btn-success btn-grow w-full"
+                      phx-click="show_payment_step"
+                    >
                       <.icon name="hero-credit-card" class="size-4" /> Cobrar cuenta
                     </button>
                     <div class="flex gap-2">
@@ -1912,22 +1928,32 @@ defmodule CRCWeb.Waiter.OrderLive do
     <%= if @change_table_modal do %>
       <div class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" phx-click="close_change_table">
       </div>
-      <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 pointer-events-none">
+      <div
+        role="dialog"
+        aria-modal="true"
+        phx-window-keydown="close_change_table"
+        phx-key="Escape"
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 pointer-events-none"
+      >
         <div class="bg-base-100 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm overflow-hidden pointer-events-auto max-h-[85vh] flex flex-col">
           <div class="px-4 py-3 border-b border-base-300 flex items-center justify-between gap-2 shrink-0">
             <div class="min-w-0">
               <p class="text-sm font-semibold text-base-content">Cambiar mesa</p>
-              <p class="text-xs text-base-content/50">
+              <p class="text-xs text-base-content/70">
                 Mueve esta comanda a una mesa disponible
               </p>
             </div>
-            <button class="btn btn-xs btn-ghost shrink-0" phx-click="close_change_table">
+            <button
+              aria-label="Cerrar"
+              class="btn btn-xs btn-ghost shrink-0"
+              phx-click="close_change_table"
+            >
               <.icon name="hero-x-mark" class="size-3.5" />
             </button>
           </div>
           <div class="p-4 overflow-y-auto">
             <%= if @available_tables == [] do %>
-              <p class="text-sm text-base-content/40 text-center py-6">
+              <p class="text-sm text-base-content/65 text-center py-6">
                 No hay mesas disponibles en este momento.
               </p>
             <% else %>
@@ -1940,7 +1966,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                   >
                     <span class="text-sm font-bold text-base-content">Mesa {table.number}</span>
                     <%= if table.label && table.label != "" do %>
-                      <span class="text-xs text-base-content/50">{table.label}</span>
+                      <span class="text-xs text-base-content/70">{table.label}</span>
                     <% end %>
                   </button>
                 <% end %>
@@ -1954,7 +1980,13 @@ defmodule CRCWeb.Waiter.OrderLive do
     <%!-- ── Modal de extras del platillo seleccionado ─────────────────────────── --%>
     <%= if @selected_menu_item && @order.status != "closed" do %>
       <div class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" phx-click="clear_extras"></div>
-      <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 pointer-events-none">
+      <div
+        role="dialog"
+        aria-modal="true"
+        phx-window-keydown="clear_extras"
+        phx-key="Escape"
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 pointer-events-none"
+      >
         <div class="bg-base-100 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md overflow-hidden pointer-events-auto">
           <div class="px-4 py-3 border-b border-accent/20 bg-accent/5 flex items-center justify-between gap-2">
             <div class="flex items-center gap-2 min-w-0">
@@ -1963,16 +1995,16 @@ defmodule CRCWeb.Waiter.OrderLive do
                 <p class="text-sm font-semibold text-base-content truncate">
                   Extras — {@selected_menu_item.name}
                 </p>
-                <p class="text-xs text-base-content/50">Toca para agregar a la comanda</p>
+                <p class="text-xs text-base-content/70">Toca para agregar a la comanda</p>
               </div>
             </div>
-            <button class="btn btn-xs btn-ghost shrink-0" phx-click="clear_extras">
+            <button aria-label="Cerrar" class="btn btn-xs btn-ghost shrink-0" phx-click="clear_extras">
               <.icon name="hero-x-mark" class="size-3.5" />
             </button>
           </div>
           <div class="p-4">
             <%= if @extras == [] do %>
-              <p class="text-sm text-base-content/40 text-center py-2">
+              <p class="text-sm text-base-content/65 text-center py-2">
                 Sin extras configurados para este platillo.
               </p>
             <% else %>
@@ -2009,15 +2041,25 @@ defmodule CRCWeb.Waiter.OrderLive do
     <%!-- ── Modal de cobro ────────────────────────────────────────────────────── --%>
     <%= if @payment_step do %>
       <div class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" phx-click="cancel_payment"></div>
-      <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none">
+      <div
+        role="dialog"
+        aria-modal="true"
+        phx-window-keydown="cancel_payment"
+        phx-key="Escape"
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none"
+      >
         <div class="bg-base-100 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md overflow-hidden pointer-events-auto">
           <%!-- Header del modal --%>
           <div class="px-5 pt-5 pb-4 border-b border-base-300 flex items-center justify-between">
             <div>
               <h3 class="font-bold text-lg">Cobrar cuenta</h3>
-              <p class="text-sm text-base-content/60">{@order.customer_name}</p>
+              <p class="text-sm text-base-content/70">{@order.customer_name}</p>
             </div>
-            <button class="btn btn-sm btn-ghost btn-circle" phx-click="cancel_payment">
+            <button
+              aria-label="Cerrar"
+              class="btn btn-sm btn-ghost btn-circle"
+              phx-click="cancel_payment"
+            >
               <.icon name="hero-x-mark" class="size-5" />
             </button>
           </div>
@@ -2025,7 +2067,7 @@ defmodule CRCWeb.Waiter.OrderLive do
           <div class="px-5 py-4 space-y-4 overflow-y-auto max-h-[80vh]">
             <%!-- Selector de descuento --%>
             <div class="space-y-2">
-              <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide">
+              <p class="text-xs font-semibold text-base-content/70 uppercase tracking-wide">
                 Descuento
               </p>
               <div class="flex flex-wrap gap-2">
@@ -2065,17 +2107,17 @@ defmodule CRCWeb.Waiter.OrderLive do
             <% total = apply_discount_to_total(subtotal, @discount_pct || 0) %>
             <div class="bg-base-200 rounded-2xl p-4 text-center space-y-1">
               <%= if @discount_pct && @discount_pct > 0 do %>
-                <p class="text-base text-base-content/50 line-through">${format_price(subtotal)}</p>
+                <p class="text-base text-base-content/70 line-through">${format_price(subtotal)}</p>
                 <p class="text-xs text-success font-semibold">–{@discount_pct}% aplicado</p>
               <% end %>
               <p class="text-4xl font-bold text-primary">${format_price(total)}</p>
-              <p class="text-xs text-base-content/50">Total a cobrar</p>
+              <p class="text-xs text-base-content/70">Total a cobrar</p>
             </div>
 
             <%!-- División de cuenta --%>
             <div class="flex items-center gap-2">
-              <.icon name="hero-users" class="size-4 text-base-content/40 shrink-0" />
-              <span class="text-sm text-base-content/60">Dividir entre</span>
+              <.icon name="hero-users" class="size-4 text-base-content/65 shrink-0" />
+              <span class="text-sm text-base-content/70">Dividir entre</span>
               <input
                 type="number"
                 inputmode="numeric"
@@ -2088,20 +2130,24 @@ defmodule CRCWeb.Waiter.OrderLive do
                 phx-value-value={@split_input}
                 phx-debounce="200"
               />
-              <span class="text-sm text-base-content/60">personas</span>
+              <span class="text-sm text-base-content/70">personas</span>
               <%= if @split_count do %>
-                <button class="btn btn-xs btn-ghost text-base-content/40" phx-click="clear_split">
+                <button
+                  aria-label="Cerrar"
+                  class="btn btn-xs btn-ghost text-base-content/65"
+                  phx-click="clear_split"
+                >
                   <.icon name="hero-x-mark" class="size-3" />
                 </button>
               <% end %>
             </div>
             <%= if @split_count do %>
               <div class="bg-primary/10 rounded-xl px-4 py-3 text-center">
-                <p class="text-xs text-base-content/60">Cada persona paga</p>
+                <p class="text-xs text-base-content/70">Cada persona paga</p>
                 <p class="text-2xl font-bold text-primary">
                   ${format_price(Decimal.div(total, Decimal.new(@split_count)))}
                 </p>
-                <p class="text-xs text-base-content/40">
+                <p class="text-xs text-base-content/65">
                   {@split_count} personas · total ${format_price(total)}
                 </p>
               </div>
@@ -2109,7 +2155,7 @@ defmodule CRCWeb.Waiter.OrderLive do
 
             <%!-- Método de pago --%>
             <div class="space-y-2">
-              <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide">
+              <p class="text-xs font-semibold text-base-content/70 uppercase tracking-wide">
                 Método de pago
               </p>
               <div class="grid grid-cols-3 gap-2">
@@ -2139,7 +2185,7 @@ defmodule CRCWeb.Waiter.OrderLive do
             <%!-- Monto en efectivo --%>
             <%= if @payment_method == "efectivo" do %>
               <div class="space-y-2">
-                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide">
+                <p class="text-xs font-semibold text-base-content/70 uppercase tracking-wide">
                   ¿Con cuánto paga?
                 </p>
                 <input
@@ -2203,7 +2249,13 @@ defmodule CRCWeb.Waiter.OrderLive do
     <%!-- ── Modal de cuenta / QR ──────────────────────────────────────────────── --%>
     <%= if @bill_modal do %>
       <div class="fixed inset-0 z-40 bg-black/60" phx-click="close_bill_modal"></div>
-      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+      <div
+        role="dialog"
+        aria-modal="true"
+        phx-window-keydown="close_bill_modal"
+        phx-key="Escape"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+      >
         <div class="bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden pointer-events-auto">
           <div class="bg-primary text-primary-content px-5 py-4 flex items-center gap-3">
             <div class="flex-1 min-w-0">
@@ -2211,6 +2263,7 @@ defmodule CRCWeb.Waiter.OrderLive do
               <p class="text-sm opacity-80 truncate">{@order.customer_name}</p>
             </div>
             <button
+              aria-label="Cerrar"
               phx-click="close_bill_modal"
               class="btn btn-sm btn-ghost text-primary-content shrink-0"
             >
@@ -2225,9 +2278,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                   <div class="flex items-baseline justify-between py-2 gap-2">
                     <div class="flex-1 min-w-0">
                       <span class="font-medium">{line.name}</span>
-                      <span class="text-base-content/50 ml-1">{line.quantity}×</span>
+                      <span class="text-base-content/70 ml-1">{line.quantity}×</span>
                       <%= if line.for_person && line.for_person != "" do %>
-                        <span class="text-base-content/40 text-xs block">👤 {line.for_person}</span>
+                        <span class="text-base-content/65 text-xs block">👤 {line.for_person}</span>
                       <% end %>
                     </div>
                     <span class="font-semibold shrink-0">${format_price(line.subtotal)}</span>
@@ -2238,7 +2291,7 @@ defmodule CRCWeb.Waiter.OrderLive do
               <% bill_total =
                 if @order.status == "closed" && @order.total, do: @order.total, else: bill_subtotal %>
               <%= if @order.discount_percentage && @order.discount_percentage > 0 do %>
-                <div class="flex items-center justify-between border-t border-base-300 pt-3 text-sm text-base-content/60">
+                <div class="flex items-center justify-between border-t border-base-300 pt-3 text-sm text-base-content/70">
                   <span>Subtotal</span>
                   <span>${format_price(bill_subtotal)}</span>
                 </div>
@@ -2255,7 +2308,7 @@ defmodule CRCWeb.Waiter.OrderLive do
             <%= if @order.bill_token do %>
               <% cuenta_url = CRCWeb.Endpoint.url() <> ~p"/cuenta/#{@order.bill_token}" %>
               <div class="flex flex-col items-center gap-3 pt-2">
-                <p class="text-xs text-base-content/50 text-center">
+                <p class="text-xs text-base-content/70 text-center">
                   El cliente escanea este QR para ver su cuenta
                 </p>
                 <div class="bg-white p-3 rounded-xl border border-base-300 shadow-sm">
@@ -2265,7 +2318,7 @@ defmodule CRCWeb.Waiter.OrderLive do
                     class="w-48 h-48 block"
                   />
                 </div>
-                <p class="text-xs text-base-content/40 font-mono text-center break-all">
+                <p class="text-xs text-base-content/65 font-mono text-center break-all">
                   {cuenta_url}
                 </p>
               </div>
@@ -2525,7 +2578,7 @@ defmodule CRCWeb.Waiter.OrderLive do
           <div class="min-w-0 flex flex-col gap-1">
             <p class={[
               "text-sm font-semibold leading-snug",
-              if(not available?, do: "text-base-content/50", else: "text-base-content")
+              if(not available?, do: "text-base-content/70", else: "text-base-content")
             ]}>
               {@menu_item.name}
             </p>
@@ -2540,7 +2593,7 @@ defmodule CRCWeb.Waiter.OrderLive do
             ${format_price(@menu_item.price)}
           </span>
         </div>
-        <p :if={@has_desc and available?} class="text-xs text-base-content/60 line-clamp-2 -mt-1">
+        <p :if={@has_desc and available?} class="text-xs text-base-content/70 line-clamp-2 -mt-1">
           {@desc}
         </p>
         <%= if not available? do %>
@@ -2651,14 +2704,14 @@ defmodule CRCWeb.Waiter.OrderLive do
               <% end %>
             </div>
             <%= if @summary && @summary.top_items != [] do %>
-              <p class="text-xs text-base-content/50 mt-0.5">
+              <p class="text-xs text-base-content/70 mt-0.5">
                 Favorito del cliente: {@summary.top_items
                 |> Enum.map(fn {n, q} -> "#{n} (#{q})" end)
                 |> Enum.join(" · ")}
               </p>
             <% end %>
             <%= if @summary && is_nil(@summary.pending_reward) && @summary.visits_until_next_reward do %>
-              <p class="text-xs text-base-content/50 mt-0.5">
+              <p class="text-xs text-base-content/70 mt-0.5">
                 Visitas restantes para ganar obsequio: {@summary.visits_until_next_reward}
               </p>
             <% end %>
@@ -2710,7 +2763,7 @@ defmodule CRCWeb.Waiter.OrderLive do
         <%= if @order.status != "closed" do %>
           <button
             type="button"
-            class="btn btn-ghost btn-xs gap-1.5 text-base-content/60"
+            class="btn btn-ghost btn-xs gap-1.5 text-base-content/70"
             phx-click="toggle_customer_panel"
           >
             <.icon name="hero-identification" class="size-4" />
@@ -2721,7 +2774,13 @@ defmodule CRCWeb.Waiter.OrderLive do
 
       <%= if @panel_open and is_nil(@order.customer) do %>
         <div class="fixed inset-0 z-40 bg-black/60" phx-click="toggle_customer_panel"></div>
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div
+          role="dialog"
+          aria-modal="true"
+          phx-window-keydown="toggle_customer_panel"
+          phx-key="Escape"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+        >
           <div class="w-full max-w-sm pointer-events-auto">
             <.live_component
               module={CustomerSearchComponent}

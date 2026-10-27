@@ -120,7 +120,7 @@ defmodule CRCWeb.Admin.HorariosLive do
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="mb-8">
           <h1 class="text-2xl font-bold text-base-content">Horarios de trabajo</h1>
-          <p class="text-base-content/60 text-sm mt-1">
+          <p class="text-base-content/70 text-sm mt-1">
             Asigna y edita los horarios semanales del personal.
           </p>
         </div>
@@ -157,7 +157,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                     </div>
                     <div class="min-w-0">
                       <p class="font-medium text-base-content text-sm truncate">{user.name}</p>
-                      <p class="text-xs text-base-content/50 capitalize">{user.role}</p>
+                      <p class="text-xs text-base-content/70 capitalize">{user.role}</p>
                     </div>
                   </button>
                 </li>
@@ -173,7 +173,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                 <div class="px-6 py-4 border-b border-base-200 flex flex-wrap items-center justify-between gap-3">
                   <div class="min-w-0">
                     <h2 class="font-bold text-base-content truncate">{@selected_user.name}</h2>
-                    <p class="text-sm text-base-content/50 capitalize">{@selected_user.role}</p>
+                    <p class="text-sm text-base-content/70 capitalize">{@selected_user.role}</p>
                   </div>
                   <%= if !@editing do %>
                     <button
@@ -189,7 +189,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                 <%= if !@editing do %>
                   <div class="p-6">
                     <%= if @schedules == [] do %>
-                      <div class="text-center py-12 text-base-content/40">
+                      <div class="text-center py-12 text-base-content/65">
                         <.icon name="hero-calendar" class="size-12 mx-auto mb-3 opacity-30" />
                         <p>Sin horario asignado.</p>
                         <p class="text-sm mt-1">
@@ -203,7 +203,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                           <div class={"flex items-center gap-4 p-3 rounded-xl border
                             #{if sched, do: "border-primary/20 bg-primary/5", else: "border-base-200 bg-base-200/50 opacity-50"}"}>
                             <span class={"w-10 text-center font-semibold text-sm
-                              #{if sched, do: "text-primary", else: "text-base-content/40"}"}>
+                              #{if sched, do: "text-primary", else: "text-base-content/65"}"}>
                               {WorkSchedule.day_short(day)}
                             </span>
                             <%= if sched do %>
@@ -212,7 +212,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                                 {format_time(sched.start_time)} — {format_time(sched.end_time)}
                               </div>
                             <% else %>
-                              <span class="text-sm text-base-content/40">Descanso</span>
+                              <span class="text-sm text-base-content/65">Descanso</span>
                             <% end %>
                           </div>
                         <% end %>
@@ -223,7 +223,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                   <%!-- Schedule edit form --%>
                 <% else %>
                   <div class="p-6 space-y-4">
-                    <p class="text-sm text-base-content/60">
+                    <p class="text-sm text-base-content/70">
                       Activa los días laborales y establece los horarios de entrada y salida.
                     </p>
 
@@ -240,7 +240,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                             phx-click="toggle_day"
                             phx-value-day={day}
                           />
-                          <span class={"font-semibold text-sm w-10 #{if data[:active], do: "text-primary", else: "text-base-content/50"}"}>
+                          <span class={"font-semibold text-sm w-10 #{if data[:active], do: "text-primary", else: "text-base-content/70"}"}>
                             {WorkSchedule.day_short(day)}
                           </span>
                         </label>
@@ -249,7 +249,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                         <div class={"grid grid-cols-2 gap-3 flex-1 sm:flex sm:items-center sm:gap-3
                           #{if !data[:active], do: "opacity-40 pointer-events-none"}"}>
                           <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
-                            <label class="text-xs text-base-content/60 shrink-0">Entrada</label>
+                            <label class="text-xs text-base-content/70 shrink-0">Entrada</label>
                             <input
                               type="time"
                               class="input input-bordered input-sm w-full sm:w-32"
@@ -260,7 +260,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                             />
                           </div>
                           <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
-                            <label class="text-xs text-base-content/60 shrink-0">Salida</label>
+                            <label class="text-xs text-base-content/70 shrink-0">Salida</label>
                             <input
                               type="time"
                               class="input input-bordered input-sm w-full sm:w-32"
@@ -287,7 +287,7 @@ defmodule CRCWeb.Admin.HorariosLive do
                 <% end %>
               </.panel>
             <% else %>
-              <.panel class="p-12 text-center text-base-content/40">
+              <.panel class="p-12 text-center text-base-content/65">
                 <.icon name="hero-user-group" class="size-14 mx-auto mb-4 opacity-30" />
                 <p>Selecciona un empleado para ver o editar su horario.</p>
               </.panel>

@@ -34,7 +34,7 @@ defmodule CRCWeb.Components.SiteComponents do
               aria-label="Café Raíces y Cultura — Inicio"
             >
               <img
-                src="/images/brand/logo-color.png"
+                src="/images/brand/logo-color.webp"
                 alt="Café Raíces y Cultura"
                 class="h-11 w-auto transition-opacity group-hover:opacity-80"
               />
@@ -93,7 +93,7 @@ defmodule CRCWeb.Components.SiteComponents do
                       <% end %>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        class="size-3 text-base-content/40"
+                        class="size-3 text-base-content/65"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -113,7 +113,7 @@ defmodule CRCWeb.Components.SiteComponents do
                       <%!-- User info header --%>
                       <li class="px-3 py-2 border-b border-base-200 mb-1 pointer-events-none">
                         <p class="text-sm font-semibold text-base-content">{@current_user.name}</p>
-                        <p class="text-xs text-base-content/50">
+                        <p class="text-xs text-base-content/70">
                           {if @current_user.role == "admin", do: "Administrador", else: "Empleado"}
                           {if @current_user.stations != [],
                             do: " · #{Enum.join(@current_user.stations, " · ")}",
@@ -126,7 +126,7 @@ defmodule CRCWeb.Components.SiteComponents do
                           href="/mi-perfil"
                           class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                         >
-                          <.icon name="hero-user-circle" class="size-4 text-base-content/50" />
+                          <.icon name="hero-user-circle" class="size-4 text-base-content/70" />
                           Mi Perfil
                         </a>
                       </li>
@@ -137,7 +137,7 @@ defmodule CRCWeb.Components.SiteComponents do
                         >
                           <.icon
                             name="hero-clipboard-document-check"
-                            class="size-4 text-base-content/50"
+                            class="size-4 text-base-content/70"
                           /> Bitácora de Turno
                         </a>
                       </li>
@@ -146,7 +146,7 @@ defmodule CRCWeb.Components.SiteComponents do
                           href="/produccion"
                           class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                         >
-                          <.icon name="hero-beaker" class="size-4 text-base-content/50" /> Producción
+                          <.icon name="hero-beaker" class="size-4 text-base-content/70" /> Producción
                         </a>
                       </li>
                       <li>
@@ -164,7 +164,7 @@ defmodule CRCWeb.Components.SiteComponents do
                             href="/calendario"
                             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                           >
-                            <.icon name="hero-table-cells" class="size-4 text-base-content/50" />
+                            <.icon name="hero-table-cells" class="size-4 text-base-content/70" />
                             Calendario
                           </a>
                         </li>
@@ -176,7 +176,7 @@ defmodule CRCWeb.Components.SiteComponents do
                             href="/admin"
                             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                           >
-                            <.icon name="hero-squares-2x2" class="size-4 text-base-content/50" />
+                            <.icon name="hero-squares-2x2" class="size-4 text-base-content/70" />
                             Panel
                           </a>
                         </li>
@@ -185,7 +185,7 @@ defmodule CRCWeb.Components.SiteComponents do
                             href="/mi-horario"
                             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                           >
-                            <.icon name="hero-calendar-days" class="size-4 text-base-content/50" />
+                            <.icon name="hero-calendar-days" class="size-4 text-base-content/70" />
                             Mi horario
                           </a>
                         </li>
@@ -196,7 +196,7 @@ defmodule CRCWeb.Components.SiteComponents do
                           >
                             <.icon
                               name="hero-clipboard-document-list"
-                              class="size-4 text-base-content/50"
+                              class="size-4 text-base-content/70"
                             /> Comandas
                           </a>
                         </li>
@@ -205,7 +205,7 @@ defmodule CRCWeb.Components.SiteComponents do
                             href="/mesa/historial"
                             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                           >
-                            <.icon name="hero-clock" class="size-4 text-base-content/50" /> Historial
+                            <.icon name="hero-clock" class="size-4 text-base-content/70" /> Historial
                           </a>
                         </li>
                         <li>
@@ -213,7 +213,7 @@ defmodule CRCWeb.Components.SiteComponents do
                             href="/cocina"
                             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                           >
-                            <.icon name="hero-fire" class="size-4 text-base-content/50" /> Cocina
+                            <.icon name="hero-fire" class="size-4 text-base-content/70" /> Cocina
                           </a>
                         </li>
                         <li>
@@ -221,7 +221,7 @@ defmodule CRCWeb.Components.SiteComponents do
                             href="/barra"
                             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                           >
-                            <.icon name="hero-beaker" class="size-4 text-base-content/50" /> Barra
+                            <.icon name="hero-beaker" class="size-4 text-base-content/70" /> Barra
                           </a>
                         </li>
                       <% end %>
@@ -232,7 +232,7 @@ defmodule CRCWeb.Components.SiteComponents do
                             href="/mi-horario"
                             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                           >
-                            <.icon name="hero-calendar-days" class="size-4 text-base-content/50" />
+                            <.icon name="hero-calendar-days" class="size-4 text-base-content/70" />
                             Mi horario
                           </a>
                         </li>
@@ -244,7 +244,7 @@ defmodule CRCWeb.Components.SiteComponents do
                             >
                               <.icon
                                 name="hero-clipboard-document-list"
-                                class="size-4 text-base-content/50"
+                                class="size-4 text-base-content/70"
                               /> Comandas
                             </a>
                           </li>
@@ -253,7 +253,7 @@ defmodule CRCWeb.Components.SiteComponents do
                               href="/mesa/historial"
                               class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                             >
-                              <.icon name="hero-clock" class="size-4 text-base-content/50" />
+                              <.icon name="hero-clock" class="size-4 text-base-content/70" />
                               Historial
                             </a>
                           </li>
@@ -264,7 +264,7 @@ defmodule CRCWeb.Components.SiteComponents do
                               href="/cocina"
                               class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                             >
-                              <.icon name="hero-fire" class="size-4 text-base-content/50" /> Cocina
+                              <.icon name="hero-fire" class="size-4 text-base-content/70" /> Cocina
                             </a>
                           </li>
                         <% end %>
@@ -274,7 +274,7 @@ defmodule CRCWeb.Components.SiteComponents do
                               href="/barra"
                               class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-base-200"
                             >
-                              <.icon name="hero-beaker" class="size-4 text-base-content/50" /> Barra
+                              <.icon name="hero-beaker" class="size-4 text-base-content/70" /> Barra
                             </a>
                           </li>
                         <% end %>
@@ -303,7 +303,7 @@ defmodule CRCWeb.Components.SiteComponents do
               <% else %>
                 <a
                   href="/iniciar-sesion"
-                  class="hidden md:inline-flex btn btn-sm btn-ghost text-base-content/60 hover:text-base-content"
+                  class="hidden md:inline-flex btn btn-sm btn-ghost text-base-content/70 hover:text-base-content"
                 >
                   Iniciar sesión
                 </a>
@@ -404,7 +404,7 @@ defmodule CRCWeb.Components.SiteComponents do
                 </div>
                 <div class="min-w-0">
                   <p class="text-sm font-semibold text-base-content truncate">{@current_user.name}</p>
-                  <p class="text-xs text-base-content/50">
+                  <p class="text-xs text-base-content/70">
                     {if @current_user.role == "admin", do: "Administrador", else: "Empleado"}
                     {if @current_user.stations != [],
                       do: " · #{Enum.join(@current_user.stations, " · ")}",
@@ -568,7 +568,7 @@ defmodule CRCWeb.Components.SiteComponents do
                 <a
                   href="/iniciar-sesion"
                   phx-click="close_nav"
-                  class="flex items-center justify-center py-2.5 px-2 text-sm text-base-content/60 hover:text-base-content rounded-lg hover:bg-base-200 transition-colors"
+                  class="flex items-center justify-center py-2.5 px-2 text-sm text-base-content/70 hover:text-base-content rounded-lg hover:bg-base-200 transition-colors"
                 >
                   Iniciar sesión
                 </a>
@@ -592,7 +592,7 @@ defmodule CRCWeb.Components.SiteComponents do
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
           <a href="/" aria-label="Café Raíces y Cultura — Inicio">
             <img
-              src="/images/brand/logo-white.png"
+              src="/images/brand/logo-white.webp"
               alt="Café Raíces y Cultura"
               class="h-12 w-auto opacity-90 hover:opacity-100 transition-opacity"
             />
@@ -608,12 +608,12 @@ defmodule CRCWeb.Components.SiteComponents do
           </nav>
 
           <div class="flex items-center gap-4">
-            <p class="text-xs text-neutral-content/50">
+            <p class="text-xs text-neutral-content/75">
               © {Date.utc_today().year} Café Raíces y Cultura
             </p>
             <a
               href="/iniciar-sesion"
-              class="text-xs text-neutral-content/30 hover:text-neutral-content/50 transition-colors"
+              class="text-xs text-neutral-content/75 hover:text-neutral-content transition-colors"
             >
               Acceso personal
             </a>
@@ -621,13 +621,13 @@ defmodule CRCWeb.Components.SiteComponents do
         </div>
 
         <div class="mt-6 pt-5 border-t border-neutral-content/10 text-center">
-          <p class="text-xs text-neutral-content/30">
-            Desarrollado por{" "}
+          <p class="text-xs text-neutral-content/75">
+            Desarrollado y soportado por{" "}
             <a
               href="https://livecraft.com.mx/"
               target="_blank"
               rel="noopener noreferrer"
-              class="hover:text-neutral-content/60 transition-colors underline underline-offset-2"
+              class="hover:text-neutral-content transition-colors underline underline-offset-2"
             >
               LiveCraft
             </a>
@@ -680,7 +680,7 @@ defmodule CRCWeb.Components.SiteComponents do
         <% else %>
           <span class="absolute inset-0 flex items-center justify-center">
             <img
-              src="/images/brand/logo-color.png"
+              src="/images/brand/logo-color.webp"
               alt=""
               class="h-10 sm:h-12 w-auto opacity-15"
             />
@@ -701,7 +701,7 @@ defmodule CRCWeb.Components.SiteComponents do
         <h3 class="text-sm sm:text-base font-bold text-base-content leading-snug group-hover:text-primary transition-colors">
           {@item.name}
         </h3>
-        <span class="inline-flex items-center gap-1 text-xs text-base-content/40 group-hover:text-primary/70 transition-colors">
+        <span class="inline-flex items-center gap-1 text-xs text-base-content/65 group-hover:text-primary/70 transition-colors">
           Ver detalle <.icon name="hero-chevron-right" class="size-3" />
         </span>
       </div>
@@ -709,6 +709,8 @@ defmodule CRCWeb.Components.SiteComponents do
 
     <%!-- ── Detail modal ── --%>
     <div
+      role="dialog"
+      aria-modal="true"
       id={@modal_id}
       class="hidden fixed inset-0 z-50 items-center justify-center p-4"
       phx-window-keydown={
@@ -732,7 +734,7 @@ defmodule CRCWeb.Components.SiteComponents do
             />
           <% else %>
             <span class="absolute inset-0 flex items-center justify-center">
-              <img src="/images/brand/logo-color.png" alt="" class="h-14 w-auto opacity-15" />
+              <img src="/images/brand/logo-color.webp" alt="" class="h-14 w-auto opacity-15" />
             </span>
           <% end %>
           <button

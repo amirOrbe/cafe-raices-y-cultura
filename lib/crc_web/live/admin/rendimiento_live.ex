@@ -137,7 +137,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
         <%!-- Header --%>
         <div>
           <h1 class="text-2xl font-bold text-base-content">Rendimiento del personal</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">
+          <p class="text-sm text-base-content/70 mt-0.5">
             Tiempos de preparación, atención y rankings del período
           </p>
         </div>
@@ -177,7 +177,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
               <strong>Reconocimientos</strong>
               — notas positivas que los administradores pueden dejar a cualquier empleado. Se guardan con fecha y aparecen en el historial del empleado. No afectan ningún cálculo, son solo retroalimentación.
             </p>
-            <p class="text-base-content/40 italic">
+            <p class="text-base-content/65 italic">
               Solo aparecen datos de empleados con sesión iniciada que hayan atendido comandas en el período seleccionado.
             </p>
           </div>
@@ -200,10 +200,10 @@ defmodule CRCWeb.Admin.RendimientoLive do
         <%= if @station_stats == [] and @waiter_stats == [] do %>
           <.panel class="py-20 text-center">
             <.icon name="hero-chart-bar" class="size-12 text-base-content/20 mx-auto mb-3" />
-            <p class="text-base-content/50 text-sm">
+            <p class="text-base-content/70 text-sm">
               No hay datos de rendimiento para este período.
             </p>
-            <p class="text-base-content/30 text-xs mt-1">
+            <p class="text-base-content/65 text-xs mt-1">
               Los datos aparecen una vez que se cierran comandas con empleados identificados.
             </p>
           </.panel>
@@ -239,7 +239,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
                               <p class="text-sm font-bold text-success shrink-0">
                                 ${CRC.Utils.format_money(entry.revenue)}
                               </p>
-                              <p class="text-xs text-base-content/40 truncate">
+                              <p class="text-xs text-base-content/65 truncate">
                                 · {entry.order_count} comandas
                               </p>
                             </div>
@@ -280,14 +280,14 @@ defmodule CRCWeb.Admin.RendimientoLive do
                         <div class="flex-1 min-w-0">
                           <p class="text-sm font-medium text-base-content">{entry.name}</p>
                           <%= if entry.station && entry.station != "—" do %>
-                            <p class="text-xs text-base-content/40 truncate">{entry.station}</p>
+                            <p class="text-xs text-base-content/65 truncate">{entry.station}</p>
                           <% end %>
                           <div class="flex items-center justify-between gap-1 mt-0.5">
                             <div class="flex items-center gap-1.5 min-w-0">
                               <p class="text-sm font-bold text-info shrink-0">
                                 {format_duration(entry.avg_secs)}
                               </p>
-                              <p class="text-xs text-base-content/40 truncate">
+                              <p class="text-xs text-base-content/65 truncate">
                                 · {entry.count} ítems
                               </p>
                             </div>
@@ -323,12 +323,12 @@ defmodule CRCWeb.Admin.RendimientoLive do
                   <span class="text-2xl shrink-0">{recognition_emoji(r.kind)}</span>
                   <div class="min-w-0">
                     <p class="text-sm font-semibold text-base-content truncate">{r.user.name}</p>
-                    <p class="text-xs text-base-content/50">{recognition_label(r.kind)}</p>
+                    <p class="text-xs text-base-content/70">{recognition_label(r.kind)}</p>
                     <%= if r.note do %>
                       <p class="text-xs text-base-content/70 mt-1 italic">"{r.note}"</p>
                     <% end %>
                     <%= if r.given_by do %>
-                      <p class="text-xs text-base-content/30 mt-1">— {r.given_by.name}</p>
+                      <p class="text-xs text-base-content/65 mt-1">— {r.given_by.name}</p>
                     <% end %>
                   </div>
                 </div>
@@ -346,7 +346,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
                 {length(@station_stats)} empleados
               </span>
             </div>
-            <p class="text-xs text-base-content/40 -mt-2">
+            <p class="text-xs text-base-content/65 -mt-2">
               Tiempo desde que el pedido llega a la estación hasta que se marca listo.
             </p>
             <.stat_grid
@@ -365,7 +365,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
               <h2 class="text-base font-semibold text-base-content">Meseros — Tiempo de servicio</h2>
               <span class="badge badge-sm badge-ghost shrink-0">{length(@waiter_stats)} meseros</span>
             </div>
-            <p class="text-xs text-base-content/40 -mt-2">
+            <p class="text-xs text-base-content/65 -mt-2">
               Tiempo total de la cuenta (apertura → cobro) y tiempo de recogida (platillo listo → servido).
             </p>
             <.stat_grid
@@ -379,7 +379,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
             <% has_pickup = Enum.any?(@waiter_stats, fn s -> s.pickup_count > 0 end) %>
             <%= if has_pickup do %>
               <div>
-                <p class="text-xs font-semibold text-base-content/60 uppercase tracking-wider mb-3">
+                <p class="text-xs font-semibold text-base-content/70 uppercase tracking-wider mb-3">
                   Tiempo de recogida (platillo listo → servido en mesa)
                 </p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -399,11 +399,11 @@ defmodule CRCWeb.Admin.RendimientoLive do
                       </div>
                       <div class="grid grid-cols-3 gap-1 text-center">
                         <div>
-                          <p class="text-xs text-base-content/40">Ítems</p>
+                          <p class="text-xs text-base-content/65">Ítems</p>
                           <p class="text-sm font-semibold">{stat.pickup_count}</p>
                         </div>
                         <div>
-                          <p class="text-xs text-base-content/40">Promedio</p>
+                          <p class="text-xs text-base-content/65">Promedio</p>
                           <p class={[
                             "text-sm font-bold",
                             if(pickup_overdue?, do: "text-error", else: "text-success")
@@ -412,8 +412,8 @@ defmodule CRCWeb.Admin.RendimientoLive do
                           </p>
                         </div>
                         <div>
-                          <p class="text-xs text-base-content/40">Rango</p>
-                          <p class="text-xs text-base-content/60">
+                          <p class="text-xs text-base-content/65">Rango</p>
+                          <p class="text-xs text-base-content/70">
                             {format_duration(stat.pickup_min)} – {format_duration(stat.pickup_max)}
                           </p>
                         </div>
@@ -437,7 +437,7 @@ defmodule CRCWeb.Admin.RendimientoLive do
             <span class="text-3xl">{recognition_emoji(modal.kind)}</span>
             <span class="inline-flex flex-col">
               <span class="font-bold text-base leading-tight">{recognition_label(modal.kind)}</span>
-              <span class="text-sm text-base-content/60 font-normal">para {modal.user.name}</span>
+              <span class="text-sm text-base-content/70 font-normal">para {modal.user.name}</span>
             </span>
           </span>
         </:title>
@@ -526,19 +526,19 @@ defmodule CRCWeb.Admin.RendimientoLive do
           <%!-- Metrics --%>
           <div class="grid grid-cols-3 gap-1 text-center">
             <div>
-              <p class="text-xs text-base-content/40">Total</p>
+              <p class="text-xs text-base-content/65">Total</p>
               <p class="text-sm font-semibold text-base-content">{stat.count}</p>
-              <p class="text-xs text-base-content/40">{@unit}</p>
+              <p class="text-xs text-base-content/65">{@unit}</p>
             </div>
             <div>
-              <p class="text-xs text-base-content/40">Promedio</p>
+              <p class="text-xs text-base-content/65">Promedio</p>
               <p class={["text-sm font-bold", if(overdue?, do: "text-error", else: "text-success")]}>
                 {format_duration(stat.avg)}
               </p>
             </div>
             <div>
-              <p class="text-xs text-base-content/40">Rango</p>
-              <p class="text-xs text-base-content/60">
+              <p class="text-xs text-base-content/65">Rango</p>
+              <p class="text-xs text-base-content/70">
                 {format_duration(stat.min)}–{format_duration(stat.max)}
               </p>
             </div>

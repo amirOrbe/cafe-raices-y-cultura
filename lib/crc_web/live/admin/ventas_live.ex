@@ -86,7 +86,7 @@ defmodule CRCWeb.Admin.VentasLive do
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 class="text-2xl font-bold text-base-content">Ventas</h1>
-            <p class="text-base-content/60 mt-1 text-sm">Resumen de comandas cerradas</p>
+            <p class="text-base-content/70 mt-1 text-sm">Resumen de comandas cerradas</p>
           </div>
           <.link navigate={~p"/admin/ventas/manual"} class="btn btn-outline btn-sm gap-2 shrink-0">
             <.icon name="hero-pencil-square" class="size-4" /> Venta manual
@@ -171,7 +171,7 @@ defmodule CRCWeb.Admin.VentasLive do
         <.panel class="p-6 space-y-4">
           <h2 class="font-semibold text-base-content">Por método de pago</h2>
           <%= if map_size(@summary.by_method) == 0 do %>
-            <p class="text-base-content/40 text-sm py-6 text-center">
+            <p class="text-base-content/65 text-sm py-6 text-center">
               Sin datos para este período.
             </p>
           <% else %>
@@ -193,7 +193,7 @@ defmodule CRCWeb.Admin.VentasLive do
                   </div>
                   <div class="text-right">
                     <span class="font-semibold text-base-content">${format_price(amount)}</span>
-                    <span class="text-base-content/40 text-xs ml-1">({pct}%)</span>
+                    <span class="text-base-content/65 text-xs ml-1">({pct}%)</span>
                   </div>
                 </div>
                 <div class="h-2 bg-base-200 rounded-full overflow-hidden">
@@ -213,7 +213,7 @@ defmodule CRCWeb.Admin.VentasLive do
             <h2 class="font-semibold text-base-content">Top platillos más vendidos</h2>
           </div>
           <%= if @top_items == [] do %>
-            <p class="text-base-content/40 text-sm py-8 text-center">
+            <p class="text-base-content/65 text-sm py-8 text-center">
               Sin datos para este período.
             </p>
           <% else %>
@@ -225,14 +225,14 @@ defmodule CRCWeb.Admin.VentasLive do
                     cond do
                       idx == 1 -> "text-accent"
                       idx <= 3 -> "text-secondary"
-                      true -> "text-base-content/25"
+                      true -> "text-base-content/70"
                     end
                   ]}>
                     {idx}
                   </span>
                   <span class="flex-1 text-sm text-base-content truncate">{name}</span>
                   <span class="text-sm font-bold text-base-content">{qty}</span>
-                  <span class="text-xs text-base-content/40">uds.</span>
+                  <span class="text-xs text-base-content/65">uds.</span>
                 </div>
               <% end %>
             </div>
@@ -271,7 +271,7 @@ defmodule CRCWeb.Admin.VentasLive do
             </div>
           <% end %>
 
-          <p class="text-xs text-base-content/40">
+          <p class="text-xs text-base-content/65">
             Basado en comandas cerradas. La barra roja indica promedio mayor a 15 min.
           </p>
         </.panel>
@@ -286,13 +286,13 @@ defmodule CRCWeb.Admin.VentasLive do
 
         <%= if @orders == [] do %>
           <.panel class="py-10 text-center">
-            <p class="text-base-content/40 text-sm">
+            <p class="text-base-content/65 text-sm">
               No hay comandas cerradas en este período.
             </p>
           </.panel>
         <% else %>
           <%= if length(@orders) > @max_orders_shown do %>
-            <p class="text-xs text-base-content/40">
+            <p class="text-xs text-base-content/65">
               Mostrando las {@max_orders_shown} comandas más recientes de {length(@orders)}. Usa un rango de fechas más corto para ver comandas específicas.
             </p>
           <% end %>
@@ -313,7 +313,7 @@ defmodule CRCWeb.Admin.VentasLive do
                   ${format_price(order.total || Decimal.new(0))}
                 </p>
               </div>
-              <div class="flex items-center justify-between gap-2 text-xs text-base-content/50">
+              <div class="flex items-center justify-between gap-2 text-xs text-base-content/70">
                 <.payment_badge method={order.payment_method} />
                 <span>{format_datetime(order.closed_at || order.inserted_at)}</span>
               </div>
@@ -351,7 +351,7 @@ defmodule CRCWeb.Admin.VentasLive do
                       <td>
                         <.payment_badge method={order.payment_method} />
                       </td>
-                      <td class="text-xs text-base-content/50">
+                      <td class="text-xs text-base-content/70">
                         {format_datetime(order.closed_at || order.inserted_at)}
                       </td>
                     </tr>
@@ -366,7 +366,7 @@ defmodule CRCWeb.Admin.VentasLive do
                     <td class="text-sm font-bold text-primary text-right px-4">
                       ${format_price(@summary.total_revenue)}
                     </td>
-                    <td colspan="2" class="text-xs text-base-content/40 px-4">
+                    <td colspan="2" class="text-xs text-base-content/65 px-4">
                       Ticket prom. ${format_price(@summary.avg_ticket)}
                     </td>
                   </tr>
@@ -391,8 +391,8 @@ defmodule CRCWeb.Admin.VentasLive do
   defp timing_row(%{stat: nil} = assigns) do
     ~H"""
     <div class="flex items-center gap-3 text-sm">
-      <span class="w-36 text-base-content/50 shrink-0">{@label}</span>
-      <span class="text-base-content/30 text-xs">Sin datos</span>
+      <span class="w-36 text-base-content/70 shrink-0">{@label}</span>
+      <span class="text-base-content/65 text-xs">Sin datos</span>
     </div>
     """
   end
@@ -406,7 +406,7 @@ defmodule CRCWeb.Admin.VentasLive do
 
     ~H"""
     <div class="flex items-center gap-3 text-sm">
-      <span class="w-36 text-base-content/60 shrink-0 text-xs">{@label}</span>
+      <span class="w-36 text-base-content/70 shrink-0 text-xs">{@label}</span>
       <div class="flex-1 h-2 bg-base-200 rounded-full overflow-hidden">
         <div
           class={[
@@ -426,7 +426,7 @@ defmodule CRCWeb.Admin.VentasLive do
             <.icon name="hero-exclamation-triangle" class="size-3 inline" />
           <% end %>
         </span>
-        <span class="text-base-content/40 text-xs ml-1">
+        <span class="text-base-content/65 text-xs ml-1">
           ({format_duration(@stat.min)} – {format_duration(@stat.max)})
         </span>
       </div>
@@ -449,7 +449,7 @@ defmodule CRCWeb.Admin.VentasLive do
   end
 
   defp payment_icon(assigns) do
-    ~H'<.icon name="hero-question-mark-circle" class="size-4 text-base-content/30" />'
+    ~H'<.icon name="hero-question-mark-circle" class="size-4 text-base-content/65" />'
   end
 
   attr :method, :string, default: nil

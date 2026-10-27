@@ -426,7 +426,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Platillos</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">
+          <p class="text-sm text-base-content/70 mt-0.5">
             {length(visible)} platillos {if @status_filter == :available,
               do: "disponibles",
               else: "no disponibles"}
@@ -484,7 +484,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
       <%!-- Margin legend --%>
       <details class="group rounded-xl border border-base-300 bg-base-100 text-sm shadow-sm">
-        <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium text-base-content/60 list-none select-none">
+        <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium text-base-content/70 list-none select-none">
           <.icon name="hero-information-circle" class="size-4 shrink-0 text-info" />
           <span class="flex-1 text-xs">¿Qué significa el % de margen?</span>
           <.icon
@@ -492,7 +492,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
             class="size-4 shrink-0 transition-transform group-open:rotate-180"
           />
         </summary>
-        <div class="px-4 pb-4 text-xs text-base-content/60 space-y-1.5 leading-relaxed">
+        <div class="px-4 pb-4 text-xs text-base-content/70 space-y-1.5 leading-relaxed">
           <p>
             El margen es <strong>(precio de venta − costo de ingredientes) / precio de venta × 100</strong>. Solo se calcula si el platillo tiene todos sus ingredientes con costo registrado.
           </p>
@@ -508,7 +508,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
       <div class="relative">
         <.icon
           name="hero-magnifying-glass"
-          class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/40 pointer-events-none"
+          class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/65 pointer-events-none"
         />
         <input
           type="search"
@@ -559,7 +559,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
       <div class="md:hidden flex flex-col gap-2">
         <%= if visible == [] do %>
           <.panel class="text-center py-12">
-            <p class="text-base-content/40 text-sm">
+            <p class="text-base-content/65 text-sm">
               {cond do
                 @status_filter == :unavailable && @filter_category == "all" ->
                   "No hay platillos ocultos."
@@ -605,7 +605,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   <% end %>
                 </div>
                 <%= if item.description do %>
-                  <p class="text-xs text-base-content/50 truncate mt-0.5">{item.description}</p>
+                  <p class="text-xs text-base-content/70 truncate mt-0.5">{item.description}</p>
                 <% end %>
                 <div class="flex items-center gap-2 mt-1.5 flex-wrap">
                   <span class="badge badge-xs badge-ghost">
@@ -646,6 +646,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
               <%!-- Actions --%>
               <div class="flex flex-col items-center gap-1 shrink-0">
                 <button
+                  aria-label="Editar"
                   class="btn btn-ghost btn-xs btn-circle"
                   phx-click="edit_item"
                   phx-value-id={item.id}
@@ -668,6 +669,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   />
                 </button>
                 <button
+                  aria-label="Eliminar"
                   class="btn btn-ghost btn-xs btn-circle text-error"
                   phx-click="delete_item"
                   phx-value-id={item.id}
@@ -680,7 +682,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
             </div>
             <%!-- Expand toggle --%>
             <button
-              class="w-full flex items-center justify-center gap-1 py-1.5 text-xs text-base-content/40 hover:text-primary border-t border-base-200 hover:bg-primary/5 transition-colors"
+              class="w-full flex items-center justify-center gap-1 py-1.5 text-xs text-base-content/65 hover:text-primary border-t border-base-200 hover:bg-primary/5 transition-colors"
               phx-click="toggle_expand"
               phx-value-id={item.id}
             >
@@ -740,7 +742,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                       <div class="min-w-0 flex-1">
                         <p class="font-medium text-sm text-base-content truncate">{item.name}</p>
                         <%= if item.description do %>
-                          <p class="text-xs text-base-content/50 truncate">{item.description}</p>
+                          <p class="text-xs text-base-content/70 truncate">{item.description}</p>
                         <% end %>
                         <%= if item.menu_item_ingredients == [] do %>
                           <span class="badge badge-xs badge-warning gap-0.5 mt-0.5 inline-flex">
@@ -749,7 +751,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                         <% end %>
                       </div>
                       <button
-                        class="btn btn-ghost btn-xs btn-circle shrink-0 text-base-content/30 hover:text-primary"
+                        class="btn btn-ghost btn-xs btn-circle shrink-0 text-base-content/65 hover:text-primary"
                         phx-click="toggle_expand"
                         phx-value-id={item.id}
                         title={if expanded, do: "Cerrar desglose", else: "Ver desglose de costos"}
@@ -770,7 +772,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   <td>
                     <p class="text-sm font-medium text-base-content">${format_price(item.price)}</p>
                     <%= if cost do %>
-                      <p class="text-xs text-base-content/45 mt-0.5">costo ${format_price(cost)}</p>
+                      <p class="text-xs text-base-content/65 mt-0.5">costo ${format_price(cost)}</p>
                     <% end %>
                   </td>
                   <td>
@@ -780,7 +782,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                         {margin}%
                       </span>
                     <% else %>
-                      <span class="text-base-content/30 text-sm">—</span>
+                      <span class="text-base-content/65 text-sm">—</span>
                     <% end %>
                   </td>
                   <td>
@@ -800,6 +802,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   <td>
                     <div class="flex items-center justify-end gap-1">
                       <button
+                        aria-label="Editar"
                         class="btn btn-ghost btn-xs btn-circle"
                         phx-click="edit_item"
                         phx-value-id={item.id}
@@ -822,6 +825,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                         />
                       </button>
                       <button
+                        aria-label="Eliminar"
                         class="btn btn-ghost btn-xs btn-circle text-error"
                         phx-click="delete_item"
                         phx-value-id={item.id}
@@ -845,7 +849,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
               <% end %>
               <%= if visible == [] do %>
                 <tr>
-                  <td colspan="7" class="text-center py-12 text-base-content/40 text-sm">
+                  <td colspan="7" class="text-center py-12 text-base-content/65 text-sm">
                     {cond do
                       @status_filter == :unavailable && @filter_category == "all" ->
                         "No hay platillos ocultos."
@@ -917,11 +921,11 @@ defmodule CRCWeb.Admin.PlatillosLive do
              doesn't gate a paginated wizard (all sections render at once below). --%>
         <div class="flex items-center gap-2 text-xs flex-wrap">
           <.step_link n={1} label="Información" target="item-modal-step-1" />
-          <.icon name="hero-chevron-right" class="size-3 text-base-content/30 shrink-0" />
+          <.icon name="hero-chevron-right" class="size-3 text-base-content/65 shrink-0" />
           <.step_link n={2} label="Precio y destino" target="item-modal-step-2" />
-          <.icon name="hero-chevron-right" class="size-3 text-base-content/30 shrink-0" />
+          <.icon name="hero-chevron-right" class="size-3 text-base-content/65 shrink-0" />
           <.step_link n={3} label="Ingredientes" target="item-modal-step-3" />
-          <.icon name="hero-chevron-right" class="size-3 text-base-content/30 shrink-0" />
+          <.icon name="hero-chevron-right" class="size-3 text-base-content/65 shrink-0" />
           <.step_link n={4} label="Extras opcionales" target="item-modal-step-4" />
         </div>
 
@@ -937,8 +941,8 @@ defmodule CRCWeb.Admin.PlatillosLive do
             id="item-modal-step-1"
             class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3"
           >
-            <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
-              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold">
+            <p class="text-xs font-semibold uppercase tracking-wider text-base-content/65 flex items-center gap-1.5">
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/70 text-[10px] font-bold">
                 1
               </span>
               Información básica
@@ -981,7 +985,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 </div>
                 <div>
                   <p class="text-sm font-medium text-base-content">Platillo destacado ⭐</p>
-                  <p class="text-xs text-base-content/40 mt-0.5">
+                  <p class="text-xs text-base-content/65 mt-0.5">
                     Aparece primero con una estrella en el menú.
                   </p>
                 </div>
@@ -999,7 +1003,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 </div>
                 <div>
                   <p class="text-sm font-medium text-base-content">Visible en el menú</p>
-                  <p class="text-xs text-base-content/40 mt-0.5">
+                  <p class="text-xs text-base-content/65 mt-0.5">
                     Los meseros pueden pedirlo en comandas.
                   </p>
                 </div>
@@ -1012,8 +1016,8 @@ defmodule CRCWeb.Admin.PlatillosLive do
             id="item-modal-step-2"
             class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3"
           >
-            <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40 flex items-center gap-1.5">
-              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold">
+            <p class="text-xs font-semibold uppercase tracking-wider text-base-content/65 flex items-center gap-1.5">
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/70 text-[10px] font-bold">
                 2
               </span>
               Precio y destino
@@ -1029,7 +1033,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 step="0.01"
                 min="0.01"
               />
-              <p class="text-xs text-base-content/40 mt-1">
+              <p class="text-xs text-base-content/65 mt-1">
                 Lo que el cliente paga. Aparece en el menú y en las comandas.
               </p>
             </div>
@@ -1052,7 +1056,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                     <span class="text-xl sm:text-3xl">🍳</span>
                     <div class="text-center">
                       <p class="font-semibold text-xs sm:text-sm text-base-content">Cocina</p>
-                      <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
+                      <p class="hidden sm:block text-xs text-base-content/70 mt-0.5">
                         Platillos, sandwiches, ensaladas…
                       </p>
                     </div>
@@ -1070,7 +1074,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                     <span class="text-xl sm:text-3xl">☕</span>
                     <div class="text-center">
                       <p class="font-semibold text-xs sm:text-sm text-base-content">Barra</p>
-                      <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
+                      <p class="hidden sm:block text-xs text-base-content/70 mt-0.5">
                         Bebidas, cafés, cócteles…
                       </p>
                     </div>
@@ -1088,7 +1092,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                     <span class="text-xl sm:text-3xl">🛍️</span>
                     <div class="text-center">
                       <p class="font-semibold text-xs sm:text-sm text-base-content">Retail</p>
-                      <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
+                      <p class="hidden sm:block text-xs text-base-content/70 mt-0.5">
                         Café en grano, merch, película… no se prepara
                       </p>
                     </div>
@@ -1102,7 +1106,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
               <div>
                 <label class="label pb-1.5">
                   <span class="label-text font-medium">Temperatura</span>
-                  <span class="label-text-alt text-base-content/40">¿Fría o caliente?</span>
+                  <span class="label-text-alt text-base-content/65">¿Fría o caliente?</span>
                 </label>
                 <div class="grid grid-cols-2 gap-2 sm:gap-3">
                   <label class="cursor-pointer">
@@ -1117,7 +1121,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                       <span class="text-xl sm:text-3xl">❄️</span>
                       <div class="text-center">
                         <p class="font-semibold text-xs sm:text-sm text-base-content">Fría</p>
-                        <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
+                        <p class="hidden sm:block text-xs text-base-content/70 mt-0.5">
                           Frapés, smoothies, aguas…
                         </p>
                       </div>
@@ -1135,7 +1139,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                       <span class="text-xl sm:text-3xl">☕</span>
                       <div class="text-center">
                         <p class="font-semibold text-xs sm:text-sm text-base-content">Caliente</p>
-                        <p class="hidden sm:block text-xs text-base-content/50 mt-0.5">
+                        <p class="hidden sm:block text-xs text-base-content/70 mt-0.5">
                           Cafés, tés, chocolates…
                         </p>
                       </div>
@@ -1149,7 +1153,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
           <%!-- ── Foto del platillo ───────────────────────────────────────────── --%>
           <div>
             <p class="text-sm font-medium text-base-content mb-2">
-              Foto del platillo <span class="text-base-content/40 font-normal">(opcional)</span>
+              Foto del platillo <span class="text-base-content/65 font-normal">(opcional)</span>
             </p>
 
             <%!-- Show current image when editing (unless user hit "remove") --%>
@@ -1161,7 +1165,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 />
                 <div class="flex-1 min-w-0 space-y-1">
                   <p class="text-sm font-medium text-base-content">Foto actual</p>
-                  <p class="text-xs text-base-content/50 break-all">{@current_img}</p>
+                  <p class="text-xs text-base-content/70 break-all">{@current_img}</p>
                   <button
                     type="button"
                     class="btn btn-xs btn-error btn-outline gap-1 mt-1"
@@ -1186,7 +1190,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   <p class="text-sm font-medium text-base-content">
                     Selecciona una foto del platillo
                   </p>
-                  <p class="text-xs text-base-content/40 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
+                  <p class="text-xs text-base-content/65 mt-0.5">JPG, PNG o WebP · Máx. 5 MB</p>
                 </div>
                 <.live_file_input upload={@uploads.photo} class="sr-only" />
               </label>
@@ -1206,6 +1210,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   </div>
                 </div>
                 <button
+                  aria-label="Cerrar"
                   type="button"
                   class="btn btn-ghost btn-xs btn-circle text-error shrink-0"
                   phx-click="cancel_upload"
@@ -1226,15 +1231,15 @@ defmodule CRCWeb.Admin.PlatillosLive do
             class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3"
           >
             <div class="flex items-center gap-1.5">
-              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/70 text-[10px] font-bold shrink-0">
                 3
               </span>
-              <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40">
+              <p class="text-xs font-semibold uppercase tracking-wider text-base-content/65">
                 Ingredientes de la receta
               </p>
               <span class="badge badge-xs badge-ghost">{length(@ingredients_draft)}</span>
             </div>
-            <p class="text-xs text-base-content/40 leading-relaxed">
+            <p class="text-xs text-base-content/65 leading-relaxed">
               Define qué insumos usa este platillo y en qué cantidad <strong>por porción</strong>.
               El sistema descuenta ese stock automáticamente cada vez que se envía a cocina o barra,
               y calcula el costo de producción y el margen de ganancia que ves en la lista.
@@ -1247,10 +1252,11 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   <div class="flex items-center justify-between py-1.5 px-3 bg-base-100 border border-base-300 rounded-lg">
                     <span class="text-sm font-medium text-base-content">{ing.product_name}</span>
                     <div class="flex items-center gap-3">
-                      <span class="text-xs font-mono text-base-content/60">
+                      <span class="text-xs font-mono text-base-content/70">
                         {format_qty(ing.quantity)} {unit_abbr(ing.unit)}
                       </span>
                       <button
+                        aria-label="Quitar ingrediente"
                         type="button"
                         class="btn btn-ghost btn-xs text-error p-0"
                         phx-click="remove_ingredient"
@@ -1321,7 +1327,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
             </div>
 
             <%= if @available_products == [] do %>
-              <p class="text-xs text-base-content/50">
+              <p class="text-xs text-base-content/70">
                 No hay insumos disponibles. Crea insumos en <a
                   href="/admin/insumos"
                   class="link link-primary"
@@ -1337,15 +1343,15 @@ defmodule CRCWeb.Admin.PlatillosLive do
             class="rounded-xl border border-base-300 bg-base-200/40 p-3 sm:p-4 space-y-3"
           >
             <div class="flex items-center gap-1.5">
-              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/50 text-[10px] font-bold shrink-0">
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-base-300 text-base-content/70 text-[10px] font-bold shrink-0">
                 4
               </span>
-              <p class="text-xs font-semibold uppercase tracking-wider text-base-content/40">
+              <p class="text-xs font-semibold uppercase tracking-wider text-base-content/65">
                 Extras opcionales
               </p>
               <span class="badge badge-xs badge-ghost">{length(@optional_extras_draft)}</span>
             </div>
-            <p class="text-xs text-base-content/40 leading-relaxed">
+            <p class="text-xs text-base-content/65 leading-relaxed">
               Insumos que el cliente puede pedir aparte, pero que <strong>no forman parte de la receta base</strong>.
               Solo se descuentan del stock si el mesero los agrega a la comanda.
               El precio es opcional; déjalo en 0 si no tienen cargo extra.
@@ -1358,7 +1364,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   <div class="flex items-center justify-between py-1.5 px-3 bg-base-100 border border-base-300 rounded-lg">
                     <span class="text-sm font-medium text-base-content">{e.product_name}</span>
                     <div class="flex items-center gap-3">
-                      <span class="text-xs font-mono text-base-content/60">
+                      <span class="text-xs font-mono text-base-content/70">
                         {format_qty(e.portion_quantity)} {unit_abbr(e.unit)}
                       </span>
                       <%= if e.sale_price && Decimal.compare(e.sale_price, Decimal.new(0)) == :gt do %>
@@ -1369,6 +1375,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                         <span class="badge badge-xs badge-ghost">Sin cargo</span>
                       <% end %>
                       <button
+                        aria-label="Quitar extra opcional"
                         type="button"
                         class="btn btn-ghost btn-xs text-error p-0"
                         phx-click="remove_optional_extra"
@@ -1478,7 +1485,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
 
     ~H"""
     <div class="px-4 py-3 space-y-2.5">
-      <p class="text-[10px] font-bold uppercase tracking-wider text-base-content/30">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-base-content/65">
         Desglose de costos
       </p>
 
@@ -1497,7 +1504,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
       <% else %>
         <table class="w-full text-xs border-collapse">
           <thead>
-            <tr class="text-base-content/30 text-[10px] uppercase border-b border-base-200">
+            <tr class="text-base-content/65 text-[10px] uppercase border-b border-base-200">
               <th class="text-left py-1 pr-2 font-semibold">Ingrediente</th>
               <th class="text-right py-1 px-2 font-semibold">Cantidad</th>
               <th class="text-right py-1 px-2 font-semibold">Costo/u</th>
@@ -1510,12 +1517,12 @@ defmodule CRCWeb.Admin.PlatillosLive do
                 <td class="py-1 pr-2 text-base-content/70 font-medium">
                   {mii.product && mii.product.name}
                 </td>
-                <td class="py-1 px-2 text-right font-mono text-base-content/60">
+                <td class="py-1 px-2 text-right font-mono text-base-content/70">
                   {format_qty(mii.quantity)} {mii.product && unit_abbr(mii.product.unit)}
                 </td>
                 <td class="py-1 px-2 text-right font-mono">
                   <%= if mii.product && mii.product.net_cost do %>
-                    <span class="text-base-content/60">${format_money(mii.product.net_cost)}</span>
+                    <span class="text-base-content/70">${format_money(mii.product.net_cost)}</span>
                   <% else %>
                     <span class="text-warning text-[10px] font-medium">Sin costo</span>
                   <% end %>
@@ -1524,7 +1531,7 @@ defmodule CRCWeb.Admin.PlatillosLive do
                   <%= if mii.product && mii.product.net_cost do %>
                     <span class="text-error">${format_money(ingredient_line_cost(mii))}</span>
                   <% else %>
-                    <span class="text-base-content/30">—</span>
+                    <span class="text-base-content/65">—</span>
                   <% end %>
                 </td>
               </tr>
@@ -1535,19 +1542,19 @@ defmodule CRCWeb.Admin.PlatillosLive do
         <%!-- Summary bar --%>
         <% price_d = Decimal.new("#{@item.price}") %>
         <div class="flex items-center gap-x-4 gap-y-1 flex-wrap pt-1.5 text-xs border-t border-base-200">
-          <span class="text-base-content/50">
+          <span class="text-base-content/70">
             Costo:
             <strong class="text-error font-mono">
               {if @cost, do: "$#{format_money(@cost)}", else: "—"}
             </strong>
           </span>
-          <span class="text-base-content/50">
+          <span class="text-base-content/70">
             Venta: <strong class="font-mono text-base-content">${format_price(@item.price)}</strong>
           </span>
           <%= if @cost do %>
             <% profit = Decimal.sub(price_d, @cost) %>
             <% margin = item_margin(@item.price, @cost) %>
-            <span class="text-base-content/50">
+            <span class="text-base-content/70">
               Ganancia:
               <strong class={"font-mono #{if margin >= 60, do: "text-success", else: if(margin >= 35, do: "text-warning", else: "text-error")}"}>
                 ${format_money(profit)}

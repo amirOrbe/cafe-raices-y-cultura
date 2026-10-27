@@ -151,7 +151,7 @@ defmodule CRCWeb.Admin.MesasLive do
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold text-base-content">Distribución de mesas</h1>
-          <p class="text-sm text-base-content/50 mt-0.5">
+          <p class="text-sm text-base-content/70 mt-0.5">
             {length(@tables)} mesa{if length(@tables) != 1, do: "s"} · Arrastra para reposicionar
           </p>
         </div>
@@ -173,8 +173,8 @@ defmodule CRCWeb.Admin.MesasLive do
             <%!-- Empty state overlay --%>
             <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none">
               <.icon name="hero-table-cells" class="size-12 text-base-content/15" />
-              <p class="text-base-content/40 text-sm font-medium">Aún no hay mesas</p>
-              <p class="text-base-content/30 text-xs">Usa el botón "Nueva mesa" para agregar</p>
+              <p class="text-base-content/65 text-sm font-medium">Aún no hay mesas</p>
+              <p class="text-base-content/65 text-xs">Usa el botón "Nueva mesa" para agregar</p>
             </div>
           <% end %>
 
@@ -186,6 +186,7 @@ defmodule CRCWeb.Admin.MesasLive do
             >
               <%!-- Edit button (visible on hover / tap) --%>
               <button
+                aria-label="Editar mesa"
                 data-no-drag
                 phx-click="edit_table"
                 phx-value-id={table.id}
@@ -193,7 +194,7 @@ defmodule CRCWeb.Admin.MesasLive do
                        flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Editar mesa"
               >
-                <.icon name="hero-pencil-square" class="size-3 text-base-content/60" />
+                <.icon name="hero-pencil-square" class="size-3 text-base-content/70" />
               </button>
 
               <%!-- Table + chairs --%>
@@ -202,7 +203,7 @@ defmodule CRCWeb.Admin.MesasLive do
               chip_cls =
                 if active,
                   do: "bg-primary text-primary-content border-primary/40",
-                  else: "bg-base-200 text-base-content/40 border-base-300"
+                  else: "bg-base-200 text-base-content/65 border-base-300"
 
               chair_cls = if active, do: "bg-primary/55", else: "bg-base-300" %>
               <% {ch_top, ch_bot, ch_left, ch_right} = chair_distribution(table.capacity) %>
@@ -249,7 +250,7 @@ defmodule CRCWeb.Admin.MesasLive do
         </div>
 
         <%!-- Legend --%>
-        <div class="px-5 py-3 border-t border-base-200 flex flex-wrap items-center gap-4 text-xs text-base-content/50">
+        <div class="px-5 py-3 border-t border-base-200 flex flex-wrap items-center gap-4 text-xs text-base-content/70">
           <span class="flex items-center gap-1.5">
             <span class="size-3 rounded bg-primary inline-block" /> Activa
           </span>
@@ -263,12 +264,12 @@ defmodule CRCWeb.Admin.MesasLive do
       <%!-- Table list — accessible fallback + mobile --%>
       <.panel class="overflow-hidden">
         <div class="px-5 py-3 border-b border-base-200 flex items-center gap-2">
-          <.icon name="hero-list-bullet" class="size-4 text-base-content/40" />
+          <.icon name="hero-list-bullet" class="size-4 text-base-content/65" />
           <h3 class="font-semibold text-sm text-base-content">Lista de mesas</h3>
         </div>
 
         <%= if @tables == [] do %>
-          <div class="py-10 text-center text-sm text-base-content/40">
+          <div class="py-10 text-center text-sm text-base-content/65">
             Sin mesas registradas
           </div>
         <% else %>
@@ -291,7 +292,7 @@ defmodule CRCWeb.Admin.MesasLive do
                   >
                     <td class="font-bold text-base-content">{table.number}</td>
                     <td class="text-base-content/70">{table.label || "—"}</td>
-                    <td class="text-center text-base-content/60">{table.capacity || "—"}</td>
+                    <td class="text-center text-base-content/70">{table.capacity || "—"}</td>
                     <td class="text-center">
                       <.admin_badge variant={if table.is_active, do: :success, else: :ghost}>
                         {if table.is_active, do: "Activa", else: "Inactiva"}
@@ -323,7 +324,7 @@ defmodule CRCWeb.Admin.MesasLive do
                   "size-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0",
                   if(table.is_active,
                     do: "bg-primary text-primary-content",
-                    else: "bg-base-200 text-base-content/40"
+                    else: "bg-base-200 text-base-content/65"
                   )
                 ]}>
                   {table.number}
@@ -332,12 +333,13 @@ defmodule CRCWeb.Admin.MesasLive do
                   <p class="text-sm font-semibold text-base-content">
                     Mesa {table.number}{if table.label && table.label != "", do: " · #{table.label}"}
                   </p>
-                  <p class="text-xs text-base-content/50">
+                  <p class="text-xs text-base-content/70">
                     {if table.capacity, do: "#{table.capacity} personas · ", else: ""}
                     {if table.is_active, do: "Activa", else: "Inactiva"}
                   </p>
                 </div>
                 <button
+                  aria-label="Editar"
                   class="btn btn-xs btn-ghost shrink-0"
                   phx-click="edit_table"
                   phx-value-id={table.id}

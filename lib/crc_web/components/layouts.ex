@@ -104,6 +104,7 @@ defmodule CRCWeb.Layouts do
 
         <div class="flex items-center gap-2 sm:gap-3">
           <.link
+            aria-label="Ver sitio"
             navigate="/"
             class="p-2 rounded-lg hover:bg-primary-content/15 transition-colors"
             title="Ver sitio"
@@ -114,6 +115,7 @@ defmodule CRCWeb.Layouts do
             <input type="hidden" name="_method" value="delete" />
             <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
             <button
+              aria-label="Cerrar sesión"
               type="submit"
               class="p-2 rounded-lg hover:bg-primary-content/15 transition-colors"
               title="Cerrar sesión"
@@ -189,6 +191,7 @@ defmodule CRCWeb.Layouts do
         class="flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="system"
+        aria-label="Tema del sistema"
       >
         <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
@@ -197,6 +200,7 @@ defmodule CRCWeb.Layouts do
         class="flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="cafe-light"
+        aria-label="Tema claro"
       >
         <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
@@ -205,6 +209,7 @@ defmodule CRCWeb.Layouts do
         class="flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="cafe-dark"
+        aria-label="Tema oscuro"
       >
         <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>

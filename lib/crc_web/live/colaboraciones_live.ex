@@ -111,9 +111,6 @@ defmodule CRCWeb.ColaboracionesLive do
         <%!-- ── Hero ────────────────────────────────────────────────────── --%>
         <div class="bg-primary text-primary-content py-14 sm:py-20">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <span class="inline-block text-primary-content/70 font-semibold text-sm uppercase tracking-widest mb-3">
-              Comunidad & Cultura
-            </span>
             <h1 class="text-4xl sm:text-5xl font-bold mb-4">Colaboraciones</h1>
             <p class="text-primary-content/80 text-base sm:text-xl max-w-2xl mx-auto">
               CRC nació como punto de encuentro. Músicos, poetas, baristas y artistas
@@ -128,10 +125,10 @@ defmodule CRCWeb.ColaboracionesLive do
           <section class="py-10 sm:py-14 bg-success/10 border-b border-success/20">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div class="flex items-center gap-3 mb-6">
-                <span class="inline-flex items-center gap-1.5 bg-success text-success-content font-bold text-xs uppercase tracking-widest px-3 py-1.5 rounded-full animate-pulse">
+                <span class="inline-flex items-center gap-1.5 bg-success text-success-content font-bold text-xs uppercase tracking-widest px-3 py-1.5 rounded-full motion-safe:animate-pulse">
                   <span class="inline-block w-2 h-2 rounded-full bg-success-content"></span> EN VIVO
                 </span>
-                <span class="text-sm text-base-content/60">Sucediendo ahora</span>
+                <span class="text-sm text-base-content/70">Sucediendo ahora</span>
               </div>
 
               <div class="bg-base-100 rounded-2xl border border-success/30 shadow-sm p-6 sm:p-8 max-w-3xl">
@@ -139,7 +136,7 @@ defmodule CRCWeb.ColaboracionesLive do
                   <%= if @current_event.event_type do %>
                     <span class="badge badge-sm badge-ghost">{@current_event.event_type.name}</span>
                   <% end %>
-                  <span class="text-sm text-base-content/60 font-medium">
+                  <span class="text-sm text-base-content/70 font-medium">
                     {format_time(@current_event.start_time)} – {format_time(@current_event.end_time)}
                   </span>
                 </div>
@@ -170,9 +167,6 @@ defmodule CRCWeb.ColaboracionesLive do
             <%!-- Header: title + month navigation --%>
             <div class="flex flex-wrap items-start justify-between gap-4 mb-8">
               <div>
-                <span class="inline-block bg-accent/15 text-accent font-semibold text-xs uppercase tracking-widest px-3 py-1 rounded-full mb-2">
-                  Agenda
-                </span>
                 <h2 class="text-2xl sm:text-3xl font-bold text-base-content">
                   Este mes en CRC
                 </h2>
@@ -203,7 +197,7 @@ defmodule CRCWeb.ColaboracionesLive do
             <div class="grid grid-cols-7 gap-px bg-base-300 rounded-2xl overflow-hidden border border-base-300">
               <%!-- Week day headers --%>
               <%= for abbr <- ~w(Do Lu Ma Mi Ju Vi Sá) do %>
-                <div class="bg-base-200 text-center py-2 sm:py-3 text-[10px] sm:text-xs font-bold text-base-content/50 uppercase tracking-wide">
+                <div class="bg-base-200 text-center py-2 sm:py-3 text-[10px] sm:text-xs font-bold text-base-content/70 uppercase tracking-wide">
                   {abbr}
                 </div>
               <% end %>
@@ -242,7 +236,7 @@ defmodule CRCWeb.ColaboracionesLive do
                         cond do
                           is_today? -> "bg-primary text-primary-content font-bold"
                           selected? -> "text-accent font-bold"
-                          past? -> "text-base-content/25"
+                          past? -> "text-base-content/70"
                           true -> "text-base-content/70"
                         end
                       ]}>
@@ -266,7 +260,7 @@ defmodule CRCWeb.ColaboracionesLive do
                           </div>
                         <% end %>
                         <%= if length(day_events) > 3 do %>
-                          <span class="text-[8px] leading-tight text-base-content/40 self-center">
+                          <span class="text-[8px] leading-tight text-base-content/65 self-center">
                             +{length(day_events) - 3}
                           </span>
                         <% end %>
@@ -278,7 +272,7 @@ defmodule CRCWeb.ColaboracionesLive do
                           <div class={[
                             "text-[10px] leading-snug rounded px-1 py-0.5 truncate font-medium",
                             cond do
-                              past? -> "bg-base-300 text-base-content/35"
+                              past? -> "bg-base-300 text-base-content/65"
                               is_today? -> "bg-accent/20 text-accent"
                               true -> "bg-primary/15 text-primary"
                             end
@@ -287,7 +281,7 @@ defmodule CRCWeb.ColaboracionesLive do
                           </div>
                         <% end %>
                         <%= if length(day_events) > 2 do %>
-                          <div class="text-[10px] text-base-content/35 pl-1">
+                          <div class="text-[10px] text-base-content/65 pl-1">
                             +{length(day_events) - 2} más
                           </div>
                         <% end %>
@@ -300,7 +294,7 @@ defmodule CRCWeb.ColaboracionesLive do
 
             <%!-- Empty month state --%>
             <%= if @cal_events == [] do %>
-              <div class="mt-8 text-center py-12 text-base-content/40">
+              <div class="mt-8 text-center py-12 text-base-content/65">
                 <.icon name="hero-calendar" class="size-12 mx-auto mb-3 opacity-30" />
                 <p class="font-medium">Sin eventos para este mes</p>
                 <p class="text-sm mt-1">Navega a otro mes o vuelve pronto.</p>
@@ -337,7 +331,7 @@ defmodule CRCWeb.ColaboracionesLive do
                           <%= if event.event_type do %>
                             <span class="badge badge-sm badge-ghost">{event.event_type.name}</span>
                           <% end %>
-                          <span class="text-sm font-semibold text-accent">
+                          <span class="text-sm font-semibold text-secondary">
                             {format_time(event.start_time)} – {format_time(event.end_time)}
                           </span>
                         </div>
@@ -349,7 +343,7 @@ defmodule CRCWeb.ColaboracionesLive do
 
                         <%!-- Description --%>
                         <%= if event.description do %>
-                          <p class="text-sm sm:text-base text-base-content/60 leading-relaxed mb-4 break-words">
+                          <p class="text-sm sm:text-base text-base-content/70 leading-relaxed mb-4 break-words">
                             {event.description}
                           </p>
                         <% end %>
@@ -381,7 +375,7 @@ defmodule CRCWeb.ColaboracionesLive do
                         <%!-- Photo carousel --%>
                         <%= if event.event_photos != [] do %>
                           <div class="pt-4 border-t border-base-300 mt-3">
-                            <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-3">
+                            <p class="text-xs font-semibold text-base-content/65 uppercase tracking-wider mb-3">
                               Galería
                               <span class="font-normal normal-case">
                                 · {length(event.event_photos)} {if length(event.event_photos) == 1,

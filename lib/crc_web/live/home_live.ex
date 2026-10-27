@@ -137,7 +137,7 @@ defmodule CRCWeb.HomeLive do
     ~H"""
     <section
       id="inicio"
-      class="relative pt-16 h-64 sm:h-80 md:h-[500px] lg:h-[600px] overflow-hidden"
+      class="relative pt-16 h-80 md:h-[500px] lg:h-[600px] overflow-hidden"
       phx-hook="CarouselAutoplay"
       data-autoplay={to_string(@autoplay)}
       aria-roledescription="carrusel"
@@ -164,7 +164,7 @@ defmodule CRCWeb.HomeLive do
             </div>
             <div
               :if={photo.caption}
-              class="absolute bottom-14 md:bottom-16 left-0 right-0 text-center px-4"
+              class="hidden sm:block absolute bottom-16 left-0 right-0 text-center px-4"
             >
               <p class="text-white text-base sm:text-lg md:text-2xl font-medium drop-shadow-lg">
                 {photo.caption}
@@ -221,12 +221,13 @@ defmodule CRCWeb.HomeLive do
       </div>
 
       <!-- Headline overlay -->
-      <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 z-20 text-center px-16 pointer-events-none">
+      <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 z-20 text-center px-16 sm:px-20 pointer-events-none">
         <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white drop-shadow-xl leading-tight text-balance">
           Café Raíces y Cultura
         </h1>
         <p class="mt-2 text-sm sm:text-base md:text-lg text-white drop-shadow">
-          Santa María la Ribera · Ciudad de México
+          Santa María la Ribera ·
+          <span class="sm:hidden">CDMX</span><span class="hidden sm:inline">Ciudad de México</span>
         </p>
       </div>
     </section>

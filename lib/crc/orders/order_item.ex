@@ -19,6 +19,8 @@ defmodule CRC.Orders.OrderItem do
     field :sent_at, :utc_datetime
     field :ready_at, :utc_datetime
     field :served_at, :utc_datetime
+    # Set when a barista claims the item ("Preparar"); status stays "sent"
+    field :started_at, :utc_datetime
 
     # When this item belongs to a package combo, the package price share (overrides menu_item.price for total)
     field :unit_price, :decimal
@@ -31,6 +33,8 @@ defmodule CRC.Orders.OrderItem do
     belongs_to :product, Product
     # Kitchen/barra staff who marked this item ready (nullable)
     belongs_to :marked_ready_by, CRC.Accounts.User, foreign_key: :marked_ready_by_id
+    # Barista who is preparing this item right now (nullable)
+    belongs_to :started_by, CRC.Accounts.User, foreign_key: :started_by_id
     # Waiter who delivered this item to the table (nullable)
     belongs_to :served_by, CRC.Accounts.User, foreign_key: :served_by_id
 

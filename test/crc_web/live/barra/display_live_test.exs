@@ -2,6 +2,7 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
   use CRCWeb.ConnCase, async: true
 
   import Phoenix.LiveViewTest
+  import Ecto.Query, only: [from: 2]
 
   alias CRC.Accounts.User
   alias CRC.Orders
@@ -477,6 +478,235 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       reloaded_food = CRC.Repo.get!(CRC.Orders.OrderItem, food_item.id)
       assert reloaded_drink.status == "ready"
       assert reloaded_food.status == "sent"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Temperature tabs (Calientes / Frías) and "Preparar" claims
+  # ---------------------------------------------------------------------------
+
+  defp insert_typed_drink(name, barra_type) do
+    {:ok, item} =
+      Catalog.create_menu_item(%{
+        name: name,
+        price: "60.00",
+        category_id: insert_category().id,
+        destination: "barra",
+        barra_type: barra_type
+      })
+
+    item
+  end
+
+  defp sent_order_with(name, menu_items) do
+    order = insert_order(%{customer_name: name, status: "sent"})
+    items = for mi <- menu_items, do: insert_order_item(order.id, mi.id, %{status: "sent"})
+    {order, items}
+  end
+
+  describe "temperature tabs" do
+    test "shows only the selected tab's drinks", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      sent_order_with("Mesa Café", [insert_typed_drink("Capuchino Tab", "caliente")])
+      sent_order_with("Mesa Frappé", [insert_typed_drink("Frappé Tab", "fria")])
+
+      {:ok, _lv, html} = live(conn, "/barra?tipo=caliente")
+      assert html =~ "Capuchino Tab"
+      refute html =~ "Frappé Tab"
+
+      {:ok, _lv, html} = live(conn, "/barra?tipo=fria")
+      assert html =~ "Frappé Tab"
+      refute html =~ "Capuchino Tab"
+    end
+
+    test "without ?tipo opens the first tab that has pending drinks", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      sent_order_with("Solo Frías", [insert_typed_drink("Limonada Tab", "fria")])
+
+      {:ok, _lv, html} = live(conn, "/barra")
+      assert html =~ "Limonada Tab"
+    end
+
+    test "an unpinned tab follows new drinks; a pinned one stays put", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      {:ok, free_lv, _} = live(conn, "/barra")
+      {:ok, pinned_lv, _} = live(conn, "/barra?tipo=caliente")
+
+      {order, _} = sent_order_with("Llega Fría", [insert_typed_drink("Malteada Tab", "fria")])
+      Phoenix.PubSub.broadcast(CRC.PubSub, "orders", {:order_updated, order.id})
+
+      assert render(free_lv) =~ "Malteada Tab"
+      refute render(pinned_lv) =~ "Malteada Tab"
+      assert render(pinned_lv) =~ "Nada pendiente en esta pestaña"
+    end
+  end
+
+  describe "Preparar (claim) / Soltar" do
+    test "claiming shows who is preparing and swaps Preparar for Soltar", %{conn: conn} do
+      {conn, user} = auth_conn(conn)
+
+      {_order, [item]} =
+        sent_order_with("Mesa Claim", [insert_typed_drink("Latte Claim", "caliente")])
+
+      {:ok, lv, html} = live(conn, "/barra?tipo=caliente")
+      assert html =~ "Preparar"
+
+      html = render_click(lv, "start_items", %{"ids" => to_string(item.id)})
+      assert html =~ "Tú estás preparando"
+      assert html =~ "Soltar"
+      assert CRC.Repo.get!(CRC.Orders.OrderItem, item.id).started_by_id == user.id
+
+      html = render_click(lv, "release_items", %{"ids" => to_string(item.id)})
+      refute html =~ "preparando"
+      assert CRC.Repo.get!(CRC.Orders.OrderItem, item.id).started_by_id == nil
+    end
+
+    test "a drink another barista already took can't be claimed again", %{conn: conn} do
+      {conn, _me} = auth_conn(conn)
+      other = insert_user(%{name: "Barista Luis"})
+
+      {_order, [item]} =
+        sent_order_with("Mesa Ocupada", [insert_typed_drink("Moka Claim", "caliente")])
+
+      {:ok, 1} = Orders.start_items([item.id], other.id)
+
+      {:ok, lv, html} = live(conn, "/barra?tipo=caliente")
+      assert html =~ "Barista Luis preparando"
+      refute html =~ "⏳ Preparar"
+
+      html = render_click(lv, "start_items", %{"ids" => to_string(item.id)})
+      assert html =~ "Otro barista ya las está preparando"
+      assert CRC.Repo.get!(CRC.Orders.OrderItem, item.id).started_by_id == other.id
+    end
+  end
+
+  describe "per-drink claim (Tomar) and protection" do
+    test "Tomar claims a single drink so a big comanda can be split", %{conn: conn} do
+      {conn, user} = auth_conn(conn)
+
+      {_order, [a, b]} =
+        sent_order_with("Mesa Grande", [
+          insert_typed_drink("Latte Split", "caliente"),
+          insert_typed_drink("Moka Split", "caliente")
+        ])
+
+      {:ok, lv, _} = live(conn, "/barra?tipo=caliente")
+      html = render_click(lv, "start_items", %{"ids" => to_string(a.id)})
+
+      assert CRC.Repo.get!(CRC.Orders.OrderItem, a.id).started_by_id == user.id
+      assert CRC.Repo.get!(CRC.Orders.OrderItem, b.id).started_by_id == nil
+      # The other drink is still free for someone else
+      assert html =~ "Tomar"
+    end
+
+    test "another barista's drink shows their name instead of Listo and can't be marked",
+         %{conn: conn} do
+      {conn, _me} = auth_conn(conn)
+      other = insert_user(%{name: "Barista Ana"})
+
+      {_order, [item]} =
+        sent_order_with("Mesa Ana", [insert_typed_drink("Chai Ana", "caliente")])
+
+      {:ok, 1} = Orders.start_items([item.id], other.id)
+      {:ok, lv, _} = live(conn, "/barra?tipo=caliente")
+
+      refute has_element?(lv, ~s(button[phx-click="mark_item_ready"][phx-value-id="#{item.id}"]))
+
+      # A stale screen can still send it: the server refuses
+      html = render_click(lv, "mark_item_ready", %{"id" => to_string(item.id)})
+      assert html =~ "Barista Ana la está preparando"
+      assert CRC.Repo.get!(CRC.Orders.OrderItem, item.id).status == "sent"
+    end
+
+    test "Todo listo on someone else's drinks asks for a second tap", %{conn: conn} do
+      {conn, _me} = auth_conn(conn)
+      other = insert_user(%{name: "Barista Ana"})
+
+      {order, [item]} =
+        sent_order_with("Mesa Confirmar", [insert_typed_drink("Flat White", "caliente")])
+
+      {:ok, 1} = Orders.start_items([item.id], other.id)
+      {:ok, lv, _} = live(conn, "/barra?tipo=caliente")
+
+      card = "#drink-order-#{order.id}-caliente"
+      html = lv |> element("#{card} button", "Todo listo") |> render_click()
+      assert html =~ "Barista Ana está preparando parte de esto"
+      assert CRC.Repo.get!(CRC.Orders.OrderItem, item.id).status == "sent"
+
+      lv |> element("#{card} button", "Sí, todo listo") |> render_click()
+      assert CRC.Repo.get!(CRC.Orders.OrderItem, item.id).status == "ready"
+    end
+
+    test "Todo listo on my own or free drinks needs no confirmation", %{conn: conn} do
+      {conn, _me} = auth_conn(conn)
+
+      {order, [item]} =
+        sent_order_with("Mesa Libre", [insert_typed_drink("Americano Libre", "caliente")])
+
+      {:ok, lv, _} = live(conn, "/barra?tipo=caliente")
+      lv |> element("#drink-order-#{order.id}-caliente button", "Todo listo") |> render_click()
+      assert CRC.Repo.get!(CRC.Orders.OrderItem, item.id).status == "ready"
+    end
+  end
+
+  describe "grouped view row label" do
+    test "shows the comanda and the person, not the person alone", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      mi = insert_typed_drink("Chai Agrupado", "caliente")
+      order = insert_order(%{customer_name: "Cumple Sofía", status: "sent"})
+      insert_order_item(order.id, mi.id, %{status: "sent", for_person: "Diego"})
+
+      {:ok, lv, _} = live(conn, "/barra?tipo=caliente")
+      html = render_click(lv, "set_view_mode", %{"mode" => "grouped"})
+
+      assert html =~ "Cumple Sofía"
+      assert html =~ "Diego"
+    end
+  end
+
+  describe "queue numbers (1 = waited longest)" do
+    defp sent_minutes_ago(item, minutes) do
+      at = DateTime.utc_now() |> DateTime.add(-minutes * 60) |> DateTime.truncate(:second)
+
+      CRC.Repo.update_all(
+        from(oi in CRC.Orders.OrderItem, where: oi.id == ^item.id),
+        set: [sent_at: at]
+      )
+    end
+
+    test "per-order view numbers cards from the oldest", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      mi = insert_typed_drink("Café Turno", "caliente")
+      {new_order, [new_item]} = sent_order_with("Mesa Nueva", [mi])
+      {old_order, [old_item]} = sent_order_with("Mesa Vieja", [mi])
+      sent_minutes_ago(new_item, 2)
+      sent_minutes_ago(old_item, 15)
+
+      {:ok, lv, _} = live(conn, "/barra?tipo=caliente")
+
+      assert lv
+             |> element("#drink-order-#{old_order.id}-caliente span[title='Turno 1']")
+             |> has_element?()
+
+      assert lv
+             |> element("#drink-order-#{new_order.id}-caliente span[title='Turno 2']")
+             |> has_element?()
+    end
+
+    test "grouped view puts the longest-waiting drink first, not the biggest batch", %{conn: conn} do
+      {conn, _} = auth_conn(conn)
+      chai = insert_typed_drink("Chai Solito", "caliente")
+      latte = insert_typed_drink("Latte Montón", "caliente")
+      {_, [chai_item]} = sent_order_with("Mesa Chai", [chai])
+      {_, latte_items} = sent_order_with("Mesa Lattes", [latte, latte, latte])
+      sent_minutes_ago(chai_item, 20)
+      Enum.each(latte_items, &sent_minutes_ago(&1, 3))
+
+      {:ok, lv, _} = live(conn, "/barra?tipo=caliente")
+      render_click(lv, "set_view_mode", %{"mode" => "grouped"})
+
+      assert lv |> element("#drink-group-#{chai.id} span[title='Turno 1']") |> has_element?()
+      assert lv |> element("#drink-group-#{latte.id} span[title='Turno 2']") |> has_element?()
     end
   end
 end

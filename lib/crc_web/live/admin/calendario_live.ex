@@ -259,6 +259,7 @@ defmodule CRCWeb.Admin.CalendarioLive do
       <div
         id="tip-admin-calendario"
         phx-hook="DismissableTip"
+        phx-update="ignore"
         data-tip-id="admin-calendario-v1"
         class="bg-info/10 border border-info/20 rounded-2xl p-4 flex gap-3"
       >

@@ -30,6 +30,7 @@ defmodule CRC.Orders do
     |> preload([
       :user,
       order_items: [
+        :started_by,
         :product,
         :variant,
         :for_menu_item,
@@ -1192,6 +1193,71 @@ defmodule CRC.Orders do
 
       {:error, _} = error ->
         error
+    end
+  end
+
+  @doc """
+  Claims sent items for a station worker ("Preparar"), so other baristas see
+  someone is already making them. Only unclaimed "sent" items are taken, in a
+  single conditional UPDATE — when two baristas tap at once, exactly one wins.
+
+  Returns `{:ok, claimed_count}`; a count of 0 means someone else got there first.
+  """
+  def start_items(ids, user_id) when is_list(ids) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    {count, order_ids} =
+      from(oi in OrderItem,
+        where: oi.id in ^ids and oi.status == "sent" and is_nil(oi.started_by_id),
+        select: oi.order_id
+      )
+      |> Repo.update_all(set: [started_at: now, started_by_id: user_id])
+
+    order_ids |> Enum.uniq() |> Enum.each(&broadcast({:order_updated, &1}))
+    {:ok, count}
+  end
+
+  @doc "Releases items the given user had claimed (undo of `start_items/2`)."
+  def release_items(ids, user_id) when is_list(ids) do
+    {count, order_ids} =
+      from(oi in OrderItem,
+        where: oi.id in ^ids and oi.status == "sent" and oi.started_by_id == ^user_id,
+        select: oi.order_id
+      )
+      |> Repo.update_all(set: [started_at: nil, started_by_id: nil])
+
+    order_ids |> Enum.uniq() |> Enum.each(&broadcast({:order_updated, &1}))
+    {:ok, count}
+  end
+
+  @doc """
+  Marks a sent item ready only if it is unclaimed or claimed by `user_id`, so
+  a barista can't finish a drink another one is making. Atomic: a claim that
+  lands at the same moment wins. Returns `{:error, {:claimed_by, name}}` when
+  someone else has it, and `{:ok, :noop}` when it was no longer pending.
+  """
+  def mark_item_ready_unless_claimed(id, user_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    {count, order_ids} =
+      from(oi in OrderItem,
+        where:
+          oi.id == ^id and oi.status == "sent" and
+            (is_nil(oi.started_by_id) or oi.started_by_id == ^user_id),
+        select: oi.order_id
+      )
+      |> Repo.update_all(
+        set: [status: "ready", ready_at: now, marked_ready_by_id: user_id, updated_at: now]
+      )
+
+    if count == 1 do
+      Enum.each(order_ids, &broadcast({:order_updated, &1}))
+      {:ok, :ready}
+    else
+      case OrderItem |> Repo.get(id) |> Repo.preload(:started_by) do
+        %{status: "sent", started_by: %{name: name}} -> {:error, {:claimed_by, name}}
+        _ -> {:ok, :noop}
+      end
     end
   end
 

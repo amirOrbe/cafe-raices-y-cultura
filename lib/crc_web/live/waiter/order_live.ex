@@ -36,7 +36,8 @@ defmodule CRCWeb.Waiter.OrderLive do
       |> assign(:menu_items, [])
       |> assign(:selected_menu_item, nil)
       |> assign(:extras, [])
-      |> assign(:flash_msg, nil)
+      # Carries notices from the floor map, e.g. "Otro mesero ya abrió la Mesa N."
+      |> assign(:flash_msg, info_flash_msg(socket))
       |> assign(:nav_open, false)
       |> assign(:payment_step, false)
       |> assign(:payment_method, nil)
@@ -74,6 +75,13 @@ defmodule CRCWeb.Waiter.OrderLive do
   # Loyalty customer association
   # ---------------------------------------------------------------------------
 
+  defp info_flash_msg(socket) do
+    case Phoenix.Flash.get(socket.assigns.flash, :info) do
+      nil -> nil
+      msg -> {:info, msg}
+    end
+  end
+
   defp load_customer_summary(%{customer_id: nil}), do: nil
   defp load_customer_summary(%{customer_id: id}), do: CRM.customer_counter_summary(id)
 
@@ -102,8 +110,12 @@ defmodule CRCWeb.Waiter.OrderLive do
 
   @impl true
   def handle_info({:order_updated, order_id}, socket) do
-    if socket.assigns.order.id == order_id do
-      new_order = Orders.get_order!(order_id)
+    # Coalesce a burst of broadcasts into a single reload
+    order_ids = [order_id | Orders.drain_order_updates()]
+    own_id = socket.assigns.order.id
+
+    if own_id in order_ids do
+      new_order = Orders.get_order!(own_id)
       new_ids = ready_item_ids(new_order)
       new_ready? = not MapSet.subset?(new_ids, socket.assigns.seen_ready_ids)
 
@@ -815,6 +827,14 @@ defmodule CRCWeb.Waiter.OrderLive do
          |> assign(:change_table_modal, false)
          |> assign(:flash_msg, {:success, "Mesa cambiada a Mesa #{new_table.number}"})}
 
+      {:error, %Ecto.Changeset{errors: [{:table_id, _} | _]}} ->
+        {:noreply,
+         assign(
+           socket,
+           :flash_msg,
+           {:error, "La Mesa #{new_table.number} ya tiene una comanda abierta"}
+         )}
+
       {:error, _} ->
         {:noreply, assign(socket, :flash_msg, {:error, "No se pudo cambiar de mesa"})}
     end
@@ -979,6 +999,15 @@ defmodule CRCWeb.Waiter.OrderLive do
          |> assign(:payment_step, false)
          |> assign(:flash_msg, {:success, close_flash_message(socket.assigns, reloaded)})}
 
+      {:error, :already_closed} ->
+        reloaded = Orders.get_order!(order.id)
+
+        {:noreply,
+         socket
+         |> assign(:order, reloaded)
+         |> assign(:payment_step, false)
+         |> assign(:flash_msg, {:error, "Esta cuenta ya fue cobrada desde otro dispositivo."})}
+
       {:error, changeset} ->
         msg =
           changeset.errors
@@ -1000,8 +1029,7 @@ defmodule CRCWeb.Waiter.OrderLive do
       |> Enum.map(& &1.menu_item_id)
       |> Enum.reject(&is_nil/1)
       |> Enum.uniq()
-      |> Enum.filter(&(Catalog.list_extras_for_waiter(&1) != []))
-      |> MapSet.new()
+      |> Catalog.menu_item_ids_with_extras()
 
     assigns = assign(assigns, :menu_item_ids_with_extras, menu_item_ids_with_extras)
 
@@ -1091,7 +1119,11 @@ defmodule CRCWeb.Waiter.OrderLive do
           <% {type, msg} = @flash_msg %>
           <div class={[
             "alert alert-sm",
-            if(type == :success, do: "alert-success", else: "alert-error")
+            case type do
+              :success -> "alert-success"
+              :info -> "alert-info"
+              _ -> "alert-error"
+            end
           ]}>
             <span class="text-sm">{msg}</span>
           </div>

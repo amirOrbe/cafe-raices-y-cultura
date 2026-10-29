@@ -159,11 +159,24 @@ defmodule CRC.Orders do
     ])
   end
 
-  @doc "Creates an order (a new customer tab)."
+  @doc """
+  Creates an order (a new customer tab) and broadcasts it, so other waiters'
+  floor maps show the table as taken right away instead of still "Libre".
+  """
   def create_order(attrs \\ %{}) do
-    %Order{}
-    |> Order.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %Order{}
+      |> Order.changeset(attrs)
+      |> Repo.insert()
+
+    case result do
+      {:ok, order} ->
+        broadcast({:order_updated, order.id})
+        {:ok, order}
+
+      error ->
+        error
+    end
   end
 
   @doc "Updates an order."
@@ -228,16 +241,30 @@ defmodule CRC.Orders do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     result =
-      order
-      |> Order.close_changeset(
-        Map.merge(attrs, %{
-          status: "closed",
-          total: total,
-          closed_at: now,
-          closed_by_id: closed_by_id
-        })
-      )
-      |> Repo.update()
+      Repo.transaction(fn ->
+        # Lock the row so two devices charging the same comanda can't both
+        # close it — the second would overwrite the first one's payment.
+        current_status =
+          from(o in Order, where: o.id == ^order.id, lock: "FOR UPDATE", select: o.status)
+          |> Repo.one!()
+
+        if current_status == "closed", do: Repo.rollback(:already_closed)
+
+        order
+        |> Order.close_changeset(
+          Map.merge(attrs, %{
+            status: "closed",
+            total: total,
+            closed_at: now,
+            closed_by_id: closed_by_id
+          })
+        )
+        |> Repo.update()
+        |> case do
+          {:ok, updated} -> updated
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
 
     case result do
       {:ok, updated} ->
@@ -335,6 +362,62 @@ defmodule CRC.Orders do
       error ->
         error
     end
+  end
+
+  @doc """
+  Everything the waiter floor map needs, loaded with a single query (plus
+  preloads) instead of one query per section. Every connected floor map
+  reloads this on each `{:order_updated, _}` broadcast, so it is hot.
+
+  Returns a map with the same sections — and the same filters — as
+  `active_orders_by_table/0`, `list_active_groups/0`, `list_active_takeout/0`,
+  `list_parked_orders/0`, plus `:tableless` (legacy dine-in orders with no
+  table that aren't groups).
+  """
+  def floor_board do
+    # Statuses are open/sent/ready/closed, so "not closed" covers both the
+    # active board and the parked list.
+    active =
+      Order
+      |> where([o], o.status != "closed")
+      |> order_by([o], o.inserted_at)
+      |> preload([
+        :user,
+        :parked_by,
+        order_items: [
+          :product,
+          :variant,
+          :for_menu_item,
+          exclusions: [:product],
+          menu_item: :category,
+          package: []
+        ]
+      ])
+      |> Repo.all()
+
+    unparked = Enum.filter(active, &is_nil(&1.parked_at))
+
+    %{
+      orders_by_table:
+        unparked
+        |> Enum.reject(&is_nil(&1.table_id))
+        |> Map.new(&{&1.table_id, &1}),
+      groups: Enum.filter(unparked, & &1.is_group),
+      takeout:
+        Enum.filter(
+          active,
+          &(&1.order_type == "takeout" and not &1.is_group and is_nil(&1.table_id))
+        ),
+      tableless:
+        Enum.filter(
+          unparked,
+          &(is_nil(&1.table_id) and not &1.is_group and &1.order_type == "dine_in")
+        ),
+      parked_orders:
+        active
+        |> Enum.reject(&is_nil(&1.parked_at))
+        |> Enum.sort_by(& &1.parked_at, DateTime)
+    }
   end
 
   @doc "Returns parked (still unpaid) comandas, oldest first, with items and staff preloaded."
@@ -1048,21 +1131,27 @@ defmodule CRC.Orders do
   instead of sitting on a station board that will never pick them up.
   """
   def send_to_kitchen(%Order{} = order) do
-    # Load pending items directly from DB (safe regardless of preload state)
-    pending =
-      from(oi in OrderItem,
-        where: oi.order_id == ^order.id and oi.status == "pending",
-        preload: [:menu_item]
-      )
-      |> Repo.all()
-
-    {retail, prepared} =
-      Enum.split_with(pending, fn oi ->
-        oi.menu_item_id && oi.menu_item.destination == "retail"
-      end)
-
     result =
       Repo.transaction(fn ->
+        # Lock the order row so two devices sending the same comanda at once
+        # run one after the other: the second one then finds no pending items
+        # instead of deducting the same ingredients twice.
+        from(o in Order, where: o.id == ^order.id, lock: "FOR UPDATE", select: o.id)
+        |> Repo.one!()
+
+        # Load pending items directly from DB (safe regardless of preload state)
+        pending =
+          from(oi in OrderItem,
+            where: oi.order_id == ^order.id and oi.status == "pending",
+            preload: [:menu_item]
+          )
+          |> Repo.all()
+
+        {retail, prepared} =
+          Enum.split_with(pending, fn oi ->
+            oi.menu_item_id && oi.menu_item.destination == "retail"
+          end)
+
         # 1. Mark pending items → sent (record timestamp); retail items go
         # straight to served since there's no station to prepare them.
         now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -1189,6 +1278,22 @@ defmodule CRC.Orders do
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------
+
+  @doc """
+  Removes every `{:order_updated, order_id}` message already waiting in the
+  calling process's mailbox and returns their order ids.
+
+  Subscribers call this before reloading so a burst of broadcasts (a waiter
+  tapping five dishes in a row) costs one reload instead of five. It never
+  waits, so a lone broadcast is handled with no added latency.
+  """
+  def drain_order_updates(acc \\ []) do
+    receive do
+      {:order_updated, order_id} -> drain_order_updates([order_id | acc])
+    after
+      0 -> acc
+    end
+  end
 
   defp broadcast(message) do
     Phoenix.PubSub.broadcast(CRC.PubSub, @pubsub_topic, message)
@@ -1976,6 +2081,16 @@ defmodule CRC.Orders do
   @doc "Returns a changeset for a table (for form building)."
   def change_table(%Table{} = table, attrs \\ %{}) do
     Table.changeset(table, attrs)
+  end
+
+  @doc "Returns the active (unparked) order sitting at a table, or nil."
+  def get_active_order_for_table(table_id) do
+    Order
+    |> where(
+      [o],
+      o.table_id == ^table_id and o.status in ["open", "sent", "ready"] and is_nil(o.parked_at)
+    )
+    |> Repo.one()
   end
 
   @doc """

@@ -226,6 +226,38 @@ defmodule CRC.Catalog do
     recipe ++ optional
   end
 
+  @doc """
+  Batch version of `list_extras_for_waiter(id) != []`: returns the MapSet of
+  the given menu item ids that have at least one extra to offer (an active
+  recipe ingredient or an active optional extra). Two queries total, however
+  many ids are passed — the waiter screen calls this on every render.
+  """
+  def menu_item_ids_with_extras([]), do: MapSet.new()
+
+  def menu_item_ids_with_extras(menu_item_ids) do
+    recipe_ids =
+      from(mii in MenuItemIngredient,
+        join: p in Product,
+        on: p.id == mii.product_id,
+        where: mii.menu_item_id in ^menu_item_ids and p.active == true,
+        distinct: true,
+        select: mii.menu_item_id
+      )
+      |> Repo.all()
+
+    optional_ids =
+      from(e in MenuItemOptionalExtra,
+        join: p in Product,
+        on: p.id == e.product_id,
+        where: e.menu_item_id in ^menu_item_ids and p.active == true,
+        distinct: true,
+        select: e.menu_item_id
+      )
+      |> Repo.all()
+
+    MapSet.new(recipe_ids ++ optional_ids)
+  end
+
   # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------

@@ -2470,4 +2470,153 @@ defmodule CRC.OrdersTest do
       assert Decimal.equal?(summary.cogs, Decimal.new("66.00"))
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # Concurrency guards (busy-service hardening)
+  # ---------------------------------------------------------------------------
+
+  describe "one active order per table" do
+    test "rejects a second active order for the same table" do
+      {:ok, table} = Orders.create_table(%{number: 1, capacity: 2})
+      insert_order(%{customer_name: "Mesa 1", table_id: table.id})
+
+      assert {:error, changeset} =
+               Orders.create_order(%{customer_name: "Mesa 1", table_id: table.id})
+
+      assert {"ya tiene una comanda abierta", _} = changeset.errors[:table_id]
+    end
+
+    test "allows reopening a table once its order is closed" do
+      {:ok, table} = Orders.create_table(%{number: 1, capacity: 2})
+      order = Orders.get_order!(insert_order(%{customer_name: "Mesa 1", table_id: table.id}).id)
+      {:ok, _} = Orders.close_order(order, %{payment_method: "tarjeta"})
+
+      assert {:ok, _} = Orders.create_order(%{customer_name: "Mesa 1", table_id: table.id})
+    end
+
+    test "allows reopening a table once its order is parked" do
+      {:ok, table} = Orders.create_table(%{number: 1, capacity: 2})
+      order = insert_order(%{customer_name: "Mesa 1", table_id: table.id})
+      {:ok, _} = Orders.park_order(order)
+
+      assert {:ok, _} = Orders.create_order(%{customer_name: "Mesa 1", table_id: table.id})
+    end
+
+    test "change_order_table/2 refuses a table that already has an active order" do
+      {:ok, t1} = Orders.create_table(%{number: 1, capacity: 2})
+      {:ok, t2} = Orders.create_table(%{number: 2, capacity: 2})
+      order = insert_order(%{customer_name: "Mesa 1", table_id: t1.id})
+      insert_order(%{customer_name: "Mesa 2", table_id: t2.id})
+
+      assert {:error, %Ecto.Changeset{}} = Orders.change_order_table(order, t2)
+    end
+
+    test "get_active_order_for_table/1 returns the active order or nil" do
+      {:ok, table} = Orders.create_table(%{number: 1, capacity: 2})
+      assert Orders.get_active_order_for_table(table.id) == nil
+
+      order = insert_order(%{customer_name: "Mesa 1", table_id: table.id})
+      assert Orders.get_active_order_for_table(table.id).id == order.id
+    end
+  end
+
+  describe "close_order/3 on an already-closed order" do
+    test "returns {:error, :already_closed} and keeps the first payment" do
+      order = Orders.get_order!(insert_order(%{status: "ready"}).id)
+      {:ok, _} = Orders.close_order(order, %{payment_method: "tarjeta"})
+
+      assert {:error, :already_closed} =
+               Orders.close_order(order, %{payment_method: "transferencia"})
+
+      assert CRC.Repo.get!(Order, order.id).payment_method == "tarjeta"
+    end
+  end
+
+  describe "floor_board/0" do
+    test "splits active orders into the same sections as the per-section queries" do
+      {:ok, table} = Orders.create_table(%{number: 1, capacity: 2})
+      at_table = insert_order(%{customer_name: "Mesa 1", table_id: table.id})
+      group = insert_order(%{customer_name: "Grupo", is_group: true})
+      takeout = insert_order(%{customer_name: "Llevar", order_type: "takeout"})
+      tableless = insert_order(%{customer_name: "Sin mesa"})
+      parked = insert_order(%{customer_name: "Apartada"})
+      {:ok, _} = Orders.park_order(parked)
+
+      closed = Orders.get_order!(insert_order(%{customer_name: "Cerrada"}).id)
+      {:ok, _} = Orders.close_order(closed, %{payment_method: "tarjeta"})
+
+      board = Orders.floor_board()
+      ids = &Enum.map(&1, fn o -> o.id end)
+
+      assert Map.keys(board.orders_by_table) == [table.id]
+      assert board.orders_by_table[table.id].id == at_table.id
+      assert ids.(board.groups) == [group.id]
+      assert ids.(board.takeout) == [takeout.id]
+      assert ids.(board.tableless) == [tableless.id]
+      assert ids.(board.parked_orders) == [parked.id]
+
+      assert Map.keys(board.orders_by_table) == Map.keys(Orders.active_orders_by_table())
+      assert ids.(board.groups) == ids.(Orders.list_active_groups())
+      assert ids.(board.takeout) == ids.(Orders.list_active_takeout())
+      assert ids.(board.parked_orders) == ids.(Orders.list_parked_orders())
+    end
+  end
+
+  describe "drain_order_updates/0" do
+    test "removes pending order_updated messages and returns their ids" do
+      send(self(), {:order_updated, 1})
+      send(self(), :unrelated)
+      send(self(), {:order_updated, 2})
+
+      assert Enum.sort(Orders.drain_order_updates()) == [1, 2]
+      refute_received {:order_updated, _}
+      assert_received :unrelated
+    end
+
+    test "returns an empty list immediately when nothing is pending" do
+      assert Orders.drain_order_updates() == []
+    end
+  end
+
+  describe "Catalog.menu_item_ids_with_extras/1" do
+    test "matches list_extras_for_waiter/1 != [] for each item" do
+      cat = insert_category()
+      plain = insert_menu_item(cat.id, %{name: "Sin receta"})
+      with_recipe = insert_menu_item(cat.id, %{name: "Con receta"})
+      inactive_only = insert_menu_item(cat.id, %{name: "Insumo inactivo"})
+
+      active =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Leche #{System.unique_integer()}",
+          unit: "ml",
+          net_cost: Decimal.new("1.00"),
+          stock_quantity: Decimal.new("1000"),
+          active: true
+        })
+
+      inactive =
+        CRC.Repo.insert!(%CRC.Inventory.Product{
+          name: "Viejo #{System.unique_integer()}",
+          unit: "g",
+          net_cost: Decimal.new("1.00"),
+          stock_quantity: Decimal.new("1000"),
+          active: false
+        })
+
+      for {mi, p} <- [{with_recipe, active}, {inactive_only, inactive}] do
+        CRC.Repo.insert!(%CRC.Catalog.MenuItemIngredient{
+          menu_item_id: mi.id,
+          product_id: p.id,
+          quantity: Decimal.new("10")
+        })
+      end
+
+      ids = [plain.id, with_recipe.id, inactive_only.id]
+      expected = ids |> Enum.filter(&(Catalog.list_extras_for_waiter(&1) != [])) |> MapSet.new()
+
+      assert Catalog.menu_item_ids_with_extras(ids) == expected
+      assert expected == MapSet.new([with_recipe.id])
+      assert Catalog.menu_item_ids_with_extras([]) == MapSet.new()
+    end
+  end
 end

@@ -74,7 +74,10 @@ defmodule CRC.CRMLoyaltyTest do
 
     test "re-closing the same order does not double-count", %{customer: customer, staff: staff} do
       closed = visit(customer, staff)
-      {:ok, _} = Orders.close_order(closed, %{payment_method: "tarjeta"}, staff.id)
+
+      assert {:error, :already_closed} =
+               Orders.close_order(closed, %{payment_method: "tarjeta"}, staff.id)
+
       assert CRM.visit_count(customer.id) == 1
     end
 

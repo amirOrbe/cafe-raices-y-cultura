@@ -38,6 +38,8 @@ defmodule CRCWeb.Kitchen.DisplayLive do
 
   @impl true
   def handle_info({:order_updated, _order_id}, socket) do
+    # Coalesce a burst of broadcasts into a single reload
+    Orders.drain_order_updates()
     new_orders = Orders.list_open_orders()
     new_ids = sent_kitchen_ids(new_orders)
     disappeared_ids = MapSet.difference(socket.assigns.seen_sent_ids, new_ids)

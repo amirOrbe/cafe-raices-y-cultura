@@ -20,24 +20,13 @@ defmodule CRCWeb.Waiter.TableLive do
       Process.send_after(self(), :tick, @tick_interval)
     end
 
-    tables = Orders.list_active_tables()
-    orders_by_table = Orders.active_orders_by_table()
-    groups = Orders.list_active_groups()
-    takeout = Orders.list_active_takeout()
-    # Legacy tableless: active, no table, not a group, dine_in
-    tableless =
-      Orders.list_active_orders()
-      |> Enum.filter(&(is_nil(&1.table_id) and not &1.is_group and &1.order_type == "dine_in"))
+    board = Orders.floor_board()
 
     socket =
       socket
       |> assign(:page_title, "Mesas")
-      |> assign(:tables, tables)
-      |> assign(:orders_by_table, orders_by_table)
-      |> assign(:groups, groups)
-      |> assign(:takeout, takeout)
-      |> assign(:tableless, tableless)
-      |> assign(:parked_orders, Orders.list_parked_orders())
+      |> assign(:tables, Orders.list_active_tables())
+      |> assign_board(board)
       |> assign(:now, DateTime.utc_now())
       |> assign(:selected_table, nil)
       |> assign(:show_new_modal, false)
@@ -48,9 +37,18 @@ defmodule CRCWeb.Waiter.TableLive do
       |> assign(:name_error, nil)
       |> assign(:nav_open, false)
       |> assign(:view_mode, :map)
-      |> assign(:seen_ready_ids, all_ready_ids(orders_by_table, groups, takeout, tableless))
+      |> assign(:seen_ready_ids, all_ready_ids(board))
 
     {:ok, socket}
+  end
+
+  defp assign_board(socket, board) do
+    socket
+    |> assign(:orders_by_table, board.orders_by_table)
+    |> assign(:groups, board.groups)
+    |> assign(:takeout, board.takeout)
+    |> assign(:tableless, board.tableless)
+    |> assign(:parked_orders, board.parked_orders)
   end
 
   # ---------------------------------------------------------------------------
@@ -59,24 +57,16 @@ defmodule CRCWeb.Waiter.TableLive do
 
   @impl true
   def handle_info({:order_updated, _order_id}, socket) do
-    orders_by_table = Orders.active_orders_by_table()
-    groups = Orders.list_active_groups()
-    takeout = Orders.list_active_takeout()
+    # Coalesce a burst of broadcasts into a single reload
+    Orders.drain_order_updates()
+    board = Orders.floor_board()
 
-    tableless =
-      Orders.list_active_orders()
-      |> Enum.filter(&(is_nil(&1.table_id) and not &1.is_group and &1.order_type == "dine_in"))
-
-    new_ids = all_ready_ids(orders_by_table, groups, takeout, tableless)
+    new_ids = all_ready_ids(board)
     new_ready? = not MapSet.subset?(new_ids, socket.assigns.seen_ready_ids)
 
     socket =
       socket
-      |> assign(:orders_by_table, orders_by_table)
-      |> assign(:groups, groups)
-      |> assign(:takeout, takeout)
-      |> assign(:tableless, tableless)
-      |> assign(:parked_orders, Orders.list_parked_orders())
+      |> assign_board(board)
       |> assign(:now, DateTime.utc_now())
       |> assign(:seen_ready_ids, new_ids)
 
@@ -161,8 +151,22 @@ defmodule CRCWeb.Waiter.TableLive do
          |> assign(:show_new_modal, false)
          |> push_navigate(to: "/mesa/#{order.id}")}
 
-      {:error, _changeset} ->
-        {:noreply, assign(socket, :name_error, "No se pudo abrir la mesa, intenta de nuevo")}
+      {:error, changeset} ->
+        # Another waiter opened this table a moment ago — join their comanda
+        # instead of creating a second one.
+        existing =
+          Keyword.has_key?(changeset.errors, :table_id) &&
+            Orders.get_active_order_for_table(table.id)
+
+        if existing do
+          {:noreply,
+           socket
+           |> assign(:show_new_modal, false)
+           |> put_flash(:info, "Otro mesero ya abrió la Mesa #{table.number}.")
+           |> push_navigate(to: "/mesa/#{existing.id}")}
+        else
+          {:noreply, assign(socket, :name_error, "No se pudo abrir la mesa, intenta de nuevo")}
+        end
     end
   end
 
@@ -1007,8 +1011,8 @@ defmodule CRCWeb.Waiter.TableLive do
     end
   end
 
-  defp all_ready_ids(orders_by_table, groups, takeout, tableless) do
-    (Map.values(orders_by_table) ++ groups ++ takeout ++ tableless)
+  defp all_ready_ids(board) do
+    (Map.values(board.orders_by_table) ++ board.groups ++ board.takeout ++ board.tableless)
     |> Enum.flat_map(& &1.order_items)
     |> Enum.filter(&(&1.status == "ready"))
     |> MapSet.new(& &1.id)

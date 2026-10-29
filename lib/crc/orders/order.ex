@@ -70,6 +70,10 @@ defmodule CRC.Orders.Order do
     |> validate_required([:customer_name, :status])
     |> validate_inclusion(:status, @valid_statuses)
     |> validate_inclusion(:order_type, @valid_order_types)
+    |> unique_constraint(:table_id,
+      name: :orders_one_active_per_table_index,
+      message: "ya tiene una comanda abierta"
+    )
   end
 
   @doc """

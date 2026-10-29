@@ -2619,4 +2619,67 @@ defmodule CRC.OrdersTest do
       assert Catalog.menu_item_ids_with_extras([]) == MapSet.new()
     end
   end
+
+  describe "start_items/2 and release_items/2" do
+    setup do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id, %{name: "Latte", destination: "barra"})
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      {1, _} =
+        CRC.Repo.update_all(from(oi in OrderItem, where: oi.id == ^item.id),
+          set: [status: "sent"]
+        )
+
+      %{item: item, ana: insert_user(), luis: insert_user()}
+    end
+
+    test "the first claim wins and later claims take nothing", %{item: item, ana: ana, luis: luis} do
+      assert {:ok, 1} = Orders.start_items([item.id], ana.id)
+      assert {:ok, 0} = Orders.start_items([item.id], luis.id)
+      assert CRC.Repo.get!(OrderItem, item.id).started_by_id == ana.id
+    end
+
+    test "only the claimer can release", %{item: item, ana: ana, luis: luis} do
+      {:ok, 1} = Orders.start_items([item.id], ana.id)
+      assert {:ok, 0} = Orders.release_items([item.id], luis.id)
+      assert {:ok, 1} = Orders.release_items([item.id], ana.id)
+      assert CRC.Repo.get!(OrderItem, item.id).started_by_id == nil
+    end
+
+    test "items that are not sent can't be claimed", %{item: item, ana: ana} do
+      {:ok, _} = Orders.mark_item_ready(item.id)
+      assert {:ok, 0} = Orders.start_items([item.id], ana.id)
+    end
+
+    test "claiming broadcasts an order update", %{item: item, ana: ana} do
+      Phoenix.PubSub.subscribe(CRC.PubSub, "orders")
+      {:ok, 1} = Orders.start_items([item.id], ana.id)
+      order_id = item.order_id
+      assert_receive {:order_updated, ^order_id}
+    end
+
+    test "mark_item_ready_unless_claimed refuses someone else's claim",
+         %{item: item, ana: ana, luis: luis} do
+      {:ok, 1} = Orders.start_items([item.id], ana.id)
+
+      assert {:error, {:claimed_by, name}} =
+               Orders.mark_item_ready_unless_claimed(item.id, luis.id)
+
+      assert name == ana.name
+      assert CRC.Repo.get!(OrderItem, item.id).status == "sent"
+
+      assert {:ok, :ready} = Orders.mark_item_ready_unless_claimed(item.id, ana.id)
+      ready = CRC.Repo.get!(OrderItem, item.id)
+      assert ready.status == "ready"
+      assert ready.marked_ready_by_id == ana.id
+    end
+
+    test "mark_item_ready_unless_claimed works on unclaimed items and is a no-op once ready",
+         %{item: item, luis: luis} do
+      assert {:ok, :ready} = Orders.mark_item_ready_unless_claimed(item.id, luis.id)
+      assert {:ok, :noop} = Orders.mark_item_ready_unless_claimed(item.id, luis.id)
+    end
+  end
 end

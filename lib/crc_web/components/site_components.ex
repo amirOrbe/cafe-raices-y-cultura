@@ -817,4 +817,28 @@ defmodule CRCWeb.Components.SiteComponents do
     </details>
     """
   end
+
+  @doc """
+  Queue position badge for the kitchen and barra screens: 1 is the comanda
+  that has waited longest. Positions shift as orders finish, so the rule for
+  staff is always "start with the 1" (or the first one nobody has taken).
+  """
+  attr :n, :integer, required: true
+
+  def queue_number(assigns) do
+    ~H"""
+    <span
+      class={[
+        "shrink-0 size-9 rounded-xl flex items-center justify-center text-lg font-black tabular-nums",
+        if(@n == 1,
+          do: "bg-primary text-primary-content",
+          else: "bg-base-content/10 text-base-content"
+        )
+      ]}
+      title={"Turno #{@n}"}
+    >
+      {@n}
+    </span>
+    """
+  end
 end

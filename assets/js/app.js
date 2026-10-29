@@ -94,10 +94,18 @@ const SoundNotifier = {
   mounted() {
     this._userInteracted = false
 
-    // Track first user interaction so the AudioContext can be created unlocked
-    const onInteract = () => { this._userInteracted = true }
+    // Track first user interaction so the AudioContext can be created unlocked.
+    // Tablets stay silent until then, so the stations show a "Toca para activar
+    // el sonido" button (#sound-hint) that disappears on the first touch.
+    const onInteract = () => {
+      this._userInteracted = true
+      document.getElementById("sound-hint")?.classList.add("hidden")
+    }
     document.addEventListener("click",    onInteract, { passive: true })
     document.addEventListener("touchend", onInteract, { passive: true })
+
+    // Tapping the hint itself plays the alert once, so staff know what to listen for
+    document.getElementById("sound-hint")?.addEventListener("click", () => this._play("new_order"))
 
     this.handleEvent("play_sound", ({ type }) => {
       this._play(type)
@@ -263,7 +271,11 @@ const FloorMapEditor = {
  * DismissableTip — hides an onboarding tip panel and remembers the choice
  * in localStorage so it never shows again for this browser.
  *
- * Usage: <div phx-hook="DismissableTip" data-tip-id="cocina">
+ * The tip's content must be static and the element needs phx-update="ignore":
+ * otherwise every re-render (e.g. a station's clock tick) wipes the inline
+ * display:none and the dismissed tip reappears.
+ *
+ * Usage: <div id="tip-cocina" phx-hook="DismissableTip" phx-update="ignore" data-tip-id="cocina">
  *          ...content...
  *          <button data-dismiss-tip>Entendido</button>
  *        </div>

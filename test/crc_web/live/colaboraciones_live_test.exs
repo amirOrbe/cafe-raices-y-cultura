@@ -422,4 +422,39 @@ defmodule CRCWeb.ColaboracionesLiveTest do
       assert html =~ "Artista Hoy"
     end
   end
+
+  describe "deep link ?fecha=" do
+    test "opens the given day's detail panel", %{conn: conn} do
+      date = Date.add(cdmx_today(), 40)
+      insert_event(%{title: "Taller Lejano", event_date: date})
+
+      {:ok, _lv, html} = live(conn, ~p"/colaboraciones?fecha=#{Date.to_iso8601(date)}")
+
+      assert html =~ ~s(id="day-detail")
+      assert html =~ "Taller Lejano"
+    end
+
+    test "ignores an invalid date", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/colaboraciones?fecha=no-es-fecha")
+      assert html =~ "Colaboraciones"
+    end
+  end
+
+  describe "photo lightbox" do
+    test "clicking a gallery photo opens it in the page instead of a new tab", %{conn: conn} do
+      event = insert_event(%{title: "Muestra De Arte"})
+      {:ok, _} = Events.add_event_photo(event.id, "https://example.com/obra.jpg", "La obra")
+
+      {:ok, lv, html} =
+        live(conn, ~p"/colaboraciones?fecha=#{Date.to_iso8601(event.event_date)}")
+
+      refute html =~ ~s(target="_blank" rel="noopener noreferrer" class="block overflow-hidden)
+
+      lv |> element(~s(button[phx-click="open_photo"])) |> render_click()
+      assert has_element?(lv, "#photo-lightbox", "La obra")
+
+      lv |> element(~s(#photo-lightbox button[aria-label="Cerrar"])) |> render_click()
+      refute has_element?(lv, "#photo-lightbox")
+    end
+  end
 end

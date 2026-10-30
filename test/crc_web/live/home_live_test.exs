@@ -227,4 +227,104 @@ defmodule CRCWeb.HomeLiveTest do
       assert html =~ "Ahorras"
     end
   end
+
+  describe "upcoming events teaser" do
+    defp cdmx_today do
+      DateTime.utc_now() |> DateTime.add(-6 * 3600, :second) |> DateTime.to_date()
+    end
+
+    defp insert_event(overrides) do
+      attrs =
+        Map.merge(
+          %{
+            title: "Evento Inicio #{System.unique_integer([:positive])}",
+            event_date: Date.add(cdmx_today(), 2),
+            start_time: ~T[18:00:00],
+            end_time: ~T[21:00:00]
+          },
+          overrides
+        )
+
+      {:ok, event} = CRC.Events.create_event(attrs)
+      event
+    end
+
+    test "hidden when there are no upcoming events", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/")
+      refute html =~ ~s(id="eventos")
+    end
+
+    test "shows the next event linking to its day in /colaboraciones", %{conn: conn} do
+      event = insert_event(%{title: "Noche De Poesía", description: "Lectura abierta"})
+      {:ok, _lv, html} = live(conn, ~p"/")
+
+      assert html =~ "Próximas colaboraciones"
+      assert html =~ "Noche De Poesía"
+      assert html =~ "Lectura abierta"
+      assert html =~ "/colaboraciones?fecha=#{Date.to_iso8601(event.event_date)}"
+      assert html =~ "Ver todas las colaboraciones"
+    end
+
+    test "inactive events are not shown", %{conn: conn} do
+      insert_event(%{title: "Evento Oculto", active: false})
+      {:ok, _lv, html} = live(conn, ~p"/")
+      refute html =~ "Evento Oculto"
+    end
+
+    test "only the nearest event is featured, the rest are counted", %{conn: conn} do
+      insert_event(%{title: "Evento Cercano", event_date: Date.add(cdmx_today(), 1)})
+
+      for i <- 2..4,
+          do: insert_event(%{title: "Evento Lejano #{i}", event_date: Date.add(cdmx_today(), i)})
+
+      {:ok, _lv, html} = live(conn, ~p"/")
+      assert html =~ "Evento Cercano"
+      refute html =~ "Evento Lejano"
+      assert html =~ "Hay 3 colaboraciones más en los próximos días."
+    end
+
+    test "event photos open in an in-page lightbox", %{conn: conn} do
+      event = insert_event(%{title: "Expo Fotográfica"})
+      {:ok, _} = CRC.Events.add_event_photo(event.id, "https://example.com/a.jpg", "Primera")
+      {:ok, _} = CRC.Events.add_event_photo(event.id, "https://example.com/b.jpg", "Segunda")
+
+      {:ok, lv, _html} = live(conn, ~p"/")
+      refute has_element?(lv, "#photo-lightbox")
+
+      lv |> element(~s(button[phx-click="open_photo"][phx-value-index="0"])) |> render_click()
+      assert has_element?(lv, "#photo-lightbox", "Primera")
+
+      render_keydown(lv, "lightbox_key", %{"key" => "ArrowRight"})
+      assert has_element?(lv, "#photo-lightbox", "Segunda")
+
+      render_keydown(lv, "lightbox_key", %{"key" => "Escape"})
+      refute has_element?(lv, "#photo-lightbox")
+    end
+
+    test "an event later today shows the Hoy badge with its start time", %{conn: conn} do
+      now = DateTime.utc_now() |> DateTime.add(-6 * 3600, :second) |> DateTime.to_time()
+
+      # Needs room for a start later today; skip the assertion in the last hours of the day
+      if now.hour < 22 do
+        start = now |> Time.add(3600) |> Time.truncate(:second) |> Map.put(:second, 0)
+        insert_event(%{event_date: cdmx_today(), start_time: start, end_time: ~T[23:59:00]})
+
+        {:ok, _lv, html} = live(conn, ~p"/")
+        assert html =~ "Hoy · #{Calendar.strftime(start, "%H:%M")}"
+        refute html =~ "En vivo"
+      end
+    end
+
+    test "an event happening now shows En vivo", %{conn: conn} do
+      insert_event(%{event_date: cdmx_today(), start_time: ~T[00:00:00], end_time: ~T[23:59:59]})
+      {:ok, _lv, html} = live(conn, ~p"/")
+      assert html =~ "En vivo"
+    end
+
+    test "appears in real time when an event is created", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/")
+      insert_event(%{title: "Concierto Sorpresa"})
+      assert render(lv) =~ "Concierto Sorpresa"
+    end
+  end
 end

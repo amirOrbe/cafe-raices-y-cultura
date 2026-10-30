@@ -5,10 +5,16 @@ defmodule CRCWeb.HomeLive do
 
   alias CRCWeb.Components.SiteComponents
   alias CRC.Catalog
+  alias CRC.Events
   alias CRC.Settings
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(CRC.PubSub, "admin:events")
+      :timer.send_interval(60_000, self(), :tick)
+    end
+
     # Carousel always uses local photos shuffled randomly — every visit shows a different order
     photos = carousel_photos() |> Enum.shuffle()
     packages = Catalog.list_packages()
@@ -23,8 +29,25 @@ defmodule CRCWeb.HomeLive do
       |> assign(:nav_open, false)
       |> assign(:packages, packages)
       |> assign(:cafe_hours, cafe_hours)
+      |> load_upcoming_events()
 
     {:ok, socket}
+  end
+
+  @impl true
+  # Keeps the "Hoy" / "En vivo" badge current; once the featured event ends,
+  # reload so the next one takes its place.
+  def handle_info(:tick, socket) do
+    now = cdmx_now()
+    event = socket.assigns.next_event
+
+    if event && ended?(event, now),
+      do: {:noreply, load_upcoming_events(socket)},
+      else: {:noreply, assign(socket, :cdmx_now, now)}
+  end
+
+  def handle_info({:event_changed, _}, socket) do
+    {:noreply, load_upcoming_events(socket)}
   end
 
   @impl true
@@ -53,6 +76,22 @@ defmodule CRCWeb.HomeLive do
     {:noreply, assign(socket, :autoplay, false)}
   end
 
+  def handle_event("open_photo", %{"index" => index}, socket) do
+    event = socket.assigns.next_event
+
+    {:noreply,
+     assign(socket, :lightbox, %{
+       photos: event.event_photos,
+       index: String.to_integer(index),
+       title: event.title
+     })}
+  end
+
+  def handle_event("lightbox_" <> action, params, socket) do
+    action = if action == "key", do: params["key"], else: action
+    {:noreply, update(socket, :lightbox, &SiteComponents.lightbox_step(&1, action))}
+  end
+
   def handle_event("toggle_nav", _params, socket) do
     {:noreply, assign(socket, :nav_open, !socket.assigns.nav_open)}
   end
@@ -72,11 +111,18 @@ defmodule CRCWeb.HomeLive do
       />
       <main class="flex-1">
         <.hero_section photos={@photos} active_slide={@active_slide} autoplay={@autoplay} />
+        <.events_section
+          :if={@next_event}
+          event={@next_event}
+          more_count={@more_events_count}
+          now={@cdmx_now}
+        />
         <.about_section cafe_hours={@cafe_hours} />
         <.packages_section :if={@packages != []} packages={@packages} />
         <.contact_section cafe_hours={@cafe_hours} />
       </main>
       <SiteComponents.site_footer />
+      <SiteComponents.photo_lightbox lightbox={@lightbox} />
     </div>
     """
   end
@@ -237,6 +283,207 @@ defmodule CRCWeb.HomeLive do
   defp near_slide?(index, active, total) do
     diff = abs(index - active)
     diff <= 1 or diff == total - 1
+  end
+
+  # ---------------------------------------------------------------------------
+  # Next event teaser
+  # ---------------------------------------------------------------------------
+
+  attr :event, :map, required: true
+  attr :more_count, :integer, default: 0
+  attr :now, NaiveDateTime, required: true
+
+  defp events_section(assigns) do
+    assigns =
+      assign(assigns,
+        photos: assigns.event.event_photos,
+        detail_href:
+          "/colaboraciones?fecha=#{Date.to_iso8601(assigns.event.event_date)}#day-detail"
+      )
+
+    ~H"""
+    <section id="eventos" class="py-12 sm:py-16 bg-base-200 border-b border-base-300">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="mb-8">
+          <p class="text-sm font-semibold text-secondary uppercase tracking-wider">
+            Agenda cultural
+          </p>
+          <h2 class="text-2xl sm:text-3xl font-bold text-base-content leading-tight mt-1">
+            Próximas colaboraciones
+          </h2>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-10 items-start">
+          <%!-- Photos --%>
+          <div class="lg:col-span-3 space-y-2">
+            <div class="relative aspect-[16/10] rounded-2xl overflow-hidden bg-primary/10 shadow-sm">
+              <%= case @photos do %>
+                <% [cover | _] -> %>
+                  <button
+                    type="button"
+                    phx-click="open_photo"
+                    phx-value-index="0"
+                    class="group block w-full h-full cursor-zoom-in"
+                    aria-label="Ver foto en grande"
+                  >
+                    <img
+                      src={SiteComponents.photo_url(cover.image_url, :cover)}
+                      alt={cover.caption || @event.title}
+                      class="w-full h-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  </button>
+                <% [] -> %>
+                  <div class="w-full h-full flex items-center justify-center text-primary/40">
+                    <.icon name="hero-calendar-days" class="size-16" />
+                  </div>
+              <% end %>
+              <div class="absolute top-3 left-3 w-14 rounded-xl bg-base-100/95 text-primary shadow flex flex-col items-center py-1.5 pointer-events-none">
+                <span class="text-[11px] font-semibold uppercase tracking-wide">
+                  {month_abbr(@event.event_date.month)}
+                </span>
+                <span class="text-2xl font-bold leading-none tabular-nums">
+                  {@event.event_date.day}
+                </span>
+              </div>
+              <%= case event_status(@event, @now) do %>
+                <% :live -> %>
+                  <span class="absolute top-3 right-3 inline-flex items-center gap-1 bg-success text-success-content font-bold text-[11px] uppercase tracking-wider px-2 py-1 rounded-full shadow pointer-events-none">
+                    <span class="size-1.5 rounded-full bg-success-content motion-safe:animate-pulse"></span>
+                    En vivo
+                  </span>
+                <% :later_today -> %>
+                  <span class="absolute top-3 right-3 inline-flex items-center gap-1 bg-accent text-accent-content font-bold text-[11px] uppercase tracking-wider px-2 py-1 rounded-full shadow pointer-events-none tabular-nums">
+                    <.icon name="hero-clock" class="size-3.5" />
+                    Hoy · {format_time(@event.start_time)}
+                  </span>
+                <% :upcoming -> %>
+              <% end %>
+            </div>
+
+            <%!-- Thumbnails for the rest of the gallery (up to 4, last one shows "+N") --%>
+            <div :if={length(@photos) > 1} class="grid grid-cols-4 gap-2">
+              <%= for {photo, index} <- @photos |> Enum.with_index() |> Enum.slice(1, 4) do %>
+                <% hidden = length(@photos) - 5 %>
+                <button
+                  type="button"
+                  phx-click="open_photo"
+                  phx-value-index={index}
+                  class="group relative aspect-square rounded-xl overflow-hidden bg-primary/10 cursor-zoom-in"
+                  aria-label={"Ver foto #{index + 1}"}
+                >
+                  <img
+                    src={SiteComponents.photo_url(photo.image_url, :thumb)}
+                    alt={photo.caption || @event.title}
+                    class="w-full h-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <span
+                    :if={index == 4 and hidden > 0}
+                    class="absolute inset-0 bg-black/55 text-white text-lg font-bold flex items-center justify-center"
+                  >
+                    +{hidden}
+                  </span>
+                </button>
+              <% end %>
+            </div>
+          </div>
+
+          <%!-- Details --%>
+          <div class="lg:col-span-2">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+              <span class="text-sm font-semibold text-secondary tabular-nums">
+                {day_label(@event.event_date, NaiveDateTime.to_date(@now))} · {format_time(
+                  @event.start_time
+                )} – {format_time(@event.end_time)}
+              </span>
+              <span :if={@event.event_type} class="badge badge-sm badge-ghost">
+                {@event.event_type.name}
+              </span>
+            </div>
+            <h3 class="text-2xl sm:text-3xl font-bold text-base-content leading-tight break-words">
+              {@event.title}
+            </h3>
+            <p
+              :if={@event.description not in [nil, ""]}
+              class="mt-3 text-base-content/70 leading-relaxed whitespace-pre-line break-words line-clamp-[8]"
+            >
+              {@event.description}
+            </p>
+            <p :if={@event.event_collaborators != []} class="mt-4 text-sm text-base-content/70">
+              <span class="font-semibold text-base-content">Con:</span>
+              {@event.event_collaborators |> Enum.map(& &1.collaborator.name) |> Enum.join(", ")}
+            </p>
+
+            <div class="mt-6 flex flex-col sm:flex-row gap-3">
+              <.link href={@detail_href} class="btn btn-primary w-full sm:w-auto">
+                Ver detalles
+              </.link>
+              <.link href={~p"/colaboraciones"} class="btn btn-ghost w-full sm:w-auto">
+                Ver todas las colaboraciones <.icon name="hero-arrow-right" class="size-4" />
+              </.link>
+            </div>
+            <p :if={@more_count > 0} class="mt-4 text-sm text-base-content/70">
+              {if @more_count == 1,
+                do: "Hay 1 colaboración más en los próximos días.",
+                else: "Hay #{@more_count} colaboraciones más en los próximos días."}
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+    """
+  end
+
+  defp ended?(event, now) do
+    case Date.compare(event.event_date, NaiveDateTime.to_date(now)) do
+      :lt -> true
+      :gt -> false
+      :eq -> Time.compare(event.end_time, NaiveDateTime.to_time(now)) != :gt
+    end
+  end
+
+  # :live while it is happening, :later_today if it starts later today, else :upcoming
+  defp event_status(event, now) do
+    today = NaiveDateTime.to_date(now)
+    time = NaiveDateTime.to_time(now)
+
+    cond do
+      event.event_date != today -> :upcoming
+      Time.compare(event.start_time, time) == :gt -> :later_today
+      Time.compare(event.end_time, time) == :gt -> :live
+      true -> :upcoming
+    end
+  end
+
+  defp day_label(date, today) do
+    case Date.diff(date, today) do
+      0 -> "Hoy"
+      1 -> "Mañana"
+      _ -> "#{weekday_name(Date.day_of_week(date))} #{date.day}"
+    end
+  end
+
+  defp weekday_name(n),
+    do: Enum.at(~w(Lunes Martes Miércoles Jueves Viernes Sábado Domingo), n - 1)
+
+  defp month_abbr(n),
+    do: Enum.at(~w(Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic), n - 1)
+
+  defp load_upcoming_events(socket) do
+    events = Events.list_upcoming_events()
+
+    socket
+    |> assign(:next_event, List.first(events))
+    |> assign(:more_events_count, max(length(events) - 1, 0))
+    |> assign(:lightbox, nil)
+    |> assign(:cdmx_now, cdmx_now())
+  end
+
+  defp cdmx_now do
+    DateTime.utc_now()
+    |> DateTime.add(-6 * 3600, :second)
+    |> DateTime.to_naive()
   end
 
   # ---------------------------------------------------------------------------

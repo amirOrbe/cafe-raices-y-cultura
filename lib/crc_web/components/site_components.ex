@@ -841,4 +841,116 @@ defmodule CRCWeb.Components.SiteComponents do
     </span>
     """
   end
+
+  # ---------------------------------------------------------------------------
+  # Photo lightbox
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Full-screen photo viewer rendered in place (no new tab). The parent LiveView
+  owns the state (`nil` or `%{photos: [...], index: i, title: "..."}`) and
+  handles `lightbox_close`, `lightbox_prev`, `lightbox_next` and `lightbox_key`
+  — see `lightbox_step/2`.
+  """
+  attr :lightbox, :map, default: nil
+
+  def photo_lightbox(%{lightbox: nil} = assigns), do: ~H""
+
+  def photo_lightbox(assigns) do
+    assigns =
+      assign(assigns,
+        photo: Enum.at(assigns.lightbox.photos, assigns.lightbox.index),
+        total: length(assigns.lightbox.photos)
+      )
+
+    ~H"""
+    <div
+      id="photo-lightbox"
+      class="fixed inset-0 z-[60] flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label={"Fotos de #{@lightbox.title}"}
+      phx-window-keydown="lightbox_key"
+    >
+      <%!-- Backdrop: clicking outside the photo closes the viewer --%>
+      <div class="absolute inset-0 bg-black/90" phx-click="lightbox_close"></div>
+
+      <figure class="relative z-10 flex flex-col items-center gap-3 px-4 pointer-events-none">
+        <img
+          src={photo_url(@photo.image_url, :full)}
+          alt={@photo.caption || @lightbox.title}
+          class="max-h-[80vh] max-w-full sm:max-w-[90vw] object-contain rounded-lg shadow-2xl pointer-events-auto"
+        />
+        <figcaption class="text-white/90 text-sm text-center max-w-xl">
+          <span :if={@photo.caption} class="block">{@photo.caption}</span>
+          <span :if={@total > 1} class="text-white/60 tabular-nums">
+            {@lightbox.index + 1} / {@total}
+          </span>
+        </figcaption>
+      </figure>
+
+      <button
+        type="button"
+        phx-click="lightbox_close"
+        class="absolute top-4 right-4 z-20 size-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+        aria-label="Cerrar"
+      >
+        <.icon name="hero-x-mark" class="size-6" />
+      </button>
+      <%= if @total > 1 do %>
+        <button
+          type="button"
+          phx-click="lightbox_prev"
+          class="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 z-20 size-11 sm:size-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+          aria-label="Foto anterior"
+        >
+          <.icon name="hero-chevron-left" class="size-6" />
+        </button>
+        <button
+          type="button"
+          phx-click="lightbox_next"
+          class="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 z-20 size-11 sm:size-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+          aria-label="Foto siguiente"
+        >
+          <.icon name="hero-chevron-right" class="size-6" />
+        </button>
+      <% end %>
+    </div>
+    """
+  end
+
+  @doc """
+  Applies a lightbox action (`"close" | "prev" | "next"` or a keyboard key) to
+  the lightbox state, returning the new state.
+  """
+  @spec lightbox_step(map() | nil, String.t()) :: map() | nil
+  def lightbox_step(nil, _action), do: nil
+  def lightbox_step(_lightbox, action) when action in ["close", "Escape"], do: nil
+
+  def lightbox_step(%{photos: photos, index: i} = lightbox, action)
+      when action in ["next", "ArrowRight"],
+      do: %{lightbox | index: rem(i + 1, length(photos))}
+
+  def lightbox_step(%{photos: photos, index: i} = lightbox, action)
+      when action in ["prev", "ArrowLeft"],
+      do: %{lightbox | index: rem(i - 1 + length(photos), length(photos))}
+
+  def lightbox_step(lightbox, _other), do: lightbox
+
+  @doc """
+  Sized Cloudinary delivery URL for an uploaded photo (`:thumb` square crop,
+  `:cover` 16:10 crop, `:full` up to 1600px). Non-Cloudinary URLs pass through.
+  """
+  @spec photo_url(String.t(), :thumb | :cover | :full) :: String.t()
+  def photo_url(url, size) do
+    if String.contains?(url, "res.cloudinary.com/") do
+      String.replace(url, "/upload/", "/upload/#{photo_transform(size)}/", global: false)
+    else
+      url
+    end
+  end
+
+  defp photo_transform(:thumb), do: "c_fill,g_auto,w_400,h_400,q_auto,f_auto"
+  defp photo_transform(:cover), do: "c_fill,g_auto,w_1000,h_625,q_auto,f_auto"
+  defp photo_transform(:full), do: "c_limit,w_1600,q_auto,f_auto"
 end

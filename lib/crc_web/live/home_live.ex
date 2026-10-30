@@ -5,10 +5,16 @@ defmodule CRCWeb.HomeLive do
 
   alias CRCWeb.Components.SiteComponents
   alias CRC.Catalog
+  alias CRC.Events
   alias CRC.Settings
+
+  # How many upcoming events the home teaser shows before pointing to /colaboraciones
+  @max_home_events 3
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket), do: Phoenix.PubSub.subscribe(CRC.PubSub, "admin:events")
+
     # Carousel always uses local photos shuffled randomly — every visit shows a different order
     photos = carousel_photos() |> Enum.shuffle()
     packages = Catalog.list_packages()
@@ -23,8 +29,14 @@ defmodule CRCWeb.HomeLive do
       |> assign(:nav_open, false)
       |> assign(:packages, packages)
       |> assign(:cafe_hours, cafe_hours)
+      |> load_upcoming_events()
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_info({:event_changed, _}, socket) do
+    {:noreply, load_upcoming_events(socket)}
   end
 
   @impl true
@@ -72,6 +84,12 @@ defmodule CRCWeb.HomeLive do
       />
       <main class="flex-1">
         <.hero_section photos={@photos} active_slide={@active_slide} autoplay={@autoplay} />
+        <.events_section
+          :if={@upcoming_events != []}
+          events={@upcoming_events}
+          more_count={@more_events_count}
+          now={@cdmx_now}
+        />
         <.about_section cafe_hours={@cafe_hours} />
         <.packages_section :if={@packages != []} packages={@packages} />
         <.contact_section cafe_hours={@cafe_hours} />
@@ -237,6 +255,136 @@ defmodule CRCWeb.HomeLive do
   defp near_slide?(index, active, total) do
     diff = abs(index - active)
     diff <= 1 or diff == total - 1
+  end
+
+  # ---------------------------------------------------------------------------
+  # Upcoming events teaser
+  # ---------------------------------------------------------------------------
+
+  attr :events, :list, required: true
+  attr :more_count, :integer, default: 0
+  attr :now, NaiveDateTime, required: true
+
+  defp events_section(assigns) do
+    ~H"""
+    <section id="eventos" class="py-12 sm:py-16 bg-base-200 border-b border-base-300">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-8">
+          <div>
+            <p class="text-sm font-semibold text-secondary uppercase tracking-wider">
+              Agenda cultural
+            </p>
+            <h2 class="text-2xl sm:text-3xl font-bold text-base-content leading-tight mt-1">
+              {events_heading(@events, @now)}
+            </h2>
+          </div>
+          <.link
+            href={~p"/colaboraciones"}
+            class="hidden sm:inline-flex items-center gap-1.5 text-primary font-semibold hover:underline"
+          >
+            Ver calendario completo <.icon name="hero-arrow-right" class="size-4" />
+          </.link>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          <.link
+            :for={event <- @events}
+            href={"/colaboraciones?fecha=#{Date.to_iso8601(event.event_date)}#day-detail"}
+            class="group bg-base-100 rounded-2xl border border-base-300 hover:border-primary/40 shadow-sm hover:shadow-md transition-all p-5 flex gap-4"
+          >
+            <div class="shrink-0 w-14 rounded-xl bg-primary/10 text-primary flex flex-col items-center justify-center py-2 self-start">
+              <span class="text-[11px] font-semibold uppercase tracking-wide">
+                {month_abbr(event.event_date.month)}
+              </span>
+              <span class="text-2xl font-bold leading-none tabular-nums">
+                {event.event_date.day}
+              </span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                <%= if live_now?(event, @now) do %>
+                  <span class="inline-flex items-center gap-1 bg-success text-success-content font-bold text-[11px] uppercase tracking-wider px-2 py-0.5 rounded-full">
+                    <span class="size-1.5 rounded-full bg-success-content motion-safe:animate-pulse"></span>
+                    En vivo
+                  </span>
+                <% else %>
+                  <span class="text-xs font-semibold text-secondary">
+                    {day_label(event.event_date, NaiveDateTime.to_date(@now))}
+                  </span>
+                <% end %>
+                <span :if={event.event_type} class="badge badge-sm badge-ghost">
+                  {event.event_type.name}
+                </span>
+              </div>
+              <h3 class="font-bold text-base-content leading-snug group-hover:text-primary transition-colors break-words">
+                {event.title}
+              </h3>
+              <p class="text-sm text-base-content/70 mt-1 tabular-nums">
+                {format_time(event.start_time)} – {format_time(event.end_time)}
+              </p>
+            </div>
+          </.link>
+        </div>
+
+        <div class="mt-6 flex flex-col sm:flex-row sm:items-center gap-3 text-sm">
+          <p :if={@more_count > 0} class="text-base-content/70">
+            {if @more_count == 1,
+              do: "Y 1 evento más en los próximos días.",
+              else: "Y #{@more_count} eventos más en los próximos días."}
+          </p>
+          <.link
+            href={~p"/colaboraciones"}
+            class="sm:hidden btn btn-primary btn-sm w-full"
+          >
+            Ver calendario completo
+          </.link>
+        </div>
+      </div>
+    </section>
+    """
+  end
+
+  defp events_heading(events, now) do
+    today = NaiveDateTime.to_date(now)
+
+    if Enum.any?(events, &(&1.event_date == today)),
+      do: "Hoy en Café Raíces y Cultura",
+      else: "Próximos eventos"
+  end
+
+  defp live_now?(event, now) do
+    event.event_date == NaiveDateTime.to_date(now) and
+      Time.compare(event.start_time, NaiveDateTime.to_time(now)) != :gt and
+      Time.compare(event.end_time, NaiveDateTime.to_time(now)) == :gt
+  end
+
+  defp day_label(date, today) do
+    case Date.diff(date, today) do
+      0 -> "Hoy"
+      1 -> "Mañana"
+      _ -> "#{weekday_name(Date.day_of_week(date))} #{date.day}"
+    end
+  end
+
+  defp weekday_name(n),
+    do: Enum.at(~w(Lunes Martes Miércoles Jueves Viernes Sábado Domingo), n - 1)
+
+  defp month_abbr(n),
+    do: Enum.at(~w(Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic), n - 1)
+
+  defp load_upcoming_events(socket) do
+    events = Events.list_upcoming_events()
+
+    socket
+    |> assign(:upcoming_events, Enum.take(events, @max_home_events))
+    |> assign(:more_events_count, max(length(events) - @max_home_events, 0))
+    |> assign(:cdmx_now, cdmx_now())
+  end
+
+  defp cdmx_now do
+    DateTime.utc_now()
+    |> DateTime.add(-6 * 3600, :second)
+    |> DateTime.to_naive()
   end
 
   # ---------------------------------------------------------------------------

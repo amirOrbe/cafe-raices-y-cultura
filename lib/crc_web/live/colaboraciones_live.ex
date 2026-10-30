@@ -39,6 +39,24 @@ defmodule CRCWeb.ColaboracionesLive do
     {:ok, socket}
   end
 
+  # Deep link from the home page: /colaboraciones?fecha=YYYY-MM-DD opens that
+  # day's month with its detail panel expanded.
+  @impl true
+  def handle_params(%{"fecha" => date_str}, _uri, socket) do
+    case Date.from_iso8601(date_str) do
+      {:ok, date} ->
+        {:noreply,
+         socket
+         |> assign(cal_year: date.year, cal_month: date.month, selected_date: date)
+         |> load_month_events()}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_params(_params, _uri, socket), do: {:noreply, socket}
+
   # ---------------------------------------------------------------------------
   # Messages
   # ---------------------------------------------------------------------------

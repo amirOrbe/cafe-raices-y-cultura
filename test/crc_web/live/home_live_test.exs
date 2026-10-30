@@ -227,4 +227,59 @@ defmodule CRCWeb.HomeLiveTest do
       assert html =~ "Ahorras"
     end
   end
+
+  describe "upcoming events teaser" do
+    defp cdmx_today do
+      DateTime.utc_now() |> DateTime.add(-6 * 3600, :second) |> DateTime.to_date()
+    end
+
+    defp insert_event(overrides) do
+      attrs =
+        Map.merge(
+          %{
+            title: "Evento Inicio #{System.unique_integer([:positive])}",
+            event_date: Date.add(cdmx_today(), 2),
+            start_time: ~T[18:00:00],
+            end_time: ~T[21:00:00]
+          },
+          overrides
+        )
+
+      {:ok, event} = CRC.Events.create_event(attrs)
+      event
+    end
+
+    test "hidden when there are no upcoming events", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/")
+      refute html =~ ~s(id="eventos")
+    end
+
+    test "shows upcoming events linking to their day in /colaboraciones", %{conn: conn} do
+      event = insert_event(%{title: "Noche De Poesía"})
+      {:ok, _lv, html} = live(conn, ~p"/")
+
+      assert html =~ "Próximos eventos"
+      assert html =~ "Noche De Poesía"
+      assert html =~ "/colaboraciones?fecha=#{Date.to_iso8601(event.event_date)}"
+      assert html =~ "Ver calendario completo"
+    end
+
+    test "inactive events are not shown", %{conn: conn} do
+      insert_event(%{title: "Evento Oculto", active: false})
+      {:ok, _lv, html} = live(conn, ~p"/")
+      refute html =~ "Evento Oculto"
+    end
+
+    test "caps the list and reports how many more there are", %{conn: conn} do
+      for i <- 1..5, do: insert_event(%{event_date: Date.add(cdmx_today(), i)})
+      {:ok, _lv, html} = live(conn, ~p"/")
+      assert html =~ "Y 2 eventos más en los próximos días."
+    end
+
+    test "appears in real time when an event is created", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/")
+      insert_event(%{title: "Concierto Sorpresa"})
+      assert render(lv) =~ "Concierto Sorpresa"
+    end
+  end
 end

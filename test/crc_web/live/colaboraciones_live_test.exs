@@ -422,4 +422,21 @@ defmodule CRCWeb.ColaboracionesLiveTest do
       assert html =~ "Artista Hoy"
     end
   end
+
+  describe "deep link ?fecha=" do
+    test "opens the given day's detail panel", %{conn: conn} do
+      date = Date.add(cdmx_today(), 40)
+      insert_event(%{title: "Taller Lejano", event_date: date})
+
+      {:ok, _lv, html} = live(conn, ~p"/colaboraciones?fecha=#{Date.to_iso8601(date)}")
+
+      assert html =~ ~s(id="day-detail")
+      assert html =~ "Taller Lejano"
+    end
+
+    test "ignores an invalid date", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/colaboraciones?fecha=no-es-fecha")
+      assert html =~ "Colaboraciones"
+    end
+  end
 end

@@ -33,6 +33,7 @@ defmodule CRCWeb.ColaboracionesLive do
       |> assign(:cal_year, today.year)
       |> assign(:cal_month, today.month)
       |> assign(:selected_date, nil)
+      |> assign(:lightbox, nil)
       |> load_month_events()
       |> load_current_event()
 
@@ -103,6 +104,28 @@ defmodule CRCWeb.ColaboracionesLive do
      socket
      |> assign(cal_year: y, cal_month: m, selected_date: nil)
      |> load_month_events()}
+  end
+
+  def handle_event("open_photo", %{"event" => event_id, "index" => index}, socket) do
+    event_id = String.to_integer(event_id)
+
+    case Enum.find(socket.assigns.cal_events, &(&1.id == event_id)) do
+      nil ->
+        {:noreply, socket}
+
+      event ->
+        {:noreply,
+         assign(socket, :lightbox, %{
+           photos: event.event_photos,
+           index: String.to_integer(index),
+           title: event.title
+         })}
+    end
+  end
+
+  def handle_event("lightbox_" <> action, params, socket) do
+    action = if action == "key", do: params["key"], else: action
+    {:noreply, update(socket, :lightbox, &SiteComponents.lightbox_step(&1, action))}
   end
 
   def handle_event("select_day", %{"date" => date_str}, socket) do
@@ -402,21 +425,23 @@ defmodule CRCWeb.ColaboracionesLive do
                               </span>
                             </p>
                             <div class="carousel carousel-center gap-2 w-full">
-                              <%= for photo <- event.event_photos do %>
+                              <%= for {photo, index} <- Enum.with_index(event.event_photos) do %>
                                 <div class="carousel-item">
-                                  <a
-                                    href={photo.image_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="block overflow-hidden rounded-xl group"
+                                  <button
+                                    type="button"
+                                    phx-click="open_photo"
+                                    phx-value-event={event.id}
+                                    phx-value-index={index}
+                                    class="block overflow-hidden rounded-xl group cursor-zoom-in"
+                                    aria-label={"Ver foto #{index + 1} en grande"}
                                   >
                                     <img
-                                      src={photo.image_url}
+                                      src={SiteComponents.photo_url(photo.image_url, :thumb)}
                                       alt={photo.caption || event.title}
                                       class="h-44 w-44 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
                                       loading="lazy"
                                     />
-                                  </a>
+                                  </button>
                                 </div>
                               <% end %>
                             </div>
@@ -459,6 +484,7 @@ defmodule CRCWeb.ColaboracionesLive do
         </section>
       </main>
       <SiteComponents.site_footer />
+      <SiteComponents.photo_lightbox lightbox={@lightbox} />
     </div>
     """
   end

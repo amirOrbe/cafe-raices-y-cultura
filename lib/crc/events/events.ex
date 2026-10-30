@@ -147,7 +147,7 @@ defmodule CRC.Events do
 
   @doc """
   Returns upcoming events (within next 15 days from CDMX time),
-  active only, preloaded.
+  active only, preloaded (photos oldest first).
   """
   @spec list_upcoming_events() :: [Event.t()]
   def list_upcoming_events do
@@ -169,6 +169,7 @@ defmodule CRC.Events do
         preload: [event_type: et, event_collaborators: {ec, collaborator: c}],
         order_by: [asc: e.event_date, asc: e.start_time]
     )
+    |> Repo.preload(event_photos: from(p in EventPhoto, order_by: [asc: p.inserted_at]))
   end
 
   @doc """

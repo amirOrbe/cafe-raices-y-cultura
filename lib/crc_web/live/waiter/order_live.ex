@@ -1034,7 +1034,7 @@ defmodule CRCWeb.Waiter.OrderLive do
     assigns = assign(assigns, :menu_item_ids_with_extras, menu_item_ids_with_extras)
 
     ~H"""
-    <div id="sound-notifier" phx-hook="SoundNotifier" class="hidden"></div>
+    <div id="sound-notifier" phx-hook="SoundNotifier" data-keep-connected class="hidden"></div>
 
     <div class="h-screen flex flex-col bg-base-200 overflow-hidden">
       <%!-- ── Encabezado fijo (no scrollea) ────────────────────────────────────── --%>

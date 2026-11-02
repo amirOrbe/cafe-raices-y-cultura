@@ -9,6 +9,7 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/crc"
 import topbar from "../vendor/topbar"
+import {disconnectWhenHidden} from "./disconnect_when_hidden"
 
 // ---------------------------------------------------------------------------
 // Hooks
@@ -359,6 +360,7 @@ window.addEventListener("phx:scroll-to", ({detail}) => {
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()
+disconnectWhenHidden(liveSocket)
 
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()

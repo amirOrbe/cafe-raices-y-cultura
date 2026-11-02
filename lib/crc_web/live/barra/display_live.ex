@@ -233,7 +233,7 @@ defmodule CRCWeb.Barra.DisplayLive do
       current_page={:barra}
       current_user={@current_user}
     />
-    <div id="sound-notifier" phx-hook="SoundNotifier" class="hidden"></div>
+    <div id="sound-notifier" phx-hook="SoundNotifier" data-keep-connected class="hidden"></div>
     <div class="min-h-screen bg-base-200 pt-20 pb-10 px-4">
       <div class="max-w-6xl mx-auto space-y-4">
         <%!-- Header --%>

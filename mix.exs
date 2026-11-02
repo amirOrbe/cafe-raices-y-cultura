@@ -94,6 +94,7 @@ defmodule CRC.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:bcrypt_elixir, "~> 3.0"},
       {:gen_smtp, "~> 1.2"},
       {:nimble_csv, "~> 1.2"}
@@ -119,7 +120,13 @@ defmodule CRC.MixProject do
         "esbuild crc --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: [
+        "compile --warnings-as-errors",
+        "deps.unlock --unused",
+        "format",
+        "credo",
+        "test"
+      ]
     ]
   end
 end

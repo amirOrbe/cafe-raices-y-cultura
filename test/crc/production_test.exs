@@ -377,7 +377,7 @@ defmodule CRC.ProductionTest do
       {:ok, _} = Production.log_production(recipe.id, "1", user.id)
 
       logs = Production.list_today_logs()
-      assert length(logs) >= 1
+      assert logs != []
     end
 
     test "GIVEN a log from today WHEN listing THEN recipe and user are preloaded" do

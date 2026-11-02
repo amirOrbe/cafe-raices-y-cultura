@@ -70,27 +70,25 @@ defmodule CRCWeb.Admin.CalendarioLive do
     day = Map.get(params, "day")
     user_id = Map.get(params, "user")
 
-    cond do
-      is_nil(task_id) or is_nil(day) ->
-        Logger.warning(
-          "[CalendarioLive] assign_user: missing task or day — params: #{inspect(params)}"
+    if is_nil(task_id) or is_nil(day) do
+      Logger.warning(
+        "[CalendarioLive] assign_user: missing task or day — params: #{inspect(params)}"
+      )
+
+      {:noreply, socket}
+    else
+      result =
+        Schedule.upsert_assignment(
+          String.to_integer(task_id),
+          String.to_integer(day),
+          socket.assigns.week_start,
+          user_id || ""
         )
 
-        {:noreply, socket}
+      Logger.info("[CalendarioLive] upsert_assignment result: #{inspect(result)}")
 
-      true ->
-        result =
-          Schedule.upsert_assignment(
-            String.to_integer(task_id),
-            String.to_integer(day),
-            socket.assigns.week_start,
-            user_id || ""
-          )
-
-        Logger.info("[CalendarioLive] upsert_assignment result: #{inspect(result)}")
-
-        Phoenix.PubSub.broadcast(CRC.PubSub, "schedule:assignments", :assignments_updated)
-        {:noreply, load_assignments(socket)}
+      Phoenix.PubSub.broadcast(CRC.PubSub, "schedule:assignments", :assignments_updated)
+      {:noreply, load_assignments(socket)}
     end
   end
 

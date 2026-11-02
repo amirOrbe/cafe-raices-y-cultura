@@ -27,7 +27,7 @@ defmodule CRCWeb.EmailConfirmLiveTest do
     test "GIVEN expired token WHEN visiting /confirmar-email THEN page renders without crash",
          %{conn: conn} do
       # Sign a valid but structurally different token that will be rejected
-      expired_token = Phoenix.Token.sign(CRCWeb.Endpoint, "email_confirm", 99999)
+      expired_token = Phoenix.Token.sign(CRCWeb.Endpoint, "email_confirm", 99_999)
 
       # Can't easily make it "expired" without waiting, but this covers the code path
       assert {:ok, _lv, html} = live(conn, ~p"/confirmar-email?token=#{expired_token}")

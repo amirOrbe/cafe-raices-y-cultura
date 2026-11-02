@@ -472,7 +472,7 @@ defmodule CRC.AccountsTest do
       })
 
       results = Accounts.list_recognitions_for_user(empleado.id)
-      assert length(results) >= 1
+      assert results != []
     end
 
     test "no retorna reconocimientos de hace más de 30 días" do

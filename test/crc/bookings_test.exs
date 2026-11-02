@@ -258,7 +258,7 @@ defmodule CRC.BookingsTest do
     test "returns list of available time slots" do
       times = Reservation.available_times()
       assert is_list(times)
-      assert length(times) > 0
+      assert times != []
     end
   end
 

@@ -185,8 +185,7 @@ defmodule CRCWeb.Admin.ClienteLive do
       {:error, %Ecto.Changeset{} = cs} ->
         msg =
           cs.errors
-          |> Enum.map(fn {f, {m, _}} -> "#{f}: #{m}" end)
-          |> Enum.join(", ")
+          |> Enum.map_join(", ", fn {f, {m, _}} -> "#{f}: #{m}" end)
 
         {:noreply, put_flash(socket, :error, "No se pudo crear el paquete — #{msg}")}
 

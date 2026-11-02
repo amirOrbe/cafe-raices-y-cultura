@@ -1011,8 +1011,7 @@ defmodule CRCWeb.Waiter.OrderLive do
       {:error, changeset} ->
         msg =
           changeset.errors
-          |> Enum.map(fn {field, {msg, _}} -> "#{field}: #{msg}" end)
-          |> Enum.join(", ")
+          |> Enum.map_join(", ", fn {field, {msg, _}} -> "#{field}: #{msg}" end)
 
         {:noreply, assign(socket, :flash_msg, {:error, "Error al cerrar: #{msg}"})}
     end

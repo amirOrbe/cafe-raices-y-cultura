@@ -398,7 +398,7 @@ defmodule CRC.SettingsTest do
 
       # Grouped hours — with 7 days where 1 has different closing, expect 2+ groups
       groups = Settings.grouped_hours()
-      assert length(groups) >= 1
+      assert groups != []
     end
   end
 end

@@ -25,8 +25,7 @@ defmodule CRC.Utils do
     str
     |> String.trim()
     |> String.split(~r/\s+/)
-    |> Enum.map(&String.capitalize/1)
-    |> Enum.join(" ")
+    |> Enum.map_join(" ", &String.capitalize/1)
   end
 
   @doc """

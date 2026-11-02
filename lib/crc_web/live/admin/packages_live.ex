@@ -99,15 +99,13 @@ defmodule CRCWeb.Admin.PackagesLive do
       result =
         case socket.assigns.modal do
           :new ->
-            with {:ok, package} <- Catalog.create_package(params),
-                 {:ok, package} <- Catalog.set_package_items(package, selected) do
-              {:ok, package}
+            with {:ok, package} <- Catalog.create_package(params) do
+              Catalog.set_package_items(package, selected)
             end
 
           {:edit, pkg} ->
-            with {:ok, package} <- Catalog.update_package(pkg, params),
-                 {:ok, package} <- Catalog.set_package_items(package, selected) do
-              {:ok, package}
+            with {:ok, package} <- Catalog.update_package(pkg, params) do
+              Catalog.set_package_items(package, selected)
             end
         end
 

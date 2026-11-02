@@ -537,7 +537,7 @@ defmodule CRC.HRTest do
       HR.get_or_create_today_record(user)
 
       records = HR.list_attendance_for_user(user.id, today.year, today.month)
-      assert length(records) >= 1
+      assert records != []
     end
 
     test "GIVEN user with no records WHEN listing THEN returns empty list" do
@@ -639,7 +639,7 @@ defmodule CRC.HRTest do
 
       # View attendance history
       records = HR.list_attendance_for_user(employee.id, today.year, today.month)
-      assert length(records) >= 1
+      assert records != []
       assert hd(records).user_id == employee.id
     end
   end

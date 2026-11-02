@@ -163,21 +163,23 @@ defmodule CRCWeb.Admin.EventsLive do
       end
 
     timeline =
-      with {:ok, new_date} <- Date.from_iso8601(date_str) do
-        current_date = socket.assigns.timeline && socket.assigns.timeline.date
+      case Date.from_iso8601(date_str) do
+        {:ok, new_date} ->
+          current_date = socket.assigns.timeline && socket.assigns.timeline.date
 
-        if new_date == current_date do
-          # Date unchanged — just update time positions, no DB call
-          %{
-            socket.assigns.timeline
-            | new_start: parse_time_opt(start_str),
-              new_end: parse_time_opt(end_str)
-          }
-        else
-          compute_timeline(date_str, start_str, end_str, editing_event_id)
-        end
-      else
-        _ -> nil
+          if new_date == current_date do
+            # Date unchanged — just update time positions, no DB call
+            %{
+              socket.assigns.timeline
+              | new_start: parse_time_opt(start_str),
+                new_end: parse_time_opt(end_str)
+            }
+          else
+            compute_timeline(date_str, start_str, end_str, editing_event_id)
+          end
+
+        _ ->
+          nil
       end
 
     {:noreply, assign(socket, :timeline, timeline)}

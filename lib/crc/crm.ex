@@ -606,7 +606,7 @@ defmodule CRC.CRM do
   end
 
   @doc """
-  Todo lo que necesita la ficha del cliente en el admin, en una llamada:
+  Everything the admin customer page needs, in one call:
   `%{customer, visit_count, pending_rewards, redemptions, spend, top_items,
      orders, birthday_today?, birthday_reward}`.
   """

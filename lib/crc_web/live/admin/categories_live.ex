@@ -9,7 +9,7 @@ defmodule CRCWeb.Admin.CategoriesLive do
     socket =
       socket
       |> assign(:page_title, "Categorías de platillos · Admin")
-      |> assign(:categories, list_categories_with_count())
+      |> assign(:categories, Catalog.list_categories_with_item_count())
       |> assign(:modal, nil)
       |> assign(:form, nil)
 
@@ -54,7 +54,7 @@ defmodule CRCWeb.Admin.CategoriesLive do
         {:noreply,
          socket
          |> put_flash(:info, "Categoría #{label} correctamente.")
-         |> assign(:categories, list_categories_with_count())
+         |> assign(:categories, Catalog.list_categories_with_item_count())
          |> assign(:modal, nil)
          |> assign(:form, nil)}
 
@@ -73,7 +73,7 @@ defmodule CRCWeb.Admin.CategoriesLive do
         {:noreply,
          socket
          |> put_flash(:info, "Categoría #{action} correctamente.")
-         |> assign(:categories, list_categories_with_count())}
+         |> assign(:categories, Catalog.list_categories_with_item_count())}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "No se pudo cambiar el estado.")}
@@ -88,7 +88,7 @@ defmodule CRCWeb.Admin.CategoriesLive do
         {:noreply,
          socket
          |> put_flash(:info, "Categoría eliminada correctamente.")
-         |> assign(:categories, list_categories_with_count())}
+         |> assign(:categories, Catalog.list_categories_with_item_count())}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "No se pudo eliminar la categoría.")}
@@ -296,26 +296,5 @@ defmodule CRCWeb.Admin.CategoriesLive do
       </.form>
     </.admin_modal>
     """
-  end
-
-  defp list_categories_with_count do
-    import Ecto.Query
-    alias CRC.Repo
-    alias CRC.Catalog.{Category, MenuItem}
-
-    Repo.all(
-      from c in Category,
-        left_join: m in MenuItem,
-        on: m.category_id == c.id,
-        group_by: c.id,
-        select: %{
-          id: c.id,
-          name: c.name,
-          active: c.active,
-          slug: c.slug,
-          item_count: count(m.id)
-        },
-        order_by: [asc: c.name]
-    )
   end
 end

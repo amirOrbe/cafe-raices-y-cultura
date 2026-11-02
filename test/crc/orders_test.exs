@@ -394,6 +394,38 @@ defmodule CRC.OrdersTest do
   # change_order_table/2
   # ---------------------------------------------------------------------------
 
+  describe "delete_empty_order/1" do
+    test "deletes an open order with no items and broadcasts" do
+      order = insert_order()
+      # Subscribe after creating it: create_order/1 broadcasts the same message.
+      Phoenix.PubSub.subscribe(CRC.PubSub, "orders")
+
+      assert Orders.delete_empty_order(order.id) == :ok
+      assert CRC.Repo.get(Order, order.id) == nil
+      order_id = order.id
+      assert_received {:order_updated, ^order_id}
+    end
+
+    test "keeps the order and its items when someone already added a dish" do
+      cat = insert_category()
+      mi = insert_menu_item(cat.id)
+      order = insert_order()
+      item = insert_order_item(order.id, mi.id)
+
+      assert Orders.delete_empty_order(order.id) == {:error, :not_empty_or_closed}
+      assert CRC.Repo.get(Order, order.id)
+      assert CRC.Repo.get(OrderItem, item.id)
+    end
+
+    test "does not delete a closed order" do
+      order = insert_order()
+      {:ok, _} = order |> Ecto.Changeset.change(status: "closed") |> CRC.Repo.update()
+
+      assert Orders.delete_empty_order(order.id) == {:error, :not_empty_or_closed}
+      assert CRC.Repo.get(Order, order.id)
+    end
+  end
+
   describe "change_order_table/2" do
     test "updates table_id and renames the order to match the new table" do
       {:ok, old_table} = Orders.create_table(%{number: 1, capacity: 2})

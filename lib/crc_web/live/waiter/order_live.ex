@@ -360,7 +360,7 @@ defmodule CRCWeb.Waiter.OrderLive do
       socket.assigns.menu_items
       |> Enum.find_value(fn {mi, _in_stock?} -> if mi.id == menu_item_id, do: mi end)
       |> then(fn
-        nil -> CRC.Repo.get(CRC.Catalog.MenuItem, menu_item_id) |> CRC.Repo.preload(:category)
+        nil -> Catalog.get_menu_item(menu_item_id)
         mi -> mi
       end)
 
@@ -739,11 +739,16 @@ defmodule CRCWeb.Waiter.OrderLive do
   def handle_event("cancel_order", _params, socket) do
     order = socket.assigns.order
 
-    if order.order_items == [] and order.status == "open" do
-      CRC.Repo.delete(order)
+    with true <- order.order_items == [] and order.status == "open",
+         :ok <- Orders.delete_empty_order(order.id) do
       {:noreply, redirect(socket, to: "/mesa")}
     else
-      {:noreply, socket}
+      false ->
+        {:noreply, socket}
+
+      {:error, :not_empty_or_closed} ->
+        {:noreply,
+         assign(socket, :flash_msg, {:error, "La cuenta ya tiene productos, no se canceló"})}
     end
   end
 

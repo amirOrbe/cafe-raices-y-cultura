@@ -21,6 +21,28 @@ defmodule CRC.Catalog do
   # Categories
   # ---------------------------------------------------------------------------
 
+  @doc """
+  Returns every category (active or not) ordered by name, with how many menu
+  items each one has. For the admin categories list.
+  """
+  @spec list_categories_with_item_count() :: [map()]
+  def list_categories_with_item_count do
+    Repo.all(
+      from c in Category,
+        left_join: m in MenuItem,
+        on: m.category_id == c.id,
+        group_by: c.id,
+        select: %{
+          id: c.id,
+          name: c.name,
+          active: c.active,
+          slug: c.slug,
+          item_count: count(m.id)
+        },
+        order_by: [asc: c.name]
+    )
+  end
+
   @doc "Returns all active categories ordered by name, preloading their items with ingredient quantities."
   def list_categories do
     Category
@@ -91,6 +113,15 @@ defmodule CRC.Catalog do
     |> order_by(:name)
     |> preload(:category)
     |> Repo.all()
+  end
+
+  @doc "Gets a single menu item by id with its category, or `nil` if it doesn't exist."
+  @spec get_menu_item(integer()) :: MenuItem.t() | nil
+  def get_menu_item(id) do
+    case Repo.get(MenuItem, id) do
+      nil -> nil
+      menu_item -> Repo.preload(menu_item, :category)
+    end
   end
 
   @doc "Gets a single menu item by id. Raises if not found."

@@ -180,6 +180,34 @@ defmodule CRC.Orders do
     end
   end
 
+  @doc """
+  Deletes an open order only while it still has no items.
+
+  The emptiness check runs in the same query as the delete: `order_items`
+  cascade on delete, so checking a stale copy of the order could wipe out a
+  dish another waiter just added. Broadcasts so floor maps free the table.
+  """
+  @spec delete_empty_order(integer()) :: :ok | {:error, :not_empty_or_closed}
+  def delete_empty_order(order_id) do
+    items = from(oi in OrderItem, where: oi.order_id == parent_as(:order).id, select: 1)
+
+    {deleted, _} =
+      from(o in Order,
+        as: :order,
+        where: o.id == ^order_id and o.status == "open",
+        where: not exists(items)
+      )
+      |> Repo.delete_all()
+
+    if deleted == 1 do
+      broadcast({:order_updated, order_id})
+      broadcast_tables_changed()
+      :ok
+    else
+      {:error, :not_empty_or_closed}
+    end
+  end
+
   @doc "Updates an order."
   def update_order(%Order{} = order, attrs) do
     order
@@ -1052,22 +1080,25 @@ defmodule CRC.Orders do
                 []
               end
 
-            orphaned_extras =
-              [item | package_siblings]
-              |> Enum.filter(& &1.menu_item_id)
-              |> Enum.flat_map(fn i ->
-                OrderItem
-                |> where(
-                  [oi],
-                  oi.order_id == ^i.order_id and
-                    oi.for_menu_item_id == ^i.menu_item_id and
-                    oi.status == "pending"
-                )
-                |> Repo.all()
-              end)
+            removed = [item | package_siblings]
+            removed_ids = Enum.map(removed, & &1.id)
+            menu_item_ids = for %OrderItem{menu_item_id: id} <- removed, id, uniq: true, do: id
 
-            Enum.each(orphaned_extras, &Repo.delete!/1)
-            Enum.each(package_siblings, &Repo.delete!/1)
+            # Pending extras/variants hanging off any removed dish, in one query.
+            OrderItem
+            |> where(
+              [oi],
+              oi.order_id == ^item.order_id and
+                oi.for_menu_item_id in ^menu_item_ids and
+                oi.status == "pending" and
+                oi.id not in ^removed_ids
+            )
+            |> Repo.delete_all()
+
+            OrderItem
+            |> where([oi], oi.id in ^Enum.map(package_siblings, & &1.id))
+            |> Repo.delete_all()
+
             deleted_item = Repo.delete!(item)
 
             [deleted_item | package_siblings]

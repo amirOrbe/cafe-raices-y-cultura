@@ -90,7 +90,7 @@ defmodule CRC.Accounts do
 
     case result do
       {:ok, user} ->
-        Task.start(fn -> deliver_welcome_email(user) end)
+        Task.Supervisor.start_child(CRC.TaskSupervisor, fn -> deliver_welcome_email(user) end)
         {:ok, user}
 
       error ->
@@ -280,7 +280,9 @@ defmodule CRC.Accounts do
   def request_password_reset(email) do
     case Repo.get_by(User, email: email) do
       %User{is_active: true} = user ->
-        Task.start(fn -> deliver_password_reset_email(user) end)
+        Task.Supervisor.start_child(CRC.TaskSupervisor, fn ->
+          deliver_password_reset_email(user)
+        end)
 
       _ ->
         :ok

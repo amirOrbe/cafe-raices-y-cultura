@@ -20,6 +20,9 @@ defmodule CRC.Application do
       CRC.Repo,
       {DNSCluster, query: Application.get_env(:crc, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: CRC.PubSub},
+      # Fire-and-forget work (emails) that must be logged if it crashes and
+      # get a chance to finish when the machine shuts down.
+      {Task.Supervisor, name: CRC.TaskSupervisor},
       # Start a worker by calling: CRC.Worker.start_link(arg)
       # {CRC.Worker, arg},
       # Start to serve requests, typically the last entry

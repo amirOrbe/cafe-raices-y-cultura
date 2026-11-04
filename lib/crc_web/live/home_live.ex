@@ -29,6 +29,7 @@ defmodule CRCWeb.HomeLive do
       |> assign(:nav_open, false)
       |> assign(:packages, packages)
       |> assign(:cafe_hours, cafe_hours)
+      |> assign(:lightbox, nil)
       |> load_upcoming_events()
 
     {:ok, socket}
@@ -476,7 +477,6 @@ defmodule CRCWeb.HomeLive do
     socket
     |> assign(:next_event, List.first(events))
     |> assign(:more_events_count, max(length(events) - 1, 0))
-    |> assign(:lightbox, nil)
     |> assign(:cdmx_now, cdmx_now())
   end
 

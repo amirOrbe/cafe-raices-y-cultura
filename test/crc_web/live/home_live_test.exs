@@ -301,6 +301,18 @@ defmodule CRCWeb.HomeLiveTest do
       refute has_element?(lv, "#photo-lightbox")
     end
 
+    test "an event update doesn't close the open lightbox", %{conn: conn} do
+      event = insert_event(%{title: "Expo Fotográfica"})
+      {:ok, _} = CRC.Events.add_event_photo(event.id, "https://example.com/a.jpg", "Primera")
+
+      {:ok, lv, _html} = live(conn, ~p"/")
+      lv |> element(~s(button[phx-click="open_photo"][phx-value-index="0"])) |> render_click()
+
+      send(lv.pid, {:event_changed, event})
+
+      assert has_element?(lv, "#photo-lightbox", "Primera")
+    end
+
     test "an event later today shows the Hoy badge with its start time", %{conn: conn} do
       now = DateTime.utc_now() |> DateTime.add(-6 * 3600, :second) |> DateTime.to_time()
 

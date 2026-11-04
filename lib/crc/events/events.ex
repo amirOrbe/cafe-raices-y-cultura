@@ -169,7 +169,7 @@ defmodule CRC.Events do
         preload: [event_type: et, event_collaborators: {ec, collaborator: c}],
         order_by: [asc: e.event_date, asc: e.start_time]
     )
-    |> Repo.preload(event_photos: from(p in EventPhoto, order_by: [asc: p.inserted_at]))
+    |> Repo.preload(event_photos: photos_oldest_first())
   end
 
   @doc """
@@ -243,7 +243,7 @@ defmodule CRC.Events do
           order_by: [asc: e.event_date, asc: e.start_time]
       )
 
-    Repo.preload(events, :event_photos)
+    Repo.preload(events, event_photos: photos_oldest_first())
   end
 
   @doc """
@@ -336,11 +336,13 @@ defmodule CRC.Events do
   @doc "Returns all photos for the given event, oldest first."
   @spec list_event_photos(integer()) :: [EventPhoto.t()]
   def list_event_photos(event_id) do
-    Repo.all(
-      from p in EventPhoto,
-        where: p.event_id == ^event_id,
-        order_by: [asc: p.inserted_at]
-    )
+    Repo.all(from p in photos_oldest_first(), where: p.event_id == ^event_id)
+  end
+
+  # inserted_at only has second precision, so id breaks ties between photos
+  # uploaded together.
+  defp photos_oldest_first do
+    from p in EventPhoto, order_by: [asc: p.inserted_at, asc: p.id]
   end
 
   @doc "Adds a photo URL to an event and broadcasts the event change."

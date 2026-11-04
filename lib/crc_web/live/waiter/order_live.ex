@@ -1559,7 +1559,9 @@ defmodule CRCWeb.Waiter.OrderLive do
                                     </span>
                                   <% else %>
                                     <%= if item.product_id do %>
-                                      {format_qty(item.portion_quantity)} {item.product.unit} ·
+                                      <span :if={item.portion_quantity}>
+                                        {format_qty(item.portion_quantity)} {item.product.unit} ·
+                                      </span>
                                       <span class="text-warning font-medium">Cocina</span>
                                     <% else %>
                                       <%= if item.loyalty_redemption_id do %>

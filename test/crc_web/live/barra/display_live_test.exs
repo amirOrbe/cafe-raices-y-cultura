@@ -393,12 +393,12 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
   end
 
   # ---------------------------------------------------------------------------
-  # REGRESSION: mark_all_drinks_ready (Todo listo barra) must bulk-mark
+  # REGRESSION: mark_drinks_ready (Todo listo barra) must bulk-mark
   # all sent drink items as ready and move them to "Listos para servir"
   # ---------------------------------------------------------------------------
 
-  describe "mark_all_drinks_ready — Todo listo barra regression" do
-    test "all sent drink items become ready after mark_all_drinks_ready", %{conn: conn} do
+  describe "mark_drinks_ready — Todo listo barra regression" do
+    test "all sent drink items become ready after mark_drinks_ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       drink_cat = insert_category("drink")
       mi1 = insert_menu_item(drink_cat.id, "Latte Todo Listo")
@@ -410,7 +410,7 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       {:ok, lv, html_before} = live(conn, "/barra")
       assert html_before =~ "Latte Todo Listo"
 
-      render_click(lv, "mark_all_drinks_ready", %{"id" => to_string(order.id)})
+      render_click(lv, "mark_drinks_ready", %{"id" => to_string(order.id), "type" => "all"})
 
       reloaded1 = CRC.Repo.get!(CRC.Orders.OrderItem, item1.id)
       reloaded2 = CRC.Repo.get!(CRC.Orders.OrderItem, item2.id)
@@ -418,7 +418,7 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       assert reloaded2.status == "ready"
     end
 
-    test "order moves out of pending queue after mark_all_drinks_ready", %{conn: conn} do
+    test "order moves out of pending queue after mark_drinks_ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       drink_cat = insert_category("drink")
       mi = insert_menu_item(drink_cat.id, "Mocha Desaparece")
@@ -428,11 +428,13 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       {:ok, lv, html_before} = live(conn, "/barra")
       assert html_before =~ "Mocha Desaparece"
 
-      html_after = render_click(lv, "mark_all_drinks_ready", %{"id" => to_string(order.id)})
+      html_after =
+        render_click(lv, "mark_drinks_ready", %{"id" => to_string(order.id), "type" => "all"})
+
       refute html_after =~ "Mocha Desaparece"
     end
 
-    test "shows flash message after mark_all_drinks_ready", %{conn: conn} do
+    test "shows flash message after mark_drinks_ready", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       cat = insert_category()
       mi = insert_menu_item(cat.id, "Bebida Flash Barra")
@@ -440,7 +442,10 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       insert_order_item(order.id, mi.id, %{status: "sent"})
 
       {:ok, lv, _} = live(conn, "/barra")
-      html = render_click(lv, "mark_all_drinks_ready", %{"id" => to_string(order.id)})
+
+      html =
+        render_click(lv, "mark_drinks_ready", %{"id" => to_string(order.id), "type" => "all"})
+
       assert html =~ "lista en barra"
     end
 
@@ -454,7 +459,7 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       item_sent = insert_order_item(order.id, mi2.id, %{status: "sent"})
 
       {:ok, lv, _} = live(conn, "/barra")
-      render_click(lv, "mark_all_drinks_ready", %{"id" => to_string(order.id)})
+      render_click(lv, "mark_drinks_ready", %{"id" => to_string(order.id), "type" => "all"})
 
       reloaded_ready = CRC.Repo.get!(CRC.Orders.OrderItem, item_ready.id)
       reloaded_sent = CRC.Repo.get!(CRC.Orders.OrderItem, item_sent.id)
@@ -472,7 +477,7 @@ defmodule CRCWeb.Barra.DisplayLiveTest do
       food_item = insert_order_item(order.id, food_mi.id, %{status: "sent"})
 
       {:ok, lv, _} = live(conn, "/barra")
-      render_click(lv, "mark_all_drinks_ready", %{"id" => to_string(order.id)})
+      render_click(lv, "mark_drinks_ready", %{"id" => to_string(order.id), "type" => "all"})
 
       reloaded_drink = CRC.Repo.get!(CRC.Orders.OrderItem, drink_item.id)
       reloaded_food = CRC.Repo.get!(CRC.Orders.OrderItem, food_item.id)

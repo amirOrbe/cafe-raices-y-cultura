@@ -51,6 +51,10 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
     order
   end
 
+  defp open_category(lv, category) do
+    render_click(lv, "select_category", %{"id" => to_string(category.id)})
+  end
+
   defp insert_order_item(order_id, menu_item_id, overrides \\ %{}) do
     {:ok, item} =
       Orders.add_item(
@@ -375,7 +379,7 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       assert html =~ "Efectivo"
     end
 
-    test "al cerrar muestra el modal QR y al cerrarlo redirige a /mesa", %{conn: conn} do
+    test "al cerrar ofrece el QR, que se abre y se cierra sin salir de la cuenta", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       cat = insert_category()
       mi = insert_menu_item(cat.id)
@@ -386,13 +390,15 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       render_click(lv, "show_payment_step")
       render_click(lv, "set_payment_method", %{"method" => "tarjeta"})
 
-      # confirm_close_order now opens the QR bill modal instead of redirecting
       html = render_click(lv, "confirm_close_order")
-      assert html =~ "Cuenta"
+      assert html =~ "Mostrar QR"
+      refute html =~ "El cliente escanea este QR"
 
-      # closing the modal redirects to /mesa
-      assert {:error, {:redirect, %{to: "/mesa"}}} =
-               render_click(lv, "close_bill_modal")
+      assert render_click(lv, "generate_bill") =~ "El cliente escanea este QR"
+
+      html = render_click(lv, "close_bill_modal")
+      refute html =~ "El cliente escanea este QR"
+      assert html =~ "Mostrar QR"
     end
 
     test "closed order no longer appears in active list", %{conn: conn} do
@@ -449,10 +455,9 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       render_click(lv, "show_payment_step")
       render_click(lv, "set_payment_method", %{"method" => "tarjeta"})
 
-      # confirm_close_order now opens the QR modal automatically;
-      # the "Ver cuenta / QR" button is also visible in the closed-order sidebar
+      # The QR is on demand: closing the order only offers the button.
       html = render_click(lv, "confirm_close_order")
-      assert html =~ "Ver cuenta / QR"
+      assert html =~ "Mostrar QR"
     end
   end
 
@@ -626,14 +631,15 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       assert html =~ "cerrada"
     end
 
-    test "send button is disabled when order is closed", %{conn: conn} do
+    test "send button is not offered when order is closed", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       cat = insert_category()
       mi = insert_menu_item(cat.id)
       order = insert_order(%{status: "closed"})
       insert_order_item(order.id, mi.id, %{status: "pending"})
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
-      assert html =~ ~s(phx-click="send_to_kitchen" disabled)
+      refute html =~ ~s(phx-click="send_to_kitchen")
+      assert html =~ "Mostrar QR"
     end
   end
 
@@ -1204,7 +1210,8 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       cat = insert_category()
       mi = insert_menu_item(cat.id)
       order = insert_order()
-      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+      html = open_category(lv, cat)
       assert html =~ mi.name
       assert html =~ "Agregar"
       refute html =~ "Agotado"
@@ -1218,11 +1225,11 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       prod = insert_stocked_product_for_ui("1000")
       link_recipe_for_ui(mi.id, prod.id, "10")
       order = insert_order()
-      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+      html = open_category(lv, cat)
       assert html =~ mi.name
       assert html =~ "Agregar"
-      refute html =~ "Solo quedan"
-      refute html =~ "el último"
+      refute html =~ "¡Solo"
       refute html =~ "Agotado"
     end
 
@@ -1234,12 +1241,13 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       prod = insert_stocked_product_for_ui("20")
       link_recipe_for_ui(mi.id, prod.id, "10")
       order = insert_order()
-      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+      html = open_category(lv, cat)
       assert html =~ mi.name
-      assert html =~ "Solo quedan 2"
+      assert html =~ "¡Solo 2! · se acaba #{prod.name}"
     end
 
-    test "item with exactly 1 portion shows '¡Es el último!' warning", %{conn: conn} do
+    test "item with exactly 1 portion shows '¡Solo 1!' warning", %{conn: conn} do
       {conn, _} = auth_conn(conn)
       cat = insert_category()
       mi = insert_menu_item(cat.id)
@@ -1247,9 +1255,10 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       prod = insert_stocked_product_for_ui("10")
       link_recipe_for_ui(mi.id, prod.id, "10")
       order = insert_order()
-      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+      html = open_category(lv, cat)
       assert html =~ mi.name
-      assert html =~ "el último"
+      assert html =~ "¡Solo 1! · se acaba #{prod.name}"
     end
 
     test "item with 0 stock is disabled and shows Agotado", %{conn: conn} do
@@ -1260,7 +1269,8 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       prod = insert_stocked_product_for_ui("0")
       link_recipe_for_ui(mi.id, prod.id, "10")
       order = insert_order()
-      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+      html = open_category(lv, cat)
       assert html =~ mi.name
       assert html =~ "Agotado"
       # Button should be disabled
@@ -1275,11 +1285,11 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       prod = insert_stocked_product_for_ui("60")
       link_recipe_for_ui(mi.id, prod.id, "10")
       order = insert_order()
-      {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
+      html = open_category(lv, cat)
       assert html =~ mi.name
       assert html =~ "Agregar"
-      refute html =~ "Solo quedan"
-      refute html =~ "el último"
+      refute html =~ "¡Solo"
     end
 
     test "item with low stock can still be added (button is NOT disabled)", %{conn: conn} do
@@ -1306,9 +1316,9 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       prod = insert_stocked_product_for_ui("20")
       link_recipe_for_ui(mi.id, prod.id, "10")
       order = insert_order()
-      {:ok, lv, html} = live(conn, "/mesa/#{order.id}")
+      {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
       # Initially 2 portions remaining
-      assert html =~ "Solo quedan 2"
+      assert open_category(lv, cat) =~ "¡Solo 2!"
       # Simulate stock depletion by broadcasting the stock update event
       Phoenix.PubSub.broadcast(CRC.PubSub, "menu_stock", :stock_updated)
       # Allow the LiveView to process the message
@@ -1352,8 +1362,8 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
       {:ok, _lv, html} = live(conn, "/mesa/#{order.id}")
       # The ingredient name should appear as a toggle badge
       assert html =~ prod.name
-      # The "Quitar:" label is shown
-      assert html =~ "Quitar:"
+      # The "Sin:" label is shown
+      assert html =~ "Sin:"
     end
 
     test "does NOT show ingredient toggles for items with no recipe", %{conn: conn} do
@@ -1507,12 +1517,13 @@ defmodule CRCWeb.Waiter.OrderLiveTest do
 
     test "switches back to menu tab", %{conn: conn} do
       {conn, _} = auth_conn(conn)
+      cat = insert_category()
+      insert_menu_item(cat.id)
       order = insert_order()
       {:ok, lv, _html} = live(conn, "/mesa/#{order.id}")
 
-      render_click(lv, "select_menu_tab", %{"tab" => "packages"})
-      html = render_click(lv, "select_menu_tab", %{"tab" => "menu"})
-      assert html =~ "Sin inventario"
+      refute render_click(lv, "select_menu_tab", %{"tab" => "packages"}) =~ cat.name
+      assert render_click(lv, "select_menu_tab", %{"tab" => "menu"}) =~ cat.name
     end
   end
 

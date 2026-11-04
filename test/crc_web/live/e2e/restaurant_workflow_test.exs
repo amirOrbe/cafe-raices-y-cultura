@@ -118,10 +118,7 @@ defmodule CRCWeb.E2E.RestaurantWorkflowTest do
     render_click(lv_waiter, "show_payment_step")
     render_click(lv_waiter, "set_payment_method", %{"method" => "tarjeta"})
 
-    render_click(lv_waiter, "confirm_close_order")
-
-    assert {:error, {:redirect, %{to: "/mesa"}}} =
-             render_click(lv_waiter, "close_bill_modal")
+    assert render_click(lv_waiter, "confirm_close_order") =~ "Mostrar QR"
 
     closed = CRC.Orders.get_order!(order.id)
     assert closed.status == "closed"
@@ -155,14 +152,16 @@ defmodule CRCWeb.E2E.RestaurantWorkflowTest do
     conn_barra = auth_conn(build_conn(), barman)
     {:ok, _, html_barra} = live(conn_barra, "/barra")
 
-    # En la comanda (orden abierta) el tipo se indica con data-order-type en el
-    # toggle interactivo. En cocina y barra se usa el badge de texto "Para llevar".
+    # En la comanda (orden abierta) el tipo se indica resaltando el botón "Para
+    # llevar" con btn-accent. En cocina y barra se usa el badge de texto.
+    takeout_selected = ~r/class="[^"]*btn-accent[^"]*"[^>]*phx-value-type="takeout"/
+
     if scenario.expect_takeout_badge do
-      assert html_comanda =~ ~s(data-order-type="takeout"),
-             "expected data-order-type=takeout in comanda for scenario '#{scenario.label}'"
+      assert html_comanda =~ takeout_selected,
+             "expected takeout selected in comanda for scenario '#{scenario.label}'"
     else
-      refute html_comanda =~ ~s(data-order-type="takeout"),
-             "unexpected data-order-type=takeout in comanda for scenario '#{scenario.label}'"
+      refute html_comanda =~ takeout_selected,
+             "unexpected takeout selected in comanda for scenario '#{scenario.label}'"
     end
 
     if scenario.expect_group_badge do

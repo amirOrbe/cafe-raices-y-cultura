@@ -149,10 +149,7 @@ defmodule CRCWeb.E2E.WaiterAttributionTest do
       render_change(lv_order, "update_amount_paid", %{"value" => scenario.amount_paid})
     end
 
-    render_click(lv_order, "confirm_close_order")
-
-    assert {:error, {:redirect, %{to: "/mesa"}}} =
-             render_click(lv_order, "close_bill_modal")
+    assert render_click(lv_order, "confirm_close_order") =~ "Mostrar QR"
 
     # Ticket belongs to this waiter — both opened and closed by the same person
     closed = CRC.Orders.get_order!(order_id)

@@ -445,15 +445,17 @@ defmodule CRC.HRTest do
     test "GIVEN employee with schedule WHEN clocking in late manually THEN status is late" do
       admin = insert_admin()
       employee = insert_user()
-      today = Date.utc_today()
+      # Attendance runs on CDMX dates; after 6 PM CDMX the UTC date is already tomorrow.
+      today = DateTime.utc_now() |> DateTime.add(-6, :hour) |> DateTime.to_date()
       day_of_week = Date.day_of_week(today)
 
-      # Schedule: 08:00. Manual clock-in: 10:00 (2 hours late, > 15 min grace)
+      # Schedule: 08:00 CDMX. Manual clock-in: 10:00 CDMX, stored as 16:00 UTC
+      # (2 hours late, > 15 min grace)
       HR.set_work_schedules(employee.id, [
         %{day_of_week: day_of_week, start_time: ~T[08:00:00], end_time: ~T[16:00:00]}
       ])
 
-      late_time = DateTime.new!(today, ~T[10:00:00], "Etc/UTC")
+      late_time = DateTime.new!(today, ~T[16:00:00], "Etc/UTC")
       {:ok, record} = HR.clock_in_manual(admin, employee, late_time)
       assert record.status == "late"
     end

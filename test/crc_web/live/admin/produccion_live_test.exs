@@ -197,7 +197,7 @@ defmodule CRCWeb.Admin.ProduccionLiveTest do
 
       # THEN
       assert html =~ "Nueva receta"
-      assert html =~ "Nombre del producto que se produce"
+      assert html =~ "Nombre del insumo que produces"
     end
 
     test "GIVEN modal is open WHEN clicking close THEN modal is dismissed",

@@ -551,7 +551,8 @@ defmodule CRC.CatalogTest do
       results = Catalog.list_menu_items_for_category_with_stock(cat.id)
       assert length(results) == 1
       [{_item, portions}] = results
-      assert portions == 4
+      assert portions.count == 4
+      assert portions.bottleneck == prod.name
     end
 
     test "returns {MenuItem, 0} when ingredient is depleted" do
@@ -561,7 +562,7 @@ defmodule CRC.CatalogTest do
       link_ingredient(item.id, prod.id, "10")
       results = Catalog.list_menu_items_for_category_with_stock(cat.id)
       [{_item, portions}] = results
-      assert portions == 0
+      assert portions.count == 0
     end
 
     test "excludes unavailable menu items" do

@@ -261,13 +261,11 @@ defmodule CRCWeb.Admin.PackagesLiveTest do
       |> element("[phx-click='toggle_menu_item'][phx-value-id='#{item.id}']")
       |> render_click()
 
-      # Click the "+" button (increment) which has phx-value-qty=2
-      lv
-      |> element("[phx-click='update_item_qty'][phx-value-id='#{item.id}'][phx-value-qty='2']")
-      |> render_click()
+      # The "+" button is rendered twice (desktop and mobile layouts).
+      html = render_click(lv, "update_item_qty", %{"id" => to_string(item.id), "qty" => "2"})
 
-      html = render(lv)
-      assert html =~ "2"
+      # The next "+" now goes from 2 to 3.
+      assert html =~ ~s(phx-value-id="#{item.id}" phx-value-qty="3")
     end
   end
 

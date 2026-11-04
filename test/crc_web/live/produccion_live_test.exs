@@ -194,8 +194,8 @@ defmodule CRCWeb.ProduccionLiveTest do
       # THEN
       assert html =~ "Salsa De Chile Rojo"
       assert html =~ "Receta seleccionada"
-      assert html =~ "¿Cuántos lotes hiciste?"
-      assert html =~ "Registrar lote"
+      assert html =~ "¿Cuántos lotes realizaste?"
+      assert html =~ "Registrar 1"
     end
 
     test "GIVEN recipe with ingredients WHEN selecting THEN ingredient preview is shown",
@@ -220,7 +220,7 @@ defmodule CRCWeb.ProduccionLiveTest do
       # THEN: ingredient listed in preview
       assert html =~ "Naranja"
       assert html =~ "Oleo De Naranja"
-      assert html =~ "Resumen del lote"
+      assert html =~ "qué cambia en el stock"
     end
 
     test "GIVEN recipe selected WHEN clearing selection THEN recipe list is shown again",

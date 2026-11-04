@@ -1123,6 +1123,9 @@ defmodule CRC.OrdersTest do
   # ---------------------------------------------------------------------------
 
   describe "list_closed_orders/1" do
+    # Period filters work on the cafe's local date (UTC-6).
+    defp cafe_today, do: DateTime.utc_now() |> DateTime.add(-6, :hour) |> DateTime.to_date()
+
     defp insert_closed_order_at(inserted_at) do
       now = DateTime.utc_now() |> DateTime.truncate(:second)
 
@@ -1150,7 +1153,7 @@ defmodule CRC.OrdersTest do
     end
 
     test "returns orders from this week with :week" do
-      recent = DateTime.utc_now() |> DateTime.add(-2, :day) |> DateTime.truncate(:second)
+      recent = DateTime.new!(Date.beginning_of_week(cafe_today()), ~T[12:00:00])
       order = insert_closed_order_at(recent)
       ids = Orders.list_closed_orders(:week) |> Enum.map(& &1.id)
       assert order.id in ids
@@ -1164,7 +1167,7 @@ defmodule CRC.OrdersTest do
     end
 
     test "returns orders from this month with :month" do
-      recent = DateTime.utc_now() |> DateTime.add(-15, :day) |> DateTime.truncate(:second)
+      recent = DateTime.new!(Date.beginning_of_month(cafe_today()), ~T[12:00:00])
       order = insert_closed_order_at(recent)
       ids = Orders.list_closed_orders(:month) |> Enum.map(& &1.id)
       assert order.id in ids
@@ -1178,7 +1181,7 @@ defmodule CRC.OrdersTest do
     end
 
     test "returns orders from this year with :year" do
-      recent = DateTime.utc_now() |> DateTime.add(-60, :day) |> DateTime.truncate(:second)
+      recent = DateTime.new!(Date.new!(cafe_today().year, 1, 1), ~T[12:00:00])
       order = insert_closed_order_at(recent)
       ids = Orders.list_closed_orders(:year) |> Enum.map(& &1.id)
       assert order.id in ids

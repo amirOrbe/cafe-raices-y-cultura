@@ -11,7 +11,10 @@ config :crc, CRC.Repo,
   hostname: "localhost",
   database: "crc_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.schedulers_online() * 2
+  pool_size: System.schedulers_online() * 2,
+  # Each test shares one connection, including Ecto's parallel preloads, so
+  # queries queue up under load. The default 100 ms makes them fail at random.
+  queue_target: 5_000
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.

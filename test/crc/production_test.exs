@@ -610,5 +610,20 @@ defmodule CRC.ProductionTest do
       [first | _] = Production.list_recent_logs(10)
       assert Decimal.compare(first.batches, Decimal.new("2")) == :eq
     end
+
+    test "GIVEN logs in the same second WHEN listing THEN the last one registered comes first" do
+      output = insert_product(%{stock_quantity: "9999.0"})
+      ing = insert_product(%{stock_quantity: "9999.0"})
+      recipe = insert_recipe(output, [%{product_id: ing.id, quantity: "1"}])
+      user = insert_user()
+
+      for _ <- 1..5, do: Production.log_production(recipe.id, "1", user.id)
+      Repo.update_all(ProductionLog, set: [produced_at: DateTime.utc_now(:second)])
+
+      ids = ProductionLog |> Repo.all() |> Enum.map(& &1.id) |> Enum.sort(:desc)
+
+      assert Enum.map(Production.list_recent_logs(10), & &1.id) == ids
+      assert Enum.map(Production.list_today_logs(), & &1.id) == ids
+    end
   end
 end

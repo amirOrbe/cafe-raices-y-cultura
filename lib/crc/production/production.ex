@@ -46,7 +46,7 @@ defmodule CRC.Production do
   @doc "Returns the most recent N production logs with recipe and user preloaded."
   def list_recent_logs(limit \\ 50) do
     ProductionLog
-    |> order_by([l], desc: l.produced_at)
+    |> order_by([l], desc: l.produced_at, desc: l.id)
     |> limit(^limit)
     |> preload([:recipe, :produced_by])
     |> Repo.all()
@@ -61,7 +61,7 @@ defmodule CRC.Production do
 
     ProductionLog
     |> where([l], l.produced_at >= ^today_start)
-    |> order_by([l], desc: l.produced_at)
+    |> order_by([l], desc: l.produced_at, desc: l.id)
     |> preload([:recipe, :produced_by])
     |> Repo.all()
   end

@@ -137,4 +137,48 @@ defmodule CRCWeb.SessionControllerTest do
       assert redirected_to(conn) == ~p"/"
     end
   end
+
+  describe "límite de intentos de login" do
+    @throttle_message "Demasiados intentos"
+
+    defp intento(ip, email, password) do
+      build_conn()
+      |> put_req_header("fly-client-ip", ip)
+      |> post(~p"/iniciar-sesion", %{"email" => email, "password" => password})
+    end
+
+    defp ip_unica, do: "198.51.100.#{System.unique_integer([:positive])}"
+    defp correo_unico, do: "limite#{System.unique_integer([:positive])}@example.com"
+
+    test "bloquea un correo tras 10 fallos, aun desde otra IP y con la contraseña correcta" do
+      email = crear_usuario(%{email: correo_unico()}).email
+
+      for _ <- 1..10, do: intento(ip_unica(), email, "contraseña-mala-123")
+
+      conn = intento(ip_unica(), email, "contraseña123")
+
+      refute get_session(conn, "user_id")
+      assert html_response(conn, 200) =~ @throttle_message
+    end
+
+    test "bloquea una IP tras 20 fallos, aunque cambie de correo" do
+      ip = ip_unica()
+
+      for _ <- 1..20, do: intento(ip, correo_unico(), "contraseña-mala-123")
+
+      conn = intento(ip, correo_unico(), "contraseña-mala-123")
+
+      assert html_response(conn, 200) =~ @throttle_message
+    end
+
+    test "un login correcto no consume intentos" do
+      email = crear_usuario(%{email: correo_unico()}).email
+      ip = ip_unica()
+
+      for _ <- 1..12 do
+        conn = intento(ip, email, "contraseña123")
+        assert get_session(conn, "user_id")
+      end
+    end
+  end
 end

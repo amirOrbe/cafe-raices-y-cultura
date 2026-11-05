@@ -3,13 +3,28 @@ defmodule CRCWeb.SessionController do
   use CRCWeb, :controller
 
   alias CRC.Accounts
-  alias CRCWeb.UserAuth
+  alias CRCWeb.{LoginThrottle, UserAuth}
 
   def new(conn, _params), do: render(conn, :new, error: nil)
 
   def create(conn, %{"email" => email, "password" => password}) do
+    case LoginThrottle.reserve(conn, email) do
+      :ok -> authenticate(conn, email, password)
+      :error -> render(conn, :new, error: LoginThrottle.message())
+    end
+  end
+
+  def delete(conn, _params) do
+    conn
+    |> put_flash(:info, "Sesión cerrada.")
+    |> UserAuth.log_out_user()
+  end
+
+  defp authenticate(conn, email, password) do
     case Accounts.authenticate_user(email, password) do
       {:ok, user} ->
+        LoginThrottle.release(conn, email)
+
         conn
         |> put_flash(:info, "Bienvenido, #{user.name}.")
         |> UserAuth.log_in_user(user)
@@ -20,11 +35,5 @@ defmodule CRCWeb.SessionController do
       {:error, :invalid_credentials} ->
         render(conn, :new, error: "Email o contraseña incorrectos.")
     end
-  end
-
-  def delete(conn, _params) do
-    conn
-    |> put_flash(:info, "Sesión cerrada.")
-    |> UserAuth.log_out_user()
   end
 end
